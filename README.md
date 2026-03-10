@@ -2,6 +2,19 @@
 
 A locally-run, full-stack web application that scrapes jobs from multiple sources, deduplicates and enriches them with AI, and presents them in a polished dark dashboard UI with application tracking.
 
+## Start Here
+
+If you're new to this repo, begin with the curated entrypoints and default workflow loop:
+
+- **Entrypoints:** `.agents/skills/entrypoints/` (curated "start here" stubs)
+- **Router:** `.agents/skills/core/router/` (task → persona/workflow selection policy)
+- **Default workflow:** `.agents/skills/workflows/plan-implement-review/`
+- **Quick fix workflow:** `.agents/skills/workflows/quick-fix/`
+- **Research workflow:** `.agents/skills/workflows/research-summarize-decide/`
+- **Quality gate:** `.agents/skills/quality/gate/` (final verification)
+- **Profiles:** `platforms/profiles/` (fast / safe / deep). Recommended default: `safe.yaml`
+- **Map:** `docs/architecture/skill-map.md` (how the taxonomy fits together)
+
 ## Quick Start
 
 ### Prerequisites
