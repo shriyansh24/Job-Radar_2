@@ -1,0 +1,19 @@
+profile_name: safe
+description: >
+  Full review and quality gates required. Reviewer and tester are mandatory.
+  Best for security-sensitive changes, production incidents, and critical paths.
+
+allowed_personas:
+  - core.persona.planner
+  - core.persona.coder
+  - core.persona.reviewer
+  - core.persona.tester
+  - core.persona.specification
+
+default_workflow: workflows.plan-implement-review
+
+require_quality_gate: true
+
+parallelism: single-agent
+
+max_depth: medium

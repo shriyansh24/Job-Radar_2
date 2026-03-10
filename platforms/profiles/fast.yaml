@@ -1,0 +1,16 @@
+profile_name: fast
+description: >
+  Minimal overhead for quick tasks. Skips quality gate by default.
+  Best for trivial fixes, config changes, and well-understood patterns.
+
+allowed_personas:
+  - core.persona.coder
+  - core.persona.tester
+
+default_workflow: workflows.quick-fix
+
+require_quality_gate: false
+
+parallelism: single-agent
+
+max_depth: short
