@@ -1,0 +1,11 @@
+id: orchestration.task-routing
+name: task-routing
+type: capability
+category: orchestration
+subcategory: routing
+legacy_paths:
+  - .agents/skills/agent-orchestrator-task
+aliases:
+  - agent-orchestrator-task
+status: active
+notes: Capability for task routing/delegation and orchestration execution

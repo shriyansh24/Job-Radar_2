@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of engineering/api
+
+id: engineering.api.docs-generator
+name: api-documentation-generator
+category: engineering
+subcategory: api
+legacy_path: .agents/skills/api-documentation-generator
+status: mode
+parent: engineering.api
+mode_id: docs-generator
+notes: Automated API documentation generation

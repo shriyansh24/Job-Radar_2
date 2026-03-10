@@ -1,0 +1,22 @@
+id: domain.ml
+name: "Domain: ML"
+type: capability
+category: domain
+subcategory: ml
+legacy_paths:
+  - .agents/skills/agent-data-ml-model
+  - .agents/skills/agent-neural-network
+  - .agents/skills/neural-training
+aliases: []
+status: active
+modes:
+  - id: models
+    name: ML Models
+    description: Machine learning model development
+  - id: neural
+    name: Neural Networks
+    description: Neural network development
+  - id: training
+    name: Neural Training
+    description: SONA, MoE, EWC++ pattern training
+notes: Machine learning domain capabilities

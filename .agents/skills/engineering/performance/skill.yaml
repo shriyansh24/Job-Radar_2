@@ -1,0 +1,28 @@
+id: engineering.performance
+name: agent-performance-analyzer
+type: capability
+category: engineering
+subcategory: performance
+legacy_path: .agents/skills/agent-performance-analyzer
+aliases: []
+status: active
+modes:
+  - id: analyze
+    name: Performance Analyzer
+    description: Analyze code performance
+  - id: benchmark
+    name: Performance Benchmarker
+    description: Run performance benchmarks
+    source: ../agent-performance-benchmarker
+  - id: monitor
+    name: Performance Monitor
+    description: Monitor performance metrics
+    source: ../agent-performance-monitor
+  - id: optimize
+    name: Performance Optimizer
+    description: Optimize code performance
+    source: ../agent-performance-optimizer
+standalone_skills:
+  - agent-matrix-optimizer (distinct matrix operations)
+  - performance-analysis (general analysis)
+notes: Performance optimization and analysis capabilities

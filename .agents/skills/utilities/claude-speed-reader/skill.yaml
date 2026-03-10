@@ -1,0 +1,9 @@
+id: utilities.claude-speed-reader
+name: claude-speed-reader
+type: utility
+category: utilities
+subcategory: ux
+legacy_path: .agents/skills/claude-speed-reader
+aliases: []
+status: active
+notes: Speed-read Claude responses at 600+ WPM using RSVP with Spritz-style ORP highlighting

@@ -1,0 +1,21 @@
+id: orchestration.consensus
+name: agent-consensus-coordinator
+type: capability
+category: orchestration
+subcategory: consensus
+legacy_path: .agents/skills/agent-consensus-coordinator
+aliases: []
+status: active
+modes:
+  - id: basic
+    name: Consensus Coordinator
+    description: Basic consensus coordination
+  - id: quorum
+    name: Quorum Manager
+    description: Quorum-based decision making
+    source: ../agent-quorum-manager
+  - id: raft
+    name: Raft Manager
+    description: Raft consensus algorithm
+    source: ../agent-raft-manager
+notes: Consensus mechanisms for distributed coordination

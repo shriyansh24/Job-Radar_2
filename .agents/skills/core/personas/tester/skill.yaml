@@ -1,0 +1,25 @@
+id: core.persona.tester
+name: "Persona: Tester"
+type: persona
+category: core
+subcategory: testing
+legacy_paths:
+  - .agents/skills/agent-tester
+  - .agents/skills/agent-test-long-runner
+  - .agents/skills/agent-benchmark-suite
+  - .agents/skills/engineering/testing
+aliases:
+  - tester
+  - agent-tester
+status: active
+modes:
+  - id: base
+    name: Tester
+    description: Comprehensive testing and QA
+  - id: long-running
+    name: Long Running Tests
+    description: Extended test suites
+  - id: benchmark
+    name: Benchmark Suite
+    description: Performance benchmarking
+notes: QA specialist for comprehensive testing strategies and validation

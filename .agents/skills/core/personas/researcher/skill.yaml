@@ -1,0 +1,13 @@
+id: core.persona.researcher
+name: "Persona: Researcher"
+type: persona
+category: core
+subcategory: investigation
+legacy_paths:
+  - .agents/skills/agent-researcher
+  - .agents/skills/research/investigation
+aliases:
+  - researcher
+  - agent-researcher
+status: active
+notes: Research specialist for investigation, pattern recognition, and knowledge synthesis

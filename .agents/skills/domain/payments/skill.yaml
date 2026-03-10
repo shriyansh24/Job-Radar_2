@@ -1,0 +1,18 @@
+id: domain.payments
+name: "Domain: Payments"
+type: capability
+category: domain
+subcategory: payments
+legacy_paths:
+  - .agents/skills/agent-payments
+  - .agents/skills/agent-agentic-payments
+aliases: []
+status: active
+modes:
+  - id: base
+    name: Payments
+    description: Base payments domain
+  - id: agentic
+    name: Agentic Payments
+    description: AI-driven payments
+notes: Payments domain capabilities with claims-based authorization

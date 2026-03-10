@@ -1,0 +1,9 @@
+id: core.agent
+name: agent-agent
+type: persona
+category: core
+subcategory: fundamentals
+legacy_path: .agents/skills/agent-agent
+aliases: []
+status: active
+notes: Fundamental agent concept and base capabilities

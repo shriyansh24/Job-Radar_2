@@ -1,0 +1,10 @@
+id: quality.gate
+name: "Quality Gate"
+type: capability
+category: quality
+status: active
+notes: Final evaluation gate -- correctness, safety, and readiness.
+legacy_paths: []
+aliases:
+  - quality-gate
+  - gate

@@ -1,0 +1,11 @@
+id: platform.azure-agents
+name: azure-agents
+type: integration
+category: platform
+subcategory: azure
+legacy_paths:
+  - .agents/skills/agents-v2-py
+aliases:
+  - agents-v2-py
+status: active
+notes: Integration for Azure AI Projects / Foundry Agents SDK

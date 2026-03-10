@@ -1,0 +1,17 @@
+id: engineering.coding
+name: agent-coder
+type: capability
+category: engineering
+subcategory: coding
+legacy_path: .agents/skills/agent-coder
+aliases: []
+status: active
+modes:
+  - id: base
+    name: Coder
+    description: Base coding agent
+  - id: sparc
+    name: SPARC Coder
+    description: SPARC methodology implementation
+    source: ../agent-implementer-sparc-coder
+notes: Code implementation and generation capabilities

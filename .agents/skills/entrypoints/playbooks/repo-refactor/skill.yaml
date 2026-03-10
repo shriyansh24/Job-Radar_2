@@ -1,0 +1,9 @@
+id: entrypoints.playbook.repo-refactor
+name: "Playbook: Repo Refactor"
+type: reference
+category: entrypoints
+subcategory: playbooks
+status: active
+notes: Curated playbook that chains personas/capabilities for codebase refactoring.
+legacy_paths: []
+aliases: []

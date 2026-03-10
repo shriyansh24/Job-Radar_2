@@ -1,0 +1,21 @@
+id: core.planning
+name: agent-planner
+type: persona
+category: core
+subcategory: planning
+legacy_path: .agents/skills/agent-planner
+aliases: []
+status: active
+modes:
+  - id: base
+    name: Planner
+    description: Base planning agent
+  - id: goal
+    name: Goal Planner
+    description: Goal-oriented planning
+    source: ../agent-goal-planner
+  - id: code
+    name: Code Goal Planner
+    description: Code-specific goal planning
+    source: ../agent-code-goal-planner
+notes: Task planning and goal decomposition

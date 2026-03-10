@@ -1,0 +1,9 @@
+id: utilities.skill-builder
+name: skill-builder
+type: utility
+category: utilities
+subcategory: skill-development
+legacy_path: .agents/skills/skill-builder
+aliases: []
+status: active
+notes: Create new Claude Code skills with proper YAML structure

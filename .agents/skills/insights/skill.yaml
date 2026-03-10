@@ -1,0 +1,8 @@
+id: utilities.analytics
+name: insights
+category: utilities
+subcategory: analytics
+legacy_path: .agents/skills/insights
+aliases: []
+status: active
+notes: Session analytics and productivity metrics

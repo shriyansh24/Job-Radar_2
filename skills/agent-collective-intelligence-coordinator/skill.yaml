@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of orchestration/coordination
+
+id: orchestration.coordination.collective
+name: agent-collective-intelligence-coordinator
+category: orchestration
+subcategory: coordination
+legacy_path: .agents/skills/agent-collective-intelligence-coordinator
+status: mode
+parent: orchestration.coordination
+mode_id: collective
+notes: Collective intelligence patterns

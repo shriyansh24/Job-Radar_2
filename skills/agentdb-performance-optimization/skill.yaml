@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of products/agentdb
+
+id: products.agentdb.performance
+name: agentdb-performance-optimization
+category: products
+subcategory: database
+legacy_path: .agents/skills/agentdb-performance-optimization
+status: mode
+parent: products.agentdb
+mode_id: performance
+notes: Performance optimization for AgentDB

@@ -1,0 +1,12 @@
+# Skill Manifest Template
+# Place this file in each skill directory after moving
+
+id: ""
+name: ""
+category: ""
+subcategory: ""
+legacy_path: ""
+aliases: []
+status: "active"
+modes: []
+notes: ""

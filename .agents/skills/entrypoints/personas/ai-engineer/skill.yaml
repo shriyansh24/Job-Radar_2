@@ -1,0 +1,9 @@
+id: entrypoints.persona.ai-engineer
+name: "Entrypoint: Persona AI Engineer"
+type: reference
+category: entrypoints
+subcategory: personas
+status: active
+notes: Curated entrypoint to canonical persona.
+legacy_paths: []
+aliases: []

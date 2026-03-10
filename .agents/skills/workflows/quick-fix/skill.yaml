@@ -1,0 +1,9 @@
+id: workflows.quick-fix
+name: "Workflow: Quick Fix"
+type: workflow
+category: workflows
+status: active
+notes: Fast path for small, low-risk changes (single file or trivial patch).
+legacy_paths: []
+aliases:
+  - quick-fix

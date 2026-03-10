@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of core/planning
+
+id: core.planning.goal
+name: agent-goal-planner
+category: core
+subcategory: planning
+legacy_path: .agents/skills/agent-goal-planner
+status: mode
+parent: core.planning
+mode_id: goal
+notes: Goal-oriented planning

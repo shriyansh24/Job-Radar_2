@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of platform/github
+
+id: platform.github.workflows
+name: github-workflow-automation
+category: platform
+subcategory: github
+legacy_path: .agents/skills/github-workflow-automation
+status: mode
+parent: platform.github
+mode_id: workflows
+notes: GitHub Actions workflow automation

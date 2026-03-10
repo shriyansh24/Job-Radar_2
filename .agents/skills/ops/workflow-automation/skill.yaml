@@ -1,0 +1,9 @@
+id: ops.workflow-automation
+name: workflow-automation
+type: capability
+category: ops
+subcategory: workflows
+legacy_path: .agents/skills/workflow-automation
+aliases: []
+status: active
+notes: Workflow creation, execution, and template management for multi-step agent processes

@@ -1,0 +1,9 @@
+id: entrypoints.workflow.research-summarize-decide
+name: "Entrypoint: Workflow Research-Summarize-Decide"
+type: reference
+category: entrypoints
+subcategory: workflows
+status: active
+notes: Curated entrypoint to canonical workflow.
+legacy_paths: []
+aliases: []

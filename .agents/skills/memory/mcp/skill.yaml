@@ -1,0 +1,11 @@
+id: memory.mcp
+name: memory-mcp
+type: capability
+category: memory
+subcategory: storage
+legacy_paths:
+  - .agents/skills/agent-memory-mcp
+aliases:
+  - agent-memory-mcp
+status: active
+notes: Memory capability for MCP-backed persistent knowledge

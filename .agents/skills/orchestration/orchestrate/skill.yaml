@@ -1,0 +1,9 @@
+id: orchestration.orchestrate
+name: orchestrate
+type: capability
+category: orchestration
+subcategory: meta
+legacy_path: .agents/skills/orchestrate
+aliases: []
+status: active
+notes: Wire Commands, Agents, and Skills together for multi-phase feature development

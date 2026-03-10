@@ -1,0 +1,9 @@
+id: ops.agent-manager
+name: agent-manager
+type: capability
+category: ops
+subcategory: agent-lifecycle
+legacy_path: .agents/skills/agent-manager-skill
+aliases: []
+status: active
+notes: Manage multiple local CLI agents via tmux sessions with cron-friendly scheduling

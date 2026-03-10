@@ -1,0 +1,29 @@
+id: products.agentdb
+name: agentdb-advanced-features
+type: product
+category: products
+subcategory: database
+legacy_path: .agents/skills/agentdb-advanced-features
+aliases: []
+status: active
+modes:
+  - id: features
+    name: AgentDB Advanced Features
+    description: Advanced AgentDB features
+  - id: learning
+    name: AgentDB Learning Plugins
+    description: Learning plugins for AgentDB
+    source: ../agentdb-learning-plugins
+  - id: memory
+    name: AgentDB Memory Patterns
+    description: Memory patterns for AgentDB
+    source: ../agentdb-memory-patterns
+  - id: performance
+    name: AgentDB Performance Optimization
+    description: Performance optimization for AgentDB
+    source: ../agentdb-performance-optimization
+  - id: vector
+    name: AgentDB Vector Search
+    description: Vector search capabilities
+    source: ../agentdb-vector-search
+notes: AgentDB product family capabilities

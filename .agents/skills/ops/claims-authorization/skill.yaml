@@ -1,0 +1,9 @@
+id: ops.claims-authorization
+name: claims-authorization
+type: capability
+category: ops
+subcategory: security
+legacy_path: .agents/skills/claims
+aliases: []
+status: active
+notes: Claims-based authorization for agents -- grant, revoke, and verify permissions

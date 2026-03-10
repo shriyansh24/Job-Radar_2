@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of engineering/api
+
+id: engineering.api.openapi
+name: api-documenter
+category: engineering
+subcategory: api
+legacy_path: .agents/skills/api-documenter
+status: mode
+parent: engineering.api
+mode_id: openapi
+notes: OpenAPI/Swagger documentation

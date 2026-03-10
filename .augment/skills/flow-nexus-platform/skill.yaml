@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of products/flow-nexus
+
+id: products.flow-nexus.platform
+name: flow-nexus-platform
+category: products
+subcategory: platform
+legacy_path: .agents/skills/flow-nexus-platform
+status: mode
+parent: products.flow-nexus
+mode_id: platform
+notes: Flow Nexus platform management

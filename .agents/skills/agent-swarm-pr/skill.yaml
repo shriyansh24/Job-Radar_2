@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of products/flow-nexus/swarm
+
+id: products.flow-nexus.swarm.pr
+name: agent-swarm-pr
+category: products
+subcategory: swarm
+legacy_path: .agents/skills/agent-swarm-pr
+status: mode
+parent: products.flow-nexus.swarm
+mode_id: pr
+notes: Swarm-based PR review

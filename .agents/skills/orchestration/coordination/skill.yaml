@@ -1,0 +1,41 @@
+id: orchestration.coordination
+name: agent-adaptive-coordinator
+type: capability
+category: orchestration
+subcategory: coordination
+legacy_path: .agents/skills/agent-adaptive-coordinator
+aliases: []
+status: active
+modes:
+  - id: adaptive
+    name: Adaptive Coordinator
+    description: Adaptive coordination strategies
+  - id: byzantine
+    name: Byzantine Coordinator
+    description: Byzantine fault tolerance
+    source: ../agent-byzantine-coordinator
+  - id: collective
+    name: Collective Intelligence Coordinator
+    description: Collective intelligence patterns
+    source: ../agent-collective-intelligence-coordinator
+  - id: gossip
+    name: Gossip Coordinator
+    description: Gossip protocol coordination
+    source: ../agent-gossip-coordinator
+  - id: hierarchical
+    name: Hierarchical Coordinator
+    description: Hierarchical coordination
+    source: ../agent-hierarchical-coordinator
+  - id: mesh
+    name: Mesh Coordinator
+    description: Mesh topology coordination
+    source: ../agent-mesh-coordinator
+  - id: queen
+    name: Queen Coordinator
+    description: Queen-led coordination
+    source: ../agent-queen-coordinator
+  - id: sync
+    name: Sync Coordinator
+    description: Synchronous coordination
+    source: ../agent-sync-coordinator
+notes: Multi-agent coordination with various topology patterns

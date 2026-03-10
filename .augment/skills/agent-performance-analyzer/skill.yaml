@@ -1,0 +1,15 @@
+# DEPRECATED: This skill has moved to engineering/performance
+# This stub maintained for compatibility
+
+id: engineering.performance
+name: agent-performance-analyzer
+status: deprecated
+legacy_path: .agents/skills/agent-performance-analyzer
+canonical_path: .agents/skills/engineering/performance
+modes:
+  - analyze (default)
+  - benchmark
+  - monitor
+  - optimize
+
+# Please use: engineering/performance

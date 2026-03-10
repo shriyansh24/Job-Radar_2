@@ -1,0 +1,9 @@
+id: entrypoints.workflow.quick-fix
+name: "Entrypoint: Workflow Quick Fix"
+type: reference
+category: entrypoints
+subcategory: workflows
+status: active
+notes: Curated entrypoint to canonical workflow.
+legacy_paths: []
+aliases: []

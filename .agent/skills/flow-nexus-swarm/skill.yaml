@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of products/flow-nexus
+
+id: products.flow-nexus.swarm-mode
+name: flow-nexus-swarm
+category: products
+subcategory: platform
+legacy_path: .agents/skills/flow-nexus-swarm
+status: mode
+parent: products.flow-nexus
+mode_id: swarm
+notes: Flow Nexus swarm orchestration

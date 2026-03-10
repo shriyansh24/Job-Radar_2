@@ -1,0 +1,8 @@
+id: architecture.adrs
+name: architecture-decision-records
+category: architecture
+subcategory: documentation
+legacy_path: .agents/skills/architecture-decision-records
+aliases: []
+status: active
+notes: Write and maintain Architecture Decision Records

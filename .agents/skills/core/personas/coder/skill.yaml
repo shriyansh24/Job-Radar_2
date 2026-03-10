@@ -1,0 +1,22 @@
+id: core.persona.coder
+name: "Persona: Coder"
+type: persona
+category: core
+subcategory: coding
+legacy_paths:
+  - .agents/skills/agent-coder
+  - .agents/skills/agent-implementer-sparc-coder
+  - .agents/skills/engineering/coding
+aliases:
+  - coder
+  - agent-coder
+  - implementer
+status: active
+modes:
+  - id: base
+    name: Coder
+    description: Code implementation and generation
+  - id: sparc
+    name: SPARC Coder
+    description: SPARC methodology implementation
+notes: Senior software engineer for clean, maintainable code implementation

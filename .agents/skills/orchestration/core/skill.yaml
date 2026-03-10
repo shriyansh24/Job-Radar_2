@@ -1,0 +1,9 @@
+id: orchestration.core
+name: agent-coordination
+type: capability
+category: orchestration
+subcategory: core
+legacy_path: .agents/skills/agent-coordination
+aliases: []
+status: active
+notes: Agent spawning, lifecycle management, and coordination patterns

@@ -1,0 +1,8 @@
+id: quality.qa
+name: verification-quality-assurance
+category: quality
+subcategory: qa
+legacy_path: .agents/skills/verification-quality-assurance
+aliases: []
+status: active
+notes: Truth scoring, code quality verification, automatic rollback

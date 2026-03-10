@@ -1,0 +1,8 @@
+id: utilities.handoff
+name: session-handoff
+category: utilities
+subcategory: session-management
+legacy_path: .agents/skills/session-handoff
+aliases: []
+status: active
+notes: Generate structured handoff documents for next session

@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of products/flow-nexus/swarm
+
+id: products.flow-nexus.swarm.tdd
+name: agent-tdd-london-swarm
+category: products
+subcategory: swarm
+legacy_path: .agents/skills/agent-tdd-london-swarm
+status: mode
+parent: products.flow-nexus.swarm
+mode_id: tdd
+notes: Test-driven development swarm

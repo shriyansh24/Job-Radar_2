@@ -1,0 +1,9 @@
+id: architecture.review
+name: architect-review
+type: reference
+category: architecture
+subcategory: review
+legacy_path: .agents/skills/architect-review
+aliases: []
+status: active
+notes: Master software architect for modern architecture reviews

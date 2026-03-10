@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of products/agentdb
+
+id: products.agentdb.vector
+name: agentdb-vector-search
+category: products
+subcategory: database
+legacy_path: .agents/skills/agentdb-vector-search
+status: mode
+parent: products.agentdb
+mode_id: vector
+notes: Vector search capabilities for AgentDB

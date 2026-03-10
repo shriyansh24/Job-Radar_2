@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of products/flow-nexus/swarm
+
+id: products.flow-nexus.swarm.multi-repo
+name: agent-multi-repo-swarm
+category: products
+subcategory: swarm
+legacy_path: .agents/skills/agent-multi-repo-swarm
+status: mode
+parent: products.flow-nexus.swarm
+mode_id: multi-repo
+notes: Multi-repository swarm

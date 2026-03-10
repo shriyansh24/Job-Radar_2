@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of engineering/performance
+
+id: engineering.performance.optimize
+name: agent-performance-optimizer
+category: engineering
+subcategory: performance
+legacy_path: .agents/skills/agent-performance-optimizer
+status: mode
+parent: engineering.performance
+mode_id: optimize
+notes: Optimize code for better performance

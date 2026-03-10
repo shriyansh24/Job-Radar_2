@@ -1,0 +1,11 @@
+id: core.persona.ai-agents-architect
+name: "Persona: AI Agents Architect"
+type: persona
+category: core
+subcategory: ai
+legacy_paths:
+  - .agents/skills/ai-agents-architect
+aliases:
+  - ai-agents-architect
+status: active
+notes: Persona for designing autonomous agent architectures and systems

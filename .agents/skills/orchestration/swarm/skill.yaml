@@ -1,0 +1,11 @@
+id: orchestration.swarm
+name: swarm-advanced
+type: capability
+category: orchestration
+subcategory: swarm
+legacy_path: .agents/skills/swarm-advanced
+aliases: []
+status: active
+standalone_skills:
+  - swarm-orchestration (reference material in orchestration/swarm/)
+notes: Advanced swarm orchestration patterns and reference

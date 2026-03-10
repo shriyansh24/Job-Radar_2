@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of domain/payments
+
+id: domain.payments.agentic
+name: agent-agentic-payments
+category: domain
+subcategory: payments
+legacy_path: .agents/skills/agent-agentic-payments
+status: mode
+parent: domain.payments
+mode_id: agentic
+notes: AI-driven payments

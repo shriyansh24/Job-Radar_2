@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of orchestration/consensus
+
+id: orchestration.consensus.quorum
+name: agent-quorum-manager
+category: orchestration
+subcategory: consensus
+legacy_path: .agents/skills/agent-quorum-manager
+status: mode
+parent: orchestration.consensus
+mode_id: quorum
+notes: Quorum-based decision making

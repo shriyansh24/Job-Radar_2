@@ -1,0 +1,9 @@
+id: utilities.wrap-up
+name: wrap-up
+type: utility
+category: utilities
+subcategory: session-management
+legacy_path: .agents/skills/wrap-up
+aliases: []
+status: active
+notes: End-of-session ritual for auditing changes and capturing learnings

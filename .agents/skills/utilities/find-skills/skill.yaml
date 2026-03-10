@@ -1,0 +1,9 @@
+id: utilities.skill-discovery
+name: find-skills
+type: utility
+category: utilities
+subcategory: discovery
+legacy_path: .agents/skills/find-skills
+aliases: []
+status: active
+notes: Discover and install agent skills

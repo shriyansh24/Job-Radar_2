@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of products/flow-nexus/swarm
+
+id: products.flow-nexus.swarm.init
+name: agent-coordinator-swarm-init
+category: products
+subcategory: swarm
+legacy_path: .agents/skills/agent-coordinator-swarm-init
+status: mode
+parent: products.flow-nexus.swarm
+mode_id: init
+notes: Swarm setup and initialization

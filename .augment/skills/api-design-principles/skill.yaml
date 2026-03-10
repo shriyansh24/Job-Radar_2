@@ -1,0 +1,8 @@
+id: reference.api-design-principles
+name: api-design-principles
+category: reference
+subcategory: api
+legacy_path: .agents/skills/api-design-principles
+aliases: []
+status: active
+notes: Master REST and GraphQL API design principles

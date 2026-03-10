@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of engineering/coding
+
+id: engineering.coding.sparc
+name: agent-implementer-sparc-coder
+category: engineering
+subcategory: coding
+legacy_path: .agents/skills/agent-implementer-sparc-coder
+status: mode
+parent: engineering.coding
+mode_id: sparc
+notes: SPARC methodology implementation with TDD

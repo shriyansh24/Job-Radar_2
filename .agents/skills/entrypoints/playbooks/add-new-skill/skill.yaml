@@ -1,0 +1,9 @@
+id: entrypoints.playbook.add-new-skill
+name: "Playbook: Add New Skill"
+type: reference
+category: entrypoints
+subcategory: playbooks
+status: active
+notes: Curated playbook for creating a new canonical skill in the taxonomy.
+legacy_paths: []
+aliases: []

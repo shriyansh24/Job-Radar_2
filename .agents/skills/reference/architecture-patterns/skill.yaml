@@ -1,0 +1,9 @@
+id: reference.architecture-patterns
+name: architecture-patterns
+type: reference
+category: reference
+subcategory: architecture
+legacy_path: .agents/skills/architecture-patterns
+aliases: []
+status: active
+notes: Clean Architecture, Hexagonal Architecture, DDD patterns

@@ -1,0 +1,15 @@
+id: engineering.security
+name: agent-security-manager
+type: capability
+category: engineering
+subcategory: security
+legacy_path: .agents/skills/agent-security-manager
+aliases: []
+status: active
+modes:
+  - id: manager
+    name: Security Manager
+    description: General security management
+standalone_skills:
+  - agent-authentication (Flow Nexus product-specific)
+notes: Security management capabilities

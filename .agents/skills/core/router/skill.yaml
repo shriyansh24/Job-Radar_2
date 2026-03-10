@@ -1,0 +1,9 @@
+id: core.router
+name: "Router: Task to Persona/Workflow Selector"
+type: capability
+category: core
+status: active
+notes: Routes tasks to the right persona(s), capabilities, and workflow.
+legacy_paths: []
+aliases:
+  - router

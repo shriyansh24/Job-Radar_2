@@ -1,0 +1,920 @@
+{
+  "version": 1,
+  "skills": {
+    "20-andruia-niche-intelligence": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "836fac7a294e08b2f3a993576db831dd470dbc59ee2c4257eca11dc2dab719b1"
+    },
+    "AgentDB Advanced Features": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "a380a3811d236ae19230c59dde18e55a76a04f78bcff0300b12c9f9b1b129888"
+    },
+    "AgentDB Learning Plugins": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "c0cb05f17b0ed0b5585df844fe849f285e2adc02e1bdc110671c018f9063f906"
+    },
+    "AgentDB Memory Patterns": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "90878e9e60ea91d001993dd459a79ba8e0c50411d68b53cf1ace50b85143e732"
+    },
+    "AgentDB Performance Optimization": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "40acec151fd646cec57e155f64d4475854f7b9302f98a362c6b458041238238f"
+    },
+    "AgentDB Vector Search": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "0cf8ed4e6033e6f6954fb9e7aee2528605f557528476cbcfcfa3af101fd131de"
+    },
+    "Hooks Automation": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "f0cbd39e5f105a36bc281423ebf82a5c1ffae2ca9c5901e4aa262c5261d94d0b"
+    },
+    "Pair Programming": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "fd2a712713ee4cff49506453193b6a349be04e0babf8cd11f67fdb61f27bc2db"
+    },
+    "ReasoningBank Intelligence": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "02a8cfccd11e523115b2bfc2471e18d08c855753718a6a4bf4806320dbc05c3d"
+    },
+    "ReasoningBank with AgentDB": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "1210f95cccb2d5fd23167dd73d39c3b34dc887c3d7ca18bc58272642271efb16"
+    },
+    "Skill Builder": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "9394a09ae13304131201a103726afda766c0ec8da81693e5b6816c93b75b04b3"
+    },
+    "Swarm Orchestration": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "2ca65c4524b16e5dddd9054200e2fb85bdb10f630ccc1672d0f68654566e9986"
+    },
+    "V3 CLI Modernization": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "17c8e11ec443f0921561cda6c7a6a82078c04c7204676f7a5c5972f5eb8566e0"
+    },
+    "V3 Core Implementation": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "c511185b9488e374caded239e241b09356e518dd5092a10f1efba3a13e83c31e"
+    },
+    "V3 DDD Architecture": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "c6d0047b8f8df5f1181be3d5f0a812c453da8a6750098a7d2d26c6f28e5b9db7"
+    },
+    "V3 Deep Integration": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "08e150a5fc1b9469d4fc47fae40e3e6177b0ae92050ef3ba16082aae60f09573"
+    },
+    "V3 MCP Optimization": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "d0f95aa3a60c54a6144ad5237def03b664403ea0dea0dfa5a5d6d3d8484c4351"
+    },
+    "V3 Memory Unification": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "3946065e9987cd0763b80feca443a62cf41f7289812cc94d82c59effce657588"
+    },
+    "V3 Performance Optimization": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "05248f609ac1f6ec9c0fd5b0569eaf04b915ea5112ecabbdb226361f5a4ffbfb"
+    },
+    "V3 Security Overhaul": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "809d70db9f81501245e47d2b2db32aa3562b36dffa64e58f406fea07433a41dd"
+    },
+    "V3 Swarm Coordination": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "47f855e5786426a407d41b2b350e7891744a9e92757f242c8d9ba41dd97aeac0"
+    },
+    "Verification & Quality Assurance": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "b0b9609313b04541f5b9a0d86a34f950ddff625638bc848df6b68d4b06457a4e"
+    },
+    "ab-test-setup": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "e9da777661760265519af134014b5a62d0088b43e15e52766194519ee04f1c8b"
+    },
+    "agent-adaptive-coordinator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "a0f1c41e2f7fd476745bf72521367dd572b537c8c362169bdd84e50b28c4aa8c"
+    },
+    "agent-agent": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "3388254521f08c2a788693d7cba3a2af9154c6e621aacdaf0d0981df21d5376f"
+    },
+    "agent-agentic-payments": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "841a2c26f9bfda012114b0728a918fd5d8358021ad5b9c5ea4cf84909b0a0c0c"
+    },
+    "agent-analyze-code-quality": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "e5045d5962adff4ea78d1f3cff545b786e3d76b72994913ec2230d24dd1a007a"
+    },
+    "agent-app-store": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "0264c227315587ee01fd64259d6d80591cd5a2ac8a49884a654798f4b5cbec37"
+    },
+    "agent-arch-system-design": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "8504574556cded427ca3aede6b66ef78043caa1a3aed0d2ab23488247a091ef1"
+    },
+    "agent-architecture": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "62c01d81165147a4ba0a92fa7cc8979b2df7f397429554971b1687a20a9a389b"
+    },
+    "agent-authentication": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "6a9f5f1d651e3e07599245f168ad343f06d029f264823b04c217cd34485d15fd"
+    },
+    "agent-automation-smart-agent": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "4abbe5599a86195c4bbfa254e0705bd9a7df87233d3953c7e6f89bf70d3d115d"
+    },
+    "agent-base-template-generator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "e8c61c6a287b4324f4ad092d1e721c90ec6b8d62b5c1599df8eb97a1e870aa70"
+    },
+    "agent-benchmark-suite": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "5c046bf0d7793306df18e98df0db9e5fb3f013d92f807db2c28745603fa66c1a"
+    },
+    "agent-byzantine-coordinator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "9f341475a99165a6dfd43122f0d84aef60ba89f3bb1701ce41d9ace2eb4deb04"
+    },
+    "agent-challenges": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "b264d73d38ecbb5ac26b41008653ce10a898f04b0c270727017d85a90654f931"
+    },
+    "agent-code-analyzer": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "7755bee32dc303ebda641ce916d971a023617808e1e1bc3dc222ad7c9368db9b"
+    },
+    "agent-code-goal-planner": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "2c0edb418101cd285546bf550c807af0bed7b6edf0d2268b762351fef1a0cdad"
+    },
+    "agent-code-review-swarm": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "3994c4289b20b863d01e99950423743e58076f0a90e26c759ae0b72874c70338"
+    },
+    "agent-coder": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "59ebeb06c42c143f4f70b1c18432ce6a024918782b2e6f87d50406d3f52760ec"
+    },
+    "agent-collective-intelligence-coordinator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "3b03819ed1422d2e1d9449c222db0849e329d332dab0d8ce2baeac85ebf0de83"
+    },
+    "agent-consensus-coordinator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "ea2d91eff973db2b0f97e5dfdbe8dd7bf94b98504c519b248c7d26581c26f148"
+    },
+    "agent-coordination": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "5990893238246961b12340707899f95aaeae011440b65974995199495aca8c2a"
+    },
+    "agent-coordinator-swarm-init": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "2044d077dbaefec32c8b2e60d99d52f4b891d1e1001234abd908e821a9a5cfab"
+    },
+    "agent-crdt-synchronizer": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "4cb8a50b6f44a1f597e5bd4c6b57d3d069941d5161e04aa58ded837105da543d"
+    },
+    "agent-data-ml-model": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "587c2a0d55707539e4c8a20b86f59809370b3f7910b10a849910e71ad58ee6da"
+    },
+    "agent-dev-backend-api": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "ebd10a0422ba78f30399d178789794eb458c13765e7309ba05753be80ff2d6fe"
+    },
+    "agent-docs-api-openapi": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "652ccda9afd073f3ab280d33b4d5cf6819ca48c6c6438c305316cf85a5e85b29"
+    },
+    "agent-evaluation": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "9c1fad7bfe566b01194299e7ef2d3fdaae3a5f072273f9d8e836e98ba22ef61b"
+    },
+    "agent-github-modes": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "1daeb9afa9aed9095a1625d81693c9bc94732f23954148a2321eb51a62c86c47"
+    },
+    "agent-github-pr-manager": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "092d7cb41afb5003f4fac3d254dd170f96a15ed2c63fbc6ad26db72325d6988a"
+    },
+    "agent-goal-planner": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "88e6760183aa2e94a9790add8209f4d4d8cdc16d1cf546798b06f7403550a9be"
+    },
+    "agent-gossip-coordinator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "5269b3758b63c7c8086d6b1e6752eeef4f6bf8b1035ae0902aec852d776a1763"
+    },
+    "agent-hierarchical-coordinator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "df62f7ff02f9c10271dd14a835a6f3ac8d323262fc385e679f000ca1ee9acdc8"
+    },
+    "agent-implementer-sparc-coder": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "1cd64da64383b6fa781a93340e06e2864f0b4b0ce434be3351d3f72355dbeccd"
+    },
+    "agent-issue-tracker": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "d76e02cffbca68167fa8221f464ef9ad1bbc6a3c4ad8348f531c043c270e2f67"
+    },
+    "agent-load-balancer": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "b819c59f7a14107db2ae300748d9bcbdbe2358f91fea04793ffedaf48c335730"
+    },
+    "agent-manager-skill": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "8da6e3eae8a5127a901e97d5b8ec57a1216fcb72b0379a939c97ce36519b4654"
+    },
+    "agent-matrix-optimizer": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "81ea102518ee2441393b80c657fbdab7ae7a1ea4904b72805d8a8bf5fbb2a144"
+    },
+    "agent-memory-coordinator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "aaef4a84c14d63eb05c5d72c8f9ac2587f5aa44c219e702598004a294604ac83"
+    },
+    "agent-memory-mcp": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "417f0df4469e6587535b25ddbc33437c85a85cc7352942a30e62484b4e73f657"
+    },
+    "agent-memory-systems": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "67b6e4146136fce50aa11a1037f4dec0af94501781e47b46f08b4ada41672c85"
+    },
+    "agent-mesh-coordinator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "e5e1f50f755e6a458648e37bec97e46b5ca9b813c8ca37a33c7678c0c6f41187"
+    },
+    "agent-migration-plan": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "1d8ef247e7acc032b99cd2efc8f8c91ba817aff2c38cacbc1862e0b61a5c56ad"
+    },
+    "agent-multi-repo-swarm": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "32eecf8948e1338f2449388e2e1992a11bcc50c5d270c680092ecbf8be53e1ce"
+    },
+    "agent-neural-network": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "421be0f27107fe7f17f286c156bad463cd436f19b888723258476623a93a3d4d"
+    },
+    "agent-ops-cicd-github": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "03bcbb1dc61769d662a59a768b4a015eff3a76f2e41ff2e98484ae6737215486"
+    },
+    "agent-orchestration-improve-agent": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "78c651ba18be56b92a157882a6cc373e2921d63620b699856d7649134d315233"
+    },
+    "agent-orchestration-multi-agent-optimize": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "3eb8de189ca39433b5d18edcd24ee8b6a51f78a6c793efdd42b991603dfa8660"
+    },
+    "agent-orchestrator-task": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "82cd2bb14ebe6a09d9bedf89f3387d33652a53900333fd7c02ce294ac4b54d13"
+    },
+    "agent-pagerank-analyzer": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "3670001df087c181ebcc738bd5178937e73de7e1ad3434fcc567d08100e29221"
+    },
+    "agent-payments": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "330f02ffa719c09e90180f2adf49cf801e33a84461f7cced22382f121f499449"
+    },
+    "agent-performance-analyzer": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "6f2ed3a1ed4eb2035ff860263cb04c7f1a650d6b6b0e3816022beb5c5072e1c4"
+    },
+    "agent-performance-benchmarker": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "7edd9f0de5cf6c58c68c523c19a5d7d55613d4d8fd7e33556dca1eb8f7cb5d97"
+    },
+    "agent-performance-monitor": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "45bd643a5af41a8722d29adba388ccd0506cdc46a16f13454813e64643c7095e"
+    },
+    "agent-performance-optimizer": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "181bfac0565d8f4afa53540138fe2d09f38b136f31e54f3a5dde54c2ee1df2df"
+    },
+    "agent-planner": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "2005f82dca38dffbf2871e3cdc89acef8b5b24d0dc27b0f7a019e4926d18177b"
+    },
+    "agent-pr-manager": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "ebabbfc37bee460783e96847baa186aa5b14de3c7aab7cd2d3b648b666072ade"
+    },
+    "agent-production-validator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "d893aa75f7d620dc7d54d0cb2e9df3964c864731bd7f67136bbbf853af841d7f"
+    },
+    "agent-project-board-sync": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "2be0d65dd3363991973f74a4f3ea56a4c107c28723c788f5f7c16614b1e462bb"
+    },
+    "agent-pseudocode": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "fad85e7b5a63da1b46220201968603dcb07eda25a7f8ffb2d9f34b9b166048cf"
+    },
+    "agent-queen-coordinator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "d8fd35ea76d8fa4937a4836285d1fb9c02e99300ee03ff954173f9e3cbcae62b"
+    },
+    "agent-quorum-manager": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "ed7ac350d7257e92bc0f4f960b4d4b437cffb126142f0098e974d9fc3e5b31bf"
+    },
+    "agent-raft-manager": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "d63b69c7c5c6e7592b0074fb695e3d15bb52e359819cbf42a6438a490dbf7860"
+    },
+    "agent-refinement": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "102216355340e2c0b8fe9c89064d3f24dab0c6e25a9ba44d615e29c7ac2c5ef7"
+    },
+    "agent-release-manager": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "0f0293acb7bebaff370aee8c672f87ab2abf8dfce128303bc470a698a293c234"
+    },
+    "agent-release-swarm": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "0a136fcac3439552efaedca5fcc0e0cca62cfac6305fdeaadc640cb9acb7e660"
+    },
+    "agent-repo-architect": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "c908b553d0e2cc8eb97e8f28c77bcfa76abd8698a5cea101fe6c16c416a51ed3"
+    },
+    "agent-researcher": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "7c207f1670ee05d9065b46c4fffcad5a532dc7c21cc3a5255b4de47c4df07e5e"
+    },
+    "agent-resource-allocator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "b7aa560a1fe0798c27d87f69afb21e5b1a303463af88bbc15c07d2881a832952"
+    },
+    "agent-reviewer": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "d0a0d614d76398b8b6db63fb1890a99516897805d78c4ca8f77219edd0857d77"
+    },
+    "agent-safla-neural": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "9a08a00212af3a86c6faad871ff9d7bbac2e75bf04a545542aee857edcf94c04"
+    },
+    "agent-sandbox": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "493683b6ea52210c26f100fb75fa618fc1dfa360aa7c1bb181c16ff170a96d49"
+    },
+    "agent-scout-explorer": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "991be3fa0f66d0a0d1df7b4583f96bb3e090ff6f0db0da373747d9e70faf762a"
+    },
+    "agent-security-manager": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "68857a01e4a705c9948364bd31cd6c7bcb18aa32c074248032b53b0c931d40b5"
+    },
+    "agent-sona-learning-optimizer": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "b2f8a0ae3f5c97b1c23abc00207f24fc528d8a7efc998c45d3a2cf24dd22d9e1"
+    },
+    "agent-sparc-coordinator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "da34223f6c67b2d0215177e32f62f4c625efc6659f03cf9f383dc70182b62ebb"
+    },
+    "agent-spec-mobile-react-native": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "cdaacdab4b7aa418da529c245688deb7fcbe961791270f232ac4bd16c0c5e236"
+    },
+    "agent-specification": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "e6813afa0c31a004f73e4a535ba606e8fdd366ef74f82ceab7baa41d30ab6e27"
+    },
+    "agent-swarm": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "2c51ef0137c1d6917dae679cc045571d23939580a06ef47cf01c4b37abae18a1"
+    },
+    "agent-swarm-issue": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "06870b233c449db89429aafcb6b7de903198343b10389c9366155819642f5df0"
+    },
+    "agent-swarm-memory-manager": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "f5d1c7aa5656de6fcc9a0383fb198ac9d7e5a3d233d98881669b94d831995f91"
+    },
+    "agent-swarm-pr": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "07824ec154faa8e3be794f7f91e4c62c3fa4f9036969ab81f98cb9baa61f725f"
+    },
+    "agent-sync-coordinator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "fc0d8685b0a08aff8ecc0972214c8a4e41f5617df2e3977f7b2d15eba3b7d64f"
+    },
+    "agent-tdd-london-swarm": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "d47c0d9484ae4afdda9699a2b6e247f24d5bfccdcafb2f097f3c363bd8c985da"
+    },
+    "agent-test-long-runner": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "7d8fd5b398c812126393b52aa194d1760a7e6da2d23cf48b927fb9c14397b091"
+    },
+    "agent-tester": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "22f30f163671505c08e58ee3474bee54fab93d205c27b2d9ea58da93f14f603d"
+    },
+    "agent-tool-builder": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "a634d96d5966a6c3a8a234982b52d62ee8f543c579bd55e5ef774db3365a0f35"
+    },
+    "agent-topology-optimizer": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "98ed2f1ae56e3b16b16560fe6d1363fdc12b6c1dc490df1dab7f1ddac48f11ef"
+    },
+    "agent-trading-predictor": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "bd7fb8ba70d23b9c15a6271f4a9718d8539e2d0366f39c682c9c4a88007fa798"
+    },
+    "agent-user-tools": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "df48908b44e4bdd8f371954ef35a44f5e8bb5076eb6881ac76929ad12398aec1"
+    },
+    "agent-v3-integration-architect": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "ae2bf5572526e8304be9a83cb4f07276e7f8168ae13277892a407b0765c62c8a"
+    },
+    "agent-v3-memory-specialist": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "0ecc3e3af6d30de4af65332bad86901267e12249e8d18e7a9b2ff10a6421819c"
+    },
+    "agent-v3-performance-engineer": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "53ef0be78765eec41cdad75ead1c15f98f8a031fe7544742510fcbe9797e80b0"
+    },
+    "agent-v3-queen-coordinator": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "7fa7f860cccf52dd5fe1afb90339bf3ae4c6bd588626c586283d2ed5b411ea98"
+    },
+    "agent-v3-security-architect": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "dd9de2246e8e43c7b9b29cb3f82ed79b7946d8ea77bee6fd9fb674ea057aba5c"
+    },
+    "agent-worker-specialist": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "19087aec7fdb8e10d3a1cf91bd73d66778c2c10c7a33d1af1060f3cd3f15f501"
+    },
+    "agent-workflow": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "ff5372fa4abc2dfbf7484d578c72e8a5378c815144f1a6cef82052d7077709c7"
+    },
+    "agent-workflow-automation": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "637280be6ca9d37755d0c6ce2617d47e4a02010ec083cad44ec7a67f9edce503"
+    },
+    "agentfolio": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "b967c9130157a64c4d0892887e45caf108c7d5add4a201480275624bb79c8a31"
+    },
+    "agentic-jujutsu": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "920fd5a6b7180bb765c41ef90282736ee25a947b2adc6b2302235dbbd19b26a0"
+    },
+    "agents-v2-py": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "a60d01f47b94292f319667ad84cf8ed57e7e5882332ebe12419c225cc295101a"
+    },
+    "ai-agent-development": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "7296a4305ddf292535223784f7c140a06a475585d2b70705f983abd9718318b7"
+    },
+    "ai-agents-architect": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "49c27f6df787c140fbdc6f11da6d577b32f0bfe38b57a679ff6c060acdd6db90"
+    },
+    "ai-engineer": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "854935520f6d01c8cbe9ce3914c50f1b900252e87fde16e9e750e8e7b957ba6e"
+    },
+    "api-design-principles": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "6d5a06666b059ab240fe8aa65a88b5a7bb079518480f0495c1c25462ffab25d4"
+    },
+    "api-documentation": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "2d6eb2e37d46e291fd6a1e1524a312a899204bacf52d8fc971e5823d467612cb"
+    },
+    "api-documentation-generator": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "46d478955a5781e7a3b2475d524481678bca80f652f83a4cce58ff13fbba6d08"
+    },
+    "api-documenter": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "5994f7095cadd26f35aa03252f6084a37f1244d946ad244080a3b37815013ae4"
+    },
+    "api-patterns": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "c8bb5135d3c2ffed6e6edf692d586b00af5b1e1063422b6d3b04a8fd8d08c72c"
+    },
+    "api-security-best-practices": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "6da90ec18bec0f4748862a8d1b31c6bbad62ac6514ce0624681548ec8c0ffe66"
+    },
+    "architect-review": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "33e087b1c05df04ea0f4c69eb333e40a7981de4f70b6d344d58fcf1917203898"
+    },
+    "architecture-decision-records": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "ad430ce35a0016f6c122d8b296cca9259441aa4acdbee6c2b66d91a669bf74fa"
+    },
+    "architecture-patterns": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "f364df82a48d9bbd6759e64a46ccab957fc6b34063b36c72bd8f77b08f400b09"
+    },
+    "autonomous-agent-patterns": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "60b8f355bd997e04afd8615c656110b87dc3c232bb9a95d5d18c05e6c5203cb4"
+    },
+    "autonomous-agents": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "7bfeb805fd98c682190d790c6affa916ad6ed5b09c137ae7d6a8be1965057f46"
+    },
+    "backend-architect": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "57b223fbedc969e1c5ea31d1bd77ec9e2ac9ac40efdaa0c313e7a23cf9415524"
+    },
+    "backend-dev-guidelines": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "eb16c993a388bb55715d6ad76f0b142c6c7ceb2c3c4e3af4042fdbd9521731f4"
+    },
+    "backend-development-feature-development": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "2d096c68830893e29efe06bbb2e728fa8799ed80115f84569da5a08062f23e78"
+    },
+    "claims": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "d8e070c74737c4b6333f4e1af0b94d2683b67e76a3972bd054b3244a607c8795"
+    },
+    "claude-scientific-skills": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "f25661dd69263bcce8eda25d29d6aae803a058c52a5180fdf65cbc59cde85386"
+    },
+    "claude-speed-reader": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "159f0c8e05e40dca9ae1e5773175b8d92b614bc6c0161e637ff305aff98bbb74"
+    },
+    "clean-code": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "c4f87bb9425b01388cdf56e72f329a8ab4047ed1d7541d2b2ee6122ee4e0e565"
+    },
+    "codebase-audit-pre-push": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "f6985045010f9e46517cbd4d18a8b80e4419e24242391d1577f86fe9a4fe132c"
+    },
+    "codebase-cleanup-refactor-clean": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "b2b0ac6f76c48714225299f586109aa61761ea7f016f97050cb1301654476b79"
+    },
+    "context-compression": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "ac04c9151e1e1fd561e8993eb950dafe07b3e195004abb6c7a9a8b87848dc472"
+    },
+    "context-driven-development": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "234a8a6a2b1f3b74506f4c75fcf2910bd44319cbb6dc8c946a4c277f759a11b4"
+    },
+    "context-fundamentals": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "9a00bb42af34a8df87b42d82b7bd4d054b09b799281b1c4147b37789ba212429"
+    },
+    "context-optimizer": {
+      "source": "rohitg00/pro-workflow",
+      "sourceType": "github",
+      "computedHash": "2c4010ecd52c1bd420024f346378a5251c75f72c224654182b8d7b63f54cfeef"
+    },
+    "deslop": {
+      "source": "rohitg00/pro-workflow",
+      "sourceType": "github",
+      "computedHash": "bfc135b26261db70116af930be688ceb6d7715e4cc1208840088093c609bd978"
+    },
+    "embeddings": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "581cb38d81589615d4d8cc2e5a0100c2963ec13a4cf0a9bf37e372a800291a14"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "computedHash": "25872a21881a950edc3db1f3329664d60405d539660ce05b3265db2de06a7dfd"
+    },
+    "flow-nexus-neural": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "8b33850d31a7f6e0af6d51bf9dbb2c0b805420245dd4911b3001a02c5513549f"
+    },
+    "flow-nexus-platform": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "86d928bde2f3efbbcbe72939d062b283a54d230198e1e99e0ad64c92fca27e9e"
+    },
+    "flow-nexus-swarm": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "254bd263191318f3aee56712b68745bbd8b64f7e87116daffac1d72fae6f4d01"
+    },
+    "github-automation": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "caaf1386a52d9a6cc0e94559436eefde46af9c5368cb5479abfcc5e22eccfaf9"
+    },
+    "github-code-review": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "32acc93b58a92d12847f5181113354d9d823ed790bd3c93588b94d75a3660b36"
+    },
+    "github-multi-repo": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "48e88aa30015bbdbf5bac19fea5d78eef31c049554a10703c5301404d44622c2"
+    },
+    "github-project-management": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "ac0bd6d2a50413fb64fcd572fb27cb20f7759ead6b82e57e2113e7964a15f259"
+    },
+    "github-release-management": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "223600eff07dada14f77b3cc9729022efe1122c46b661877b2e2c76b09cfa6ec"
+    },
+    "github-workflow-automation": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "e9113da7dcdb75a61c146aba2cefa242492b793e01f5cc2c08b479979d43009f"
+    },
+    "hive-mind": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "4790a5eae7bd2e2f562aac5adf169861fc76d1ec00e91fdeaeb8d8a27317cedc"
+    },
+    "hive-mind-advanced": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "f7a68ed11ca0634dc7e047a6d6f72dac8cd22f54aa4db56585b0c6b46bf8bc6a"
+    },
+    "insights": {
+      "source": "rohitg00/pro-workflow",
+      "sourceType": "github",
+      "computedHash": "97fe76e78aed734fe9299528b84c14b9041e2c348084e9c69cbb7d17a7b2b019"
+    },
+    "learn-rule": {
+      "source": "rohitg00/pro-workflow",
+      "sourceType": "github",
+      "computedHash": "1d1839ff4541f29f935ab22cf922308ce5766a8e084b57874b29c93ee0710498"
+    },
+    "memory-management": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "6008e82ef1e844e66dbe2b1bd1e2e568069a3466e536314e56427e5e69655b73"
+    },
+    "neural-training": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "10589bb8b53c1f0d0e1e1fcc23e5d449bed14ba048db57018096bc6d1b4265ad"
+    },
+    "orchestrate": {
+      "source": "rohitg00/pro-workflow",
+      "sourceType": "github",
+      "computedHash": "a2ef4d7d80ac1fab31a99eab14bdfa7c5aecb7658a3cdf1f740e71a251524984"
+    },
+    "parallel-worktrees": {
+      "source": "rohitg00/pro-workflow",
+      "sourceType": "github",
+      "computedHash": "80c343c412a088177940e5f6ad9c210de0445adb07bd773393e17ad866844e2f"
+    },
+    "performance-analysis": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "1ec1d37a93279520f104700b87b02e07194516026e9cdf66ce327e17a532217e"
+    },
+    "pro-workflow": {
+      "source": "rohitg00/pro-workflow",
+      "sourceType": "github",
+      "computedHash": "c20e9b5aae55dd2d3071edf70a6e8b9ce567878360363fde123c1dc96dde5568"
+    },
+    "replay-learnings": {
+      "source": "rohitg00/pro-workflow",
+      "sourceType": "github",
+      "computedHash": "905d9de71b42f9b832477619256733633ed15777253d927bdaba53cfd1b32383"
+    },
+    "security-audit": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "42fb955fdeab03f8b0e15afaba8232bbd672ca53b39f85c23f84aa9669783b9f"
+    },
+    "session-handoff": {
+      "source": "rohitg00/pro-workflow",
+      "sourceType": "github",
+      "computedHash": "4c005642a561acce84193c24ef388d9b6f34e6953ab8fad368e0caecfa154142"
+    },
+    "smart-commit": {
+      "source": "rohitg00/pro-workflow",
+      "sourceType": "github",
+      "computedHash": "0e3cc2c28644458675fefc0789e92673de3269b45ffe6584e644efe1b11182c9"
+    },
+    "sparc-methodology": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "0ff51d6e574b5daa61ef79268e210e70de8f622a4ceec92bd499d4d93a2ea856"
+    },
+    "stream-chain": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "5234fda6e79fe0ad8ef22d59a6e860756256f938ff3ffaa361d41be24f9e0cad"
+    },
+    "swarm-advanced": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "8edb9d3935dd4c3e072ec9febcd8a4bf6a7215aec2f1de34ae4ee658254bbe52"
+    },
+    "swarm-orchestration": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "8810c22b1b3d2f7b25771e780bfb931078421b6e9a57484de4ef2136859efaac"
+    },
+    "worker-benchmarks": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "bdd8f5028aede3d6542951da2a114574cd149735585f54221b8b97c9ef54f737"
+    },
+    "worker-integration": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "425cefea0d5e63018d5a74f5f4850da71fcfb820b41449a56eb95344f5f55aa2"
+    },
+    "workflow-automation": {
+      "source": "ruvnet/ruflo",
+      "sourceType": "github",
+      "computedHash": "ca100f902aaf9ed964212f07722194e67d49ee1c5f7617a0eb48a83123d66cd3"
+    },
+    "wrap-up": {
+      "source": "rohitg00/pro-workflow",
+      "sourceType": "github",
+      "computedHash": "d5cf4d548dc43ed1c9000f100f077be879105c268ae1de881b42f70741074044"
+    }
+  }
+}

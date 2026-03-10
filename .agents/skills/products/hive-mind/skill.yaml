@@ -1,0 +1,17 @@
+id: products.hive-mind
+name: hive-mind
+type: product
+category: products
+subcategory: coordination
+legacy_path: .agents/skills/hive-mind
+aliases: []
+status: active
+modes:
+  - id: basic
+    name: Basic Hive Mind
+    description: Basic Byzantine fault-tolerant consensus
+  - id: advanced
+    name: Advanced Hive Mind
+    description: Advanced Queen-led hierarchical swarm management
+    source: ../hive-mind-advanced
+notes: Byrantine fault-tolerant consensus and distributed coordination

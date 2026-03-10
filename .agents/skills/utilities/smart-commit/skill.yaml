@@ -1,0 +1,9 @@
+id: utilities.commit
+name: smart-commit
+type: utility
+category: utilities
+subcategory: git
+legacy_path: .agents/skills/smart-commit
+aliases: []
+status: active
+notes: Quality gates and conventional commits

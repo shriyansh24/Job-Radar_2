@@ -1,0 +1,9 @@
+id: ops.hooks-automation
+name: hooks-automation
+type: capability
+category: ops
+subcategory: hooks
+legacy_path: .agents/skills/hooks-automation
+aliases: []
+status: active
+notes: Automated coordination and learning from Claude Code hook events with MCP integration

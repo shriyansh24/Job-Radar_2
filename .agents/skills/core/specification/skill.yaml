@@ -1,0 +1,9 @@
+id: core.specification
+name: agent-specification
+type: persona
+category: core
+subcategory: specification
+legacy_path: .agents/skills/agent-specification
+aliases: []
+status: active
+notes: Specification and requirements definition

@@ -1,0 +1,10 @@
+id: domain.mobile
+name: "Domain: Mobile"
+type: capability
+category: domain
+subcategory: mobile
+legacy_paths:
+  - .agents/skills/agent-spec-mobile-react-native
+aliases: []
+status: active
+notes: Mobile development domain for React Native and cross-platform apps
