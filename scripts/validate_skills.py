@@ -43,6 +43,8 @@ CANONICAL_ROOTS = {
     "products",
     "reference",
     "utilities",
+    "entrypoints",
+    "workflows",
 }
 
 

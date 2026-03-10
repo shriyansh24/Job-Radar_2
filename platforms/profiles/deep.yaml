@@ -1,0 +1,23 @@
+profile_name: deep
+description: >
+  Comprehensive analysis with research phase, deeper quality checks, and
+  full persona suite. Best for complex features, architecture decisions,
+  and unfamiliar codebases.
+
+allowed_personas:
+  - core.persona.planner
+  - core.persona.coder
+  - core.persona.reviewer
+  - core.persona.tester
+  - core.persona.researcher
+  - core.persona.specification
+  - core.persona.ai-engineer
+  - core.persona.ai-agents-architect
+
+default_workflow: workflows.plan-implement-review
+
+require_quality_gate: true
+
+parallelism: multi-agent
+
+max_depth: deep
