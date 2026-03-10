@@ -1,0 +1,9 @@
+id: reference.backend-guidelines
+name: backend-dev-guidelines
+type: reference
+category: reference
+subcategory: backend
+legacy_path: .agents/skills/backend-dev-guidelines
+aliases: []
+status: active
+notes: Opinionated backend development standards for Node.js + Express + TypeScript

@@ -1,0 +1,14 @@
+# DEPRECATED: This skill has moved to products/hive-mind
+# This stub maintained for compatibility
+
+id: products.hive-mind
+name: hive-mind
+status: deprecated
+legacy_path: .agents/skills/hive-mind
+canonical_path: .agents/skills/products/hive-mind
+modes:
+  - basic (default)
+  - advanced (see products/hive-mind-advanced)
+
+# This skill has been consolidated into the hive-mind family
+# Please use: products/hive-mind

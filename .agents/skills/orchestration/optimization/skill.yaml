@@ -1,0 +1,11 @@
+id: orchestration.optimization
+name: multi-agent-optimization
+type: capability
+category: orchestration
+subcategory: optimization
+legacy_paths:
+  - .agents/skills/agent-orchestration-multi-agent-optimize
+aliases:
+  - agent-orchestration-multi-agent-optimize
+status: active
+notes: Capability for optimizing multi-agent systems (profiling, coordination, bottlenecks)

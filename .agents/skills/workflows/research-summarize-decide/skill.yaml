@@ -1,0 +1,9 @@
+id: workflows.research-summarize-decide
+name: "Workflow: Research, Summarize, Decide"
+type: workflow
+category: workflows
+status: active
+notes: Investigation loop for uncertain tasks -- research, synthesize, propose decision and next actions.
+legacy_paths: []
+aliases:
+  - research-summarize-decide

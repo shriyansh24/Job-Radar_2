@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of orchestration/consensus
+
+id: orchestration.consensus.raft
+name: agent-raft-manager
+category: orchestration
+subcategory: consensus
+legacy_path: .agents/skills/agent-raft-manager
+status: mode
+parent: orchestration.consensus
+mode_id: raft
+notes: Raft consensus algorithm implementation

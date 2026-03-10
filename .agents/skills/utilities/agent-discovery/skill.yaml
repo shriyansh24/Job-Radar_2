@@ -1,0 +1,11 @@
+id: utilities.agent-discovery
+name: "Agent Discovery"
+type: utility
+category: utilities
+subcategory: discovery
+legacy_paths:
+  - .agents/skills/agentfolio
+aliases:
+  - agentfolio
+status: active
+notes: Discover and research autonomous AI agents / tools / skill packs

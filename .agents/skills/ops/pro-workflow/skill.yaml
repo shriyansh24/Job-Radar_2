@@ -1,0 +1,11 @@
+id: ops.pro-workflow
+name: pro-workflow
+type: workflow
+category: ops
+subcategory: workflows
+legacy_paths:
+  - .agents/skills/pro-workflow
+aliases:
+  - pro-workflow
+status: active
+notes: Workflow system for structured AI coding (plan, implement, verify, wrap-up)

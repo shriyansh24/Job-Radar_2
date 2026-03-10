@@ -1,0 +1,11 @@
+id: quality.agent-evaluation
+name: agent-evaluation
+type: capability
+category: quality
+subcategory: testing
+legacy_paths:
+  - .agents/skills/agent-evaluation
+aliases:
+  - agent-evaluation
+status: active
+notes: Capability for evaluating agents (tests, benchmarks, scoring)

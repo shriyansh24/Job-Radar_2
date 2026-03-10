@@ -1,0 +1,9 @@
+id: utilities.deslop
+name: deslop
+type: utility
+category: utilities
+subcategory: cleanup
+legacy_path: .agents/skills/deslop
+aliases: []
+status: active
+notes: Remove AI-generated code slop and unnecessary boilerplate

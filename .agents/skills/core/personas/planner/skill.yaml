@@ -1,0 +1,26 @@
+id: core.persona.planner
+name: "Persona: Planner"
+type: persona
+category: core
+subcategory: planning
+legacy_paths:
+  - .agents/skills/agent-planner
+  - .agents/skills/agent-goal-planner
+  - .agents/skills/agent-code-goal-planner
+  - .agents/skills/core/planning
+aliases:
+  - planner
+  - agent-planner
+  - goal-planner
+status: active
+modes:
+  - id: base
+    name: Planner
+    description: Strategic planning and task orchestration
+  - id: goal
+    name: Goal Planner
+    description: Goal-oriented planning
+  - id: code
+    name: Code Goal Planner
+    description: Code-specific goal planning
+notes: Strategic planning specialist for task decomposition and execution planning

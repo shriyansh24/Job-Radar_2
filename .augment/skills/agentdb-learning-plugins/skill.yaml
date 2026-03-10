@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of products/agentdb
+
+id: products.agentdb.learning
+name: agentdb-learning-plugins
+category: products
+subcategory: database
+legacy_path: .agents/skills/agentdb-learning-plugins
+status: mode
+parent: products.agentdb
+mode_id: learning
+notes: Learning plugins for AgentDB

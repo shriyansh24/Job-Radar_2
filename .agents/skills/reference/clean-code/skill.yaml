@@ -1,0 +1,9 @@
+id: reference.clean-code
+name: clean-code
+type: reference
+category: reference
+subcategory: code-quality
+legacy_path: .agents/skills/clean-code
+aliases: []
+status: active
+notes: Applies principles from Robert C. Martin's Clean Code

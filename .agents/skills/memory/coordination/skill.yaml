@@ -1,0 +1,11 @@
+id: memory.coordination
+name: memory-coordination
+type: capability
+category: memory
+subcategory: coordination
+legacy_paths:
+  - .agents/skills/agent-memory-coordinator
+aliases:
+  - agent-memory-coordinator
+status: active
+notes: Capability for coordinating memory writes/reads across agents

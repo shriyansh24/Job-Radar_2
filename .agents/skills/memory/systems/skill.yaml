@@ -1,0 +1,11 @@
+id: memory.systems
+name: memory-systems
+type: reference
+category: memory
+subcategory: architecture
+legacy_paths:
+  - .agents/skills/agent-memory-systems
+aliases:
+  - agent-memory-systems
+status: active
+notes: "Reference: concepts and patterns for agent memory systems"

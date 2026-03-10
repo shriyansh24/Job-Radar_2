@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of orchestration/coordination
+
+id: orchestration.coordination.sync
+name: agent-sync-coordinator
+category: orchestration
+subcategory: coordination
+legacy_path: .agents/skills/agent-sync-coordinator
+status: mode
+parent: orchestration.coordination
+mode_id: sync
+notes: Synchronous coordination

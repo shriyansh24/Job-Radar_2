@@ -1,0 +1,45 @@
+id: products.flow-nexus.swarm
+name: agent-swarm
+type: product
+category: products
+subcategory: swarm
+legacy_path: .agents/skills/agent-swarm
+aliases: []
+status: active
+modes:
+  - id: base
+    name: Flow Nexus Swarm
+    description: Base swarm orchestration
+  - id: issue
+    name: Swarm Issue Tracking
+    description: Swarm-based issue handling
+    source: ../agent-swarm-issue
+  - id: memory
+    name: Swarm Memory Management
+    description: Swarm memory coordination
+    source: ../agent-swarm-memory-manager
+  - id: pr
+    name: Swarm PR Review
+    description: Swarm-based PR review
+    source: ../agent-swarm-pr
+  - id: multi-repo
+    name: Multi-Repo Swarm
+    description: Multi-repository swarm
+    source: ../agent-multi-repo-swarm
+  - id: code-review
+    name: Swarm Code Review
+    description: Swarm code review patterns
+    source: ../agent-code-review-swarm
+  - id: release
+    name: Swarm Release
+    description: Swarm release management
+    source: ../agent-release-swarm
+  - id: tdd
+    name: TDD Swarm
+    description: Test-driven development swarm
+    source: ../agent-tdd-london-swarm
+  - id: init
+    name: Swarm Initialization
+    description: Swarm setup and initialization
+    source: ../agent-coordinator-swarm-init
+notes: Flow Nexus swarm workflow patterns

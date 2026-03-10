@@ -1,0 +1,10 @@
+id: domain.scientific
+name: "Domain: Scientific"
+type: capability
+category: domain
+subcategory: scientific
+legacy_paths:
+  - .agents/skills/claude-scientific-skills
+aliases: []
+status: active
+notes: Scientific research and analysis skills

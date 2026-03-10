@@ -1,0 +1,9 @@
+id: ops.worker-benchmarks
+name: worker-benchmarks
+type: capability
+category: ops
+subcategory: workers
+legacy_path: .agents/skills/worker-benchmarks
+aliases: []
+status: active
+notes: Comprehensive worker system benchmarks and performance analysis

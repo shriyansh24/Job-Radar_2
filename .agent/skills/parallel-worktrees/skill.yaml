@@ -1,0 +1,8 @@
+id: utilities.worktrees
+name: parallel-worktrees
+category: utilities
+subcategory: git
+legacy_path: .agents/skills/parallel-worktrees
+aliases: []
+status: active
+notes: Git worktree management for parallel coding sessions

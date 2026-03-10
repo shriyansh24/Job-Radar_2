@@ -1,0 +1,9 @@
+id: ops.ab-test-setup
+name: ab-test-setup
+type: capability
+category: ops
+subcategory: experimentation
+legacy_path: .agents/skills/ab-test-setup
+aliases: []
+status: active
+notes: Structured A/B test setup with mandatory gates for hypothesis, metrics, and execution

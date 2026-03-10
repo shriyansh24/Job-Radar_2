@@ -1,0 +1,12 @@
+
+
+Always read AGENTS.md and SYSTEM_CONTEXT.md before writing any code.
+Always state which agent you are before starting (@company-graph, @backend-coder, etc.).
+Describe your approach and wait for approval before writing code.
+Never touch AGENT_OVERRIDES.md.
+Never add ollama, proxycurl, or any local LLM.
+Use uv for Python deps, pnpm for Node deps.
+If a task touches more than 3 files, stop and break it into smaller tasks.
+After finishing code, list edge cases and suggest test cases.
+When corrected, add a rule to the Persistent Rules section of AGENTS.md.
+Run tests before declaring any task complete.

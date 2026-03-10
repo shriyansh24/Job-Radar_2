@@ -1,0 +1,11 @@
+id: engineering.tooling.agent-tool-builder
+name: "Tool Builder"
+type: capability
+category: engineering
+subcategory: tooling
+legacy_paths:
+  - .agents/skills/agent-tool-builder
+aliases:
+  - agent-tool-builder
+status: active
+notes: Build and integrate tools that agents can call reliably

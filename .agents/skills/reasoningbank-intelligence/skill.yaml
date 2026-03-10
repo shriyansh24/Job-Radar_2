@@ -1,0 +1,10 @@
+# DEPRECATED: This skill has moved to products/reasoningbank
+# This stub maintained for compatibility
+
+id: products.reasoningbank
+name: reasoningbank-intelligence
+status: deprecated
+legacy_path: .agents/skills/reasoningbank-intelligence
+canonical_path: .agents/skills/products/reasoningbank
+
+# Please use: products/reasoningbank

@@ -1,0 +1,9 @@
+id: research.investigation
+name: agent-researcher
+type: capability
+category: research
+subcategory: investigation
+legacy_path: .agents/skills/agent-researcher
+aliases: []
+status: active
+notes: Research and investigation capabilities

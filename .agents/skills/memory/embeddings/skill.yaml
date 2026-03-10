@@ -1,0 +1,9 @@
+id: memory.embeddings
+name: embeddings
+type: capability
+category: memory
+subcategory: vector
+legacy_path: .agents/skills/embeddings
+aliases: []
+status: active
+notes: Vector embeddings with HNSW indexing, sql.js persistence

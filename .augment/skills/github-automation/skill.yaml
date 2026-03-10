@@ -1,0 +1,17 @@
+# DEPRECATED: This skill has moved to platform/github
+# This stub maintained for compatibility
+
+id: platform.github
+name: github-automation
+status: deprecated
+legacy_path: .agents/skills/github-automation
+canonical_path: .agents/skills/platform/github
+modes:
+  - automation (default)
+  - code-review
+  - multi-repo
+  - projects
+  - release
+  - workflows
+
+# Please use: platform/github

@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of products/flow-nexus/swarm
+
+id: products.flow-nexus.swarm.release
+name: agent-release-swarm
+category: products
+subcategory: swarm
+legacy_path: .agents/skills/agent-release-swarm
+status: mode
+parent: products.flow-nexus.swarm
+mode_id: release
+notes: Swarm release management

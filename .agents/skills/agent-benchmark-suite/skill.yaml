@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of engineering/testing
+
+id: engineering.testing.benchmark
+name: agent-benchmark-suite
+category: engineering
+subcategory: testing
+legacy_path: .agents/skills/agent-benchmark-suite
+status: mode
+parent: engineering.testing
+mode_id: benchmark
+notes: Performance benchmarking suite

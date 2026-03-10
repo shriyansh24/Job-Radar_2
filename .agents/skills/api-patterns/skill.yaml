@@ -1,0 +1,8 @@
+id: reference.api-patterns
+name: api-patterns
+category: reference
+subcategory: api
+legacy_path: .agents/skills/api-patterns
+aliases: []
+status: active
+notes: Proven API design patterns including REST, GraphQL, tRPC

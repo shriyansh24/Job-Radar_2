@@ -1,0 +1,9 @@
+id: memory.management
+name: memory-management
+type: capability
+category: memory
+subcategory: systems
+legacy_path: .agents/skills/memory-management
+aliases: []
+status: active
+notes: AgentDB memory system with HNSW vector search

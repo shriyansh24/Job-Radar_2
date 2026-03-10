@@ -1,0 +1,13 @@
+id: engineering.backend
+name: backend-development-feature-development
+type: capability
+category: engineering
+subcategory: backend
+legacy_path: .agents/skills/backend-development-feature-development
+aliases: []
+status: active
+standalone_skills:
+  - backend-architect (in architecture/)
+  - backend-dev-guidelines (in reference/)
+  - agent-dev-backend-api (in root, API-specific)
+notes: Backend development capabilities

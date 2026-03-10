@@ -1,0 +1,40 @@
+id: platform.github
+name: github-automation
+type: integration
+category: platform
+subcategory: github
+legacy_path: .agents/skills/github-automation
+aliases: []
+status: active
+modes:
+  - id: automation
+    name: GitHub Automation
+    description: General GitHub automation
+  - id: code-review
+    name: GitHub Code Review
+    description: AI-powered code review
+    source: ../github-code-review
+  - id: multi-repo
+    name: Multi-Repo Management
+    description: Manage multiple repositories
+    source: ../github-multi-repo
+  - id: projects
+    name: Project Management
+    description: GitHub Projects automation
+    source: ../github-project-management
+  - id: release
+    name: Release Management
+    description: Release automation
+    source: ../github-release-management
+  - id: workflows
+    name: Workflow Automation
+    description: GitHub Actions workflows
+    source: ../github-workflow-automation
+standalone_skills:
+  - agent-github-modes (knowledge base)
+  - agent-github-pr-manager
+  - agent-issue-tracker
+  - agent-project-board-sync
+  - agent-ops-cicd-github
+  - agent-pr-manager
+notes: GitHub platform integration and automation

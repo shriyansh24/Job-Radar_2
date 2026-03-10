@@ -1,0 +1,9 @@
+id: utilities.sparc
+name: sparc-methodology
+type: utility
+category: utilities
+subcategory: methodology
+legacy_path: .agents/skills/sparc-methodology
+aliases: []
+status: active
+notes: SPARC development workflow - Specification, Pseudocode, Architecture, Refinement, Completion

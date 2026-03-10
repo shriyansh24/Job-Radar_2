@@ -1,0 +1,10 @@
+id: domain.autonomous
+name: "Domain: Autonomous"
+type: capability
+category: domain
+subcategory: autonomous
+legacy_paths:
+  - .agents/skills/autonomous-agents
+aliases: []
+status: active
+notes: Autonomous agent patterns and best practices

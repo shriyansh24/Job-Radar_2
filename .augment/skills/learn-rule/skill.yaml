@@ -1,0 +1,8 @@
+id: utilities.learning
+name: learn-rule
+category: utilities
+subcategory: learning
+legacy_path: .agents/skills/learn-rule
+aliases: []
+status: active
+notes: Capture corrections and lessons as persistent learning rules

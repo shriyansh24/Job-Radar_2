@@ -1,0 +1,9 @@
+id: context.fundamentals
+name: context-fundamentals
+type: reference
+category: context
+subcategory: theory
+legacy_path: .agents/skills/context-fundamentals
+aliases: []
+status: active
+notes: Understanding context in agent systems

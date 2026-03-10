@@ -1,0 +1,8 @@
+id: quality.security-audit
+name: security-audit
+category: quality
+subcategory: security
+legacy_path: .agents/skills/security-audit
+aliases: []
+status: active
+notes: Comprehensive security scanning and vulnerability detection

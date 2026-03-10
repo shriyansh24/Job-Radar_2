@@ -1,0 +1,17 @@
+id: products.reasoningbank
+name: reasoningbank-intelligence
+type: product
+category: products
+subcategory: ml
+legacy_path: .agents/skills/reasoningbank-intelligence
+aliases: []
+status: active
+modes:
+  - id: basic
+    name: ReasoningBank Intelligence
+    description: Adaptive learning with pattern recognition
+  - id: with-agentdb
+    name: ReasoningBank with AgentDB
+    description: Integration with AgentDB vector database
+    source: ../reasoningbank-with-agentdb
+notes: Adaptive learning with ReasoningBank for pattern recognition

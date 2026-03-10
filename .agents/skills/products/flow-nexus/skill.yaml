@@ -1,0 +1,24 @@
+id: products.flow-nexus
+name: flow-nexus-neural
+type: product
+category: products
+subcategory: platform
+legacy_path: .agents/skills/flow-nexus-neural
+aliases: []
+status: active
+modes:
+  - id: neural
+    name: Flow Nexus Neural
+    description: Neural network capabilities for Flow Nexus
+  - id: platform
+    name: Flow Nexus Platform
+    description: Flow Nexus platform integration
+    source: ../flow-nexus-platform
+  - id: swarm
+    name: Flow Nexus Swarm
+    description: Swarm orchestration for Flow Nexus
+    source: ../flow-nexus-swarm
+standalone_skills:
+  - agent-workflow (Flow Nexus workflow)
+  - agent-swarm (Flow Nexus swarm agent)
+notes: Flow Nexus platform integration and capabilities

@@ -1,0 +1,9 @@
+id: utilities.streaming
+name: stream-chain
+type: utility
+category: utilities
+subcategory: data-processing
+legacy_path: .agents/skills/stream-chain
+aliases: []
+status: active
+notes: Stream-JSON chaining for multi-agent pipelines

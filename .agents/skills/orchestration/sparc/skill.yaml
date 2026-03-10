@@ -1,0 +1,9 @@
+id: orchestration.sparc
+name: agent-sparc-coordinator
+type: capability
+category: orchestration
+subcategory: sparc
+legacy_path: .agents/skills/agent-sparc-coordinator
+aliases: []
+status: active
+notes: SPARC methodology coordination - Specification, Pseudocode, Architecture, Refinement, Completion

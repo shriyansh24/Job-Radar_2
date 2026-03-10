@@ -1,0 +1,9 @@
+id: orchestration.crdt
+name: agent-crdt-synchronizer
+type: capability
+category: orchestration
+subcategory: crdt
+legacy_path: .agents/skills/agent-crdt-synchronizer
+aliases: []
+status: active
+notes: CRDT-based distributed synchronization

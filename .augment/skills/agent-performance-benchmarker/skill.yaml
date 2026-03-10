@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of engineering/performance
+
+id: engineering.performance.benchmark
+name: agent-performance-benchmarker
+category: engineering
+subcategory: performance
+legacy_path: .agents/skills/agent-performance-benchmarker
+status: mode
+parent: engineering.performance
+mode_id: benchmark
+notes: Run and measure performance benchmarks

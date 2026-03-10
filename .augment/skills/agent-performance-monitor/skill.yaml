@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of engineering/performance
+
+id: engineering.performance.monitor
+name: agent-performance-monitor
+category: engineering
+subcategory: performance
+legacy_path: .agents/skills/agent-performance-monitor
+status: mode
+parent: engineering.performance
+mode_id: monitor
+notes: Monitor and track performance metrics

@@ -1,0 +1,23 @@
+id: engineering.testing
+name: agent-tester
+type: capability
+category: engineering
+subcategory: testing
+legacy_path: .agents/skills/agent-tester
+aliases: []
+status: active
+modes:
+  - id: base
+    name: Core Tester
+    description: Standard testing capabilities
+  - id: long-running
+    name: Long Running Tests
+    description: Handles extended test suites
+    source: ../agent-test-long-runner
+  - id: benchmark
+    name: Benchmark Suite
+    description: Performance benchmarking
+    source: ../agent-benchmark-suite
+standalone_skills:
+  - worker-benchmarks (in engineering/benchmark)
+notes: Testing and quality assurance capabilities

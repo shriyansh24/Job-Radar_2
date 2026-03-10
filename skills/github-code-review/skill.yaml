@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of platform/github
+
+id: platform.github.code-review
+name: github-code-review
+category: platform
+subcategory: github
+legacy_path: .agents/skills/github-code-review
+status: mode
+parent: platform.github
+mode_id: code-review
+notes: AI-powered code review with swarm coordination

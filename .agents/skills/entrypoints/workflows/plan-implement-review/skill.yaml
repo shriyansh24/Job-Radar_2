@@ -1,0 +1,9 @@
+id: entrypoints.workflow.plan-implement-review
+name: "Entrypoint: Workflow Plan-Implement-Review"
+type: reference
+category: entrypoints
+subcategory: workflows
+status: active
+notes: Curated entrypoint to canonical workflow.
+legacy_paths: []
+aliases: []

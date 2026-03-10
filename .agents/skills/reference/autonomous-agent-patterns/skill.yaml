@@ -1,0 +1,9 @@
+id: reference.autonomous-agent-patterns
+name: autonomous-agent-patterns
+type: reference
+category: reference
+subcategory: agents
+legacy_path: .agents/skills/autonomous-agent-patterns
+aliases: []
+status: active
+notes: Design patterns for building autonomous AI agents

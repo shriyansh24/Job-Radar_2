@@ -1,0 +1,11 @@
+id: quality.agent-improvement
+name: agent-improvement
+type: capability
+category: quality
+subcategory: agents
+legacy_paths:
+  - .agents/skills/agent-orchestration-improve-agent
+aliases:
+  - agent-orchestration-improve-agent
+status: active
+notes: Capability for systematically improving existing agents (eval + feedback loops)

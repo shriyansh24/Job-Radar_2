@@ -1,0 +1,8 @@
+id: utilities.pair-programming
+name: pair-programming
+category: utilities
+subcategory: collaboration
+legacy_path: .agents/skills/pair-programming
+aliases: []
+status: active
+notes: AI-assisted pair programming with driver/navigator modes

@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of quality/code-review
+
+id: quality.code-review.analyze
+name: agent-analyze-code-quality
+category: quality
+subcategory: code-review
+legacy_path: .agents/skills/agent-analyze-code-quality
+status: mode
+parent: quality.code-review
+mode_id: analyze
+notes: Static code quality analysis

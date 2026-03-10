@@ -1,0 +1,9 @@
+id: workflows.plan-implement-review
+name: "Workflow: Plan, Implement, Review"
+type: workflow
+category: workflows
+status: active
+notes: Default engineering workflow -- plan, implement, review, test, wrap-up.
+legacy_paths: []
+aliases:
+  - plan-implement-review

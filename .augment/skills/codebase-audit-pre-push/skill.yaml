@@ -1,0 +1,8 @@
+id: quality.pre-push-audit
+name: codebase-audit-pre-push
+category: quality
+subcategory: audit
+legacy_path: .agents/skills/codebase-audit-pre-push
+aliases: []
+status: active
+notes: Deep audit before GitHub push - removes junk, dead code, security issues

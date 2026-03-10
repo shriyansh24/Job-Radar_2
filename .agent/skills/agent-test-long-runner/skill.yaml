@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of engineering/testing
+
+id: engineering.testing.long-running
+name: agent-test-long-runner
+category: engineering
+subcategory: testing
+legacy_path: .agents/skills/agent-test-long-runner
+status: mode
+parent: engineering.testing
+mode_id: long-running
+notes: Handles extended test suites and long-running tests

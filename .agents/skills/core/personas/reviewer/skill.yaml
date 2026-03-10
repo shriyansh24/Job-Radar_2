@@ -1,0 +1,26 @@
+id: core.persona.reviewer
+name: "Persona: Reviewer"
+type: persona
+category: core
+subcategory: code-review
+legacy_paths:
+  - .agents/skills/agent-reviewer
+  - .agents/skills/agent-analyze-code-quality
+  - .agents/skills/agent-code-analyzer
+  - .agents/skills/quality/code-review
+aliases:
+  - reviewer
+  - agent-reviewer
+  - code-reviewer
+status: active
+modes:
+  - id: base
+    name: Reviewer
+    description: Code review and quality assurance
+  - id: analyze
+    name: Code Quality Analyzer
+    description: Static code quality analysis
+  - id: static
+    name: Static Analyzer
+    description: Static code analysis
+notes: Senior code reviewer for quality, security, and maintainability

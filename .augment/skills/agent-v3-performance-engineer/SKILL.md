@@ -1,0 +1,7 @@
+# DEPRECATED: This skill has moved to products/v3
+# See products/v3/SKILL.md for the canonical skill
+
+Legacy alias of **products/v3** (mode: performance-engineer).
+Please use: products/v3
+
+> Policy: docs/architecture/skill-system-design.md

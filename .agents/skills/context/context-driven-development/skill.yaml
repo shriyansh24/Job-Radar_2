@@ -1,0 +1,9 @@
+id: context.cd-development
+name: context-driven-development
+type: reference
+category: context
+subcategory: methodology
+legacy_path: .agents/skills/context-driven-development
+aliases: []
+status: active
+notes: Context-driven development methodology

@@ -1,0 +1,14 @@
+# DEPRECATED: This skill has moved to engineering/testing
+# This stub maintained for compatibility
+
+id: engineering.testing
+name: agent-tester
+status: deprecated
+legacy_path: .agents/skills/agent-tester
+canonical_path: .agents/skills/engineering/testing
+modes:
+  - base (default)
+  - long-running
+  - benchmark
+
+# Please use: engineering/testing

@@ -1,0 +1,12 @@
+# Mode reference: This skill is now a mode of products/hive-mind
+# See products/hive-mind/skill.yaml for full family
+
+id: products.hive-mind.advanced
+name: hive-mind-advanced
+category: products
+subcategory: coordination
+legacy_path: .agents/skills/hive-mind-advanced
+status: mode
+parent: products.hive-mind
+mode_id: advanced
+notes: Advanced Queen-led hierarchical swarm management

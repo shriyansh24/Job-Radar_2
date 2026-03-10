@@ -1,0 +1,11 @@
+id: core.persona.ai-engineer
+name: "Persona: AI Engineer"
+type: persona
+category: core
+subcategory: ai
+legacy_paths:
+  - .agents/skills/ai-engineer
+aliases:
+  - ai-engineer
+status: active
+notes: Persona for building production LLM applications and RAG systems

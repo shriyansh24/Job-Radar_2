@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of platform/github
+
+id: platform.github.release
+name: github-release-management
+category: platform
+subcategory: github
+legacy_path: .agents/skills/github-release-management
+status: mode
+parent: platform.github
+mode_id: release
+notes: Release management automation

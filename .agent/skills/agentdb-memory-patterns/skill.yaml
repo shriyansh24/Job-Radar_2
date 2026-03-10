@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of products/agentdb
+
+id: products.agentdb.memory
+name: agentdb-memory-patterns
+category: products
+subcategory: database
+legacy_path: .agents/skills/agentdb-memory-patterns
+status: mode
+parent: products.agentdb
+mode_id: memory
+notes: Memory patterns for AgentDB

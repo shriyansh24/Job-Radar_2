@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of products/reasoningbank
+
+id: products.reasoningbank.agentdb
+name: reasoningbank-with-agentdb
+category: products
+subcategory: ml
+legacy_path: .agents/skills/reasoningbank-with-agentdb
+status: mode
+parent: products.reasoningbank
+mode_id: with-agentdb
+notes: Integration with AgentDB vector database

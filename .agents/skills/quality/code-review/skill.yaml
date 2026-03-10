@@ -1,0 +1,21 @@
+id: quality.code-review
+name: agent-reviewer
+type: capability
+category: quality
+subcategory: code-review
+legacy_path: .agents/skills/agent-reviewer
+aliases: []
+status: active
+modes:
+  - id: base
+    name: Code Reviewer
+    description: Base code review capabilities
+  - id: analyze
+    name: Code Quality Analyzer
+    description: Static code quality analysis
+    source: ../agent-analyze-code-quality
+  - id: static
+    name: Static Analyzer
+    description: Static code analysis
+    source: ../agent-code-analyzer
+notes: Code review and quality analysis

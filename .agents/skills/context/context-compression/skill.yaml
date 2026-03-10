@@ -1,0 +1,9 @@
+id: context.compression
+name: context-compression
+type: reference
+category: context
+subcategory: optimization
+legacy_path: .agents/skills/context-compression
+aliases: []
+status: active
+notes: Context compression techniques for managing large contexts

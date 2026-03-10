@@ -1,0 +1,9 @@
+id: utilities.replay
+name: replay-learnings
+type: utility
+category: utilities
+subcategory: learning
+legacy_path: .agents/skills/replay-learnings
+aliases: []
+status: active
+notes: Surface past learnings relevant to current task

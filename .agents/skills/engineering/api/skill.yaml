@@ -1,0 +1,23 @@
+id: engineering.api
+name: api-documentation
+type: capability
+category: engineering
+subcategory: api
+legacy_path: .agents/skills/api-documentation
+aliases: []
+status: active
+modes:
+  - id: documentation
+    name: API Documentation
+    description: Create and maintain API documentation
+  - id: docs-generator
+    name: Documentation Generator
+    description: Automated API documentation generation
+    source: ../api-documentation-generator
+  - id: openapi
+    name: OpenAPI Documentation
+    description: OpenAPI/Swagger documentation
+    source: ../api-documenter
+standalone_skills:
+  - agent-dev-backend-api
+notes: API development and documentation capabilities

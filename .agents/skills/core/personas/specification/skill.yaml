@@ -1,0 +1,14 @@
+id: core.persona.specification
+name: "Persona: Specification"
+type: persona
+category: core
+subcategory: specification
+legacy_paths:
+  - .agents/skills/agent-specification
+  - .agents/skills/core/specification
+aliases:
+  - specification
+  - agent-specification
+  - specifier
+status: active
+notes: Requirements analysis specialist for SPARC specification phase

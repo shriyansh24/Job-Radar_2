@@ -1,0 +1,9 @@
+id: ops.worker-integration
+name: worker-integration
+type: capability
+category: ops
+subcategory: workers
+legacy_path: .agents/skills/worker-integration
+aliases: []
+status: active
+notes: Worker-Agent integration for intelligent task dispatch and performance tracking

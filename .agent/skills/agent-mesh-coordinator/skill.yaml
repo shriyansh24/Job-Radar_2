@@ -1,0 +1,11 @@
+# Mode reference: This skill is now a mode of orchestration/coordination
+
+id: orchestration.coordination.mesh
+name: agent-mesh-coordinator
+category: orchestration
+subcategory: coordination
+legacy_path: .agents/skills/agent-mesh-coordinator
+status: mode
+parent: orchestration.coordination
+mode_id: mesh
+notes: Mesh topology coordination

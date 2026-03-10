@@ -1,0 +1,13 @@
+id: domain.ai-agents
+name: "Domain: AI Agents"
+type: capability
+category: domain
+subcategory: ai-agents
+legacy_paths:
+  - .agents/skills/ai-agents-architect
+  - .agents/skills/ai-engineer
+  - .agents/skills/ai-agent-development
+  - .agents/skills/autonomous-agents
+aliases: []
+status: active
+notes: AI agents development domain with CrewAI, LangGraph, and custom agents

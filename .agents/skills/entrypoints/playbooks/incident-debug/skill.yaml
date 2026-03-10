@@ -1,0 +1,9 @@
+id: entrypoints.playbook.incident-debug
+name: "Playbook: Incident Debug"
+type: reference
+category: entrypoints
+subcategory: playbooks
+status: active
+notes: Curated playbook for structured incident investigation and resolution.
+legacy_paths: []
+aliases: []
