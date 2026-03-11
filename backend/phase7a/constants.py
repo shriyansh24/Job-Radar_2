@@ -183,3 +183,58 @@ VALIDATION_PARALLEL_PROBES = 5
 # Canonical job lifecycle thresholds (M4).
 CANONICAL_STALE_SCRAPES = 2     # mark stale after missing from N scrapes
 CANONICAL_CLOSED_DAYS = 14      # mark closed after N days without sighting
+
+# Application status transitions (M5 state machine).
+# Maps each status to the set of statuses it can transition to.
+VALID_STATUS_TRANSITIONS: dict[ApplicationStatus, set[ApplicationStatus]] = {
+    ApplicationStatus.SAVED: {
+        ApplicationStatus.APPLIED,
+        ApplicationStatus.WITHDRAWN,
+    },
+    ApplicationStatus.APPLIED: {
+        ApplicationStatus.PHONE_SCREEN,
+        ApplicationStatus.INTERVIEWING,
+        ApplicationStatus.REJECTED,
+        ApplicationStatus.GHOSTED,
+        ApplicationStatus.WITHDRAWN,
+    },
+    ApplicationStatus.PHONE_SCREEN: {
+        ApplicationStatus.INTERVIEWING,
+        ApplicationStatus.REJECTED,
+        ApplicationStatus.GHOSTED,
+        ApplicationStatus.WITHDRAWN,
+    },
+    ApplicationStatus.INTERVIEWING: {
+        ApplicationStatus.FINAL_ROUND,
+        ApplicationStatus.OFFER,
+        ApplicationStatus.REJECTED,
+        ApplicationStatus.GHOSTED,
+        ApplicationStatus.WITHDRAWN,
+    },
+    ApplicationStatus.FINAL_ROUND: {
+        ApplicationStatus.OFFER,
+        ApplicationStatus.REJECTED,
+        ApplicationStatus.GHOSTED,
+        ApplicationStatus.WITHDRAWN,
+    },
+    ApplicationStatus.OFFER: {
+        ApplicationStatus.ACCEPTED,
+        ApplicationStatus.DECLINED,
+        ApplicationStatus.WITHDRAWN,
+    },
+    # Terminal states: no transitions out
+    ApplicationStatus.ACCEPTED: set(),
+    ApplicationStatus.DECLINED: set(),
+    ApplicationStatus.REJECTED: set(),
+    ApplicationStatus.GHOSTED: set(),
+    ApplicationStatus.WITHDRAWN: set(),
+}
+
+# Maps status values to auto-set timestamp fields on the Application model (M5).
+STATUS_TIMESTAMP_MAP: dict[ApplicationStatus, str] = {
+    ApplicationStatus.APPLIED: "applied_at",
+    ApplicationStatus.PHONE_SCREEN: "response_at",
+    ApplicationStatus.INTERVIEWING: "interview_at",
+    ApplicationStatus.OFFER: "offer_at",
+    ApplicationStatus.REJECTED: "rejected_at",
+}
