@@ -72,3 +72,7 @@ async def init_db():
                 DELETE FROM jobs_fts WHERE job_id = old.job_id;
             END
         """))
+
+        # Run Phase 7A additive migrations
+        from backend.phase7a.migration import run_migrations
+        await run_migrations(conn)
