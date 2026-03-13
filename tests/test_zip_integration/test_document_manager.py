@@ -11,7 +11,6 @@ from backend.resume.document_manager import (
     list_resume_versions,
     get_resume_by_id,
     delete_resume,
-    set_default_resume,
     generate_resume_id,
 )
 
@@ -28,7 +27,7 @@ class TestGenerateResumeId:
 
     def test_sortable(self):
         id1 = generate_resume_id()
-        import time; time.sleep(0.01)
+        import time; time.sleep(0.05)  # 50ms to ensure Windows timer advances
         id2 = generate_resume_id()
         assert id1 < id2  # ULIDs are time-sortable
 
