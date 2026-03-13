@@ -7,12 +7,12 @@ from dataclasses import dataclass, field, asdict, fields as dataclass_fields
 
 @dataclass
 class ApplicationProfile:
-    name: str | None = None
+    full_name: str | None = None
     email: str | None = None
     phone: str | None = None
-    linkedin: str | None = None
-    github: str | None = None
-    portfolio: str | None = None
+    linkedin_url: str | None = None
+    github_url: str | None = None
+    portfolio_url: str | None = None
     location: str | None = None
     work_authorization: str | None = None
     years_experience: int | None = None
@@ -46,7 +46,7 @@ def validate_profile(profile: ApplicationProfile) -> list[str]:
     """
     errors: list[str] = []
 
-    if not profile.name:
+    if not profile.full_name:
         errors.append("Name is required")
 
     if not profile.email:

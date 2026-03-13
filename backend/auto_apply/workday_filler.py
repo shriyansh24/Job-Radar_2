@@ -5,8 +5,11 @@ making it more predictable to automate than generic ATS platforms.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import logging
+from dataclasses import dataclass
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 from backend.auto_apply.profile import ApplicationProfile
 
@@ -49,7 +52,8 @@ WORKDAY_SELECTORS: dict[str, str] = {
     # Navigation
     "next_button":          '[data-automation-id="bottom-navigation-next-button"]',
     "save_button":          '[data-automation-id="bottom-navigation-save-button"]',
-    "submit_button":        '[data-automation-id="bottom-navigation-next-button"]',
+    # Correct Workday submit button automation ID (distinct from next-button)
+    "submit_button":        '[data-automation-id="bottom-navigation-submit-button"]',
 }
 
 
@@ -152,8 +156,8 @@ class WorkdayFiller:
         needs_review: list[str] = []
 
         # Split name into first/last
-        if self.profile.name:
-            parts = self.profile.name.strip().split(" ", 1)
+        if self.profile.full_name:
+            parts = self.profile.full_name.strip().split(" ", 1)
             first_name = parts[0]
             last_name = parts[1] if len(parts) > 1 else ""
 
@@ -166,7 +170,8 @@ class WorkdayFiller:
                     try:
                         await el.fill(value)
                         filled[sel_key] = value
-                    except Exception:
+                    except Exception as e:
+                        logger.warning("Workday fill failed for %r: %s", sel_key, e)
                         skipped.append(sel_key)
                 else:
                     skipped.append(sel_key)
@@ -178,7 +183,8 @@ class WorkdayFiller:
                 try:
                     await el.fill(self.profile.email)
                     filled["email"] = self.profile.email
-                except Exception:
+                except Exception as e:
+                    logger.warning("Workday fill failed for 'email': %s", e)
                     skipped.append("email")
             else:
                 skipped.append("email")
@@ -190,7 +196,8 @@ class WorkdayFiller:
                 try:
                     await el.fill(self.profile.phone)
                     filled["phone"] = self.profile.phone
-                except Exception:
+                except Exception as e:
+                    logger.warning("Workday fill failed for 'phone': %s", e)
                     skipped.append("phone")
             else:
                 skipped.append("phone")
@@ -206,24 +213,26 @@ class WorkdayFiller:
         filled: dict[str, Any] = {}
         skipped: list[str] = []
 
-        if self.profile.linkedin:
+        if self.profile.linkedin_url:
             el = await page.query_selector(WORKDAY_SELECTORS["linkedin_url"])
             if el:
                 try:
-                    await el.fill(self.profile.linkedin)
-                    filled["linkedin_url"] = self.profile.linkedin
-                except Exception:
+                    await el.fill(self.profile.linkedin_url)
+                    filled["linkedin_url"] = self.profile.linkedin_url
+                except Exception as e:
+                    logger.warning("Workday fill failed for 'linkedin_url': %s", e)
                     skipped.append("linkedin_url")
             else:
                 skipped.append("linkedin_url")
 
-        if self.profile.portfolio:
+        if self.profile.portfolio_url:
             el = await page.query_selector(WORKDAY_SELECTORS["website_url"])
             if el:
                 try:
-                    await el.fill(self.profile.portfolio)
-                    filled["website_url"] = self.profile.portfolio
-                except Exception:
+                    await el.fill(self.profile.portfolio_url)
+                    filled["website_url"] = self.profile.portfolio_url
+                except Exception as e:
+                    logger.warning("Workday fill failed for 'website_url': %s", e)
                     skipped.append("website_url")
             else:
                 skipped.append("website_url")
@@ -243,7 +252,8 @@ class WorkdayFiller:
                 try:
                     await el.click()
                     filled["work_auth"] = self.profile.work_authorization
-                except Exception:
+                except Exception as e:
+                    logger.warning("Workday click failed for 'work_auth': %s", e)
                     needs_review.append("work_authorization")
             else:
                 needs_review.append("work_authorization")

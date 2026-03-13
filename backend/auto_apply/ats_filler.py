@@ -1,10 +1,14 @@
 """Generic ATS form filler using Playwright (mocked in tests)."""
 from __future__ import annotations
 
+import logging
+import re
 from dataclasses import dataclass
 from typing import Any, Optional
 
 from rapidfuzz import fuzz, process
+
+logger = logging.getLogger(__name__)
 
 from backend.auto_apply.profile import ApplicationProfile
 
@@ -15,10 +19,10 @@ from backend.auto_apply.profile import ApplicationProfile
 _FIELD_TYPE_KEYWORDS: dict[str, list[str]] = {
     "email": ["email", "e-mail", "email_address"],
     "phone": ["phone", "telephone", "mobile", "cell", "tel"],
-    "name": ["name", "first_name", "last_name", "full_name", "fname", "lname"],
-    "linkedin": ["linkedin", "linked_in", "linkedin_url"],
-    "github": ["github", "git_hub", "github_url"],
-    "portfolio": ["portfolio", "website", "personal_website", "url"],
+    "full_name": ["full_name", "name", "first_name", "last_name", "fname", "lname"],
+    "linkedin_url": ["linkedin_url", "linkedin", "linked_in"],
+    "github_url": ["github_url", "github", "git_hub"],
+    "portfolio_url": ["portfolio_url", "portfolio", "website", "personal_website", "url"],
     "location": ["location", "city", "address", "state", "zip", "postal"],
     "work_authorization": ["work_authorization", "work_auth", "authorized", "visa", "citizenship"],
     "years_experience": ["years_experience", "years_of_experience", "experience_years", "years"],
@@ -29,7 +33,7 @@ _FIELD_TYPE_KEYWORDS: dict[str, list[str]] = {
 }
 
 
-def fuzzy_match_label(label: str, candidates: list[str], threshold: int = 60) -> Optional[str]:
+def fuzzy_match_label(label: str, candidates: list[str], threshold: int = 80) -> Optional[str]:
     """Match a form field label to a list of profile field candidates using fuzzy matching.
 
     Returns the best matching candidate or None if no match exceeds the threshold.
@@ -87,7 +91,7 @@ def detect_field_type(label: str, element_id: str, input_type: str) -> str:
     if input_type == "tel":
         return "phone"
     if input_type == "url":
-        return "portfolio"
+        return "portfolio_url"
 
     # Check each semantic type's keywords
     for field_type, keywords in _FIELD_TYPE_KEYWORDS.items():
@@ -112,6 +116,8 @@ class FieldMapping:
     profile_key: str
     selector: str
     required: bool = False
+    field_id: str = ""
+    confidence: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -150,7 +156,13 @@ class GenericATSFiller:
                 if not for_attr:
                     continue
 
-                input_el = await page.query_selector(f"#{for_attr}, [name='{for_attr}']")
+                # Sanitize for_attr to prevent CSS selector injection — allow
+                # only alphanumeric characters, hyphens, and underscores.
+                safe_for_attr = re.sub(r"[^a-zA-Z0-9_-]", "", for_attr)
+                if not safe_for_attr:
+                    continue
+
+                input_el = await page.query_selector(f"#{safe_for_attr}, [name='{safe_for_attr}']")
                 if input_el is None:
                     continue
 
@@ -162,16 +174,16 @@ class GenericATSFiller:
                 matched_key = fuzzy_match_label(label_text, self._profile_keys)
 
                 if matched_key:
-                    selector = f"#{for_attr}" if for_attr else f"[name='{input_name}']"
+                    selector = f"#{safe_for_attr}" if safe_for_attr else f"[name='{input_name}']"
                     mappings[matched_key] = FieldMapping(
                         label=label_text,
                         field_type=field_type,
                         profile_key=matched_key,
                         selector=selector,
                     )
-        except Exception:
+        except Exception as e:
             # Page interaction errors are logged but non-fatal
-            pass
+            logger.warning("analyze_form page interaction error: %s", e)
 
         return mappings
 
@@ -202,7 +214,8 @@ class GenericATSFiller:
                 if input_el:
                     await input_el.fill(str(value))
                     filled[key] = value
-            except Exception:
+            except Exception as e:
+                logger.warning("fill_form failed for key %r: %s", key, e)
                 skipped.append(key)
 
         return {"filled": filled, "skipped": skipped}
