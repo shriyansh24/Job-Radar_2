@@ -185,6 +185,31 @@ def tfidf_vectors(corpus: List[str]) -> List[Dict[str, float]]:
 # ---------------------------------------------------------------------------
 
 
+def compute_tfidf_similarity(text_a: str, text_b: str) -> float:
+    """Compute TF-IDF-based cosine similarity between two text strings.
+
+    A lightweight 2-document TF-IDF computation:
+    1. Tokenize both texts.
+    2. Build a mini IDF from the 2-document corpus.
+    3. Compute TF-IDF vectors for each document.
+    4. Return cosine similarity of the two vectors.
+
+    Returns a float in [0.0, 1.0].  Returns 0.0 for empty inputs.
+
+    Args:
+        text_a: First raw text string (e.g. resume).
+        text_b: Second raw text string (e.g. job description).
+    """
+    if not text_a or not text_b:
+        return 0.0
+
+    vectors = tfidf_vectors([text_a, text_b])
+    if len(vectors) < 2:
+        return 0.0
+
+    return cosine_similarity(vectors[0], vectors[1])
+
+
 def extract_keyphrases(text: str, top_n: int = 10) -> List[str]:
     """Extract top-N keyphrases from text by simple term frequency after stopword removal.
 

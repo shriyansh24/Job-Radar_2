@@ -57,7 +57,52 @@ Provide:
 2. Gaps to address
 3. Specific actions to strengthen the application
 4. An honest assessment of fit (percentage estimate)""",
+
+    "tailorResume": """Tailor this resume for the specific job posting.
+Rewrite experience bullets to align with the job requirements.
+Optimize for ATS keyword matching.
+
+Job Title: {title}
+Company: {company_name}
+Required Skills: {skills_required}
+Description: {description}
+
+{resume_context}
+
+Return the tailored resume with:
+1. Enhanced summary targeting this role
+2. Rewritten experience bullets with relevant keywords
+3. Skills section optimized for ATS
+4. Suggested additions to strengthen the application""",
 }
+
+
+async def _try_nlp_delegation(tool: str, job, resume_context: str, settings) -> dict | None:
+    """Try to use NLP modules for structured output. Returns None to fall through to LLM.
+
+    Currently supports:
+    - gapAnalysis → backend.nlp.gap_analyzer.analyze_gaps
+
+    Returns None for all other tools or when the NLP module is not importable.
+    """
+    try:
+        if tool == "gapAnalysis":
+            from backend.nlp.gap_analyzer import analyze_gaps
+            resume_parsed = {"raw_text": resume_context}
+            job_data = {
+                "title": job.title,
+                "company": job.company_name,
+                "skills_required": job.skills_required or [],
+                "skills_nice_to_have": job.skills_nice_to_have or [],
+                "description": job.description_clean or "",
+            }
+            result = analyze_gaps(resume_parsed, job_data)
+            return {"tool": tool, "structured": True, "data": result.__dict__}
+    except ImportError:
+        pass
+    except Exception as exc:
+        logger.warning(f"NLP delegation failed for tool '{tool}': {exc}")
+    return None
 
 
 @router.post("")
@@ -81,10 +126,16 @@ async def copilot(request: CopilotRequest, db: AsyncSession = Depends(get_db)):
     if profile and profile.resume_text:
         resume_context = f"Candidate Resume:\n{profile.resume_text[:2000]}"
 
-    # Build prompt
+    # Validate tool before attempting NLP delegation
     prompt_template = TOOL_PROMPTS.get(request.tool)
     if not prompt_template:
         raise HTTPException(status_code=400, detail=f"Unknown tool: {request.tool}")
+
+    # Try NLP module delegation (non-streaming, returns structured data)
+    nlp_result = await _try_nlp_delegation(request.tool, job, resume_context, settings)
+    if nlp_result is not None:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(content=nlp_result)
 
     prompt = prompt_template.format(
         title=job.title,

@@ -1,10 +1,8 @@
 import logging
 import os
-from datetime import datetime
-from typing import Optional
 
 import aiofiles
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -84,55 +82,6 @@ async def update_settings(body: SettingsUpdate, db: AsyncSession = Depends(get_d
     await db.commit()
 
     return await get_settings_endpoint(db)
-
-
-@router.post("/resume/upload")
-async def upload_resume(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No file provided")
-
-    ext = file.filename.rsplit(".", 1)[-1].lower()
-    if ext not in ("pdf", "txt"):
-        raise HTTPException(status_code=400, detail="Only PDF and TXT files are supported")
-
-    content = await file.read()
-    if len(content) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large (max 5MB)")
-
-    # Parse text from file
-    if ext == "txt":
-        resume_text = content.decode("utf-8", errors="ignore")
-    else:
-        try:
-            import io
-            try:
-                import pypdf
-                reader = pypdf.PdfReader(io.BytesIO(content))
-                resume_text = "\n".join(
-                    page.extract_text() or "" for page in reader.pages
-                )
-            except ImportError:
-                resume_text = content.decode("utf-8", errors="ignore")
-        except Exception as e:
-            logger.error(f"PDF parsing failed: {e}")
-            raise HTTPException(status_code=400, detail="Failed to parse PDF")
-
-    # Save to profile
-    profile = await _get_or_create_profile(db)
-    profile.resume_filename = file.filename
-    profile.resume_text = resume_text
-    profile.resume_uploaded_at = datetime.utcnow()
-    await db.commit()
-
-    # Trigger re-embedding
-    from backend.enrichment.embedding import load_resume_embedding
-    await load_resume_embedding()
-
-    return {
-        "filename": file.filename,
-        "text_length": len(resume_text),
-        "uploaded_at": profile.resume_uploaded_at.isoformat(),
-    }
 
 
 # --- Saved Searches ---
