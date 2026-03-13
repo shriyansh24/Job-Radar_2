@@ -55,6 +55,24 @@ def hamming_distance(a: int, b: int) -> int:
     return bin(a ^ b).count("1")
 
 
+def compute_dedup_hash(title: str, company_name: str) -> str:
+    """Compute a stable deduplication hash from job title and company name.
+
+    The hash is a 16-character hex string derived from the normalised
+    (lowercase, stripped) title + company_name pair.  Used for fast
+    cross-source dedup lookups via the ``dedup_hash`` column on the Job model.
+
+    Args:
+        title: Job title string.
+        company_name: Company name string.
+
+    Returns:
+        16-character lowercase hex string.
+    """
+    key = f"{(title or '').lower().strip()}|{(company_name or '').lower().strip()}"
+    return hashlib.sha256(key.encode()).hexdigest()[:16]
+
+
 @dataclass
 class DedupResult:
     """Return value of :func:`deduplicate_batch`."""
