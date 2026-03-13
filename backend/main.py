@@ -7,7 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import get_settings
 from backend.database import init_db
-from backend.routers import jobs, scraper, search, stats, copilot, settings
+from backend.routers import jobs, scraper, search, stats, copilot, settings, resume, auto_apply
+from backend.phase7a.routers import (
+    applications,
+    canonical_jobs,
+    companies,
+    search_expansion,
+    sources,
+)
 from backend.scheduler import create_scheduler
 from backend.enrichment.embedding import load_resume_embedding
 
@@ -76,6 +83,15 @@ app.include_router(search.router)
 app.include_router(stats.router)
 app.include_router(copilot.router)
 app.include_router(settings.router)
+app.include_router(resume.router)
+app.include_router(auto_apply.router)
+
+# Phase 7A routers
+app.include_router(companies.router)
+app.include_router(search_expansion.router)
+app.include_router(sources.router)
+app.include_router(canonical_jobs.router)
+app.include_router(applications.router)
 
 
 @app.get("/api/health")

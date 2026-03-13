@@ -104,3 +104,36 @@ async def score_jobs_batch():
 
         await session.commit()
         logger.info(f"Match scoring complete for {len(jobs)} jobs")
+
+    # Compute TF-IDF scores if NLP module available
+    try:
+        from backend.nlp.core import compute_tfidf_similarity
+        if _resume_embedding is not None:
+            async with async_session() as session:
+                result = await session.execute(
+                    select(Job)
+                    .where(Job.tfidf_score.is_(None))
+                    .where(Job.description_clean.isnot(None))
+                    .limit(50)
+                )
+                tfidf_jobs = result.scalars().all()
+                if tfidf_jobs:
+                    profile_result = await session.execute(
+                        select(UserProfile).where(UserProfile.id == 1)
+                    )
+                    profile = profile_result.scalar_one_or_none()
+                    if profile and profile.resume_text:
+                        for job in tfidf_jobs:
+                            score = compute_tfidf_similarity(
+                                profile.resume_text,
+                                job.description_clean or ""
+                            )
+                            await session.execute(
+                                update(Job).where(Job.job_id == job.job_id).values(tfidf_score=score)
+                            )
+                        await session.commit()
+                        logger.info(f"TF-IDF scoring complete for {len(tfidf_jobs)} jobs")
+    except ImportError:
+        pass  # NLP module not available
+    except Exception as e:
+        logger.warning(f"TF-IDF scoring failed: {e}")

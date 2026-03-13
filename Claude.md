@@ -3,6 +3,33 @@
 
 ---
 
+## MANDATORY: Post-Code Verification (ALL agents, ALL tasks)
+
+**After writing any code, you MUST complete ALL four checks before claiming done:**
+
+1. **Edge cases** — List edge cases for the code you wrote. Handle or document each one.
+2. **Unit tests** — Write unit tests covering the new/changed logic.
+3. **Integration tests** — Write integration tests for any changed boundaries (API, DB, cross-module).
+4. **Backward-compatibility checks** — Verify existing endpoints, tables, pages, and imports still work.
+
+**This is non-negotiable.** Subagents, worktree agents, and the main agent all follow this rule.
+No PR, commit, or "done" claim is valid without evidence of all four checks passing.
+
+---
+
+## Agent Skills Reference
+
+Project skills are at `.agents/skills/`. Each skill has a `skill.yaml` (metadata) and `SKILL.md` (instructions).
+Key skills for this project:
+- `.agents/skills/engineering/testing/SKILL.md` — testing patterns
+- `.agents/skills/quality/code-review/SKILL.md` — code review checklist
+- `.agents/skills/quality/verification-quality-assurance/SKILL.md` — QA verification
+- `.agents/skills/engineering/coding/SKILL.md` — coding standards
+
+Subagents: if your task involves testing, QA, or code review, read the relevant SKILL.md above.
+
+---
+
 ## CRITICAL: READ THIS FIRST
 
 The research phase is **already complete**. Do NOT conduct your own research.

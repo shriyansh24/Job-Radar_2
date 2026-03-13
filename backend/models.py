@@ -71,6 +71,12 @@ class Job(Base):
     is_starred: Mapped[bool] = mapped_column(Boolean, default=False)
     tags: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
+    # Zip integration columns
+    dedup_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    tfidf_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    council_scores: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    apply_questions: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+
 
 class SavedSearch(Base):
     __tablename__ = "saved_searches"
@@ -110,3 +116,41 @@ class UserProfile(Base):
         JSON, default=lambda: ["Remote", "New York, NY"]
     )
     company_watchlist: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+
+    # Zip integration columns
+    resume_parsed: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    application_profile: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+
+class ResumeVersion(Base):
+    __tablename__ = "resume_versions"
+
+    id: Mapped[str] = mapped_column(String(26), primary_key=True)  # ULID
+    filename: Mapped[str] = mapped_column(String(255))
+    format: Mapped[str] = mapped_column(String(8))  # pdf/docx/md/tex
+    file_path: Mapped[str] = mapped_column(String(512))
+    parsed_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    parsed_structured: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    version_label: Mapped[str] = mapped_column(String(255), default="v1")
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(nullable=True, onupdate=func.now())
+
+
+class ApplicationAttempt(Base):
+    __tablename__ = "application_attempts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    job_id: Mapped[str] = mapped_column(String(64), ForeignKey("jobs.job_id"))
+    resume_version_id: Mapped[Optional[str]] = mapped_column(
+        String(26), ForeignKey("resume_versions.id"), nullable=True
+    )
+    ats_provider: Mapped[str] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(32), default="pending")
+    fields_filled: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    fields_skipped: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    screenshots: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    custom_answers: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(default=func.now())
+    completed_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
