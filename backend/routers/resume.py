@@ -9,11 +9,10 @@ from backend.schemas import ResumeVersionResponse
 from backend.resume.document_manager import (
     ingest_resume,
     delete_resume as delete_resume_file,
-    get_resume_by_id,
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/resume", tags=["resume"])
+router = APIRouter(prefix="/api/resume", tags=["resume"])
 
 
 @router.get("/versions", response_model=list[ResumeVersionResponse])

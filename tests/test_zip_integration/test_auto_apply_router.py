@@ -9,7 +9,7 @@ def auto_apply_app():
     from fastapi import FastAPI
     from backend.routers.auto_apply import router
     app = FastAPI()
-    app.include_router(router, prefix="/api")
+    app.include_router(router)
     return app
 
 
