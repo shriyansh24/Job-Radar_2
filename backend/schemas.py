@@ -119,7 +119,7 @@ class SemanticSearchResult(BaseModel):
 # --- Copilot Schemas ---
 
 class CopilotRequest(BaseModel):
-    tool: str  # "coverLetter"|"interviewPrep"|"gapAnalysis"
+    tool: str  # "coverLetter"|"interviewPrep"|"gapAnalysis"|"tailorResume"
     job_id: str
 
 
@@ -184,3 +184,81 @@ class SavedSearchResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# --- Zip Integration Schemas ---
+
+class DimensionScoreSchema(BaseModel):
+    grade: str  # A/B/C/D
+    score: int = Field(ge=0, le=100)
+    rationale: str
+    gaps: list[str] = []
+    suggestions: list[str] = []
+
+
+class CouncilScoreResponse(BaseModel):
+    skill_alignment: DimensionScoreSchema
+    experience_level: DimensionScoreSchema
+    impact_language: DimensionScoreSchema
+    ats_keyword_density: DimensionScoreSchema
+    structural_quality: DimensionScoreSchema
+    cultural_signals: DimensionScoreSchema
+    growth_trajectory: DimensionScoreSchema
+    overall_grade: str
+    overall_score: int
+    top_gaps: list[str] = []
+    missing_keywords: list[str] = []
+    strong_points: list[str] = []
+    suggested_bullets: list[str] = []
+    council_consensus: float
+
+
+class ResumeVersionResponse(BaseModel):
+    id: str
+    filename: str
+    format: str
+    version_label: str
+    is_default: bool
+    parsed_text_preview: str = ""
+    created_at: str
+
+
+class AutoApplyRunRequest(BaseModel):
+    job_id: str
+    resume_id: Optional[str] = None
+    submit: bool = False
+
+
+class ApplicationResultResponse(BaseModel):
+    success: bool
+    fields_filled: dict = {}
+    fields_missed: list[str] = []
+    ats_provider: str = ""
+    error: Optional[str] = None
+    screenshots: list[str] = []
+
+
+class AutoApplyAnalysis(BaseModel):
+    ats_provider: str
+    form_fields_detected: list[str] = []
+    estimated_fill_rate: float = 0.0
+    requires_login: bool = False
+
+
+class ApplicationProfileRequest(BaseModel):
+    name: str = ""
+    email: str = ""
+    phone: str = ""
+    linkedin: str = ""
+    github: str = ""
+    portfolio: str = ""
+    location: str = ""
+    work_authorization: str = ""
+    years_experience: int = 0
+    education_summary: str = ""
+    current_title: str = ""
+    desired_salary: str = ""
+
+
+class ApplicationProfileResponse(ApplicationProfileRequest):
+    pass

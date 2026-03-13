@@ -18,6 +18,13 @@ from backend.scrapers.theirstack_scraper import TheirStackScraper
 from backend.enrichment.deduplicator import deduplicate_and_insert
 from backend.enrichment.llm_enricher import run_enrichment_batch
 from backend.enrichment.embedding import score_jobs_batch
+from backend.phase7a.scraper_hooks import on_jobs_scraped
+from backend.phase7a.background_jobs import (
+    run_company_validation,
+    run_source_health_checks,
+    run_staleness_sweep,
+    run_followup_reminders,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +146,18 @@ async def run_scraper(source: str):
             "existing": jobs_updated,
         })
 
+        # Phase 7A post-processing hooks (safe — never breaks scraping)
+        try:
+            async with async_session() as hook_session:
+                await on_jobs_scraped(
+                    all_raw_jobs, source, hook_session,
+                    jobs_new=jobs_new,
+                    jobs_found=jobs_found,
+                )
+                await hook_session.commit()
+        except Exception as hook_err:
+            logger.warning(f"Phase 7A hooks failed for {source}: {hook_err}")
+
     except Exception as e:
         error_message = str(e)
         logger.error(f"Scraper {source} failed: {e}")
@@ -176,6 +195,68 @@ async def run_scraper(source: str):
         f"Scraper {source} complete: {jobs_found} found, "
         f"{jobs_new} new, {jobs_updated} existing"
     )
+
+
+async def run_tfidf_batch():
+    """Compute TF-IDF scores for jobs missing them."""
+    try:
+        from backend.nlp.core import compute_tfidf_similarity
+        async with async_session() as session:
+            from sqlalchemy import select
+            result = await session.execute(
+                select(Job)
+                .where(Job.tfidf_score.is_(None))
+                .where(Job.description_clean.isnot(None))
+                .limit(50)
+            )
+            jobs = result.scalars().all()
+            if not jobs:
+                return
+
+            profile_result = await session.execute(
+                select(UserProfile).where(UserProfile.id == 1)
+            )
+            profile = profile_result.scalar_one_or_none()
+            if not profile or not profile.resume_text:
+                return
+
+            for job in jobs:
+                score = compute_tfidf_similarity(profile.resume_text, job.description_clean or "")
+                await session.execute(
+                    update(Job).where(Job.job_id == job.job_id).values(tfidf_score=score)
+                )
+            await session.commit()
+            logger.info(f"TF-IDF batch: scored {len(jobs)} jobs")
+    except ImportError:
+        pass
+    except Exception as e:
+        logger.warning(f"TF-IDF batch failed: {e}")
+
+
+async def backfill_dedup_hashes():
+    """One-time backfill of dedup_hash for existing jobs."""
+    try:
+        from backend.enrichment.deduplicator import compute_dedup_hash
+        async with async_session() as session:
+            from sqlalchemy import select
+            result = await session.execute(
+                select(Job).where(Job.dedup_hash.is_(None)).limit(200)
+            )
+            jobs = result.scalars().all()
+            if not jobs:
+                return
+
+            for job in jobs:
+                hash_val = compute_dedup_hash(job.title, job.company_name)
+                await session.execute(
+                    update(Job).where(Job.job_id == job.job_id).values(dedup_hash=hash_val)
+                )
+            await session.commit()
+            logger.info(f"Dedup backfill: hashed {len(jobs)} jobs")
+    except ImportError:
+        pass
+    except Exception as e:
+        logger.warning(f"Dedup backfill failed: {e}")
 
 
 async def run_all_scrapers():
@@ -222,6 +303,34 @@ def create_scheduler() -> AsyncIOScheduler:
     scheduler.add_job(
         score_jobs_batch, "interval", minutes=20,
         id="scoring_batch", replace_existing=True
+    )
+
+    # Phase 7A background jobs
+    scheduler.add_job(
+        run_company_validation, "interval", hours=4,
+        id="phase7a_company_validation", replace_existing=True
+    )
+    scheduler.add_job(
+        run_source_health_checks, "interval", hours=2,
+        id="phase7a_source_health", replace_existing=True
+    )
+    scheduler.add_job(
+        run_staleness_sweep, "interval", hours=6,
+        id="phase7a_staleness_sweep", replace_existing=True
+    )
+    scheduler.add_job(
+        run_followup_reminders, "interval", hours=1,
+        id="phase7a_followup_reminders", replace_existing=True
+    )
+
+    # NLP enrichment jobs (guarded by try/import — no-op if module unavailable)
+    scheduler.add_job(
+        run_tfidf_batch, "interval", minutes=20,
+        id="tfidf_batch", replace_existing=True
+    )
+    scheduler.add_job(
+        backfill_dedup_hashes, "date",
+        id="dedup_backfill", replace_existing=True
     )
 
     return scheduler
