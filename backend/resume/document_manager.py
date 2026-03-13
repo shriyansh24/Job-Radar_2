@@ -107,8 +107,3 @@ def get_resume_by_id(resume_id: str, fmt: str) -> bytes | None:
         return None
     with open(file_path, "rb") as f:
         return f.read()
-
-
-def set_default_resume(resume_id: str) -> None:
-    """Mark a resume as default. DB update handled by caller."""
-    pass  # Actual DB update is in the router layer

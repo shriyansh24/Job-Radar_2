@@ -1,8 +1,11 @@
 """3-model council scoring system for resume-job matching."""
 import json
 import asyncio
+import logging
 from dataclasses import dataclass, field
 from openai import AsyncOpenAI
+
+logger = logging.getLogger(__name__)
 
 
 SCORING_DIMENSIONS = [
@@ -191,7 +194,8 @@ async def evaluate_resume_council(
                 max_tokens=2000,
             )
             return _parse_model_response(response.choices[0].message.content)
-        except Exception:
+        except Exception as exc:
+            logger.warning("Council model %s failed: %s", model, exc)
             return None
 
     # Run all 3 models in parallel
