@@ -9,7 +9,7 @@ Endpoints:
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -30,12 +30,12 @@ router = APIRouter(prefix="/auto-apply", tags=["auto-apply"])
 
 
 class ProfileRequest(BaseModel):
-    name: Optional[str] = None
+    full_name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
-    linkedin: Optional[str] = None
-    github: Optional[str] = None
-    portfolio: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
     location: Optional[str] = None
     work_authorization: Optional[str] = None
     years_experience: Optional[int] = None
@@ -52,22 +52,6 @@ class RunRequest(BaseModel):
     job_id: str
     submit: bool = False
     cover_letter_text: Optional[str] = None
-
-
-# ---------------------------------------------------------------------------
-# Helper — load/create UserProfile singleton
-# ---------------------------------------------------------------------------
-
-
-async def _get_user_profile(db: AsyncSession) -> UserProfile:
-    result = await db.execute(select(UserProfile).where(UserProfile.id == 1))
-    profile = result.scalar_one_or_none()
-    if profile is None:
-        profile = UserProfile(id=1)
-        db.add(profile)
-        await db.commit()
-        await db.refresh(profile)
-    return profile
 
 
 # ---------------------------------------------------------------------------
@@ -93,7 +77,10 @@ async def save_profile(
     body: ProfileRequest,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Save (upsert) the ApplicationProfile into UserProfile.application_profile."""
+    """Save (upsert) the ApplicationProfile into UserProfile.application_profile.
+
+    Replaces the entire application profile. Send all fields, not just changed ones.
+    """
     profile = ApplicationProfile(**body.model_dump(exclude_none=False))
     errors = validate_profile(profile)
     if errors:

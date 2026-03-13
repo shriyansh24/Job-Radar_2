@@ -1,7 +1,7 @@
 """Auto-apply orchestrator — routes job application attempts to the right filler."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from backend.adapters.ats_detector import detect_ats_provider
@@ -39,6 +39,7 @@ async def _run_generic_fill(
     """Run the generic ATS filler for non-Workday providers."""
     from backend.auto_apply.ats_filler import GenericATSFiller
 
+    # TODO: Implement Playwright browser launch
     # In a real run this would launch a Playwright browser.
     # Returning a placeholder result here — actual browser automation
     # is invoked by the router/background task layer.
@@ -65,6 +66,7 @@ async def _run_workday_fill(
     """Run the Workday filler for myworkdayjobs.com URLs."""
     from backend.auto_apply.workday_filler import WorkdayFiller
 
+    # TODO: Implement Playwright browser launch
     filler = WorkdayFiller(profile)
 
     return ApplicationResult(

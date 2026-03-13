@@ -24,7 +24,7 @@ class TestWorkdayResult:
     def test_create(self):
         wr = WorkdayResult(
             pages_completed=["My Information", "My Experience"],
-            fields_filled={"name": "John Doe"},
+            fields_filled={"full_name": "John Doe"},
             fields_skipped=["cover_letter"],
             custom_questions_answered=[],
             screenshots=[],
@@ -38,12 +38,12 @@ class TestWorkdayResult:
 @pytest.mark.asyncio
 class TestWorkdayFiller:
     async def test_create_filler(self):
-        profile = ApplicationProfile(name="John Doe", email="john@test.com")
+        profile = ApplicationProfile(full_name="John Doe", email="john@test.com")
         filler = WorkdayFiller(profile)
-        assert filler.profile.name == "John Doe"
+        assert filler.profile.full_name == "John Doe"
 
     async def test_fill_page_returns_fields(self):
-        profile = ApplicationProfile(name="John Doe", email="john@test.com", phone="+1-555-0123")
+        profile = ApplicationProfile(full_name="John Doe", email="john@test.com", phone="+1-555-0123")
 
         mock_page = AsyncMock()
         mock_page.query_selector = AsyncMock(return_value=None)
@@ -59,3 +59,21 @@ class TestWorkdayFiller:
         for key, selector in WORKDAY_SELECTORS.items():
             assert "data-automation-id" in selector or "[" in selector, \
                 f"Selector {key} should use data-automation-id: {selector}"
+
+    async def test_fill_my_experience_uses_new_field_names(self):
+        """Verify workday filler reads linkedin_url and portfolio_url from profile."""
+        profile = ApplicationProfile(
+            full_name="Jane Doe",
+            email="jane@test.com",
+            linkedin_url="https://linkedin.com/in/jane",
+            portfolio_url="https://jane.dev",
+        )
+
+        mock_el = AsyncMock()
+        mock_el.fill = AsyncMock()
+        mock_page = AsyncMock()
+        mock_page.query_selector = AsyncMock(return_value=mock_el)
+
+        filler = WorkdayFiller(profile)
+        result = await filler._fill_my_experience(mock_page)
+        assert "linkedin_url" in result["filled"] or "website_url" in result["filled"]
