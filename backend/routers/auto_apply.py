@@ -21,7 +21,7 @@ from backend.auto_apply.profile import ApplicationProfile, validate_profile
 from backend.database import get_db
 from backend.models import Job, UserProfile
 
-router = APIRouter(prefix="/auto-apply", tags=["auto-apply"])
+router = APIRouter(prefix="/api/auto-apply", tags=["auto-apply"])
 
 
 # ---------------------------------------------------------------------------

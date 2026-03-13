@@ -118,7 +118,6 @@ async def score_jobs_batch():
                 )
                 tfidf_jobs = result.scalars().all()
                 if tfidf_jobs:
-                    from sqlalchemy import select as sa_select
                     profile_result = await session.execute(
                         select(UserProfile).where(UserProfile.id == 1)
                     )

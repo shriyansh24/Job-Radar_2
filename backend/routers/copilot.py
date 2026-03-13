@@ -88,13 +88,13 @@ async def _try_nlp_delegation(tool: str, job, resume_context: str, settings) -> 
     try:
         if tool == "gapAnalysis":
             from backend.nlp.gap_analyzer import analyze_gaps
-            resume_parsed = {"raw_text": resume_context}
+            resume_parsed = {"text": resume_context}
             job_data = {
                 "title": job.title,
                 "company": job.company_name,
                 "skills_required": job.skills_required or [],
                 "skills_nice_to_have": job.skills_nice_to_have or [],
-                "description": job.description_clean or "",
+                "description_clean": job.description_clean or "",
             }
             result = analyze_gaps(resume_parsed, job_data)
             return {"tool": tool, "structured": True, "data": result.__dict__}
