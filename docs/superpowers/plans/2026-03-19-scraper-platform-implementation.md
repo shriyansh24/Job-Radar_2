@@ -1291,9 +1291,1285 @@ After completing Chunk 1, you have:
 - Deterministic simhash
 - Unit tests for all new code
 
-**Remaining chunks (to be written):**
-- Chunk 2: Tier Router + Execution Ports + Escalation Engine
-- Chunk 3: New Scraper Adapters (Cloudscraper, Scrapling, Nodriver, Workday)
-- Chunk 4: Heavy Browser Adapters (Camoufox, SeleniumBase) + Browser Pool
-- Chunk 5: Scheduler + Service Integration + Crawl4AI
-- Chunk 6: Fixture Tests + Contract Tests + Failure Tests
+---
+
+## Chunk 2: Tier Router + Execution Ports + Escalation Engine
+
+### Task 11: Create Execution Port Interfaces
+
+**Files:**
+- Create: `backend/app/scraping/execution/__init__.py`
+- Create: `backend/app/scraping/execution/fetcher_port.py`
+- Create: `backend/app/scraping/execution/browser_port.py`
+- Create: `backend/app/scraping/execution/extractor_port.py`
+
+- [ ] **Step 1: Write test for port interfaces**
+
+```python
+# tests/unit/scraping/test_execution_ports.py
+from app.scraping.execution.fetcher_port import FetcherPort, FetchResult
+from app.scraping.execution.browser_port import BrowserPort, BrowserResult
+from app.scraping.execution.extractor_port import ExtractorPort
+
+def test_fetch_result_dataclass():
+    r = FetchResult(html="<html>", status_code=200, headers={},
+                    url_final="https://example.com", duration_ms=100,
+                    content_hash="abc123")
+    assert r.html == "<html>"
+    assert r.status_code == 200
+
+def test_browser_result_dataclass():
+    r = BrowserResult(html="<html>", status_code=200,
+                      url_final="https://example.com", duration_ms=500,
+                      content_hash="def456")
+    assert r.screenshot is None  # optional
+
+def test_fetcher_port_is_abstract():
+    """Cannot instantiate FetcherPort directly."""
+    import pytest
+    with pytest.raises(TypeError):
+        FetcherPort()
+
+def test_browser_port_is_abstract():
+    import pytest
+    with pytest.raises(TypeError):
+        BrowserPort()
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+- [ ] **Step 3: Create fetcher_port.py**
+
+```python
+# app/scraping/execution/fetcher_port.py
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class FetchResult:
+    html: str
+    status_code: int
+    headers: dict[str, str]
+    url_final: str
+    duration_ms: int
+    content_hash: str
+
+class FetcherPort(ABC):
+    @property
+    @abstractmethod
+    def fetcher_name(self) -> str: ...
+
+    @abstractmethod
+    async def fetch(self, url: str, timeout_s: int = 30,
+                    user_agent: str | None = None) -> FetchResult: ...
+
+    @abstractmethod
+    async def health_check(self) -> bool: ...
+
+    async def close(self) -> None:
+        pass
+```
+
+- [ ] **Step 4: Create browser_port.py**
+
+```python
+# app/scraping/execution/browser_port.py
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+
+@dataclass(frozen=True)
+class BrowserResult:
+    html: str
+    status_code: int
+    url_final: str
+    duration_ms: int
+    content_hash: str
+    screenshot: bytes | None = None
+
+class BrowserPort(ABC):
+    @property
+    @abstractmethod
+    def browser_name(self) -> str: ...
+
+    @abstractmethod
+    async def render(self, url: str, timeout_s: int = 60,
+                     fingerprint: dict | None = None,
+                     wait_for_selector: str | None = None) -> BrowserResult: ...
+
+    @abstractmethod
+    async def health_check(self) -> bool: ...
+
+    async def close(self) -> None:
+        pass
+```
+
+- [ ] **Step 5: Create extractor_port.py**
+
+```python
+# app/scraping/execution/extractor_port.py
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from app.scraping.port import ScrapedJob
+
+class ExtractorPort(ABC):
+    @abstractmethod
+    async def extract_jobs(self, html: str, url: str) -> list[ScrapedJob]: ...
+
+    @abstractmethod
+    async def to_markdown(self, html: str) -> str: ...
+```
+
+- [ ] **Step 6: Run tests, commit**
+
+```bash
+python -m pytest tests/unit/scraping/test_execution_ports.py -v
+git add app/scraping/execution/ tests/unit/scraping/test_execution_ports.py
+git commit -m "feat: add FetcherPort, BrowserPort, ExtractorPort interfaces"
+```
+
+---
+
+### Task 12: Build Tier Router
+
+**Files:**
+- Create: `backend/app/scraping/control/tier_router.py`
+- Test: `backend/tests/unit/scraping/test_tier_router.py`
+
+- [ ] **Step 1: Write tests**
+
+```python
+# tests/unit/scraping/test_tier_router.py
+import pytest
+from app.scraping.control.tier_router import TierRouter, ExecutionPlan, Step
+
+def _make_target(**kwargs):
+    """Create a minimal target-like object for testing."""
+    from types import SimpleNamespace
+    defaults = dict(ats_vendor=None, start_tier=1, max_tier=3,
+                    last_success_tier=None, consecutive_failures=0)
+    defaults.update(kwargs)
+    return SimpleNamespace(**defaults)
+
+def test_tier0_greenhouse():
+    plan = TierRouter.route(_make_target(ats_vendor="greenhouse"))
+    assert plan.primary_tier == 0
+    assert plan.primary_step.scraper_name == "greenhouse"
+    assert plan.fallback_chain == []
+
+def test_tier0_lever():
+    plan = TierRouter.route(_make_target(ats_vendor="lever"))
+    assert plan.primary_tier == 0
+    assert plan.primary_step.scraper_name == "lever"
+
+def test_tier0_workday():
+    plan = TierRouter.route(_make_target(ats_vendor="workday"))
+    assert plan.primary_tier == 0
+
+def test_unknown_starts_tier1():
+    plan = TierRouter.route(_make_target())
+    assert plan.primary_tier == 1
+    assert plan.primary_step.tier == 1
+    assert len(plan.fallback_chain) > 0
+
+def test_history_skips_lower_tiers():
+    plan = TierRouter.route(_make_target(last_success_tier=2))
+    assert plan.primary_tier == 2
+    assert plan.primary_step.tier == 2
+    assert all(s.tier >= 2 for s in plan.fallback_chain)
+
+def test_max_tier_caps_fallback():
+    plan = TierRouter.route(_make_target(max_tier=1))
+    assert all(s.tier <= 1 for s in plan.fallback_chain)
+    assert plan.max_tier == 1
+
+def test_fallback_chain_has_browser_flag():
+    plan = TierRouter.route(_make_target())
+    tier2_steps = [s for s in plan.fallback_chain if s.tier >= 2]
+    assert all(s.browser_required for s in tier2_steps)
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+- [ ] **Step 3: Create tier_router.py**
+
+```python
+# app/scraping/control/tier_router.py
+from __future__ import annotations
+from dataclasses import dataclass, field
+
+@dataclass(frozen=True)
+class Step:
+    tier: int
+    scraper_name: str
+    parser_name: str = "adaptive"
+    timeout_s: int = 30
+    browser_required: bool = False
+
+@dataclass(frozen=True)
+class ExecutionPlan:
+    primary_tier: int
+    max_tier: int
+    primary_step: Step
+    fallback_chain: list[Step]
+    rate_policy: str = "generic"
+
+TIER_0_VENDORS = {"greenhouse", "lever", "ashby", "workday"}
+
+ATS_SCRAPER_MAP = {
+    "greenhouse": "greenhouse", "lever": "lever",
+    "ashby": "ashby", "workday": "workday",
+}
+ATS_PARSER_MAP = {
+    "greenhouse": "greenhouse_api", "lever": "lever_api",
+    "ashby": "ashby_graphql", "workday": "workday_json",
+}
+
+FULL_FALLBACK_CHAIN = [
+    Step(tier=1, scraper_name="cloudscraper", parser_name="adaptive"),
+    Step(tier=1, scraper_name="scrapling_fast", parser_name="adaptive"),
+    Step(tier=2, scraper_name="nodriver", parser_name="adaptive",
+         timeout_s=60, browser_required=True),
+    Step(tier=2, scraper_name="scrapling_stealth", parser_name="adaptive",
+         timeout_s=60, browser_required=True),
+    Step(tier=3, scraper_name="camoufox", parser_name="adaptive",
+         timeout_s=90, browser_required=True),
+    Step(tier=3, scraper_name="seleniumbase", parser_name="adaptive",
+         timeout_s=90, browser_required=True),
+]
+
+class TierRouter:
+    @staticmethod
+    def route(target) -> ExecutionPlan:
+        if target.ats_vendor in TIER_0_VENDORS:
+            return ExecutionPlan(
+                primary_tier=0,
+                max_tier=0,
+                primary_step=Step(
+                    tier=0,
+                    scraper_name=ATS_SCRAPER_MAP[target.ats_vendor],
+                    parser_name=ATS_PARSER_MAP[target.ats_vendor],
+                ),
+                fallback_chain=[],
+                rate_policy=target.ats_vendor,
+            )
+
+        effective_start = target.last_success_tier or target.start_tier
+        pruned = [s for s in FULL_FALLBACK_CHAIN
+                  if s.tier >= effective_start and s.tier <= target.max_tier]
+
+        if not pruned:
+            pruned = [Step(tier=1, scraper_name="cloudscraper")]
+
+        return ExecutionPlan(
+            primary_tier=effective_start,
+            max_tier=target.max_tier,
+            primary_step=pruned[0],
+            fallback_chain=pruned[1:],
+        )
+```
+
+- [ ] **Step 4: Run tests, commit**
+
+```bash
+python -m pytest tests/unit/scraping/test_tier_router.py -v
+git add app/scraping/control/tier_router.py tests/unit/scraping/test_tier_router.py
+git commit -m "feat: add tier router with execution plan and fallback chain"
+```
+
+---
+
+### Task 13: Build Escalation Engine
+
+**Files:**
+- Create: `backend/app/scraping/execution/escalation_engine.py`
+- Test: `backend/tests/unit/scraping/test_escalation_engine.py`
+
+- [ ] **Step 1: Write tests**
+
+```python
+# tests/unit/scraping/test_escalation_engine.py
+import pytest
+from app.scraping.execution.escalation_engine import should_escalate, EscalationReason
+
+def test_403_triggers_escalation():
+    assert should_escalate(status_code=403, jobs_found=0, html_length=0)
+    assert should_escalate(status_code=403, jobs_found=0, html_length=0).reason == EscalationReason.HTTP_FORBIDDEN
+
+def test_429_triggers_escalation():
+    result = should_escalate(status_code=429, jobs_found=0, html_length=0)
+    assert result
+    assert result.reason == EscalationReason.RATE_LIMITED
+
+def test_200_with_jobs_no_escalation():
+    result = should_escalate(status_code=200, jobs_found=5, html_length=5000)
+    assert result is None
+
+def test_200_empty_page_escalates():
+    result = should_escalate(status_code=200, jobs_found=0, html_length=0)
+    assert result
+    assert result.reason == EscalationReason.EMPTY_RESPONSE
+
+def test_200_nonempty_zero_jobs_escalates():
+    result = should_escalate(status_code=200, jobs_found=0, html_length=5000)
+    assert result
+    assert result.reason == EscalationReason.ZERO_EXTRACTION
+
+def test_cloudflare_challenge_detected():
+    result = should_escalate(status_code=403, jobs_found=0, html_length=2000,
+                             html_snippet="Checking your browser")
+    assert result
+    assert result.reason == EscalationReason.CLOUDFLARE_CHALLENGE
+    assert result.skip_to_tier >= 2
+
+def test_timeout_triggers_escalation():
+    result = should_escalate(status_code=None, jobs_found=0, html_length=0,
+                             timed_out=True)
+    assert result
+    assert result.reason == EscalationReason.TIMEOUT
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+- [ ] **Step 3: Create escalation_engine.py**
+
+```python
+# app/scraping/execution/escalation_engine.py
+from __future__ import annotations
+from dataclasses import dataclass
+from enum import Enum
+
+class EscalationReason(Enum):
+    HTTP_FORBIDDEN = "http_403"
+    RATE_LIMITED = "http_429"
+    SERVER_ERROR = "http_5xx"
+    TIMEOUT = "timeout"
+    EMPTY_RESPONSE = "empty_response"
+    ZERO_EXTRACTION = "zero_extraction"
+    CLOUDFLARE_CHALLENGE = "cloudflare_challenge"
+
+@dataclass(frozen=True)
+class EscalationDecision:
+    reason: EscalationReason
+    skip_to_tier: int | None = None  # if set, skip directly to this tier
+    retry_same: bool = False          # retry same tier before escalating
+    backoff_seconds: float = 0        # wait before retry
+
+CF_SIGNATURES = ["checking your browser", "cloudflare", "cf-browser-verification",
+                  "ray id", "enable javascript and cookies"]
+
+def should_escalate(
+    status_code: int | None,
+    jobs_found: int,
+    html_length: int,
+    html_snippet: str = "",
+    timed_out: bool = False,
+) -> EscalationDecision | None:
+    """Determine if the current attempt should escalate to a higher tier."""
+
+    if timed_out:
+        return EscalationDecision(reason=EscalationReason.TIMEOUT)
+
+    if status_code == 429:
+        return EscalationDecision(reason=EscalationReason.RATE_LIMITED,
+                                  retry_same=True, backoff_seconds=30)
+
+    if status_code == 403:
+        if _is_cloudflare(html_snippet):
+            return EscalationDecision(reason=EscalationReason.CLOUDFLARE_CHALLENGE,
+                                      skip_to_tier=2)
+        return EscalationDecision(reason=EscalationReason.HTTP_FORBIDDEN)
+
+    if status_code and status_code >= 500:
+        return EscalationDecision(reason=EscalationReason.SERVER_ERROR,
+                                  retry_same=True)
+
+    if status_code == 200 and html_length == 0:
+        return EscalationDecision(reason=EscalationReason.EMPTY_RESPONSE)
+
+    if status_code == 200 and jobs_found == 0 and html_length > 0:
+        return EscalationDecision(reason=EscalationReason.ZERO_EXTRACTION)
+
+    if jobs_found > 0:
+        return None  # success, no escalation
+
+    return None
+
+def _is_cloudflare(html: str) -> bool:
+    lower = html.lower()
+    return any(sig in lower for sig in CF_SIGNATURES)
+```
+
+- [ ] **Step 4: Run tests, commit**
+
+```bash
+python -m pytest tests/unit/scraping/test_escalation_engine.py -v
+git add app/scraping/execution/escalation_engine.py tests/unit/scraping/test_escalation_engine.py
+git commit -m "feat: add escalation engine with trigger detection"
+```
+
+---
+
+### Task 14: Build Priority Scorer
+
+**Files:**
+- Create: `backend/app/scraping/control/priority_scorer.py`
+- Test: `backend/tests/unit/scraping/test_priority_scorer.py`
+
+- [ ] **Step 1: Write tests**
+
+```python
+# tests/unit/scraping/test_priority_scorer.py
+from app.scraping.control.priority_scorer import compute_priority_score
+from types import SimpleNamespace
+from datetime import datetime, timedelta, UTC
+
+def _target(**kw):
+    defaults = dict(priority_class="cool", consecutive_failures=0,
+                    last_success_tier=1, last_success_at=None,
+                    next_scheduled_at=None, schedule_interval_m=720)
+    defaults.update(kw)
+    return SimpleNamespace(**defaults)
+
+def test_watchlist_highest():
+    assert compute_priority_score(_target(priority_class="watchlist")) > \
+           compute_priority_score(_target(priority_class="hot"))
+
+def test_hot_above_warm():
+    assert compute_priority_score(_target(priority_class="hot")) > \
+           compute_priority_score(_target(priority_class="warm"))
+
+def test_never_scraped_gets_bonus():
+    never = compute_priority_score(_target(last_success_at=None))
+    recent = compute_priority_score(_target(
+        last_success_at=datetime.now(UTC)))
+    assert never > recent
+
+def test_failures_reduce_score():
+    clean = compute_priority_score(_target(consecutive_failures=0))
+    failing = compute_priority_score(_target(consecutive_failures=5))
+    assert clean > failing
+
+def test_expensive_tier_penalized():
+    cheap = compute_priority_score(_target(last_success_tier=0))
+    expensive = compute_priority_score(_target(last_success_tier=3))
+    assert cheap > expensive
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+- [ ] **Step 3: Create priority_scorer.py**
+
+```python
+# app/scraping/control/priority_scorer.py
+from __future__ import annotations
+from datetime import datetime, UTC
+
+BASE_PRIORITY = {"watchlist": 100, "hot": 70, "warm": 40, "cool": 10}
+
+def compute_priority_score(target) -> float:
+    score = BASE_PRIORITY.get(target.priority_class, 10)
+
+    # Recency bonus
+    if target.last_success_at is None:
+        score += 20  # never scraped
+    elif target.next_scheduled_at:
+        overdue = (datetime.now(UTC) - target.next_scheduled_at).total_seconds()
+        interval_s = target.schedule_interval_m * 60
+        if overdue > interval_s * 2:
+            score += 10
+        elif overdue > interval_s:
+            score += 5
+
+    # Failure penalty
+    score -= target.consecutive_failures * 15
+
+    # Cost penalty
+    tier = target.last_success_tier or 0
+    if tier >= 3:
+        score -= 10
+    elif tier >= 2:
+        score -= 5
+
+    return score
+```
+
+- [ ] **Step 4: Run tests, commit**
+
+```bash
+python -m pytest tests/unit/scraping/test_priority_scorer.py -v
+git add app/scraping/control/priority_scorer.py tests/unit/scraping/test_priority_scorer.py
+git commit -m "feat: add priority scorer for scheduler"
+```
+
+---
+
+## End of Chunk 2
+
+After Chunk 2: Tier router, execution ports, escalation engine, and priority scorer are all built and tested. The system can classify a target, route it to the right tier, decide when to escalate, and score targets for scheduling.
+
+---
+
+## Chunk 3: New Scraper Adapters (Cloudscraper, Scrapling, Nodriver, Workday)
+
+### Task 15: Install New Python Dependencies
+
+- [ ] **Step 1: Install all new packages**
+
+```bash
+cd D:/jobradar-v2/backend
+pip install cloudscraper nodriver camoufox seleniumbase crawl4ai browserforge fake-useragent protego "scrapling[all]"
+```
+
+- [ ] **Step 2: Verify imports work**
+
+```bash
+python -c "import cloudscraper; print('cloudscraper OK')"
+python -c "import nodriver; print('nodriver OK')"
+python -c "from camoufox.sync_api import Camoufox; print('camoufox OK')"
+python -c "import seleniumbase; print('seleniumbase OK')"
+python -c "import crawl4ai; print('crawl4ai OK')"
+python -c "import browserforge; print('browserforge OK')"
+python -c "from fake_useragent import UserAgent; print('fake-useragent OK')"
+python -c "from protego import Protego; print('protego OK')"
+```
+
+- [ ] **Step 3: Add to pyproject.toml dependencies**
+
+```toml
+# Add to [project.dependencies]:
+cloudscraper = ">=1.2.0"
+nodriver = ">=0.38.0"
+camoufox = ">=0.4.0"
+seleniumbase = ">=4.30.0"
+crawl4ai = ">=0.4.0"
+browserforge = ">=1.1.0"
+fake-useragent = ">=1.5.0"
+protego = ">=0.3.0"
+"scrapling[all]" = ">=0.4.0"
+typer = ">=0.12.0"
+rich = ">=13.7.0"
+openpyxl = ">=3.1.0"
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add pyproject.toml
+git commit -m "feat: add scraper ecosystem dependencies"
+```
+
+---
+
+### Task 16: Build Cloudscraper Fetcher Adapter
+
+**Files:**
+- Create: `backend/app/scraping/execution/cloudscraper_fetcher.py`
+- Test: `backend/tests/unit/scraping/test_cloudscraper_fetcher.py`
+
+- [ ] **Step 1: Write test**
+
+```python
+# tests/unit/scraping/test_cloudscraper_fetcher.py
+from app.scraping.execution.cloudscraper_fetcher import CloudscraperFetcher
+from app.scraping.execution.fetcher_port import FetcherPort
+
+def test_implements_fetcher_port():
+    assert issubclass(CloudscraperFetcher, FetcherPort)
+
+def test_fetcher_name():
+    f = CloudscraperFetcher()
+    assert f.fetcher_name == "cloudscraper"
+```
+
+- [ ] **Step 2: Create cloudscraper_fetcher.py**
+
+```python
+# app/scraping/execution/cloudscraper_fetcher.py
+from __future__ import annotations
+import hashlib
+import time
+import cloudscraper as cs
+from app.scraping.execution.fetcher_port import FetcherPort, FetchResult
+
+class CloudscraperFetcher(FetcherPort):
+    def __init__(self):
+        self._scraper = cs.create_scraper(browser={"browser": "chrome", "platform": "windows"})
+
+    @property
+    def fetcher_name(self) -> str:
+        return "cloudscraper"
+
+    async def fetch(self, url: str, timeout_s: int = 30,
+                    user_agent: str | None = None) -> FetchResult:
+        import asyncio
+        if user_agent:
+            self._scraper.headers["User-Agent"] = user_agent
+        start = time.monotonic()
+        resp = await asyncio.to_thread(self._scraper.get, url, timeout=timeout_s)
+        duration = int((time.monotonic() - start) * 1000)
+        content_hash = hashlib.sha256(resp.text.encode()).hexdigest()[:64]
+        return FetchResult(
+            html=resp.text, status_code=resp.status_code,
+            headers=dict(resp.headers), url_final=str(resp.url),
+            duration_ms=duration, content_hash=content_hash,
+        )
+
+    async def health_check(self) -> bool:
+        return True
+
+    async def close(self) -> None:
+        self._scraper.close()
+```
+
+- [ ] **Step 3: Run tests, commit**
+
+```bash
+python -m pytest tests/unit/scraping/test_cloudscraper_fetcher.py -v
+git add app/scraping/execution/cloudscraper_fetcher.py tests/unit/scraping/test_cloudscraper_fetcher.py
+git commit -m "feat: add Cloudscraper fetcher adapter"
+```
+
+---
+
+### Task 17: Port Scrapling Fetcher from V1
+
+**Files:**
+- Create: `backend/app/scraping/execution/scrapling_fetcher.py`
+- Test: `backend/tests/unit/scraping/test_scrapling_fetcher.py`
+
+- [ ] **Step 1: Write test**
+
+```python
+# tests/unit/scraping/test_scrapling_fetcher.py
+from app.scraping.execution.scrapling_fetcher import ScraplingFetcher
+from app.scraping.execution.fetcher_port import FetcherPort
+from app.scraping.execution.browser_port import BrowserPort
+
+def test_implements_both_ports():
+    """Scrapling has dual mode: fast (FetcherPort) + stealth (BrowserPort)."""
+    f = ScraplingFetcher()
+    assert isinstance(f, FetcherPort)
+    assert isinstance(f, BrowserPort)
+
+def test_fetcher_name():
+    f = ScraplingFetcher()
+    assert f.fetcher_name == "scrapling_fast"
+    assert f.browser_name == "scrapling_stealth"
+```
+
+- [ ] **Step 2: Create scrapling_fetcher.py**
+
+Port from v1's `ScraplingScraper` (D:/jobradar-v1/merged_project/backend/scrapers/scrapling_scraper.py), adapting to the new `FetcherPort` and `BrowserPort` interfaces. The dual-mode pattern:
+- `fetch()` uses `Fetcher.get(url, impersonate="chrome")` — Tier 1
+- `render()` uses `StealthyFetcher.fetch(url, headless=True)` — Tier 2
+
+Include graceful degradation: if `scrapling` package is not installed, `health_check()` returns False.
+
+- [ ] **Step 3: Run tests, commit**
+
+```bash
+python -m pytest tests/unit/scraping/test_scrapling_fetcher.py -v
+git add app/scraping/execution/scrapling_fetcher.py tests/unit/scraping/test_scrapling_fetcher.py
+git commit -m "feat: port Scrapling dual-mode fetcher from v1"
+```
+
+---
+
+### Task 18: Build Nodriver Browser Adapter
+
+**Files:**
+- Create: `backend/app/scraping/execution/nodriver_browser.py`
+- Test: `backend/tests/unit/scraping/test_nodriver_browser.py`
+
+- [ ] **Step 1: Write test**
+
+```python
+# tests/unit/scraping/test_nodriver_browser.py
+from app.scraping.execution.nodriver_browser import NodriverBrowser
+from app.scraping.execution.browser_port import BrowserPort
+
+def test_implements_browser_port():
+    assert issubclass(NodriverBrowser, BrowserPort)
+
+def test_browser_name():
+    b = NodriverBrowser()
+    assert b.browser_name == "nodriver"
+```
+
+- [ ] **Step 2: Create nodriver_browser.py**
+
+```python
+# app/scraping/execution/nodriver_browser.py
+from __future__ import annotations
+import hashlib
+import time
+from app.scraping.execution.browser_port import BrowserPort, BrowserResult
+
+try:
+    import nodriver as uc
+    NODRIVER_AVAILABLE = True
+except ImportError:
+    NODRIVER_AVAILABLE = False
+
+class NodriverBrowser(BrowserPort):
+    @property
+    def browser_name(self) -> str:
+        return "nodriver"
+
+    async def render(self, url: str, timeout_s: int = 60,
+                     fingerprint: dict | None = None,
+                     wait_for_selector: str | None = None) -> BrowserResult:
+        if not NODRIVER_AVAILABLE:
+            raise RuntimeError("nodriver not installed")
+
+        start = time.monotonic()
+        browser = await uc.start()
+        try:
+            page = await browser.get(url)
+            if wait_for_selector:
+                await page.find(wait_for_selector, timeout=timeout_s)
+            else:
+                await page.sleep(2)  # wait for JS rendering
+            html = await page.get_content()
+            duration = int((time.monotonic() - start) * 1000)
+            content_hash = hashlib.sha256(html.encode()).hexdigest()[:64]
+            return BrowserResult(
+                html=html, status_code=200, url_final=str(page.url),
+                duration_ms=duration, content_hash=content_hash,
+            )
+        finally:
+            browser.stop()
+
+    async def health_check(self) -> bool:
+        return NODRIVER_AVAILABLE
+
+    async def close(self) -> None:
+        pass
+```
+
+- [ ] **Step 3: Run tests, commit**
+
+```bash
+python -m pytest tests/unit/scraping/test_nodriver_browser.py -v
+git add app/scraping/execution/nodriver_browser.py tests/unit/scraping/test_nodriver_browser.py
+git commit -m "feat: add Nodriver browser adapter"
+```
+
+---
+
+### Task 19: Build Workday Scraper
+
+**Files:**
+- Create: `backend/app/scraping/scrapers/workday.py`
+- Test: `backend/tests/unit/scraping/test_workday_scraper.py`
+
+- [ ] **Step 1: Write test with fixture**
+
+```python
+# tests/unit/scraping/test_workday_scraper.py
+import pytest
+from app.scraping.scrapers.workday import WorkdayScraper
+
+MOCK_RESPONSE = {
+    "total": 2,
+    "jobPostings": [
+        {"title": "ML Engineer", "locationsText": "Seattle, WA",
+         "postedOn": "2026-03-15", "bulletFields": ["Full-time"],
+         "externalPath": "/job/ML-Engineer/12345"},
+        {"title": "Data Scientist", "locationsText": "Remote",
+         "postedOn": "2026-03-14", "bulletFields": ["Full-time"],
+         "externalPath": "/job/Data-Scientist/12346"},
+    ]
+}
+
+def test_parse_workday_response():
+    scraper = WorkdayScraper()
+    jobs = scraper._parse_response(MOCK_RESPONSE, "https://microsoft.wd5.myworkdayjobs.com")
+    assert len(jobs) == 2
+    assert jobs[0].title == "ML Engineer"
+    assert jobs[0].location == "Seattle, WA"
+    assert jobs[0].source == "workday"
+
+def test_extract_tenant_from_url():
+    scraper = WorkdayScraper()
+    assert scraper._extract_tenant("https://microsoft.wd5.myworkdayjobs.com/en-US/Global") == ("microsoft", "wd5", "Global")
+```
+
+- [ ] **Step 2: Create workday.py**
+
+Build a Workday ATS scraper that:
+- Extracts tenant, subdomain, and career section from URL
+- POSTs to `/wday/cxs/{tenant}/{section}/jobs` with pagination
+- Parses the JSON response into `ScrapedJob` objects
+- Implements `ScraperPort` interface
+
+- [ ] **Step 3: Run tests, commit**
+
+```bash
+python -m pytest tests/unit/scraping/test_workday_scraper.py -v
+git add app/scraping/scrapers/workday.py tests/unit/scraping/test_workday_scraper.py
+git commit -m "feat: add Workday ATS scraper"
+```
+
+---
+
+## End of Chunk 3
+
+After Chunk 3: All dependencies installed, Cloudscraper + Scrapling + Nodriver + Workday adapters built and tested.
+
+---
+
+## Chunk 4: Heavy Browser Adapters + Browser Pool
+
+### Task 20: Build Camoufox Browser Adapter
+
+**Files:**
+- Create: `backend/app/scraping/execution/camoufox_browser.py`
+- Test: `backend/tests/unit/scraping/test_camoufox_browser.py`
+
+- [ ] **Step 1: Write test**
+
+```python
+# tests/unit/scraping/test_camoufox_browser.py
+from app.scraping.execution.camoufox_browser import CamoufoxBrowser
+from app.scraping.execution.browser_port import BrowserPort
+
+def test_implements_browser_port():
+    assert issubclass(CamoufoxBrowser, BrowserPort)
+
+def test_browser_name():
+    b = CamoufoxBrowser()
+    assert b.browser_name == "camoufox"
+```
+
+- [ ] **Step 2: Create camoufox_browser.py**
+
+Implement BrowserPort using Camoufox's Playwright-compatible API with BrowserForge fingerprint generation. Include memory-aware session management.
+
+- [ ] **Step 3: Run tests, commit**
+
+```bash
+python -m pytest tests/unit/scraping/test_camoufox_browser.py -v
+git add app/scraping/execution/camoufox_browser.py tests/unit/scraping/test_camoufox_browser.py
+git commit -m "feat: add Camoufox browser adapter (Tier 3)"
+```
+
+---
+
+### Task 21: Build SeleniumBase UC Mode Adapter
+
+**Files:**
+- Create: `backend/app/scraping/execution/seleniumbase_browser.py`
+- Test: `backend/tests/unit/scraping/test_seleniumbase_browser.py`
+
+- [ ] **Step 1-3: Same pattern as Task 20** — implement BrowserPort, test interface, commit.
+
+```bash
+git commit -m "feat: add SeleniumBase UC Mode adapter (Tier 3 backup)"
+```
+
+---
+
+### Task 22: Build Browser Pool with Concurrency Governance
+
+**Files:**
+- Create: `backend/app/scraping/execution/browser_pool.py`
+- Test: `backend/tests/unit/scraping/test_browser_pool.py`
+
+- [ ] **Step 1: Write tests**
+
+```python
+# tests/unit/scraping/test_browser_pool.py
+import pytest
+import asyncio
+from app.scraping.execution.browser_pool import BrowserPool
+
+@pytest.mark.asyncio
+async def test_pool_respects_concurrency():
+    pool = BrowserPool(max_sessions=2)
+    acquired = 0
+    async def acquire_and_hold():
+        nonlocal acquired
+        async with pool.session("nodriver"):
+            acquired += 1
+            await asyncio.sleep(0.1)
+    # Launch 3, only 2 should run concurrently
+    tasks = [asyncio.create_task(acquire_and_hold()) for _ in range(3)]
+    await asyncio.sleep(0.05)
+    assert acquired <= 2
+    await asyncio.gather(*tasks)
+    assert acquired == 3
+
+@pytest.mark.asyncio
+async def test_pool_per_domain_limit():
+    pool = BrowserPool(max_sessions=10, max_per_domain=2)
+    count = 0
+    async def fetch(domain):
+        nonlocal count
+        async with pool.session("nodriver", domain=domain):
+            count += 1
+            await asyncio.sleep(0.1)
+    tasks = [asyncio.create_task(fetch("example.com")) for _ in range(5)]
+    await asyncio.sleep(0.05)
+    assert count <= 2  # per-domain limit
+    await asyncio.gather(*tasks)
+```
+
+- [ ] **Step 2: Create browser_pool.py**
+
+```python
+# app/scraping/execution/browser_pool.py
+from __future__ import annotations
+import asyncio
+from collections import defaultdict
+from contextlib import asynccontextmanager
+
+from app.scraping.constants import TIER_CONCURRENCY, MAX_PER_DOMAIN_CONCURRENCY
+
+class BrowserPool:
+    def __init__(self, max_sessions: int | None = None,
+                 max_per_domain: int = MAX_PER_DOMAIN_CONCURRENCY):
+        self._global_sem = asyncio.Semaphore(max_sessions or 11)  # 8 T2 + 3 T3
+        self._domain_sems: dict[str, asyncio.Semaphore] = defaultdict(
+            lambda: asyncio.Semaphore(max_per_domain))
+        self._active_count = 0
+
+    @asynccontextmanager
+    async def session(self, browser_name: str, domain: str | None = None):
+        domain_sem = self._domain_sems[domain] if domain else None
+        if domain_sem:
+            await domain_sem.acquire()
+        await self._global_sem.acquire()
+        self._active_count += 1
+        try:
+            yield browser_name
+        finally:
+            self._active_count -= 1
+            self._global_sem.release()
+            if domain_sem:
+                domain_sem.release()
+
+    @property
+    def active_sessions(self) -> int:
+        return self._active_count
+```
+
+- [ ] **Step 3: Run tests, commit**
+
+```bash
+python -m pytest tests/unit/scraping/test_browser_pool.py -v
+git add app/scraping/execution/browser_pool.py tests/unit/scraping/test_browser_pool.py
+git commit -m "feat: add browser pool with concurrency governance"
+```
+
+---
+
+## End of Chunk 4
+
+After Chunk 4: Camoufox + SeleniumBase adapters built, browser pool controls concurrency.
+
+---
+
+## Chunk 5: Scheduler + Service Integration + Crawl4AI
+
+### Task 23: Build Crawl4AI Extractor Adapter
+
+**Files:**
+- Create: `backend/app/scraping/execution/crawl4ai_extractor.py`
+- Test: `backend/tests/unit/scraping/test_crawl4ai_extractor.py`
+
+- [ ] **Step 1: Write test**
+
+```python
+# tests/unit/scraping/test_crawl4ai_extractor.py
+from app.scraping.execution.crawl4ai_extractor import Crawl4AIExtractor
+from app.scraping.execution.extractor_port import ExtractorPort
+
+def test_implements_extractor_port():
+    assert issubclass(Crawl4AIExtractor, ExtractorPort)
+```
+
+- [ ] **Step 2: Create crawl4ai_extractor.py** — wraps Crawl4AI's markdown output.
+
+- [ ] **Step 3: Run tests, commit**
+
+```bash
+git commit -m "feat: add Crawl4AI markdown extractor"
+```
+
+---
+
+### Task 24: Build Scoring Scheduler
+
+**Files:**
+- Create: `backend/app/scraping/control/scheduler.py`
+- Test: `backend/tests/unit/scraping/test_scheduler.py`
+
+- [ ] **Step 1: Write tests**
+
+```python
+# tests/unit/scraping/test_scheduler.py
+import pytest
+from datetime import datetime, timedelta, UTC
+from app.scraping.control.scheduler import select_due_targets, schedule_next_run
+
+def test_selects_overdue_targets(mock_db):
+    """Targets past their next_scheduled_at should be selected."""
+    # Insert targets with next_scheduled_at in the past
+    # Assert they appear in selection results
+
+def test_watchlist_always_included(mock_db):
+    """Watchlist targets run on Mode 3 schedule regardless."""
+
+def test_updates_next_scheduled_at_on_success(mock_db):
+    """After success, next run = now + schedule_interval_m."""
+
+def test_backoff_on_failure(mock_db):
+    """After failure, next run uses exponential backoff."""
+
+def test_quarantine_after_threshold(mock_db):
+    """10 consecutive failures -> quarantined = True."""
+```
+
+- [ ] **Step 2: Create scheduler.py** — implements the scoring-based batch selection from spec Section 5.
+
+- [ ] **Step 3: Run tests, commit**
+
+```bash
+git commit -m "feat: add scoring-based target scheduler"
+```
+
+---
+
+### Task 25: Integrate New Pipeline into ScrapingService
+
+**Files:**
+- Modify: `backend/app/scraping/service.py`
+- Test: `backend/tests/integration/scraping/test_scrape_run_pipeline.py`
+
+- [ ] **Step 1: Add `run_target_batch()` method to ScrapingService**
+
+This is the new entry point for Mode 1 (career page) and Mode 3 (watchlist) scraping. It:
+1. Accepts a list of ScrapeTarget objects
+2. Routes each through TierRouter
+3. Executes with escalation via the appropriate fetcher/browser
+4. Parses results with AdaptiveParser (or ATS-specific parser)
+5. Deduplicates and persists
+6. Records scrape_attempts for each physical fetch
+7. Updates target metadata (last_success, content_hash, etc.)
+
+Existing `run_scrape()` stays for Mode 2 (keyword search). No breaking changes.
+
+- [ ] **Step 2: Wire `run_target_batch()` into the scheduler worker**
+
+Update `backend/app/workers/scraping_worker.py`:
+- `run_career_page_scrape()` now calls scheduler to select due targets, then `run_target_batch()`
+- Add new `run_watchlist_scrape()` function for Mode 3
+
+- [ ] **Step 3: Register new scheduler jobs**
+
+Update `backend/app/workers/scheduler.py`:
+- Career page tick: every 30 minutes
+- Watchlist tick: every 2 hours
+- Keep existing keyword search: every 6 hours
+
+- [ ] **Step 4: Integration test**
+
+```python
+# tests/integration/scraping/test_scrape_run_pipeline.py
+@pytest.mark.asyncio
+async def test_run_target_batch_creates_attempts(test_db):
+    """Running a batch should create scrape_attempt records."""
+
+@pytest.mark.asyncio
+async def test_run_target_batch_persists_jobs(test_db):
+    """Jobs found should appear in the jobs table."""
+
+@pytest.mark.asyncio
+async def test_escalation_records_multiple_attempts(test_db):
+    """When escalation happens, multiple attempt rows are created."""
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat: integrate target-based scraping pipeline into ScrapingService"
+```
+
+---
+
+## End of Chunk 5
+
+After Chunk 5: Full pipeline works end-to-end. Scheduler selects targets, routes through tiers, escalates on failure, persists jobs and attempts.
+
+---
+
+## Chunk 6: Fixture Tests + Contract Tests + CLI Completion
+
+### Task 26: Capture Real Fixtures
+
+- [ ] **Step 1: Capture Greenhouse fixture**
+
+```bash
+cd D:/jobradar-v2/backend
+python -c "
+import httpx, json, asyncio
+async def fetch():
+    async with httpx.AsyncClient() as c:
+        r = await c.get('https://boards-api.greenhouse.io/v1/boards/huggingface/jobs')
+        with open('tests/fixtures/greenhouse/huggingface_board.json', 'w') as f:
+            json.dump(r.json(), f, indent=2)
+        print(f'Saved {len(r.json().get(\"jobs\", []))} jobs')
+asyncio.run(fetch())
+"
+```
+
+- [ ] **Step 2: Capture Lever fixture**
+
+```bash
+python -c "
+import httpx, json, asyncio
+async def fetch():
+    async with httpx.AsyncClient() as c:
+        r = await c.get('https://api.lever.co/v0/postings/stripe?mode=json')
+        with open('tests/fixtures/lever/stripe_postings.json', 'w') as f:
+            json.dump(r.json(), f, indent=2)
+        print(f'Saved {len(r.json())} postings')
+asyncio.run(fetch())
+"
+```
+
+- [ ] **Step 3: Capture Ashby fixture**
+
+Fetch from `https://jobs.ashbyhq.com/api/non-user-graphql` with Ramp's org slug.
+
+- [ ] **Step 4: Save expected outputs alongside each fixture**
+
+For each fixture, run the parser and save the expected output as `expected_jobs.json`.
+
+- [ ] **Step 5: Commit fixtures**
+
+```bash
+git add tests/fixtures/
+git commit -m "test: add real ATS response fixtures for parser testing"
+```
+
+---
+
+### Task 27: Write Parser Contract Tests
+
+**Files:**
+- Create: `backend/tests/contracts/test_greenhouse_contract.py`
+- Create: `backend/tests/contracts/test_lever_contract.py`
+- Create: `backend/tests/contracts/test_workday_contract.py`
+
+- [ ] **Step 1: Write contract tests**
+
+Each contract test:
+- Loads a fixture
+- Runs the parser
+- Asserts every ScrapedJob has: title, company_name, source, source_url
+- Asserts no invalid enums
+- Asserts salary_min <= salary_max when both present
+- Asserts no malformed URLs
+
+- [ ] **Step 2: Run contract tests**
+
+```bash
+python -m pytest tests/contracts/ -v
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git commit -m "test: add parser contract tests for ATS scrapers"
+```
+
+---
+
+### Task 28: Complete CLI Quarantine and Health Commands
+
+**Files:**
+- Modify: `backend/app/scraping/ops.py`
+
+- [ ] **Step 1: Add quarantine commands**
+
+```python
+@quarantine_app.command("list")
+def quarantine_list():
+    """Show all quarantined targets with failure reasons."""
+
+@quarantine_app.command("review")
+def quarantine_review(target_id: str):
+    """Show last 5 attempts and failure traces for a target."""
+
+@quarantine_app.command("release")
+def quarantine_release(target_id: str, force_tier: int = typer.Option(None)):
+    """Un-quarantine and reset failure count."""
+```
+
+- [ ] **Step 2: Add health and test commands**
+
+```python
+@app.command("health")
+def health_cmd():
+    """Show per-source success rates and circuit breaker states."""
+
+@app.command("test-fetch")
+def test_fetch(url: str, tier: int = typer.Option(None), dry_run: bool = False):
+    """Test-scrape a single URL through the full pipeline."""
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git commit -m "feat: complete CLI with quarantine, health, and test commands"
+```
+
+---
+
+### Task 29: Update PROJECT_STATUS.md
+
+- [ ] **Step 1: Update project status doc**
+
+Mark completed:
+- ✅ Scraper ecosystem installed and integrated
+- ✅ 1,473 H1B career pages imported and classified
+- ✅ Tier router with escalation
+- ✅ Browser pool with concurrency governance
+- ✅ Scoring-based scheduler
+- ✅ CLI ops tool
+- ✅ Fixture-based parser tests
+
+Update "What To Do Next" to reflect remaining work:
+- Fix slow page switching
+- Port remaining v1 features
+- Wire frontend scraper controls
+- End-to-end live testing
+
+- [ ] **Step 2: Commit**
+
+```bash
+git commit -m "docs: update project status after scraper platform build"
+```
+
+---
+
+## End of Chunk 6
+
+## Summary: Full Plan at a Glance
+
+| Chunk | Tasks | What It Builds |
+|-------|-------|---------------|
+| 1 | 1-10 | DB schema, constants, ATS registry, classifier, simhash fix, CLI import |
+| 2 | 11-14 | Execution ports, tier router, escalation engine, priority scorer |
+| 3 | 15-19 | Dependencies, Cloudscraper, Scrapling, Nodriver, Workday adapters |
+| 4 | 20-22 | Camoufox, SeleniumBase, browser pool |
+| 5 | 23-25 | Crawl4AI, scheduler, service integration |
+| 6 | 26-29 | Fixtures, contract tests, CLI completion, docs update |
+
+**Total: 29 tasks across 6 chunks. Estimated time: 15-20 hours of focused work.**
+
+After all chunks are complete, the scraper platform is a fully operational, policy-driven ingestion engine capable of scraping 1,473+ career pages with tiered execution, automatic escalation, and scoring-based scheduling.
