@@ -340,7 +340,7 @@ The classifier function walks the registry. It never contains vendor-specific lo
 - ~30-40% of targets classifiable from URL alone
 
 **Step 2: Priority classification** (instant, from H1B data)
-- LCA filings >= 1000 AND in watchlist → 'watchlist' (every 2h)
+- In user's watchlist (regardless of LCA count) → 'watchlist' (every 2h)
 - LCA filings >= 1000 → 'hot' (every 4h)
 - LCA filings >= 100 → 'warm' (every 6h)
 - LCA filings < 100 → 'cool' (every 12h)
