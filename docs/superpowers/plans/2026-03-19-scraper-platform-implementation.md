@@ -2573,3 +2573,414 @@ git commit -m "docs: update project status after scraper platform build"
 **Total: 29 tasks across 6 chunks. Estimated time: 15-20 hours of focused work.**
 
 After all chunks are complete, the scraper platform is a fully operational, policy-driven ingestion engine capable of scraping 1,473+ career pages with tiered execution, automatic escalation, and scoring-based scheduling.
+
+---
+
+## Appendix: Review Amendments (Fixes for CRITICAL/HIGH issues)
+
+These amendments override or supplement the corresponding tasks above. Read these BEFORE implementing.
+
+### Amendment A1: Adapter Registry (fixes C2, C3)
+
+**Add to Task 25 — this is the connective tissue between components.**
+
+Create `backend/app/scraping/execution/adapter_registry.py`:
+
+```python
+# app/scraping/execution/adapter_registry.py
+"""Maps scraper_name strings from ExecutionPlan Steps to adapter instances and methods."""
+from __future__ import annotations
+from dataclasses import dataclass
+from typing import Callable, Any
+
+@dataclass
+class AdapterBinding:
+    instance: Any                    # the adapter object
+    method: str                      # "fetch" or "render"
+    is_browser: bool = False
+
+class AdapterRegistry:
+    def __init__(self):
+        self._bindings: dict[str, AdapterBinding] = {}
+
+    def register_fetcher(self, name: str, adapter):
+        """Register a FetcherPort adapter for a scraper_name."""
+        self._bindings[name] = AdapterBinding(instance=adapter, method="fetch", is_browser=False)
+
+    def register_browser(self, name: str, adapter):
+        """Register a BrowserPort adapter for a scraper_name."""
+        self._bindings[name] = AdapterBinding(instance=adapter, method="render", is_browser=True)
+
+    def register_ats(self, name: str, adapter):
+        """Register a ScraperPort adapter for ATS scraper_name."""
+        self._bindings[name] = AdapterBinding(instance=adapter, method="fetch_jobs", is_browser=False)
+
+    def get(self, scraper_name: str) -> AdapterBinding:
+        if scraper_name not in self._bindings:
+            raise KeyError(f"No adapter registered for '{scraper_name}'")
+        return self._bindings[scraper_name]
+
+    def resolve(self, scraper_name: str) -> tuple[Any, Callable]:
+        """Returns (adapter_instance, bound_method)."""
+        binding = self.get(scraper_name)
+        return binding.instance, getattr(binding.instance, binding.method)
+
+
+def build_default_registry() -> AdapterRegistry:
+    """Construct registry with all available adapters."""
+    from app.scraping.execution.cloudscraper_fetcher import CloudscraperFetcher
+    from app.scraping.execution.scrapling_fetcher import ScraplingFetcher
+    from app.scraping.execution.nodriver_browser import NodriverBrowser
+    from app.scraping.execution.camoufox_browser import CamoufoxBrowser
+    from app.scraping.execution.seleniumbase_browser import SeleniumBaseBrowser
+    from app.scraping.scrapers.greenhouse import GreenhouseScraper
+    from app.scraping.scrapers.lever import LeverScraper
+    from app.scraping.scrapers.ashby import AshbyScraper
+    from app.scraping.scrapers.workday import WorkdayScraper
+
+    reg = AdapterRegistry()
+
+    # Tier 0: ATS
+    reg.register_ats("greenhouse", GreenhouseScraper())
+    reg.register_ats("lever", LeverScraper())
+    reg.register_ats("ashby", AshbyScraper())
+    reg.register_ats("workday", WorkdayScraper())
+
+    # Tier 1: HTTP fetchers
+    reg.register_fetcher("cloudscraper", CloudscraperFetcher())
+
+    # Scrapling serves both Tier 1 (fetch) and Tier 2 (render)
+    scrapling = ScraplingFetcher()
+    reg.register_fetcher("scrapling_fast", scrapling)
+    reg.register_browser("scrapling_stealth", scrapling)
+
+    # Tier 2: Browser
+    reg.register_browser("nodriver", NodriverBrowser())
+
+    # Tier 3: Heavy browser
+    reg.register_browser("camoufox", CamoufoxBrowser())
+    reg.register_browser("seleniumbase", SeleniumBaseBrowser())
+
+    return reg
+```
+
+This resolves C2: the router's `scraper_name` strings now map to concrete adapters via `registry.resolve("nodriver")` → `(nodriver_instance, nodriver_instance.render)`.
+
+---
+
+### Amendment A2: Browser Pool Manages Instances (fixes C1)
+
+**Override Task 22's `BrowserPool` with this version:**
+
+```python
+# app/scraping/execution/browser_pool.py
+from __future__ import annotations
+import asyncio
+from contextlib import asynccontextmanager
+from app.scraping.constants import MAX_PER_DOMAIN_CONCURRENCY
+
+class BrowserPool:
+    """Manages browser session concurrency and per-domain limits.
+
+    Does NOT own browser instances (adapters manage their own).
+    Controls admission: how many browser sessions can run concurrently.
+    """
+    def __init__(self, max_tier2: int = 8, max_tier3: int = 3,
+                 max_per_domain: int = MAX_PER_DOMAIN_CONCURRENCY):
+        self._tier2_sem = asyncio.Semaphore(max_tier2)
+        self._tier3_sem = asyncio.Semaphore(max_tier3)
+        self._domain_sems: dict[str, asyncio.Semaphore] = {}
+        self._domain_lock = asyncio.Lock()
+        self._active = 0
+
+    async def _get_domain_sem(self, domain: str) -> asyncio.Semaphore:
+        async with self._domain_lock:
+            if domain not in self._domain_sems:
+                self._domain_sems[domain] = asyncio.Semaphore(MAX_PER_DOMAIN_CONCURRENCY)
+            return self._domain_sems[domain]
+
+    @asynccontextmanager
+    async def acquire(self, tier: int, domain: str | None = None):
+        """Acquire a browser session slot. Blocks until available."""
+        sem = self._tier3_sem if tier >= 3 else self._tier2_sem
+        domain_sem = await self._get_domain_sem(domain) if domain else None
+
+        if domain_sem:
+            await domain_sem.acquire()
+        await sem.acquire()
+        self._active += 1
+        try:
+            yield
+        finally:
+            self._active -= 1
+            sem.release()
+            if domain_sem:
+                domain_sem.release()
+
+    @property
+    def active_sessions(self) -> int:
+        return self._active
+
+    async def cleanup_idle_domains(self, active_domains: set[str]):
+        """Remove semaphores for domains no longer being scraped."""
+        async with self._domain_lock:
+            stale = set(self._domain_sems) - active_domains
+            for d in stale:
+                del self._domain_sems[d]
+```
+
+Key changes vs original:
+- Separate semaphores for Tier 2 and Tier 3 (not one pool)
+- Domain semaphores created on-demand with lock (not `defaultdict`)
+- `cleanup_idle_domains()` prevents unbounded growth (fixes H5)
+- Pool controls admission only — adapters manage their own browser lifecycle
+
+For Nodriver specifically (fixes C1): the adapter should maintain a **reusable browser instance** internally:
+
+```python
+# Override in nodriver_browser.py
+class NodriverBrowser(BrowserPort):
+    def __init__(self):
+        self._browser = None
+        self._lock = asyncio.Lock()
+
+    async def _get_browser(self):
+        async with self._lock:
+            if self._browser is None:
+                self._browser = await uc.start()
+            return self._browser
+
+    async def render(self, url, ...):
+        browser = await self._get_browser()
+        page = await browser.get(url)
+        # ... render and return
+        # Do NOT stop browser — reuse across calls
+
+    async def close(self):
+        if self._browser:
+            self._browser.stop()
+            self._browser = None
+```
+
+---
+
+### Amendment A3: Execution Loop for run_target_batch (fixes C3)
+
+**Add this implementation guidance to Task 25:**
+
+```python
+# Core orchestration loop inside ScrapingService.run_target_batch()
+
+async def run_target_batch(self, targets: list[ScrapeTarget], run_id: UUID) -> ScraperRunResult:
+    registry = self._adapter_registry  # AdapterRegistry from A1
+    browser_pool = self._browser_pool   # BrowserPool from A2
+    results = ScraperRunResult(run_id=run_id)
+
+    # Group targets by starting tier for concurrent pool dispatch
+    async def process_target(target: ScrapeTarget):
+        plan = TierRouter.route(target)
+        steps = [plan.primary_step] + list(plan.fallback_chain)
+        last_attempt = None
+
+        for step_idx, step in enumerate(steps):
+            # Record attempt
+            attempt = ScrapeAttempt(
+                run_id=run_id, target_id=target.id,
+                selected_tier=plan.primary_tier,
+                actual_tier_used=step.tier,
+                scraper_name=step.scraper_name,
+                parser_name=step.parser_name,
+                escalations=step_idx,
+            )
+
+            try:
+                adapter, method = registry.resolve(step.scraper_name)
+                binding = registry.get(step.scraper_name)
+
+                # Acquire browser pool slot if needed
+                if binding.is_browser:
+                    domain = urlparse(target.url).netloc
+                    async with browser_pool.acquire(step.tier, domain):
+                        result = await asyncio.wait_for(
+                            method(target.url, timeout_s=step.timeout_s),
+                            timeout=step.timeout_s + 5,
+                        )
+                elif binding.method == "fetch_jobs":
+                    # ATS scraper — pass board token
+                    token = target.ats_board_token or target.url
+                    result = await method(token)
+                else:
+                    # HTTP fetcher
+                    result = await method(target.url, timeout_s=step.timeout_s)
+
+                # Parse if needed (fetchers return HTML, ATS returns jobs)
+                if binding.method == "fetch_jobs":
+                    jobs = result  # already list[ScrapedJob]
+                    attempt.jobs_extracted = len(jobs)
+                    attempt.http_status = 200
+                else:
+                    html = result.html
+                    attempt.http_status = result.status_code
+                    attempt.content_hash_after = result.content_hash
+
+                    # Check escalation
+                    parser = self._get_parser(step.parser_name)
+                    jobs = await parser.extract_jobs(html, target.url)
+                    attempt.jobs_extracted = len(jobs)
+
+                    decision = should_escalate(
+                        status_code=result.status_code,
+                        jobs_found=len(jobs),
+                        html_length=len(html),
+                        html_snippet=html[:2000],
+                    )
+                    if decision:
+                        attempt.status = "escalated"
+                        attempt.error_class = decision.reason.value
+                        await self._save_attempt(attempt)
+                        continue  # try next step in chain
+
+                # Success
+                attempt.status = "success"
+                attempt.content_changed = (
+                    attempt.content_hash_after != target.content_hash
+                )
+                await self._save_attempt(attempt)
+                await self._update_target_success(target, step.tier, attempt)
+                await self._persist_jobs(jobs, target, run_id)
+                results.jobs_found += len(jobs)
+                break  # no more escalation needed
+
+            except asyncio.TimeoutError:
+                attempt.status = "escalated"
+                attempt.error_class = "timeout"
+                await self._save_attempt(attempt)
+                continue
+
+            except Exception as e:
+                attempt.status = "failed"
+                attempt.error_class = type(e).__name__
+                attempt.error_message = str(e)[:500]
+                await self._save_attempt(attempt)
+                continue
+
+        else:
+            # All steps exhausted — mark target as failed
+            await self._update_target_failure(target)
+            results.errors.append(f"{target.company_name}: all tiers exhausted")
+
+    # Run all targets concurrently within tier pools
+    tasks = [process_target(t) for t in targets]
+    await asyncio.gather(*tasks, return_exceptions=True)
+    return results
+```
+
+This is ~80 lines of orchestration that was missing. It wires together:
+- AdapterRegistry for dispatch
+- BrowserPool for admission control
+- EscalationEngine for retry decisions
+- ScrapeAttempt recording per physical fetch
+- Target state updates
+- Job persistence
+
+---
+
+### Amendment A4: Minor Fixes
+
+**H1 (frozen dataclass list):** In Task 12, change `ExecutionPlan`:
+```python
+fallback_chain: tuple[Step, ...]  # NOT list — truly immutable
+```
+And in `TierRouter.route()`, change `pruned[1:]` to `tuple(pruned[1:])`.
+
+**H2 (priority scorer edge case):** In Task 14, add defensive check:
+```python
+    elif target.last_success_at and target.next_scheduled_at:
+        # Only compute overdue if both values exist
+        overdue = ...
+```
+
+**H3 (Cloudscraper shared state):** In Task 16, create a new session per call:
+```python
+    async def fetch(self, url, timeout_s=30, user_agent=None):
+        scraper = cs.create_scraper(browser={"browser": "chrome", "platform": "windows"})
+        if user_agent:
+            scraper.headers["User-Agent"] = user_agent
+        # ... use scraper, then scraper.close()
+```
+
+**H4 (scrape_attempts indexes):** In Task 3, add to ScrapeAttempt model:
+```python
+    __table_args__ = (
+        Index("idx_attempts_run", "run_id"),
+        Index("idx_attempts_target", "target_id", created_at.desc()),
+    )
+```
+
+**H6 (Camoufox skeleton):** For Task 20:
+```python
+class CamoufoxBrowser(BrowserPort):
+    @property
+    def browser_name(self) -> str:
+        return "camoufox"
+
+    async def render(self, url, timeout_s=60, fingerprint=None, wait_for_selector=None):
+        from camoufox.async_api import AsyncCamoufox
+        config = fingerprint or {}
+        async with AsyncCamoufox(config=config, headless=True) as browser:
+            page = await browser.new_page()
+            await page.goto(url, timeout=timeout_s * 1000)
+            if wait_for_selector:
+                await page.wait_for_selector(wait_for_selector, timeout=timeout_s * 1000)
+            html = await page.content()
+            content_hash = hashlib.sha256(html.encode()).hexdigest()[:64]
+            return BrowserResult(html=html, status_code=200, url_final=page.url,
+                                 duration_ms=0, content_hash=content_hash)
+```
+
+For Task 21 (SeleniumBase):
+```python
+class SeleniumBaseBrowser(BrowserPort):
+    @property
+    def browser_name(self) -> str:
+        return "seleniumbase"
+
+    async def render(self, url, timeout_s=60, fingerprint=None, wait_for_selector=None):
+        import asyncio
+        def _sync_render():
+            from seleniumbase import Driver
+            driver = Driver(uc=True, headless=True)
+            try:
+                driver.get(url)
+                if wait_for_selector:
+                    driver.wait_for_element(wait_for_selector, timeout=timeout_s)
+                return driver.page_source
+            finally:
+                driver.quit()
+        html = await asyncio.to_thread(_sync_render)
+        content_hash = hashlib.sha256(html.encode()).hexdigest()[:64]
+        return BrowserResult(html=html, status_code=200, url_final=url,
+                             duration_ms=0, content_hash=content_hash)
+```
+
+**M3 (pyproject.toml syntax):** Use the array format matching existing style:
+```toml
+"cloudscraper>=1.2.0",
+"nodriver>=0.38.0",
+"camoufox>=0.4.0",
+"seleniumbase>=4.30.0",
+"crawl4ai>=0.4.0",
+"browserforge>=1.1.0",
+"fake-useragent>=1.5.0",
+"protego>=0.3.0",
+"scrapling[all]>=0.4.0",
+"typer>=0.12.0",
+"rich>=13.7.0",
+"openpyxl>=3.1.0",
+```
+
+**M5 (ETag/If-Modified-Since):** Explicitly deferred to Phase 3. Add note to Task 16:
+> Note: Conditional requests (ETag/If-Modified-Since) are deferred to Phase 3. Adapters compute content_hash for change detection but do not send conditional headers yet.
+
+**M6 (robots.txt):** Explicitly deferred to Phase 3. Add note to Task 25:
+> Note: robots.txt checking via Protego is deferred to Phase 3. The library is installed but not yet wired into the execution loop. The rate limiter provides safety in the interim.
