@@ -1,0 +1,277 @@
+---
+# Pre-configured employer portal mappings for major tech companies.
+# Each entry defines the ATS type, portal URL, CSS selectors, and known custom questions.
+
+employers:
+  - name: google
+    display_name: Google
+    ats_type: workday
+    portal_url: https://careers.google.com/jobs/
+    form_mappings:
+      first_name: "input[data-automation-id='legalNameSection_firstName']"
+      last_name: "input[data-automation-id='legalNameSection_lastName']"
+      email: "input[data-automation-id='email']"
+      phone: "input[data-automation-id='phone-number']"
+      address: "input[data-automation-id='addressSection_addressLine1']"
+      city: "input[data-automation-id='addressSection_city']"
+      state: "input[data-automation-id='addressSection_countryRegion']"
+      zip: "input[data-automation-id='addressSection_postalCode']"
+      resume: "input[data-automation-id='file-upload-input-ref']"
+      linkedin: "input[aria-label*='LinkedIn']"
+      website: "input[aria-label*='Website']"
+    custom_questions:
+      - key: work_authorization
+        question: "Are you legally authorized to work in the United States?"
+        type: yes_no
+      - key: requires_sponsorship
+        question: "Will you now or in the future require sponsorship for an employment visa?"
+        type: yes_no
+      - key: why_google
+        question: "Why do you want to work at Google?"
+        type: essay
+
+  - name: microsoft
+    display_name: Microsoft
+    ats_type: workday
+    portal_url: https://careers.microsoft.com/
+    form_mappings:
+      first_name: "input[aria-label='First Name']"
+      last_name: "input[aria-label='Last Name']"
+      email: "input[aria-label='Email']"
+      phone: "input[aria-label='Phone']"
+      linkedin: "input[aria-label*='LinkedIn']"
+      resume: "input[type='file'][accept*='pdf']"
+      city: "input[aria-label='City']"
+      state: "input[aria-label='State/Province']"
+      country: "select[aria-label='Country']"
+    custom_questions:
+      - key: work_authorization
+        question: "Are you authorized to work in the country for which you are applying?"
+        type: yes_no
+      - key: requires_sponsorship
+        question: "Will you require sponsorship to work in this location?"
+        type: yes_no
+      - key: disability_status
+        question: "Do you have a disability?"
+        type: short_answer
+      - key: veteran_status
+        question: "Are you a veteran?"
+        type: yes_no
+
+  - name: amazon
+    display_name: Amazon
+    ats_type: workday
+    portal_url: https://www.amazon.jobs/
+    form_mappings:
+      first_name: "input[id*='firstName'], input[name*='firstName']"
+      last_name: "input[id*='lastName'], input[name*='lastName']"
+      email: "input[id*='email'], input[type='email']"
+      phone: "input[id*='phone'], input[type='tel']"
+      resume: "input[type='file']"
+      linkedin: "input[placeholder*='LinkedIn']"
+      address: "input[id*='address'], input[name*='address']"
+      city: "input[id*='city'], input[name*='city']"
+      state: "select[id*='state'], select[name*='state']"
+      zip: "input[id*='zip'], input[id*='postal']"
+    custom_questions:
+      - key: work_authorization
+        question: "Are you legally authorized to work in the United States?"
+        type: yes_no
+      - key: requires_sponsorship
+        question: "Will you now or in the future require immigration sponsorship?"
+        type: yes_no
+      - key: amazon_leadership
+        question: "Describe a situation where you demonstrated one of Amazon's Leadership Principles."
+        type: essay
+      - key: years_experience
+        question: "How many years of relevant experience do you have?"
+        type: short_answer
+
+  - name: meta
+    display_name: Meta
+    ats_type: greenhouse
+    portal_url: https://www.metacareers.com/
+    form_mappings:
+      first_name: "input#first_name, input[name='first_name']"
+      last_name: "input#last_name, input[name='last_name']"
+      email: "input#email, input[name='email']"
+      phone: "input#phone, input[name='phone']"
+      resume: "input[type='file']"
+      linkedin: "input[name*='linkedin'], input[placeholder*='LinkedIn']"
+      github: "input[name*='github'], input[placeholder*='GitHub']"
+      website: "input[name*='website'], input[placeholder*='website']"
+      location: "input[name='location'], input[placeholder*='location']"
+    custom_questions:
+      - key: work_authorization
+        question: "Are you legally authorized to work in the United States?"
+        type: yes_no
+      - key: requires_sponsorship
+        question: "Do you require visa sponsorship now or in the future?"
+        type: yes_no
+      - key: why_meta
+        question: "Why do you want to work at Meta?"
+        type: essay
+      - key: diversity
+        question: "How do you think about diversity and inclusion in the workplace?"
+        type: essay
+
+  - name: apple
+    display_name: Apple
+    ats_type: workday
+    portal_url: https://jobs.apple.com/
+    form_mappings:
+      first_name: "input[data-automation-id='legalNameSection_firstName']"
+      last_name: "input[data-automation-id='legalNameSection_lastName']"
+      email: "input[data-automation-id='email']"
+      phone: "input[data-automation-id='phone-number']"
+      resume: "input[data-automation-id='file-upload-input-ref']"
+      linkedin: "input[aria-label*='LinkedIn Profile']"
+      address: "input[data-automation-id='addressSection_addressLine1']"
+      city: "input[data-automation-id='addressSection_city']"
+    custom_questions:
+      - key: work_authorization
+        question: "Are you legally authorized to work in the country where this position is located?"
+        type: yes_no
+      - key: requires_sponsorship
+        question: "Will you now or in the future require Apple to sponsor you for employment authorization?"
+        type: yes_no
+      - key: innovation
+        question: "Describe a time you had to think differently to solve a problem."
+        type: essay
+
+  - name: netflix
+    display_name: Netflix
+    ats_type: lever
+    portal_url: https://jobs.netflix.com/
+    form_mappings:
+      name: "input[name='name'], input[placeholder*='Full Name']"
+      email: "input[name='email'], input[type='email']"
+      phone: "input[name='phone'], input[type='tel']"
+      resume: "input[type='file']"
+      linkedin: "input[name='urls[LinkedIn]'], input[placeholder*='LinkedIn']"
+      github: "input[name='urls[GitHub]'], input[placeholder*='GitHub']"
+      website: "input[name='urls[Portfolio]'], input[placeholder*='Portfolio']"
+      location: "input[name='location'], input[placeholder*='location']"
+      org: "input[name='org'], input[placeholder*='company']"
+    custom_questions:
+      - key: work_authorization
+        question: "Are you legally authorized to work in the United States?"
+        type: yes_no
+      - key: culture_fit
+        question: "What excites you about working at Netflix?"
+        type: essay
+      - key: freedom_responsibility
+        question: "Describe how you embody the Netflix culture of freedom and responsibility."
+        type: essay
+
+  - name: salesforce
+    display_name: Salesforce
+    ats_type: workday
+    portal_url: https://salesforce.wd12.myworkdayjobs.com/
+    form_mappings:
+      first_name: "input[data-automation-id='legalNameSection_firstName']"
+      last_name: "input[data-automation-id='legalNameSection_lastName']"
+      email: "input[data-automation-id='email']"
+      phone: "input[data-automation-id='phone-number']"
+      resume: "input[data-automation-id='file-upload-input-ref']"
+      linkedin: "input[aria-label*='LinkedIn']"
+      address: "input[data-automation-id='addressSection_addressLine1']"
+      city: "input[data-automation-id='addressSection_city']"
+      state: "input[data-automation-id='addressSection_countryRegion']"
+    custom_questions:
+      - key: work_authorization
+        question: "Are you legally authorized to work in the United States?"
+        type: yes_no
+      - key: requires_sponsorship
+        question: "Will you require visa sponsorship now or in the future?"
+        type: yes_no
+      - key: ohana
+        question: "How do you demonstrate Salesforce's Ohana (family) culture?"
+        type: essay
+      - key: equality
+        question: "How have you contributed to equality and inclusion in your work?"
+        type: essay
+
+  - name: adobe
+    display_name: Adobe
+    ats_type: workday
+    portal_url: https://adobe.wd5.myworkdayjobs.com/
+    form_mappings:
+      first_name: "input[data-automation-id='legalNameSection_firstName']"
+      last_name: "input[data-automation-id='legalNameSection_lastName']"
+      email: "input[data-automation-id='email']"
+      phone: "input[data-automation-id='phone-number']"
+      resume: "input[data-automation-id='file-upload-input-ref']"
+      linkedin: "input[aria-label*='LinkedIn']"
+      portfolio: "input[aria-label*='Portfolio'], input[aria-label*='Behance']"
+      city: "input[data-automation-id='addressSection_city']"
+      country: "input[data-automation-id='addressSection_countryRegion']"
+    custom_questions:
+      - key: work_authorization
+        question: "Are you authorized to work lawfully in the United States?"
+        type: yes_no
+      - key: requires_sponsorship
+        question: "Do you now or will you in the future require sponsorship?"
+        type: yes_no
+      - key: creativity
+        question: "Describe a creative project you are most proud of."
+        type: essay
+      - key: design_thinking
+        question: "How do you approach design thinking in your work?"
+        type: essay
+
+  - name: ibm
+    display_name: IBM
+    ats_type: greenhouse
+    portal_url: https://www.ibm.com/careers/
+    form_mappings:
+      first_name: "input#first_name, input[data-qa='input-first-name']"
+      last_name: "input#last_name, input[data-qa='input-last-name']"
+      email: "input#email, input[data-qa='input-email']"
+      phone: "input#phone, input[data-qa='input-phone']"
+      resume: "input[type='file']"
+      linkedin: "input[data-qa*='linkedin'], input[placeholder*='LinkedIn']"
+      location: "input[data-qa='input-location']"
+      education: "select[data-qa*='education'], select[name*='education']"
+    custom_questions:
+      - key: work_authorization
+        question: "Are you authorized to work in the country where this position is based?"
+        type: yes_no
+      - key: requires_sponsorship
+        question: "Do you require sponsorship to work in this location now or in the future?"
+        type: yes_no
+      - key: ibm_values
+        question: "How do IBM's values align with your own?"
+        type: essay
+      - key: innovation_example
+        question: "Provide an example of how you have driven innovation in a previous role."
+        type: essay
+
+  - name: oracle
+    display_name: Oracle
+    ats_type: workday
+    portal_url: https://oracle.taleo.net/careers/
+    form_mappings:
+      first_name: "input[id*='firstName'], input[name*='FirstName']"
+      last_name: "input[id*='lastName'], input[name*='LastName']"
+      email: "input[id*='email'], input[name*='Email']"
+      phone: "input[id*='phone'], input[name*='Phone']"
+      resume: "input[type='file']"
+      linkedin: "input[placeholder*='LinkedIn'], input[name*='linkedin']"
+      address: "input[id*='Address1'], input[name*='Address1']"
+      city: "input[id*='City'], input[name*='City']"
+      state: "select[id*='State'], select[name*='State']"
+      zip: "input[id*='Zip'], input[name*='Zip']"
+    custom_questions:
+      - key: work_authorization
+        question: "Are you legally authorized to work in the United States on a full-time basis?"
+        type: yes_no
+      - key: requires_sponsorship
+        question: "Will you now or in the future require Oracle to commence a visa or employment authorization?"
+        type: yes_no
+      - key: technical_experience
+        question: "Describe your most significant technical achievement."
+        type: essay
+      - key: cloud_experience
+        question: "How much experience do you have with cloud technologies?"
+        type: short_answer
