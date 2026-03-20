@@ -45,8 +45,19 @@ class ScraplingFetcher(FetcherPort, BrowserPort):
         if not SCRAPLING_AVAILABLE:
             raise RuntimeError("scrapling not installed")
         start = time.monotonic()
+        # Note: Fetcher() does not accept a user_agent constructor arg.
+        # The scrapling Fetcher manages its own UA string internally;
+        # the caller-supplied user_agent is therefore intentionally ignored.
         fetcher = Fetcher()
-        resp = await asyncio.to_thread(fetcher.get, url, timeout=timeout_s)
+        kwargs: dict = {"timeout": timeout_s}
+        # Attempt to request Chrome-like TLS fingerprinting when supported.
+        try:
+            resp = await asyncio.to_thread(
+                fetcher.get, url, **kwargs, impersonate="chrome",
+            )
+        except TypeError:
+            # Older scrapling versions may not support the impersonate kwarg.
+            resp = await asyncio.to_thread(fetcher.get, url, **kwargs)
         duration = int((time.monotonic() - start) * 1000)
         html = resp.text if hasattr(resp, "text") else str(resp)
         content_hash = hashlib.sha256(html.encode()).hexdigest()[:64]
@@ -69,6 +80,13 @@ class ScraplingFetcher(FetcherPort, BrowserPort):
         if not SCRAPLING_AVAILABLE:
             raise RuntimeError("scrapling not installed")
         start = time.monotonic()
+        # Intentionally ignored parameters:
+        #   - wait_for_selector: StealthyFetcher.fetch() does not accept a
+        #     CSS selector to await; it uses its own internal page-ready
+        #     heuristic instead.
+        #   - fingerprint: StealthyFetcher already applies its own
+        #     anti-detection fingerprint; passing a custom one is not
+        #     supported by the library.
         fetcher = StealthyFetcher()
         resp = await asyncio.to_thread(fetcher.fetch, url, headless=True)
         duration = int((time.monotonic() - start) * 1000)
@@ -76,7 +94,11 @@ class ScraplingFetcher(FetcherPort, BrowserPort):
         content_hash = hashlib.sha256(html.encode()).hexdigest()[:64]
         return BrowserResult(
             html=html,
+            # status_code is hardcoded to 200 because StealthyFetcher does
+            # not expose the HTTP status on its response object.
             status_code=200,
+            # url_final echoes the request URL because StealthyFetcher does
+            # not expose the final (post-redirect) URL.
             url_final=url,
             duration_ms=duration,
             content_hash=content_hash,
