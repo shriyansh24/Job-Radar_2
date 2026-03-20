@@ -5,7 +5,6 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import (
-    Boolean,
     DateTime,
     ForeignKey,
     Index,
@@ -45,21 +44,6 @@ class ScraperRun(Base):
     started_at: Mapped[datetime] = mapped_column(server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column()
     duration_seconds: Mapped[Decimal | None] = mapped_column(Numeric)
-
-
-class CareerPage(Base):
-    __tablename__ = "career_pages"
-
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
-    url: Mapped[str] = mapped_column(Text, nullable=False)
-    company_name: Mapped[str | None] = mapped_column(String(300))
-    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    use_spider: Mapped[bool] = mapped_column(Boolean, default=False)
-    consecutive_failures: Mapped[int] = mapped_column(Integer, default=0)
-    last_scraped_at: Mapped[datetime | None] = mapped_column()
-    last_error: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
 class ScrapeTarget(Base):

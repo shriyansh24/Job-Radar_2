@@ -20,7 +20,7 @@ from app.pipeline.models import Application, ApplicationStatusHistory  # noqa: F
 from app.profile.models import UserProfile  # noqa: F401
 from app.resume.models import ResumeVersion  # noqa: F401
 from app.salary.models import SalaryCache  # noqa: F401
-from app.scraping.models import CareerPage, ScrapeAttempt, ScrapeTarget, ScraperRun  # noqa: F401
+from app.scraping.models import ScrapeAttempt, ScrapeTarget, ScraperRun  # noqa: F401
 from app.settings.models import SavedSearch  # noqa: F401
 from app.source_health.models import SourceCheckLog, SourceRegistry  # noqa: F401
 from app.notifications.models import Notification  # noqa: F401
