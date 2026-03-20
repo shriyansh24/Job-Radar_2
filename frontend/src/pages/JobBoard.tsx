@@ -1,5 +1,5 @@
 import { Briefcase, CaretLeft, CaretRight } from "@phosphor-icons/react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { jobsApi, type JobListParams } from "../api/jobs";
 import JobCard from "../components/jobs/JobCard";
@@ -41,6 +41,7 @@ export default function JobBoard() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['jobs', activeFilters],
     queryFn: () => jobsApi.list(activeFilters).then((r) => r.data),
+    placeholderData: keepPreviousData, // Keep old page data visible while new page loads
   });
 
   const { data: selectedJob, isLoading: isLoadingDetail } = useQuery({

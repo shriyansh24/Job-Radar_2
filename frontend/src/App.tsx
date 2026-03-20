@@ -30,8 +30,10 @@ const Targets = React.lazy(() => import("./pages/Targets"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,
+      staleTime: 5 * 60 * 1000,      // 5 minutes — data stays fresh during navigation
+      gcTime: 10 * 60 * 1000,        // 10 minutes — keep cache in memory longer
       retry: 1,
+      refetchOnWindowFocus: false,   // Don't refetch when user alt-tabs back
     },
   },
 });

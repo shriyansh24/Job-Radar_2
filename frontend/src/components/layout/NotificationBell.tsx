@@ -15,7 +15,7 @@ export default function NotificationBell() {
   const { data: countData } = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: notificationsApi.unreadCount,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000, // 1 minute — notification count doesn't need to be real-time
   });
 
   const { data: listData } = useQuery({

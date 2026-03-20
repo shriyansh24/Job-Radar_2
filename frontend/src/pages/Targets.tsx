@@ -11,7 +11,7 @@ import {
   Warning,
   XCircle,
 } from "@phosphor-icons/react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { useRef, useState } from "react";
 import {
@@ -679,6 +679,7 @@ export default function Targets() {
   const [showImport, setShowImport] = useState(false);
   const [page, setPage] = useState(0);
   const pageSize = 50;
+  // removed unused listRef — using window.scrollTo instead
 
   const [filters, setFilters] = useState<{
     priority_class: string;
@@ -704,6 +705,7 @@ export default function Targets() {
   const { data: targets, isLoading, isError } = useQuery({
     queryKey: ["targets", apiParams],
     queryFn: () => scraperApi.listTargets(apiParams).then((r) => r.data),
+    placeholderData: keepPreviousData, // Keep old page data visible while new page loads
   });
 
   const batchMutation = useMutation({
@@ -729,7 +731,8 @@ export default function Targets() {
     onError: () => toast("error", "Failed to update target"),
   });
 
-  const list = targets ?? [];
+  const list = targets?.items ?? [];
+  const totalCount = targets?.total ?? 0;
   const hasMore = list.length === pageSize;
 
   return (
@@ -744,7 +747,7 @@ export default function Targets() {
             Scrape Targets
             {!isLoading && (
               <span className="ml-2 text-base font-mono text-text-muted">
-                ({list.length})
+                ({totalCount})
               </span>
             )}
           </h1>
@@ -834,7 +837,7 @@ export default function Targets() {
               <div className="text-sm font-semibold text-text-primary">Targets</div>
               <div className="text-xs text-text-muted">
                 <span className="font-mono text-text-secondary">{list.length}</span>{" "}
-                shown
+                of {totalCount} shown
               </div>
             </div>
           </div>
@@ -883,7 +886,7 @@ export default function Targets() {
                 variant="ghost"
                 size="sm"
                 disabled={page === 0}
-                onClick={() => setPage((p) => p - 1)}
+                onClick={() => { setPage((p) => p - 1); window.scrollTo(0, 0); }}
                 icon={<CaretLeft size={14} weight="bold" />}
               >
                 Prev
@@ -892,7 +895,7 @@ export default function Targets() {
                 variant="ghost"
                 size="sm"
                 disabled={!hasMore}
-                onClick={() => setPage((p) => p + 1)}
+                onClick={() => { setPage((p) => p + 1); window.scrollTo(0, 0); }}
                 icon={<CaretRight size={14} weight="bold" />}
               >
                 Next

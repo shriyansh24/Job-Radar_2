@@ -16,8 +16,12 @@ import {
   ShieldCheck,
   SquaresFour,
 } from "@phosphor-icons/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { NavLink } from "react-router-dom";
+import { analyticsApi } from "../../api/analytics";
+import { jobsApi } from "../../api/jobs";
+import { pipelineApi } from "../../api/pipeline";
 import { cn } from "../../lib/utils";
 import { useUIStore } from "../../store/useUIStore";
 
@@ -42,6 +46,37 @@ const navItems = [
 
 export default function Sidebar() {
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
+  const queryClient = useQueryClient();
+
+  const prefetchMap: Record<string, () => void> = {
+    '/': () => queryClient.prefetchQuery({
+      queryKey: ['analytics', 'overview'],
+      queryFn: () => analyticsApi.overview().then((r) => r.data),
+      staleTime: 5 * 60 * 1000,
+    }),
+    '/jobs': () => queryClient.prefetchQuery({
+      queryKey: ['jobs', { page: 1, page_size: 20, sort_by: 'scraped_at', sort_order: 'desc' }],
+      queryFn: () => jobsApi.list({ page: 1, page_size: 20, sort_by: 'scraped_at', sort_order: 'desc' }).then((r) => r.data),
+      staleTime: 5 * 60 * 1000,
+    }),
+    '/pipeline': () => queryClient.prefetchQuery({
+      queryKey: ['pipeline'],
+      queryFn: () => pipelineApi.pipeline().then((r) => r.data),
+      staleTime: 5 * 60 * 1000,
+    }),
+    '/analytics': () => {
+      queryClient.prefetchQuery({
+        queryKey: ['analytics', 'overview'],
+        queryFn: () => analyticsApi.overview().then((r) => r.data),
+        staleTime: 5 * 60 * 1000,
+      });
+      queryClient.prefetchQuery({
+        queryKey: ['analytics', 'daily'],
+        queryFn: () => analyticsApi.daily(30).then((r) => r.data),
+        staleTime: 5 * 60 * 1000,
+      });
+    },
+  };
 
   return (
     <aside
@@ -72,6 +107,7 @@ export default function Sidebar() {
           <NavLink
             key={to}
             to={to}
+            onMouseEnter={() => prefetchMap[to]?.()}
             className={({ isActive }) =>
               cn(
                 "group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-md)] text-sm transition-[background-color,color,transform] duration-[var(--transition-fast)]",
