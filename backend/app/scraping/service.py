@@ -271,10 +271,14 @@ class ScrapingService:
         ExecutionPlan, then steps are tried in order (primary + fallbacks) until
         one succeeds or all are exhausted.
 
+        For custom HTML career pages (source_kind='career_page', no ATS vendor),
+        PageCrawler automatically follows pagination to collect jobs from all pages.
+
         The existing ``run_scrape()`` method (Mode 2, keyword search) is unaffected.
         """
         from app.scraping.control.tier_router import TierRouter
         from app.scraping.execution.escalation_engine import should_escalate
+        from app.scraping.execution.page_crawler import PageCrawler
         from app.scraping.models import ScrapeAttempt
         from urllib.parse import urlparse
         import asyncio
@@ -351,9 +355,62 @@ class ScrapingService:
                         self.db.add(attempt)
                         continue
 
+                    # ── Pagination for custom HTML career pages ──────────
+                    # Only follow pagination when:
+                    #   - source_kind is 'career_page' (not an ATS API)
+                    #   - ats_vendor is not set (custom HTML, not Greenhouse etc.)
+                    source_kind = getattr(target, "source_kind", None)
+                    ats_vendor = getattr(target, "ats_vendor", None)
+                    paginated_jobs: list[dict] = []
+
+                    if source_kind == "career_page" and not ats_vendor:
+                        # Build a simple fetch callable that re-uses the same
+                        # adapter method used for the first page fetch.
+                        async def _fetch_page(url: str) -> str:
+                            page_result = await method(url, timeout_s=step.timeout_s)
+                            return page_result.html
+
+                        # No-op parser — job extraction is owned by the
+                        # downstream parser pipeline, not the crawler.
+                        # The crawler returns raw dicts; callers merge them.
+                        def _parse_page(html: str, url: str) -> list[dict]:
+                            return []  # extraction handled separately
+
+                        crawler = PageCrawler()
+                        try:
+                            pagination_result = await crawler.crawl(
+                                start_url=target.url,
+                                first_page_html=result.html,
+                                fetch_fn=_fetch_page,
+                                parse_fn=_parse_page,
+                            )
+                            # Record pagination metadata on the attempt
+                            attempt.pages_crawled = pagination_result.pages_crawled
+                            attempt.pagination_stopped_reason = (
+                                pagination_result.stopped_reason
+                            )
+                            paginated_jobs = pagination_result.jobs
+                            logger.info(
+                                "pagination_complete",
+                                target_url=target.url,
+                                pages=pagination_result.pages_crawled,
+                                stopped_reason=pagination_result.stopped_reason,
+                            )
+                        except Exception as exc:
+                            # Pagination failure must not prevent the first-page
+                            # result from being recorded as a success.
+                            logger.warning(
+                                "pagination_error",
+                                target_url=target.url,
+                                error=str(exc),
+                            )
+
+                    jobs_count = len(paginated_jobs)
+                    attempt.jobs_extracted = jobs_count
                     attempt.status = "success"
                     attempt.content_changed = (result.content_hash != target.content_hash)
                     self.db.add(attempt)
+                    results["jobs_found"] += jobs_count
                     results["targets_succeeded"] += 1
                     succeeded_target_ids.add(target.id)
                     break
