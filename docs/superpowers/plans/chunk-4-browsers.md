@@ -433,18 +433,20 @@ git commit -m "feat: add browser pool with tier-separated concurrency governance
 ---
 
 ## Chunk Status
-- [ ] All tasks completed
-- [ ] All tests passing
-- [ ] Camoufox adapter implements BrowserPort
-- [ ] SeleniumBase adapter implements BrowserPort
-- [ ] Nodriver upgraded to reusable browser pattern
-- [ ] Browser pool uses separate Tier 2 / Tier 3 semaphores
-- [ ] scrape_attempts indexes applied
-- [ ] Domain semaphore cleanup working
+- [x] All tasks completed
+- [x] All tests passing (148 tests in scraping suite)
+- [x] Camoufox adapter implements BrowserPort (11 tests)
+- [x] SeleniumBase adapter implements BrowserPort (9 tests)
+- [x] Nodriver upgraded to reusable browser pattern (13 tests)
+- [x] Browser pool uses separate Tier 2 / Tier 3 semaphores (10 tests)
+- [x] scrape_attempts indexes applied (done in Chunk 1, commit 26c20af)
+- [x] Domain semaphore cleanup working
 
 ### Notes / Issues Encountered
-_Record any deviations from the plan, issues hit, or decisions made during implementation._
 
 | Date | Note |
 |------|------|
-| | |
+| 2026-03-19 | Task 21c (scrape_attempts indexes) was already done in Chunk 1 — skipped |
+| 2026-03-19 | SeleniumBase: extracted _import_driver() helper for testability |
+| 2026-03-19 | Camoufox/SeleniumBase not pip-installed (complex deps) — handled via ImportError |
+| 2026-03-19 | Nodriver: 13 tests updated for reusable browser pattern (close() now stops browser) |
