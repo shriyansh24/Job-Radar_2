@@ -14,6 +14,7 @@ import {
   Lock,
   MagnifyingGlass,
   Moon,
+  Play,
   Plus,
   Sun,
   ToggleLeft,
@@ -26,6 +27,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { adminApi } from "../api/admin";
+import { scraperApi } from "../api/scraper";
 import { settingsApi, type AppSettings, type SavedSearch } from "../api/settings";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
@@ -33,6 +35,7 @@ import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Input from "../components/ui/Input";
 import Modal from "../components/ui/Modal";
+import ScraperControlPanel from "../components/scraper/ScraperControlPanel";
 import Skeleton from "../components/ui/Skeleton";
 import { toast } from "../components/ui/Toast";
 import { useUIStore } from "../store/useUIStore";
@@ -205,6 +208,16 @@ export default function Settings() {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
     },
     onError: () => toast('error', 'Failed to update settings'),
+  });
+
+  // Trigger all scrapers mutation
+  const triggerAllMutation = useMutation({
+    mutationFn: () => scraperApi.triggerScraper(),
+    onSuccess: () => {
+      toast('success', 'Scrapers triggered successfully');
+      queryClient.invalidateQueries({ queryKey: ['scraper', 'runs'] });
+    },
+    onError: () => toast('error', 'Failed to trigger scrapers'),
   });
 
   const handleToggleNotifications = () => {
@@ -540,6 +553,26 @@ export default function Settings() {
               Clear All Data
             </Button>
           </div>
+        </Card>
+
+        {/* Scraper Controls */}
+        <Card className="lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+              <Play size={16} weight="bold" className="text-accent-primary" />
+              Scraper Controls
+            </h2>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => triggerAllMutation.mutate()}
+              loading={triggerAllMutation.isPending}
+              icon={<Play size={14} weight="bold" />}
+            >
+              Run All Scrapers
+            </Button>
+          </div>
+          <ScraperControlPanel />
         </Card>
 
         {/* Saved Searches */}

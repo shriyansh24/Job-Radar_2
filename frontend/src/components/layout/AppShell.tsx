@@ -2,6 +2,7 @@ import { List, Moon, SignOut, Sun, UserCircle } from "@phosphor-icons/react";
 import { Outlet } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useUIStore } from "../../store/useUIStore";
+import ScraperLog from "../scraper/ScraperLog";
 import NotificationBell from "./NotificationBell";
 import Sidebar from "./Sidebar";
 
@@ -71,6 +72,7 @@ export default function AppShell() {
           <Outlet />
         </main>
       </div>
+      <ScraperLog />
     </div>
   );
 }
