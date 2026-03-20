@@ -58,3 +58,142 @@ class CareerPageResponse(BaseModel):
     consecutive_failures: int
     created_at: datetime
     updated_at: datetime
+
+
+# ---------------------------------------------------------------------------
+# ScrapeTarget schemas
+# ---------------------------------------------------------------------------
+
+
+class ScrapeTargetResponse(BaseModel):
+    """Full response schema for a ScrapeTarget."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    user_id: uuid.UUID | None = None
+    url: str
+    company_name: str | None = None
+    company_domain: str | None = None
+    source_kind: str
+    ats_vendor: str | None = None
+    ats_board_token: str | None = None
+    start_tier: int
+    max_tier: int
+    priority_class: str
+    schedule_interval_m: int
+    enabled: bool
+    quarantined: bool
+    quarantine_reason: str | None = None
+    last_success_at: datetime | None = None
+    last_failure_at: datetime | None = None
+    last_success_tier: int | None = None
+    last_http_status: int | None = None
+    consecutive_failures: int
+    failure_count: int
+    next_scheduled_at: datetime | None = None
+    lca_filings: int | None = None
+    industry: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ScrapeTargetListResponse(BaseModel):
+    """Paginated list of ScrapeTargets."""
+
+    items: list[ScrapeTargetResponse]
+    total: int
+
+
+class ScrapeTargetUpdate(BaseModel):
+    """Partial update for a ScrapeTarget."""
+
+    priority_class: str | None = None
+    enabled: bool | None = None
+    start_tier: int | None = None
+    max_tier: int | None = None
+
+
+class ScrapeTargetImportItem(BaseModel):
+    """Single entry in a bulk import request."""
+
+    url: str
+    company_name: str | None = None
+    priority_class: str | None = None
+    ats_vendor: str | None = None
+
+
+class ScrapeTargetImportResponse(BaseModel):
+    """Result of a bulk import operation."""
+
+    imported: int
+    skipped: int
+    errors: list[str]
+
+
+class ScrapeTargetReleaseRequest(BaseModel):
+    """Optional body for releasing a quarantined target."""
+
+    force_tier: int | None = None
+
+
+# ---------------------------------------------------------------------------
+# ScrapeAttempt schemas
+# ---------------------------------------------------------------------------
+
+
+class ScrapeAttemptResponse(BaseModel):
+    """Response schema for a ScrapeAttempt."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    run_id: uuid.UUID | None = None
+    target_id: uuid.UUID
+    selected_tier: int
+    actual_tier_used: int
+    scraper_name: str
+    parser_name: str | None = None
+    status: str
+    http_status: int | None = None
+    duration_ms: int | None = None
+    retries: int
+    escalations: int
+    jobs_extracted: int
+    content_hash_before: str | None = None
+    content_hash_after: str | None = None
+    content_changed: bool | None = None
+    error_class: str | None = None
+    error_message: str | None = None
+    browser_used: bool
+    created_at: datetime
+
+
+class ScrapeTargetWithAttemptsResponse(BaseModel):
+    """Target plus its most recent attempts."""
+
+    target: ScrapeTargetResponse
+    recent_attempts: list[ScrapeAttemptResponse]
+
+
+# ---------------------------------------------------------------------------
+# Batch trigger schemas
+# ---------------------------------------------------------------------------
+
+
+class TriggerBatchRequest(BaseModel):
+    """Optional body for triggering a batch scrape run."""
+
+    priority_class: str | None = None
+    batch_size: int = 50
+
+
+class TriggerBatchResponse(BaseModel):
+    """Summary of a triggered batch scrape run."""
+
+    run_id: uuid.UUID | None = None
+    targets_attempted: int
+    targets_succeeded: int
+    targets_failed: int
+    jobs_found: int
+    errors: list[str]
