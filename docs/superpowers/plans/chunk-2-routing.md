@@ -533,16 +533,18 @@ git commit -m "feat: add priority scorer for scheduler"
 ---
 
 ## Chunk Status
-- [ ] All tasks completed
-- [ ] All tests passing
-- [ ] Execution ports defined (FetcherPort, BrowserPort, ExtractorPort)
-- [ ] TierRouter routes targets correctly (Tier 0 ATS, Tier 1-3 generic)
-- [ ] EscalationEngine detects all trigger conditions
-- [ ] PriorityScorer ranks targets for scheduling
+- [x] All tasks completed
+- [x] All tests passing (26 tests: 5 ports + 8 router + 7 escalation + 6 scorer)
+- [x] Execution ports defined (FetcherPort, BrowserPort, ExtractorPort)
+- [x] TierRouter routes targets correctly (Tier 0 ATS, Tier 1-3 generic)
+- [x] EscalationEngine detects all trigger conditions
+- [x] PriorityScorer ranks targets for scheduling
 
 ### Notes / Issues Encountered
-_Record any deviations from the plan, issues hit, or decisions made during implementation._
 
 | Date | Note |
 |------|------|
-| | |
+| 2026-03-19 | Plan intentionally omits `success_rate_bonus` from priority scorer (spec section 5.2) — requires historical attempt data not available through lightweight target interface. Deferred to integration chunk. |
+| 2026-03-19 | Plan intentionally omits "Tier 3 fails 3x -> quarantine" trigger from escalation engine (spec section 3.5) — quarantine logic belongs at orchestration layer, not in per-attempt decisions. |
+| 2026-03-19 | Plan intentionally omits "0 jobs -> AIScraper LLM fallback" trigger — LLM fallback is a separate execution step, not an escalation decision. |
+| 2026-03-19 | Code review found missing ExtractorPort abstractness test — fixed in commit 0344aa3. |
