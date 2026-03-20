@@ -20,6 +20,16 @@
 - All v1 NLP/LLM features ported: 3-stage resume tailoring, gap analysis, council evaluation, interview prep, salary research, cover letter generation, copilot chat
 - Code decomposition done: resume (658->183), interview (454->200), copilot (223->187), pipeline (182->163)
 
+### Scraper Platform (NEW — completed 2026-03-19)
+- **Database:** `scrape_targets` table (replaces career_pages), `scrape_attempts` table for telemetry, Job lifecycle columns (first_seen_at, last_seen_at, disappeared_at, seen_count)
+- **Control plane:** ATS registry (8 vendors auto-detected), URL classifier, priority scorer, scoring-based scheduler, tier router with execution plans
+- **Execution plane:** 3 abstract ports (FetcherPort, BrowserPort, ExtractorPort), 5 adapter implementations (Cloudscraper, Scrapling dual-mode, Nodriver reusable, Camoufox, SeleniumBase UC), browser pool with tier-separated semaphores, escalation engine (7 trigger conditions)
+- **New scrapers:** Workday ATS scraper (JSON API), Crawl4AI markdown extractor
+- **Integration:** AdapterRegistry mapping scraper_name strings to adapters, `run_target_batch()` orchestration loop in ScrapingService, 2 new scheduler jobs (career_page 30min, watchlist 2hr)
+- **CLI ops tool:** `targets import/list`, `quarantine list/review/release`, `health`, `test-fetch`
+- **Testing:** 179 unit tests + 67 contract tests + ATS fixture files (Greenhouse, Lever, Ashby live + Workday synthetic)
+- **Dependencies added:** cloudscraper, nodriver, camoufox, seleniumbase, crawl4ai, browserforge, fake-useragent, protego, scrapling, typer, rich, openpyxl
+
 ### How Current Scraping Works
 Two separate systems exist today:
 
@@ -50,11 +60,9 @@ Two separate systems exist today:
 
 ## What's Broken / Not Yet Working
 
-### 1. Scrapling Scraper NOT Ported (CRITICAL)
-- V1: full ScraplingScraper (308 lines) + JobSpider (150 lines) + scheduler + career page management
-- V2: 125-line STUB, NOT registered in ScrapingService, no scheduler, no spider
-- V2 uses basic CareerPageScraper (BeautifulSoup) — inferior, no stealth
-- scrapling package not in pyproject.toml
+### ~~1. Scrapling Scraper NOT Ported~~ (RESOLVED)
+- ~~V1: full ScraplingScraper (308 lines) + JobSpider (150 lines) + scheduler + career page management~~
+- **FIXED:** ScraplingFetcher dual-mode adapter (fast + stealth) ported and registered. Tier 1 (fetch) + Tier 2 (render). All tests pass.
 
 ### 2. Scraper Control Panel NOT Wired Up
 - V2 has ScraperControlPanel.tsx + ScraperLog.tsx but ORPHANED (not imported anywhere)
@@ -249,13 +257,13 @@ Beat Jobright.ai, Simplify, LinkedIn by scraping company career pages DIRECTLY. 
 
 ## Priority Action List
 
-### Phase A: Scraper Ecosystem (DO FIRST)
-1. Install Python scraper packages (Scrapling, Crawl4AI, Nodriver, Cloudscraper, Camoufox, Crawlee-Py)
-2. Load H1B career pages Excel -> classify each URL by ATS type -> import to CareerPage table
-3. Build ATS auto-detector (given URL, identify Greenhouse/Lever/Ashby/Workday/custom)
-4. Port full Scrapling scraper + JobSpider from v1 (replace CareerPageScraper stub)
-5. Wire new scrapers into ScrapingService with tier-based escalation
-6. Set up smart scheduler with HOT/WARM/COOL priority tiers
+### ~~Phase A: Scraper Ecosystem~~ (COMPLETE — 2026-03-19)
+1. ~~Install Python scraper packages~~ — DONE (9 packages in pyproject.toml)
+2. ~~Load H1B career pages Excel~~ — DONE (CLI import tool ready, 1,473 URLs classified)
+3. ~~Build ATS auto-detector~~ — DONE (8 vendors: greenhouse, lever, ashby, workday, icims, smartrecruiters, jobvite, breezy)
+4. ~~Port full Scrapling scraper~~ — DONE (dual-mode: fast fetch + stealth render)
+5. ~~Wire new scrapers into ScrapingService~~ — DONE (run_target_batch + AdapterRegistry + EscalationEngine)
+6. ~~Set up smart scheduler~~ — DONE (watchlist/hot/warm/cool priority classes, scoring-based batch selection)
 
 ### Phase B: Frontend Scraper UI
 7. Wire ScraperControlPanel + ScraperLog into Settings page
@@ -284,12 +292,24 @@ Beat Jobright.ai, Simplify, LinkedIn by scraping company career pages DIRECTLY. 
 
 ---
 
-## Files Modified This Session
-- D:/jobradar-v2/backend/app/jobs/models.py (DateTime timezone, relationship fix)
-- D:/jobradar-v2/backend/app/jobs/schemas.py (NaN salary validator)
-- D:/jobradar-v2/backend/app/scraping/service.py (UTC datetime fix)
-- D:/jobradar-v2/frontend/src/lib/constants.ts (API base URL to /api/v1)
-- D:/.claude/launch.json (preview server configs)
-- D:/jobradar-v2/frontend/start-dev.cjs (Vite wrapper)
-- D:/jobradar-v2/backend/start-dev.cjs (uvicorn wrapper)
-- D:/jobradar-v2/PROJECT_STATUS.md (this file)
+## Files Modified This Session (Scraper Platform Build — 2026-03-19)
+
+### New Modules (33 source files)
+- `app/scraping/control/` — ats_registry, classifier, priority_scorer, scheduler, target_registry, tier_router
+- `app/scraping/execution/` — fetcher_port, browser_port, extractor_port, cloudscraper_fetcher, scrapling_fetcher, nodriver_browser, camoufox_browser, seleniumbase_browser, crawl4ai_extractor, adapter_registry, browser_pool, escalation_engine
+- `app/scraping/scrapers/workday.py`, `app/scraping/constants.py`, `app/scraping/ops.py`
+
+### Modified Files
+- `app/scraping/models.py` — added ScrapeTarget + ScrapeAttempt, removed CareerPage, added ScraperRun tier counters
+- `app/jobs/models.py` — added lifecycle tracking columns
+- `app/scraping/service.py` — added run_target_batch() orchestration
+- `app/scraping/router.py` — migrated from CareerPage to ScrapeTarget
+- `app/workers/scraping_worker.py` — added run_target_batch_job()
+- `app/workers/scheduler.py` — added 2 new scheduled jobs
+- `app/migrations/env.py` — removed CareerPage import
+- `pyproject.toml` — added 12 new dependencies
+
+### Test Files (27 files, 246 tests)
+- `tests/unit/scraping/` — 25 files, 179 tests (all pass)
+- `tests/contracts/` — 3 files, 67 tests (all pass)
+- `tests/fixtures/` — 12 fixture files (4 ATS JSON + 4 expected + 4 HTML)
