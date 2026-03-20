@@ -257,6 +257,133 @@ class ScrapingService:
             "scraped_at": datetime.now(UTC),
         }
 
+    async def run_target_batch(
+        self,
+        targets: list,
+        run_id,
+        adapter_registry,
+        browser_pool,
+    ) -> dict:
+        """Execute scraping for a batch of targets using the tier-based pipeline.
+
+        This is the new entry point for Mode 1 (career page) and Mode 3 (watchlist)
+        scraping.  Each target is routed through the TierRouter to build an
+        ExecutionPlan, then steps are tried in order (primary + fallbacks) until
+        one succeeds or all are exhausted.
+
+        The existing ``run_scrape()`` method (Mode 2, keyword search) is unaffected.
+        """
+        from app.scraping.control.tier_router import TierRouter
+        from app.scraping.execution.escalation_engine import should_escalate
+        from app.scraping.models import ScrapeAttempt
+        from urllib.parse import urlparse
+        import asyncio
+
+        results: dict = {
+            "jobs_found": 0,
+            "targets_attempted": 0,
+            "targets_succeeded": 0,
+            "targets_failed": 0,
+            "errors": [],
+        }
+
+        async def process_target(target) -> None:
+            plan = TierRouter.route(target)
+            steps = [plan.primary_step] + list(plan.fallback_chain)
+
+            for step_idx, step in enumerate(steps):
+                attempt = ScrapeAttempt(
+                    run_id=run_id,
+                    target_id=target.id,
+                    selected_tier=plan.primary_tier,
+                    actual_tier_used=step.tier,
+                    scraper_name=step.scraper_name,
+                    parser_name=step.parser_name,
+                    escalations=step_idx,
+                )
+
+                try:
+                    binding = adapter_registry.get(step.scraper_name)
+                    _adapter, method = adapter_registry.resolve(step.scraper_name)
+
+                    # ── ATS / API path ──────────────────────────
+                    if binding.method == "fetch_jobs":
+                        token = target.ats_board_token or target.url
+                        jobs = await method(token)
+                        attempt.jobs_extracted = len(jobs) if isinstance(jobs, list) else 0
+                        attempt.status = "success"
+                        attempt.http_status = 200
+                        self.db.add(attempt)
+                        results["jobs_found"] += attempt.jobs_extracted
+                        results["targets_succeeded"] += 1
+                        break
+
+                    # ── Browser path ────────────────────────────
+                    if binding.is_browser:
+                        domain = urlparse(target.url).netloc
+                        async with browser_pool.acquire(step.tier, domain):
+                            result = await asyncio.wait_for(
+                                method(target.url, timeout_s=step.timeout_s),
+                                timeout=step.timeout_s + 5,
+                            )
+                    else:
+                        # ── Fetcher path ────────────────────────
+                        result = await method(target.url, timeout_s=step.timeout_s)
+
+                    # Evaluate fetcher / browser result
+                    attempt.http_status = result.status_code
+                    attempt.content_hash_after = result.content_hash
+                    attempt.duration_ms = result.duration_ms
+
+                    decision = should_escalate(
+                        status_code=result.status_code,
+                        jobs_found=0,  # job extraction happens downstream
+                        html_length=len(result.html),
+                        html_snippet=result.html[:2000],
+                    )
+                    if decision:
+                        attempt.status = "escalated"
+                        attempt.error_class = decision.reason.value
+                        self.db.add(attempt)
+                        continue
+
+                    attempt.status = "success"
+                    attempt.content_changed = (result.content_hash != target.content_hash)
+                    self.db.add(attempt)
+                    results["targets_succeeded"] += 1
+                    break
+
+                except asyncio.TimeoutError:
+                    attempt.status = "escalated"
+                    attempt.error_class = "timeout"
+                    self.db.add(attempt)
+                    continue
+
+                except Exception as exc:
+                    attempt.status = "failed"
+                    attempt.error_class = type(exc).__name__
+                    attempt.error_message = str(exc)[:500]
+                    self.db.add(attempt)
+                    continue
+
+            else:
+                # for/else: all steps exhausted without break
+                results["targets_failed"] += 1
+                company = getattr(target, "company_name", "unknown")
+                results["errors"].append(f"{company}: all tiers exhausted")
+
+            results["targets_attempted"] += 1
+
+        tasks = [process_target(t) for t in targets]
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+        try:
+            await self.db.commit()
+        except Exception:
+            await self.db.rollback()
+
+        return results
+
     async def close(self) -> None:
         """Cleanup all scraper resources."""
         for scraper in self._scrapers.values():

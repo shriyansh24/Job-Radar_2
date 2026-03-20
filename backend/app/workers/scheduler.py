@@ -17,7 +17,11 @@ from app.workers.phase7a_worker import (
     run_source_health_checks as run_phase7a_source_health,
     run_staleness_sweep,
 )
-from app.workers.scraping_worker import run_career_page_scrape, run_scheduled_scrape
+from app.workers.scraping_worker import (
+    run_career_page_scrape,
+    run_scheduled_scrape,
+    run_target_batch_job,
+)
 
 logger = structlog.get_logger()
 
@@ -130,6 +134,24 @@ def create_scheduler() -> AsyncIOScheduler:
         run_followup_reminders,
         IntervalTrigger(hours=1),
         id="followup_reminders",
+        replace_existing=True,
+    )
+
+    # Target-based pipeline: career page targets every 30 minutes
+    scheduler.add_job(
+        run_target_batch_job,
+        IntervalTrigger(minutes=30),
+        id="target_batch_career_page",
+        kwargs={"source_kind": "career_page", "batch_size": 50},
+        replace_existing=True,
+    )
+
+    # Target-based pipeline: watchlist targets every 2 hours
+    scheduler.add_job(
+        run_target_batch_job,
+        IntervalTrigger(hours=2),
+        id="target_batch_watchlist",
+        kwargs={"source_kind": "watchlist", "batch_size": 25},
         replace_existing=True,
     )
 
