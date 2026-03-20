@@ -222,8 +222,12 @@ def _register_default_adapters(registry, settings: Settings) -> None:
 
     try:
         from app.scraping.execution.scrapling_fetcher import ScraplingFetcher
-        registry.register_fetcher("scrapling_fast", ScraplingFetcher(stealth=False))
-        registry.register_browser("scrapling_stealth", ScraplingFetcher(stealth=True))
+        # ScraplingFetcher is a dual-mode adapter: same instance handles both
+        # fast HTTP fetching (scrapling_fast) and stealth browser rendering
+        # (scrapling_stealth).  No constructor arguments are accepted.
+        scrapling = ScraplingFetcher()
+        registry.register_fetcher("scrapling_fast", scrapling)
+        registry.register_browser("scrapling_stealth", scrapling)
     except Exception:
         pass
 
@@ -231,6 +235,18 @@ def _register_default_adapters(registry, settings: Settings) -> None:
     try:
         from app.scraping.execution.nodriver_browser import NodriverBrowser
         registry.register_browser("nodriver", NodriverBrowser())
+    except Exception:
+        pass
+
+    try:
+        from app.scraping.execution.camoufox_browser import CamoufoxBrowser
+        registry.register_browser("camoufox", CamoufoxBrowser())
+    except Exception:
+        pass
+
+    try:
+        from app.scraping.execution.seleniumbase_browser import SeleniumBaseBrowser
+        registry.register_browser("seleniumbase", SeleniumBaseBrowser())
     except Exception:
         pass
 
