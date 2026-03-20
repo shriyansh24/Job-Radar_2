@@ -131,7 +131,7 @@ backend/pyproject.toml                 — Add new dependencies
 | 3 | [chunk-3-adapters.md](chunk-3-adapters.md) | 15-19 | Dependencies, Cloudscraper, Scrapling, Nodriver, Workday adapters | Chunk 2 | - [x] Complete |
 | 4 | [chunk-4-browsers.md](chunk-4-browsers.md) | 20-22 | Camoufox, SeleniumBase, browser pool with tier-separated semaphores | Chunk 3 | - [x] Complete |
 | 5 | [chunk-5-integration.md](chunk-5-integration.md) | 23-25 (+24b) | Crawl4AI, adapter registry, scheduler, service integration | Chunk 4 | - [x] Complete |
-| 6 | [chunk-6-testing.md](chunk-6-testing.md) | 26-29 | Fixtures, contract tests, CLI completion, docs update | Chunk 5 | - [ ] Complete |
+| 6 | [chunk-6-testing.md](chunk-6-testing.md) | 26-29 | Fixtures, contract tests, CLI completion, docs update | Chunk 5 | - [x] Complete |
 
 **Total: 29 tasks (+1 inserted: 24b) across 6 chunks. Estimated time: 15-20 hours of focused work.**
 
@@ -144,3 +144,4 @@ backend/pyproject.toml                 — Add new dependencies
 | 2026-03-19 | Chunk 1 | All 10 tasks completed: ScrapeTarget/ScrapeAttempt models, Job lifecycle cols, ScraperRun tier counters, career_pages migration, constants, ATS registry, classifier, simhash fix, CLI import tool. 153 unit tests pass. | Combined related tasks into single commits for efficiency. Alembic autogenerate required manual trimming. |
 | 2026-03-19 | Chunk 2+3 | Parallel execution via worktrees. Chunk 2: execution ports, tier router, escalation engine, priority scorer (26 tests). Chunk 3: cloudscraper, scrapling, nodriver, workday adapters (39 tests). Both merged to master, 114 scraping tests pass. | Spec + code quality reviews applied post-merge. Fixed: missing ExtractorPort test, scrapling param forwarding, workday __init__ registration. |
 | 2026-03-19 | Chunk 4+5 | Parallel execution via worktrees. Chunk 4: Camoufox, SeleniumBase, Nodriver reusable upgrade, browser pool (42 tests). Chunk 5: Crawl4AI, scheduler, adapter registry, service integration (31 tests). All merged, 179 scraping tests pass. | Strict per-task subagent-driven-dev. Fixed: per-target success bug in compute_next_run. Integration tests deferred to Chunk 6. |
+| 2026-03-19 | Chunk 6 | Fixtures (3 live + 1 synthetic + 4 HTML), 67 contract tests (Greenhouse, Lever, Workday), CLI commands (quarantine list/review/release, health, test-fetch with 10 tests), PROJECT_STATUS.md updated. Total: 246 scraping tests pass. | HuggingFace/Stripe slugs 404'd — used GitLab/Plaid. Ashby GraphQL schema changed. UI integration held per user request. |
