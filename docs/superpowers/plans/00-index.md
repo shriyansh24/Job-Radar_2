@@ -126,7 +126,7 @@ backend/pyproject.toml                 — Add new dependencies
 
 | # | Chunk File | Tasks | What It Builds | Dependencies | Status |
 |---|-----------|-------|---------------|-------------|--------|
-| 1 | [chunk-1-foundation.md](chunk-1-foundation.md) | 1-10 | DB schema, constants, ATS registry, classifier, simhash fix, CLI import, 1,473 URLs | None (first chunk) | - [ ] Complete |
+| 1 | [chunk-1-foundation.md](chunk-1-foundation.md) | 1-10 | DB schema, constants, ATS registry, classifier, simhash fix, CLI import, 1,473 URLs | None (first chunk) | - [x] Complete |
 | 2 | [chunk-2-routing.md](chunk-2-routing.md) | 11-14 | Execution ports, tier router, escalation engine, priority scorer | Chunk 1 | - [ ] Complete |
 | 3 | [chunk-3-adapters.md](chunk-3-adapters.md) | 15-19 | Dependencies, Cloudscraper, Scrapling, Nodriver, Workday adapters | Chunk 2 | - [ ] Complete |
 | 4 | [chunk-4-browsers.md](chunk-4-browsers.md) | 20-22 | Camoufox, SeleniumBase, browser pool with tier-separated semaphores | Chunk 3 | - [ ] Complete |
@@ -141,4 +141,4 @@ backend/pyproject.toml                 — Add new dependencies
 
 | Date | Session | What was done | Decisions / Blockers |
 |------|---------|---------------|---------------------|
-| | | | |
+| 2026-03-19 | Chunk 1 | All 10 tasks completed: ScrapeTarget/ScrapeAttempt models, Job lifecycle cols, ScraperRun tier counters, career_pages migration, constants, ATS registry, classifier, simhash fix, CLI import tool. 153 unit tests pass. | Combined related tasks into single commits for efficiency. Alembic autogenerate required manual trimming. |

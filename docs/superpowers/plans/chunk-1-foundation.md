@@ -1163,14 +1163,19 @@ git commit -m "feat: add CLI ops tool with H1B career page import"
 ---
 
 ## Chunk Status
-- [ ] All tasks completed
-- [ ] All tests passing
-- [ ] Migration applied successfully
-- [ ] 1,473 URLs imported and classified
+- [x] All tasks completed
+- [x] All tests passing (153/153 unit tests pass)
+- [x] Migration applied successfully (4 migrations: scrape_targets+attempts, indexes, lifecycle+tier, career_pages migration)
+- [ ] 1,473 URLs imported and classified (CLI ready, import not yet run against real data)
 
 ### Notes / Issues Encountered
-_Record any deviations from the plan, issues hit, or decisions made during implementation._
 
 | Date | Note |
 |------|------|
-| | |
+| 2026-03-19 | Tasks 2+3 combined into single commit (models tightly coupled via FK) |
+| 2026-03-19 | Tasks 4+5 combined into single commit (both add columns to existing models) |
+| 2026-03-19 | Code review found missing indexes on scrape_attempts — fixed in separate commit |
+| 2026-03-19 | script.py.mako was missing from Alembic setup — created standard template |
+| 2026-03-19 | Alembic autogenerate detects many spurious type diffs (JSONB/JSON, TIMESTAMP) — manually trimmed all migrations |
+| 2026-03-19 | SQLAlchemy 2.0 mapped_column(default=X) sets SQL INSERT default, not Python __init__ default — tests adjusted accordingly |
+| 2026-03-19 | CareerPage schemas kept in schemas.py for API compatibility (renamed internally to use ScrapeTarget) |
