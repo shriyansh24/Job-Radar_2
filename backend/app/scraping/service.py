@@ -279,12 +279,15 @@ class ScrapingService:
         from urllib.parse import urlparse
         import asyncio
 
+        succeeded_target_ids: set = set()
+
         results: dict = {
             "jobs_found": 0,
             "targets_attempted": 0,
             "targets_succeeded": 0,
             "targets_failed": 0,
             "errors": [],
+            "succeeded_target_ids": succeeded_target_ids,
         }
 
         async def process_target(target) -> None:
@@ -316,6 +319,7 @@ class ScrapingService:
                         self.db.add(attempt)
                         results["jobs_found"] += attempt.jobs_extracted
                         results["targets_succeeded"] += 1
+                        succeeded_target_ids.add(target.id)
                         break
 
                     # ── Browser path ────────────────────────────
@@ -351,6 +355,7 @@ class ScrapingService:
                     attempt.content_changed = (result.content_hash != target.content_hash)
                     self.db.add(attempt)
                     results["targets_succeeded"] += 1
+                    succeeded_target_ids.add(target.id)
                     break
 
                 except asyncio.TimeoutError:

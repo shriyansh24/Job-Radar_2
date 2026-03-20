@@ -157,17 +157,13 @@ async def run_target_batch_job(
                     browser_pool=browser_pool,
                 )
 
-                # 4. Update target metadata based on results
+                # 4. Update target metadata based on per-target results
                 now = datetime.now(UTC)
+                succeeded_ids = results.get("succeeded_target_ids", set())
                 for target in due:
-                    succeeded = any(
-                        getattr(target, "_batch_success", False)
-                        for _ in [None]
-                    )
-                    # Simple heuristic: if target had no errors recorded, it succeeded
                     target.next_scheduled_at = compute_next_run(
                         target,
-                        success=(results["targets_failed"] == 0),
+                        success=(target.id in succeeded_ids),
                     )
 
                 await db.commit()
