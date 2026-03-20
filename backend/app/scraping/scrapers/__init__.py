@@ -11,6 +11,7 @@ from app.scraping.scrapers.content_hasher import ContentHasher
 from app.scraping.scrapers.detail_extractor import DetailPageExtractor
 from app.scraping.scrapers.scrapingbee import ScrapingBeeScraper
 from app.scraping.scrapers.scrapling import ScraplingScraper
+from app.scraping.scrapers.workday import WorkdayScraper
 
 __all__ = [
     "AIScraper",
@@ -19,4 +20,5 @@ __all__ = [
     "DetailPageExtractor",
     "ScrapingBeeScraper",
     "ScraplingScraper",
+    "WorkdayScraper",
 ]

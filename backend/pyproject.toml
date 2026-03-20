@@ -29,6 +29,15 @@ dependencies = [
     "typer>=0.12.0",
     "rich>=13.7.0",
     "openpyxl>=3.1.0",
+    "cloudscraper>=1.2.0",
+    "nodriver>=0.38.0",
+    "camoufox>=0.4.0",
+    "seleniumbase>=4.30.0",
+    "crawl4ai>=0.4.0",
+    "browserforge>=1.1.0",
+    "fake-useragent>=1.5.0",
+    "protego>=0.3.0",
+    "scrapling[all]>=0.4.0",
 ]
 
 [project.optional-dependencies]
