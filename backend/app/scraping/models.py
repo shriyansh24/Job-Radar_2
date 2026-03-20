@@ -103,6 +103,10 @@ class ScrapeTarget(Base):
 
 class ScrapeAttempt(Base):
     __tablename__ = "scrape_attempts"
+    __table_args__ = (
+        Index("idx_attempts_run", "run_id"),
+        Index("idx_attempts_target", "target_id", "created_at"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     run_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("scraper_runs.id"))
