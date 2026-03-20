@@ -39,6 +39,80 @@ export interface ScraperEvent {
   timestamp?: string;
 }
 
+export interface ScrapeTarget {
+  id: string;
+  url: string;
+  company_name: string | null;
+  company_domain: string | null;
+  source_kind: string;
+  ats_vendor: string | null;
+  ats_board_token: string | null;
+  start_tier: number;
+  max_tier: number;
+  priority_class: string;
+  schedule_interval_m: number;
+  enabled: boolean;
+  quarantined: boolean;
+  quarantine_reason: string | null;
+  last_success_at: string | null;
+  last_failure_at: string | null;
+  last_success_tier: number | null;
+  last_http_status: number | null;
+  content_hash: string | null;
+  consecutive_failures: number;
+  failure_count: number;
+  next_scheduled_at: string | null;
+  lca_filings: number | null;
+  industry: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScrapeAttempt {
+  id: string;
+  run_id: string | null;
+  target_id: string;
+  selected_tier: number;
+  actual_tier_used: number;
+  scraper_name: string;
+  parser_name: string | null;
+  status: string;
+  http_status: number | null;
+  duration_ms: number | null;
+  retries: number;
+  escalations: number;
+  jobs_extracted: number;
+  content_changed: boolean | null;
+  error_class: string | null;
+  error_message: string | null;
+  browser_used: boolean;
+  created_at: string;
+}
+
+export interface TargetWithAttempts extends ScrapeTarget {
+  recent_attempts: ScrapeAttempt[];
+}
+
+export interface ImportResult {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
+export interface TargetListParams {
+  priority_class?: string;
+  ats_vendor?: string;
+  quarantined?: boolean;
+  enabled?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface BatchTriggerParams {
+  priority_class?: string;
+  batch_size?: number;
+}
+
 export const scraperApi = {
   stream: () => `/api/v1/scraper/stream`,
   runs: () =>
@@ -51,4 +125,22 @@ export const scraperApi = {
     apiClient.patch<CareerPage>(`/scraper/career-pages/${id}`, data),
   deleteCareerPage: (id: string) =>
     apiClient.delete(`/scraper/career-pages/${id}`),
+  triggerScraper: () =>
+    apiClient.post<ScraperRunResult>('/scraper/run'),
+  listTargets: (params?: TargetListParams) =>
+    apiClient.get<ScrapeTarget[]>('/scraper/targets', { params }),
+  getTarget: (id: string) =>
+    apiClient.get<TargetWithAttempts>(`/scraper/targets/${id}`),
+  importTargets: (targets: Partial<ScrapeTarget>[]) =>
+    apiClient.post<ImportResult>('/scraper/targets/import', targets),
+  triggerTarget: (id: string) =>
+    apiClient.post<ScraperRunResult>(`/scraper/targets/${id}/trigger`),
+  updateTarget: (id: string, data: Partial<ScrapeTarget>) =>
+    apiClient.patch<ScrapeTarget>(`/scraper/targets/${id}`, data),
+  releaseTarget: (id: string, opts?: { reason?: string }) =>
+    apiClient.post<ScrapeTarget>(`/scraper/targets/${id}/release`, opts),
+  listAttempts: (params?: { target_id?: string; run_id?: string; limit?: number; offset?: number }) =>
+    apiClient.get<ScrapeAttempt[]>('/scraper/attempts', { params }),
+  triggerBatch: (params?: BatchTriggerParams) =>
+    apiClient.post<ScraperRunResult>('/scraper/trigger-batch', params),
 };
