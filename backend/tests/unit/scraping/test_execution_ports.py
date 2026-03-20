@@ -29,3 +29,9 @@ def test_browser_port_is_abstract():
     import pytest
     with pytest.raises(TypeError):
         BrowserPort()
+
+
+def test_extractor_port_is_abstract():
+    import pytest
+    with pytest.raises(TypeError):
+        ExtractorPort()
