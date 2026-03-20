@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import uuid
+
 import structlog
 
 from app.config import Settings
@@ -89,3 +91,159 @@ async def run_career_page_scrape(ctx: dict | None = None) -> None:
             await scraper.close()
         except Exception as e:
             logger.error("career_page_worker_failed", error=str(e))
+
+
+async def run_target_batch_job(
+    source_kind: str = "career_page",
+    batch_size: int = 50,
+    ctx: dict | None = None,
+) -> None:
+    """Background job: run the tier-based target pipeline for due targets.
+
+    Selects targets that are due for scraping via ``select_due_targets()``,
+    then runs them through ``ScrapingService.run_target_batch()``.
+
+    Args:
+        source_kind: Filter targets by source_kind (e.g. "career_page", "watchlist").
+        batch_size: Maximum number of targets to process per tick.
+        ctx: APScheduler job context (unused, present for signature compat).
+    """
+    settings = Settings()
+    async with async_session_factory() as db:
+        try:
+            from datetime import UTC, datetime
+
+            from sqlalchemy import select
+
+            from app.scraping.control.scheduler import compute_next_run, select_due_targets
+            from app.scraping.execution.adapter_registry import AdapterRegistry
+            from app.scraping.models import ScrapeTarget
+
+            # 1. Load enabled, non-quarantined targets of the requested kind
+            all_targets = (
+                await db.scalars(
+                    select(ScrapeTarget).where(
+                        ScrapeTarget.source_kind == source_kind,
+                        ScrapeTarget.enabled == True,  # noqa: E712
+                        ScrapeTarget.quarantined == False,  # noqa: E712
+                    )
+                )
+            ).all()
+
+            due = select_due_targets(list(all_targets), batch_size=batch_size)
+            if not due:
+                logger.info("target_batch_no_due_targets", source_kind=source_kind)
+                return
+
+            # 2. Build adapter registry and a lightweight browser pool stub
+            #    (BrowserPool is provided by Chunk 4; if unavailable, use a no-op)
+            adapter_registry = AdapterRegistry()
+            _register_default_adapters(adapter_registry, settings)
+
+            try:
+                from app.scraping.execution.browser_pool import BrowserPool
+                browser_pool = BrowserPool()
+            except ImportError:
+                browser_pool = _NoOpBrowserPool()
+
+            # 3. Run the batch
+            run_id = uuid.uuid4()
+            service = ScrapingService(db, settings)
+            try:
+                results = await service.run_target_batch(
+                    targets=due,
+                    run_id=run_id,
+                    adapter_registry=adapter_registry,
+                    browser_pool=browser_pool,
+                )
+
+                # 4. Update target metadata based on per-target results
+                now = datetime.now(UTC)
+                succeeded_ids = results.get("succeeded_target_ids", set())
+                for target in due:
+                    target.next_scheduled_at = compute_next_run(
+                        target,
+                        success=(target.id in succeeded_ids),
+                    )
+
+                await db.commit()
+
+                logger.info(
+                    "target_batch_completed",
+                    source_kind=source_kind,
+                    run_id=str(run_id),
+                    attempted=results["targets_attempted"],
+                    succeeded=results["targets_succeeded"],
+                    failed=results["targets_failed"],
+                    jobs_found=results["jobs_found"],
+                )
+            finally:
+                await service.close()
+
+        except Exception as e:
+            logger.error(
+                "target_batch_job_failed", source_kind=source_kind, error=str(e)
+            )
+
+
+def _register_default_adapters(registry, settings: Settings) -> None:
+    """Register available adapters into the registry based on installed packages."""
+    # ATS adapters
+    try:
+        from app.scraping.scrapers.greenhouse import GreenhouseScraper
+        registry.register_ats("greenhouse", GreenhouseScraper(settings))
+    except Exception:
+        pass
+
+    try:
+        from app.scraping.scrapers.lever import LeverScraper
+        registry.register_ats("lever", LeverScraper(settings))
+    except Exception:
+        pass
+
+    try:
+        from app.scraping.scrapers.ashby import AshbyScraper
+        registry.register_ats("ashby", AshbyScraper(settings))
+    except Exception:
+        pass
+
+    try:
+        from app.scraping.scrapers.workday import WorkdayScraper
+        registry.register_ats("workday", WorkdayScraper(settings))
+    except Exception:
+        pass
+
+    # Fetchers
+    try:
+        from app.scraping.execution.cloudscraper_fetcher import CloudscraperFetcher
+        registry.register_fetcher("cloudscraper", CloudscraperFetcher())
+    except Exception:
+        pass
+
+    try:
+        from app.scraping.execution.scrapling_fetcher import ScraplingFetcher
+        registry.register_fetcher("scrapling_fast", ScraplingFetcher(stealth=False))
+        registry.register_browser("scrapling_stealth", ScraplingFetcher(stealth=True))
+    except Exception:
+        pass
+
+    # Browsers
+    try:
+        from app.scraping.execution.nodriver_browser import NodriverBrowser
+        registry.register_browser("nodriver", NodriverBrowser())
+    except Exception:
+        pass
+
+
+class _NoOpBrowserPool:
+    """Stub browser pool used when the real BrowserPool (Chunk 4) is not available."""
+
+    class _NoOpContext:
+        async def __aenter__(self):
+            return None
+
+        async def __aexit__(self, *args):
+            pass
+
+    def acquire(self, tier: int, domain: str):
+        return self._NoOpContext()
