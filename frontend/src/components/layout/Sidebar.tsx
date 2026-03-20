@@ -4,6 +4,7 @@ import {
   Buildings,
   ChartBar,
   ChatsCircle,
+  Crosshair,
   CurrencyDollar,
   FileText,
   GearSix,
@@ -35,6 +36,7 @@ const navItems = [
   { to: "/sources", icon: Heartbeat, label: "Sources" },
   { to: "/canonical-jobs", icon: GitMerge, label: "Canonical Jobs" },
   { to: "/search-expansion", icon: MagnifyingGlassPlus, label: "Search Expansion" },
+  { to: "/targets", icon: Crosshair, label: "Targets" },
   { to: "/admin", icon: ShieldCheck, label: "Admin" },
 ];
 

@@ -25,6 +25,7 @@ const Companies = React.lazy(() => import("./pages/Companies"));
 const Sources = React.lazy(() => import("./pages/Sources"));
 const CanonicalJobs = React.lazy(() => import("./pages/CanonicalJobs"));
 const SearchExpansion = React.lazy(() => import("./pages/SearchExpansion"));
+const Targets = React.lazy(() => import("./pages/Targets"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,6 +68,7 @@ export default function App() {
                 <Route path="/sources" element={<Sources />} />
                 <Route path="/canonical-jobs" element={<CanonicalJobs />} />
                 <Route path="/search-expansion" element={<SearchExpansion />} />
+                <Route path="/targets" element={<Targets />} />
               </Route>
             </Routes>
           </Suspense>
