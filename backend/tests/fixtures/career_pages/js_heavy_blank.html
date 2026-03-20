@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DynamicCo Careers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+</head>
+<body>
+  <!-- This page requires JavaScript to render job listings -->
+  <!-- A static fetch will see only the empty shell below -->
+  <div id="root"></div>
+  <div id="app"></div>
+
+  <!-- React/Vue/Angular app bundle would load here -->
+  <script>
+    // Simulated SPA bootstrap - in reality this would be a large bundle
+    window.__INITIAL_STATE__ = {};
+    window.__API_BASE__ = '/api/v1';
+
+    // The actual job data would be fetched client-side via XHR/fetch
+    // e.g., fetch('/api/v1/jobs').then(r => r.json()).then(data => renderJobs(data))
+  </script>
+  <script type="module" src="/assets/app.abc123.js"></script>
+
+  <noscript>
+    <p>This careers page requires JavaScript to be enabled. Please enable JavaScript in your browser settings.</p>
+  </noscript>
+</body>
+</html>

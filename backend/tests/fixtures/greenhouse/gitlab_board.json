@@ -1,0 +1,167 @@
+{
+  "jobs": [
+    {
+      "absolute_url": "https://job-boards.greenhouse.io/gitlab/jobs/8437754002",
+      "data_compliance": [
+        {
+          "type": "gdpr",
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "demographic_data_consent_applies": false
+        }
+      ],
+      "internal_job_id": 6370471002,
+      "location": {
+        "name": "Remote, Canada; Remote, US"
+      },
+      "metadata": [
+        {
+          "id": 4595831002,
+          "name": "Quota Coverage Type",
+          "value": "n/a",
+          "value_type": "single_select"
+        }
+      ],
+      "id": 8437754002,
+      "updated_at": "2026-03-10T09:43:33-04:00",
+      "requisition_id": "6000",
+      "title": "Backend Engineer, Knowledge Graph (Rust)",
+      "company_name": "GitLab",
+      "first_published": "2026-03-06T12:27:06-05:00",
+      "language": "en"
+    },
+    {
+      "absolute_url": "https://job-boards.greenhouse.io/gitlab/jobs/8442330002",
+      "data_compliance": [
+        {
+          "type": "gdpr",
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "demographic_data_consent_applies": false
+        }
+      ],
+      "internal_job_id": 6372287002,
+      "location": {
+        "name": "Remote, North America"
+      },
+      "metadata": [
+        {
+          "id": 4595831002,
+          "name": "Quota Coverage Type",
+          "value": "n/a",
+          "value_type": "single_select"
+        }
+      ],
+      "id": 8442330002,
+      "updated_at": "2026-03-10T12:00:05-04:00",
+      "requisition_id": "6017",
+      "title": "Billing Operations Analyst, West ",
+      "company_name": "GitLab",
+      "first_published": "2026-03-10T12:00:05-04:00",
+      "language": "en"
+    },
+    {
+      "absolute_url": "https://job-boards.greenhouse.io/gitlab/jobs/8439753002",
+      "data_compliance": [
+        {
+          "type": "gdpr",
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "demographic_data_consent_applies": false
+        }
+      ],
+      "internal_job_id": 6371337002,
+      "location": {
+        "name": "Remote, North America"
+      },
+      "metadata": [
+        {
+          "id": 4595831002,
+          "name": "Quota Coverage Type",
+          "value": "N/A",
+          "value_type": "single_select"
+        }
+      ],
+      "id": 8439753002,
+      "updated_at": "2026-03-06T16:19:38-05:00",
+      "requisition_id": "6007",
+      "title": "Business Development Representative",
+      "company_name": "GitLab",
+      "first_published": "2026-02-27T10:06:35-05:00",
+      "language": "en"
+    },
+    {
+      "absolute_url": "https://job-boards.greenhouse.io/gitlab/jobs/8414310002",
+      "data_compliance": [
+        {
+          "type": "gdpr",
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "demographic_data_consent_applies": false
+        }
+      ],
+      "internal_job_id": 6360952002,
+      "location": {
+        "name": "Remote, EMEA"
+      },
+      "metadata": [
+        {
+          "id": 4595831002,
+          "name": "Quota Coverage Type",
+          "value": "n/a",
+          "value_type": "single_select"
+        }
+      ],
+      "id": 8414310002,
+      "updated_at": "2026-03-06T16:19:38-05:00",
+      "requisition_id": "5938",
+      "title": "Business Systems Analyst, Marketing",
+      "company_name": "GitLab",
+      "first_published": "2026-02-10T18:11:50-05:00",
+      "language": "en"
+    },
+    {
+      "absolute_url": "https://job-boards.greenhouse.io/gitlab/jobs/8446714002",
+      "data_compliance": [
+        {
+          "type": "gdpr",
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "demographic_data_consent_applies": false
+        }
+      ],
+      "internal_job_id": 6374240002,
+      "location": {
+        "name": "Remote, Germany"
+      },
+      "metadata": [
+        {
+          "id": 4595831002,
+          "name": "Quota Coverage Type",
+          "value": "Account Executive",
+          "value_type": "single_select"
+        }
+      ],
+      "id": 8446714002,
+      "updated_at": "2026-03-11T16:13:46-04:00",
+      "requisition_id": "6028",
+      "title": "Commercial Account Executive - DACH",
+      "company_name": "GitLab",
+      "first_published": "2026-03-06T08:31:28-05:00",
+      "language": "en"
+    }
+  ],
+  "meta": {
+    "total": 166
+  }
+}

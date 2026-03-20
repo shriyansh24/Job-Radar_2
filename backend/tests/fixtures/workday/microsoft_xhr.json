@@ -1,0 +1,26 @@
+{
+  "total": 3,
+  "jobPostings": [
+    {
+      "title": "Software Engineer",
+      "locationsText": "Redmond, WA",
+      "postedOn": "2026-03-15",
+      "bulletFields": ["Full-time", "Engineering"],
+      "externalPath": "/job/Software-Engineer/12345"
+    },
+    {
+      "title": "Senior Data Scientist",
+      "locationsText": "Seattle, WA",
+      "postedOn": "2026-03-14",
+      "bulletFields": ["Full-time", "Data & AI"],
+      "externalPath": "/job/Senior-Data-Scientist/12346"
+    },
+    {
+      "title": "Product Manager",
+      "locationsText": "Remote",
+      "postedOn": "2026-03-13",
+      "bulletFields": ["Full-time", "Product Management"],
+      "externalPath": "/job/Product-Manager/12347"
+    }
+  ]
+}

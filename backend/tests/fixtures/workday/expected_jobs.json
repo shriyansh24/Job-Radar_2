@@ -1,0 +1,29 @@
+[
+  {
+    "title": "Software Engineer",
+    "company_name": "Microsoft",
+    "location": "Redmond, WA",
+    "source": "workday",
+    "external_id": "12345",
+    "employment_type": "Full-time",
+    "department": "Engineering"
+  },
+  {
+    "title": "Senior Data Scientist",
+    "company_name": "Microsoft",
+    "location": "Seattle, WA",
+    "source": "workday",
+    "external_id": "12346",
+    "employment_type": "Full-time",
+    "department": "Data & AI"
+  },
+  {
+    "title": "Product Manager",
+    "company_name": "Microsoft",
+    "location": "Remote",
+    "source": "workday",
+    "external_id": "12347",
+    "employment_type": "Full-time",
+    "department": "Product Management"
+  }
+]

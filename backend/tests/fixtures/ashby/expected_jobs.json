@@ -1,0 +1,29 @@
+[
+  {
+    "title": "Account Executive | Commercial",
+    "company_name": "Ramp",
+    "location": "New York, NY (HQ)",
+    "source": "ashby",
+    "external_id": "8c004352-f162-4d89-858f-75a649e77ec4",
+    "employment_type": "FullTime",
+    "compensation": "$138.8K - $212.1K"
+  },
+  {
+    "title": "Account Executive | Federal",
+    "company_name": "Ramp",
+    "location": "Washington, D.C.",
+    "source": "ashby",
+    "external_id": "f8e75f30-738c-4987-8e00-2837af8d8bf6",
+    "employment_type": "FullTime",
+    "compensation": "$321K - $442K"
+  },
+  {
+    "title": "Account Executive | Mid-Market",
+    "company_name": "Ramp",
+    "location": "New York, NY (HQ)",
+    "source": "ashby",
+    "external_id": "f7c4de3c-1d64-42e9-8111-f38e265327d8",
+    "employment_type": "FullTime",
+    "compensation": "$177,400 - $270,950"
+  }
+]

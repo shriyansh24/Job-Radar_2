@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acme Corp Careers</title>
+</head>
+<body>
+  <header>
+    <h1>Acme Corp - Open Positions</h1>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/careers">Careers</a>
+      <a href="/about">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="job-listings">
+      <div class="job-card">
+        <h2><a href="/careers/senior-software-engineer">Senior Software Engineer</a></h2>
+        <p class="location">San Francisco, CA</p>
+        <p class="department">Engineering</p>
+        <p class="type">Full-time</p>
+        <p class="description">Join our engineering team to build next-generation cloud infrastructure.</p>
+      </div>
+
+      <div class="job-card">
+        <h2><a href="/careers/product-designer">Product Designer</a></h2>
+        <p class="location">Remote, US</p>
+        <p class="department">Design</p>
+        <p class="type">Full-time</p>
+        <p class="description">Shape the future of our product experience.</p>
+      </div>
+
+      <div class="job-card">
+        <h2><a href="/careers/data-analyst">Data Analyst</a></h2>
+        <p class="location">New York, NY</p>
+        <p class="department">Analytics</p>
+        <p class="type">Full-time</p>
+        <p class="description">Turn data into actionable insights for business growth.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- JSON-LD structured data for job postings -->
+  <script type="application/ld+json">
+  [
+    {
+      "@context": "https://schema.org/",
+      "@type": "JobPosting",
+      "title": "Senior Software Engineer",
+      "description": "Join our engineering team to build next-generation cloud infrastructure.",
+      "datePosted": "2026-03-10",
+      "validThrough": "2026-06-10",
+      "employmentType": "FULL_TIME",
+      "hiringOrganization": {
+        "@type": "Organization",
+        "name": "Acme Corp",
+        "sameAs": "https://www.acmecorp.example.com",
+        "logo": "https://www.acmecorp.example.com/logo.png"
+      },
+      "jobLocation": {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "123 Market St",
+          "addressLocality": "San Francisco",
+          "addressRegion": "CA",
+          "postalCode": "94105",
+          "addressCountry": "US"
+        }
+      },
+      "baseSalary": {
+        "@type": "MonetaryAmount",
+        "currency": "USD",
+        "value": {
+          "@type": "QuantitativeValue",
+          "minValue": 150000,
+          "maxValue": 220000,
+          "unitText": "YEAR"
+        }
+      },
+      "identifier": {
+        "@type": "PropertyValue",
+        "name": "Acme Corp",
+        "value": "SSE-2026-001"
+      }
+    },
+    {
+      "@context": "https://schema.org/",
+      "@type": "JobPosting",
+      "title": "Product Designer",
+      "description": "Shape the future of our product experience.",
+      "datePosted": "2026-03-12",
+      "validThrough": "2026-06-12",
+      "employmentType": "FULL_TIME",
+      "hiringOrganization": {
+        "@type": "Organization",
+        "name": "Acme Corp",
+        "sameAs": "https://www.acmecorp.example.com"
+      },
+      "jobLocation": {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "addressCountry": "US"
+        }
+      },
+      "jobLocationType": "TELECOMMUTE",
+      "identifier": {
+        "@type": "PropertyValue",
+        "name": "Acme Corp",
+        "value": "PD-2026-002"
+      }
+    },
+    {
+      "@context": "https://schema.org/",
+      "@type": "JobPosting",
+      "title": "Data Analyst",
+      "description": "Turn data into actionable insights for business growth.",
+      "datePosted": "2026-03-14",
+      "validThrough": "2026-06-14",
+      "employmentType": "FULL_TIME",
+      "hiringOrganization": {
+        "@type": "Organization",
+        "name": "Acme Corp",
+        "sameAs": "https://www.acmecorp.example.com"
+      },
+      "jobLocation": {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "New York",
+          "addressRegion": "NY",
+          "addressCountry": "US"
+        }
+      },
+      "identifier": {
+        "@type": "PropertyValue",
+        "name": "Acme Corp",
+        "value": "DA-2026-003"
+      }
+    }
+  ]
+  </script>
+
+  <footer>
+    <p>&copy; 2026 Acme Corp. All rights reserved.</p>
+  </footer>
+</body>
+</html>

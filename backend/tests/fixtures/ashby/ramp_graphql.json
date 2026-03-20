@@ -1,0 +1,109 @@
+{
+  "data": {
+    "jobBoard": {
+      "teams": [
+        {
+          "id": "baa9ccf5-274b-43e7-a810-1b50545f0745",
+          "name": "Sales",
+          "parentTeamId": null
+        },
+        {
+          "id": "d8dc541b-72a7-4bb8-86b2-22993312a38d",
+          "name": "Account Executive",
+          "parentTeamId": "baa9ccf5-274b-43e7-a810-1b50545f0745"
+        },
+        {
+          "id": "edf939ac-1369-4888-a6c6-f253c5cbb0a0",
+          "name": "Account Manager",
+          "parentTeamId": "baa9ccf5-274b-43e7-a810-1b50545f0745"
+        },
+        {
+          "id": "7d8f568b-2daa-4a4c-ad02-199d3f68690f",
+          "name": "Marketing",
+          "parentTeamId": null
+        },
+        {
+          "id": "b0812e1d-0c58-45eb-b38e-58abcceee473",
+          "name": "Growth Marketing",
+          "parentTeamId": "7d8f568b-2daa-4a4c-ad02-199d3f68690f"
+        }
+      ],
+      "jobPostings": [
+        {
+          "id": "8c004352-f162-4d89-858f-75a649e77ec4",
+          "title": "Account Executive | Commercial",
+          "teamId": "d8dc541b-72a7-4bb8-86b2-22993312a38d",
+          "locationId": "727b4420-37ce-4db8-bd81-5404184bfd04",
+          "locationName": "New York, NY (HQ)",
+          "employmentType": "FullTime",
+          "compensationTierSummary": "$138.8K \u2013 $212.1K \u2022 Offers Equity \u2022 Offers Commission \u2022 50/50 split",
+          "secondaryLocations": [
+            {
+              "locationId": "3178e0cd-d087-4533-85df-48e9e3adbe65",
+              "locationName": "San Francisco, CA"
+            }
+          ]
+        },
+        {
+          "id": "f8e75f30-738c-4987-8e00-2837af8d8bf6",
+          "title": "Account Executive | Federal ",
+          "teamId": "d8dc541b-72a7-4bb8-86b2-22993312a38d",
+          "locationId": "f64e8a30-12b3-43a9-b5d2-cc93f4d4654b",
+          "locationName": "Washington, D.C.",
+          "employmentType": "FullTime",
+          "compensationTierSummary": "$321K \u2013 $442K \u2022 Offers Equity \u2022 Offers Commission \u2022 50/50 split",
+          "secondaryLocations": []
+        },
+        {
+          "id": "f7c4de3c-1d64-42e9-8111-f38e265327d8",
+          "title": " Account Executive | Mid-Market",
+          "teamId": "d8dc541b-72a7-4bb8-86b2-22993312a38d",
+          "locationId": "727b4420-37ce-4db8-bd81-5404184bfd04",
+          "locationName": "New York, NY (HQ)",
+          "employmentType": "FullTime",
+          "compensationTierSummary": "$177,400 \u2013 $270,950 \u2022 Offers Equity \u2022 Offers Commission \u2022 50/50 split",
+          "secondaryLocations": [
+            {
+              "locationId": "3178e0cd-d087-4533-85df-48e9e3adbe65",
+              "locationName": "San Francisco, CA"
+            }
+          ]
+        },
+        {
+          "id": "a808d519-404a-4aee-9189-2b1ad62d0330",
+          "title": "Account Executive | SLED",
+          "teamId": "d8dc541b-72a7-4bb8-86b2-22993312a38d",
+          "locationId": "727b4420-37ce-4db8-bd81-5404184bfd04",
+          "locationName": "New York, NY (HQ)",
+          "employmentType": "FullTime",
+          "compensationTierSummary": "$243K \u2013 $334K \u2022 Offers Equity \u2022 Offers Commission \u2022 50/50 split",
+          "secondaryLocations": [
+            {
+              "locationId": "3178e0cd-d087-4533-85df-48e9e3adbe65",
+              "locationName": "San Francisco, CA"
+            },
+            {
+              "locationId": "f64e8a30-12b3-43a9-b5d2-cc93f4d4654b",
+              "locationName": "Washington, D.C."
+            }
+          ]
+        },
+        {
+          "id": "707d5f91-bcf7-42b2-a0e6-8130bf13e56b",
+          "title": "Account Executive | Strategic ",
+          "teamId": "d8dc541b-72a7-4bb8-86b2-22993312a38d",
+          "locationId": "727b4420-37ce-4db8-bd81-5404184bfd04",
+          "locationName": "New York, NY (HQ)",
+          "employmentType": "FullTime",
+          "compensationTierSummary": "$321K \u2013 $491K \u2022 Offers Equity \u2022 Offers Commission \u2022 Multiple Ranges",
+          "secondaryLocations": [
+            {
+              "locationId": "3178e0cd-d087-4533-85df-48e9e3adbe65",
+              "locationName": "San Francisco, CA"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
