@@ -29,7 +29,7 @@ import Select from "../components/ui/Select";
 import Skeleton from "../components/ui/Skeleton";
 import Textarea from "../components/ui/Textarea";
 import Toggle from "../components/ui/Toggle";
-import { toast } from "../components/ui/Toast";
+import { toast } from "../components/ui/toastService";
 import { cn } from "../lib/utils";
 
 // ---------- helpers ----------

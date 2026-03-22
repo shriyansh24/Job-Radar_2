@@ -32,7 +32,7 @@ import Modal from "../components/ui/Modal";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import Tabs from "../components/ui/Tabs";
 import Textarea from "../components/ui/Textarea";
-import { toast } from "../components/ui/Toast";
+import { toast } from "../components/ui/toastService";
 
 const TABS = [
   { id: "profiles", label: "Profiles", icon: <User size={14} weight="bold" /> },
@@ -465,7 +465,10 @@ export default function AutoApply() {
 
   const toggleRuleMutation = useMutation({
     mutationFn: (rule: AutoApplyRule) =>
-      autoApplyApi.updateRule(rule.id, { name: rule.name }),
+      autoApplyApi.updateRule(rule.id, {
+        name: rule.name ?? undefined,
+        is_active: !rule.is_active,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auto-apply-rules'] });
       toast('success', 'Rule updated');

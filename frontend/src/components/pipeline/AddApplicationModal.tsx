@@ -5,7 +5,7 @@ import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
-import { toast } from '../ui/Toast';
+import { toast } from "../ui/toastService";
 
 interface AddApplicationModalProps {
   open: boolean;

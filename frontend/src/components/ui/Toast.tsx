@@ -7,19 +7,14 @@ import {
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
+import { registerToastHandler } from "./toastService";
 
-type ToastType = 'success' | 'error' | 'warning' | 'info';
+type ToastType = "success" | "error" | "warning" | "info";
 
 interface Toast {
   id: string;
   type: ToastType;
   message: string;
-}
-
-let addToastFn: ((type: ToastType, message: string) => void) | null = null;
-
-export function toast(type: ToastType, message: string) {
-  addToastFn?.(type, message);
 }
 
 export function ToastContainer() {
@@ -34,8 +29,10 @@ export function ToastContainer() {
   }, []);
 
   useEffect(() => {
-    addToastFn = addToast;
-    return () => { addToastFn = null; };
+    registerToastHandler(addToast);
+    return () => {
+      registerToastHandler(null);
+    };
   }, [addToast]);
 
   const removeToast = (id: string) => {
@@ -55,7 +52,7 @@ export function ToastContainer() {
         <div
           key={t.id}
           className={cn(
-            "flex items-center gap-3 px-4 py-3 bg-bg-secondary border border-border rounded-[var(--radius-xl)] shadow-[var(--shadow-lg)] min-w-[300px] max-w-[420px]"
+            "flex items-center gap-3 px-4 py-3 bg-bg-secondary border border-border rounded-[var(--radius-xl)] shadow-[var(--shadow-lg)] min-w-[300px] max-w-[420px]",
           )}
         >
           {icons[t.type]}

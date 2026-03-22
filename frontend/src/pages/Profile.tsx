@@ -26,7 +26,7 @@ import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
 import Skeleton from "../components/ui/Skeleton";
-import { toast } from "../components/ui/Toast";
+import { toast } from "../components/ui/toastService";
 import { useAuthStore } from "../store/useAuthStore";
 
 const JOB_TYPE_OPTIONS = [

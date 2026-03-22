@@ -6,7 +6,7 @@ import AddApplicationModal from "../components/pipeline/AddApplicationModal";
 import ApplicationModal from "../components/pipeline/ApplicationModal";
 import PipelineColumn from "../components/pipeline/PipelineColumn";
 import Button from "../components/ui/Button";
-import { toast } from "../components/ui/Toast";
+import { toast } from "../components/ui/toastService";
 
 const COLUMNS = [
   { key: "saved", label: "Saved", color: "border-text-muted" },

@@ -3,6 +3,7 @@ import {
   Clock,
   FileText,
   Eye,
+  PencilSimple,
   Scroll,
   Trash,
   UploadSimple,
@@ -18,10 +19,12 @@ import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
+import Input from "../components/ui/Input";
 import Modal from "../components/ui/Modal";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import Tabs from "../components/ui/Tabs";
-import { toast } from "../components/ui/Toast";
+import Textarea from "../components/ui/Textarea";
+import { toast } from "../components/ui/toastService";
 
 const TABS = [
   { id: "resumes", label: "Resumes", icon: <FileText size={14} weight="bold" /> },
@@ -31,10 +34,12 @@ const TABS = [
 function ResumeCard({
   resume,
   onPreview,
+  onEdit,
   onDelete,
 }: {
   resume: ResumeVersion;
   onPreview: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -61,6 +66,14 @@ function ResumeCard({
           onClick={onPreview}
         >
           Preview
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<PencilSimple size={14} weight="bold" />}
+          onClick={onEdit}
+        >
+          Edit
         </Button>
         {confirmDelete ? (
           <div className="flex items-center gap-1.5 ml-auto">
@@ -90,9 +103,11 @@ function ResumeCard({
 
 function CoverLetterCard({
   letter,
+  onEdit,
   onDelete,
 }: {
   letter: CoverLetterResult;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -101,10 +116,10 @@ function CoverLetterCard({
     <Card hover>
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Badge variant="info" size="sm">{letter.style}</Badge>
+          <Badge variant="info" size="sm">{letter.style ?? "Cover Letter"}</Badge>
           <span className="text-xs text-text-muted flex items-center gap-1">
             <Briefcase size={10} weight="bold" />
-            {letter.job_id.slice(0, 8)}...
+            {letter.job_id ? `${letter.job_id.slice(0, 8)}...` : "General"}
           </span>
         </div>
         <p className="text-xs text-text-muted">
@@ -115,6 +130,14 @@ function CoverLetterCard({
         {letter.content}
       </p>
       <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border">
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<PencilSimple size={14} weight="bold" />}
+          onClick={onEdit}
+        >
+          Edit
+        </Button>
         {confirmDelete ? (
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-text-muted">Delete?</span>
@@ -145,6 +168,12 @@ export default function DocumentVault() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('resumes');
   const [previewResume, setPreviewResume] = useState<ResumeVersion | null>(null);
+  const [editingItem, setEditingItem] = useState<
+    | { kind: 'resume'; item: ResumeVersion }
+    | { kind: 'cover-letter'; item: CoverLetterResult }
+    | null
+  >(null);
+  const [editValue, setEditValue] = useState('');
 
   // Queries
   const { data: resumes, isLoading: resumesLoading } = useQuery({
@@ -185,6 +214,28 @@ export default function DocumentVault() {
     onError: () => toast('error', 'Failed to delete cover letter'),
   });
 
+  const updateResumeMutation = useMutation({
+    mutationFn: ({ id, label }: { id: string; label: string }) =>
+      vaultApi.updateResume(id, label),
+    onSuccess: () => {
+      toast('success', 'Resume updated');
+      queryClient.invalidateQueries({ queryKey: ['vault-resumes'] });
+      closeEditor();
+    },
+    onError: () => toast('error', 'Failed to update resume'),
+  });
+
+  const updateCoverLetterMutation = useMutation({
+    mutationFn: ({ id, content }: { id: string; content: string }) =>
+      vaultApi.updateCoverLetter(id, content),
+    onSuccess: () => {
+      toast('success', 'Cover letter updated');
+      queryClient.invalidateQueries({ queryKey: ['vault-cover-letters'] });
+      closeEditor();
+    },
+    onError: () => toast('error', 'Failed to update cover letter'),
+  });
+
   // Dropzone
   const onDrop = useCallback(
     (accepted: File[]) => {
@@ -202,6 +253,45 @@ export default function DocumentVault() {
     },
     maxFiles: 1,
   });
+
+  function closeEditor() {
+    setEditingItem(null);
+    setEditValue('');
+  }
+
+  function handleEditResume(resume: ResumeVersion) {
+    setEditingItem({ kind: 'resume', item: resume });
+    setEditValue(resume.label ?? '');
+  }
+
+  function handleEditCoverLetter(letter: CoverLetterResult) {
+    setEditingItem({ kind: 'cover-letter', item: letter });
+    setEditValue(letter.content);
+  }
+
+  function handleSaveEdit() {
+    if (!editingItem) return;
+    if (editingItem.kind === 'resume') {
+      updateResumeMutation.mutate({
+        id: editingItem.item.id,
+        label: editValue.trim(),
+      });
+      return;
+    }
+    updateCoverLetterMutation.mutate({
+      id: editingItem.item.id,
+      content: editValue,
+    });
+  }
+
+  const editorPending =
+    updateResumeMutation.isPending || updateCoverLetterMutation.isPending;
+  const editorTitle =
+    editingItem?.kind === 'resume' ? 'Edit Resume Label' : 'Edit Cover Letter';
+  const editorDescription =
+    editingItem?.kind === 'resume'
+      ? 'Rename how this resume version appears in the vault.'
+      : 'Update the saved cover letter text.';
 
   return (
     <div className="space-y-6">
@@ -256,6 +346,7 @@ export default function DocumentVault() {
                   key={resume.id}
                   resume={resume}
                   onPreview={() => setPreviewResume(resume)}
+                  onEdit={() => handleEditResume(resume)}
                   onDelete={() => deleteResumeMutation.mutate(resume.id)}
                 />
               ))}
@@ -285,6 +376,7 @@ export default function DocumentVault() {
                 <CoverLetterCard
                   key={letter.id}
                   letter={letter}
+                  onEdit={() => handleEditCoverLetter(letter)}
                   onDelete={() => deleteCoverLetterMutation.mutate(letter.id)}
                 />
               ))}
@@ -297,7 +389,7 @@ export default function DocumentVault() {
       <Modal
         open={!!previewResume}
         onClose={() => setPreviewResume(null)}
-        title={previewResume?.filename}
+        title={previewResume?.filename ?? "Resume Preview"}
         size="lg"
       >
         {previewResume?.parsed_text ? (
@@ -310,6 +402,42 @@ export default function DocumentVault() {
             <span className="text-sm">No text has been extracted from this resume yet.</span>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        open={!!editingItem}
+        onClose={closeEditor}
+        title={editorTitle}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary">{editorDescription}</p>
+          {editingItem?.kind === 'resume' ? (
+            <Input
+              label="Label"
+              aria-label="Resume label"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              placeholder="Optional label"
+            />
+          ) : (
+            <Textarea
+              label="Content"
+              aria-label="Cover letter content"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              className="min-h-[240px]"
+            />
+          )}
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={closeEditor} disabled={editorPending}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} loading={editorPending}>
+              Save changes
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

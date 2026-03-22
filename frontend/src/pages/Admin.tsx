@@ -2,7 +2,6 @@ import {
   Pulse,
   ArrowClockwise,
   Briefcase,
-  Cpu,
   Clock,
   Database,
   DownloadSimple,
@@ -20,7 +19,7 @@ import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Skeleton from "../components/ui/Skeleton";
-import { toast } from "../components/ui/Toast";
+import { toast } from "../components/ui/toastService";
 
 function healthBadgeVariant(state: string): 'success' | 'warning' | 'danger' | 'default' {
   switch (state) {
@@ -129,12 +128,6 @@ export default function Admin() {
     mutationFn: () => adminApi.reindex(),
     onSuccess: () => toast('success', 'Full-text search reindex started'),
     onError: () => toast('error', 'Failed to start reindex'),
-  });
-
-  const rebuildEmbeddingsMutation = useMutation({
-    mutationFn: () => adminApi.reindex(),
-    onSuccess: () => toast('success', 'Embedding rebuild started'),
-    onError: () => toast('error', 'Failed to start embedding rebuild'),
   });
 
   const exportMutation = useMutation({
@@ -348,11 +341,11 @@ export default function Admin() {
           </Button>
           <Button
             variant="secondary"
-            icon={<Cpu size={14} weight="bold" />}
-            loading={rebuildEmbeddingsMutation.isPending}
-            onClick={() => rebuildEmbeddingsMutation.mutate()}
+            icon={<ArrowClockwise size={14} weight="bold" />}
+            loading={reindexMutation.isPending}
+            onClick={() => reindexMutation.mutate()}
           >
-            Rebuild Embeddings
+            Reindex Search
           </Button>
           <Button
             variant="secondary"

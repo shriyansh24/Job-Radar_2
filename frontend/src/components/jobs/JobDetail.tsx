@@ -18,7 +18,7 @@ import Badge from "../ui/Badge";
 import Button from "../ui/Button";
 import Card from "../ui/Card";
 import Modal from "../ui/Modal";
-import { toast } from "../ui/Toast";
+import { toast } from "../ui/toastService";
 import ScoreGauge from "./ScoreGauge";
 
 interface JobDetailProps {

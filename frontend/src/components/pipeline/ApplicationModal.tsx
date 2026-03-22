@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { pipelineApi, type Application, type StatusHistory } from "../../api/pipeline";
 import Badge from "../ui/Badge";
 import Modal from "../ui/Modal";
-import { statusBadgeVariant } from "./ApplicationCard";
+import { statusBadgeVariant } from "./statusBadgeVariant";
 
 interface ApplicationModalProps {
   open: boolean;

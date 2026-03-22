@@ -37,18 +37,9 @@ import Input from "../components/ui/Input";
 import Modal from "../components/ui/Modal";
 import ScraperControlPanel from "../components/scraper/ScraperControlPanel";
 import Skeleton from "../components/ui/Skeleton";
-import { toast } from "../components/ui/Toast";
+import { toast } from "../components/ui/toastService";
+import { useAuthStore } from "../store/useAuthStore";
 import { useUIStore } from "../store/useUIStore";
-
-function getStorage(): Storage | null {
-  if (typeof window === "undefined") return null;
-  const s = window.localStorage;
-  if (!s) return null;
-  if (typeof s.getItem !== "function") return null;
-  if (typeof s.setItem !== "function") return null;
-  if (typeof s.removeItem !== "function") return null;
-  return s;
-}
 
 function ToggleRow({
   icon,
@@ -154,6 +145,7 @@ function SavedSearchCard({
 export default function Settings() {
   const queryClient = useQueryClient();
   const { theme, setTheme } = useUIStore();
+  const logout = useAuthStore((s) => s.logout);
 
   // Settings query
   const { data: settings, isLoading: loadingSettings } = useQuery({
@@ -387,11 +379,9 @@ export default function Settings() {
       // Account deletion not yet implemented on backend
       await Promise.resolve();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast('success', 'Account deleted');
-      const storage = getStorage();
-      storage?.removeItem('access_token');
-      storage?.removeItem('refresh_token');
+      await logout();
       window.location.href = '/login';
     },
     onError: () => toast('error', 'Failed to delete account'),

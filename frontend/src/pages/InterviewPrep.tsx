@@ -22,7 +22,7 @@ import Select from "../components/ui/Select";
 import Skeleton from "../components/ui/Skeleton";
 import Tabs from "../components/ui/Tabs";
 import Textarea from "../components/ui/Textarea";
-import { toast } from "../components/ui/Toast";
+import { toast } from "../components/ui/toastService";
 
 const tabs = [
   { id: "practice", label: "Practice", icon: <Brain size={14} weight="bold" /> },
@@ -59,6 +59,14 @@ const DIFFICULTY_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'def
   medium: 'warning',
   hard: 'danger',
 };
+
+function getQuestionCategory(question: InterviewQuestion): string {
+  return question.category || question.type || 'behavioral';
+}
+
+function getQuestionDifficulty(question: InterviewQuestion): string {
+  return question.difficulty || 'medium';
+}
 
 function GenerateForm({
   onGenerate,
@@ -188,8 +196,10 @@ function QuestionCard({
     onError: () => toast('error', 'Evaluation failed'),
   });
 
-  const categoryVariant = CATEGORY_VARIANT[question.category] || 'default';
-  const difficultyVariant = DIFFICULTY_VARIANT[question.difficulty] || 'default';
+  const category = getQuestionCategory(question);
+  const difficulty = getQuestionDifficulty(question);
+  const categoryVariant = CATEGORY_VARIANT[category] || 'default';
+  const difficultyVariant = DIFFICULTY_VARIANT[difficulty] || 'default';
 
   const scoreVariant =
     feedback && feedback.score >= 7
@@ -216,10 +226,10 @@ function QuestionCard({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Badge variant={categoryVariant} size="sm">
-              {question.category.replace('_', ' ')}
+              {category.replace('_', ' ')}
             </Badge>
             <Badge variant={difficultyVariant} size="sm">
-              {question.difficulty}
+              {difficulty}
             </Badge>
             {feedback && (
               <Badge variant={scoreVariant} size="sm">
@@ -337,7 +347,7 @@ function SessionHistoryCard({
             <span>{session.questions.length} questions</span>
           </div>
           <div className="flex flex-wrap gap-1.5 mt-2">
-            {Array.from(new Set(session.questions.map((q) => q.category))).map((cat) => (
+            {Array.from(new Set(session.questions.map(getQuestionCategory))).map((cat) => (
               <Badge key={cat} variant={CATEGORY_VARIANT[cat] || 'default'} size="sm">
                 {cat.replace('_', ' ')}
               </Badge>

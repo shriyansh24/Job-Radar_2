@@ -11,6 +11,7 @@ export { default as StatCard } from './StatCard';
 export { default as Table } from './Table';
 export { default as Tabs } from './Tabs';
 export { default as Textarea } from './Textarea';
-export { toast, ToastContainer } from './Toast';
+export { ToastContainer } from './Toast';
+export { toast } from './toastService';
 export { default as Toggle } from './Toggle';
 export { default as PageLoader } from './PageLoader';

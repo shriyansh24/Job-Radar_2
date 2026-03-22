@@ -9,6 +9,7 @@ import type { Application } from "../../api/pipeline";
 import Badge from "../ui/Badge";
 import Card from "../ui/Card";
 import Dropdown from "../ui/Dropdown";
+import { statusBadgeVariant } from "./statusBadgeVariant";
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   saved: ["applied", "withdrawn"],
@@ -20,25 +21,6 @@ const STATUS_TRANSITIONS: Record<string, string[]> = {
   rejected: [],
   withdrawn: [],
 };
-
-export function statusBadgeVariant(
-  status: string
-): "default" | "success" | "warning" | "danger" | "info" {
-  switch (status) {
-    case "offer":
-    case "accepted":
-      return "success";
-    case "interviewing":
-      return "warning";
-    case "rejected":
-      return "danger";
-    case "applied":
-    case "screening":
-      return "info";
-    default:
-      return "default";
-  }
-}
 
 interface ApplicationCardProps {
   app: Application;

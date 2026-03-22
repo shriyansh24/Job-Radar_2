@@ -20,7 +20,7 @@ import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Input from "../components/ui/Input";
 import Skeleton from "../components/ui/Skeleton";
-import { toast } from "../components/ui/Toast";
+import { toast } from "../components/ui/toastService";
 import { cn } from "../lib/utils";
 
 interface SavedResearch {

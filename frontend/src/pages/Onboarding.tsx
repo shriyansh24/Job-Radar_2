@@ -20,7 +20,7 @@ import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
-import { toast } from "../components/ui/Toast";
+import { toast } from "../components/ui/toastService";
 
 const STEPS = [
   { label: "Welcome", icon: <RocketLaunch size={16} weight="bold" /> },

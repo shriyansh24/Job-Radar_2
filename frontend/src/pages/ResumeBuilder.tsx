@@ -21,7 +21,7 @@ import Modal from "../components/ui/Modal";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import Select from "../components/ui/Select";
 import Tabs from "../components/ui/Tabs";
-import { toast } from "../components/ui/Toast";
+import { toast } from "../components/ui/toastService";
 
 const tabs = [
   { id: "upload", label: "Upload", icon: <UploadSimple size={14} weight="bold" /> },
@@ -86,7 +86,7 @@ export default function ResumeBuilder() {
 
   const resumeOptions = (versions || []).map((v: ResumeVersion) => ({
     value: v.id,
-    label: v.filename,
+    label: v.filename ?? 'Untitled resume',
   }));
 
   return (
@@ -141,7 +141,9 @@ export default function ResumeBuilder() {
                     <FileText size={24} weight="bold" className="text-accent-primary shrink-0 mt-0.5" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-text-primary truncate">{v.filename}</p>
+                        <p className="text-sm font-medium text-text-primary truncate">
+                          {v.filename ?? 'Untitled resume'}
+                        </p>
                         {v.is_default && (
                           <Badge variant="success" size="sm">
                             <Star size={10} weight="fill" className="mr-0.5" />
@@ -279,7 +281,7 @@ export default function ResumeBuilder() {
       <Modal
         open={!!showPreview}
         onClose={() => setShowPreview(null)}
-        title={showPreview?.filename}
+        title={showPreview?.filename ?? "Resume Preview"}
         size="lg"
       >
         {showPreview?.parsed_text ? (
