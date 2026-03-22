@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -25,7 +25,9 @@ class AutoApplyProfile(Base):
     portfolio_url: Mapped[str | None] = mapped_column(Text)
     cover_letter_template: Mapped[str | None] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     rules: Mapped[list[AutoApplyRule]] = relationship(back_populates="profile")
 
@@ -48,7 +50,9 @@ class AutoApplyRule(Base):
     excluded_companies: Mapped[list | None] = mapped_column(JSONB, default=list)
     experience_levels: Mapped[list | None] = mapped_column(JSONB, default=list)
     remote_types: Mapped[list | None] = mapped_column(JSONB, default=list)
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     profile: Mapped[AutoApplyProfile | None] = relationship(back_populates="rules")
 
@@ -58,7 +62,9 @@ class AutoApplyRun(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
-    job_id: Mapped[str | None] = mapped_column(ForeignKey("jobs.id"), nullable=True)
+    job_id: Mapped[str | None] = mapped_column(
+        ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True
+    )
     rule_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("auto_apply_rules.id"), nullable=True
     )
@@ -68,5 +74,5 @@ class AutoApplyRun(Base):
     fields_missed: Mapped[list | None] = mapped_column(JSONB, default=list)
     screenshots: Mapped[list | None] = mapped_column(JSONB, default=list)
     error_message: Mapped[str | None] = mapped_column(Text)
-    started_at: Mapped[datetime | None] = mapped_column()
-    completed_at: Mapped[datetime | None] = mapped_column()
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

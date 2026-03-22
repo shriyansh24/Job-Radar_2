@@ -1,0 +1,11 @@
+.env
+.env.*
+.git
+.gitignore
+coverage
+dist
+docs
+node_modules
+src/__tests__
+current_ui_screenshots
+.claude

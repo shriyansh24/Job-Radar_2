@@ -15,11 +15,7 @@ export function useSSE(
   useEffect(() => {
     if (!url) return;
 
-    const token = localStorage.getItem('access_token');
-    const separator = url.includes('?') ? '&' : '?';
-    const fullUrl = `${url}${separator}token=${token}`;
-
-    const es = new EventSource(fullUrl);
+    const es = new EventSource(url, { withCredentials: true });
     eventSourceRef.current = es;
 
     es.onmessage = (event) => {

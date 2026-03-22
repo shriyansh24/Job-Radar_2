@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -23,8 +23,12 @@ class QueryTemplate(Base):
     expanded_queries: Mapped[list | None] = mapped_column(JSONB)  # list of expanded query strings
     strictness: Mapped[str] = mapped_column(String(20), default="balanced")  # loose, balanced, strict
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
 
 class ExpansionRule(Base):
@@ -38,7 +42,9 @@ class ExpansionRule(Base):
     expanded_terms: Mapped[list] = mapped_column(JSONB, nullable=False)
     rule_type: Mapped[str] = mapped_column(String(30), default="synonym")  # synonym, related, broader
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
 
 class QueryPerformance(Base):
@@ -54,4 +60,6 @@ class QueryPerformance(Base):
     query_text: Mapped[str] = mapped_column(Text, nullable=False)
     jobs_found: Mapped[int] = mapped_column(Integer, default=0)
     relevant_jobs: Mapped[int] = mapped_column(Integer, default=0)
-    executed_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    executed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

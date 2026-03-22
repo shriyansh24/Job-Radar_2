@@ -1,8 +1,11 @@
 """Maps scraper_name strings from ExecutionPlan Steps to adapter instances and methods."""
 from __future__ import annotations
 
+import structlog
 from dataclasses import dataclass
 from typing import Any, Callable
+
+logger = structlog.get_logger()
 
 
 @dataclass
@@ -62,3 +65,74 @@ class AdapterRegistry:
         """
         binding = self.get(scraper_name)
         return binding.instance, getattr(binding.instance, binding.method)
+
+    @property
+    def registered_names(self) -> list[str]:
+        """Return all registered adapter names."""
+        return list(self._bindings.keys())
+
+
+def build_default_registry(settings: Any = None) -> AdapterRegistry:
+    """Create and populate an AdapterRegistry with all available adapters.
+
+    This is the single source of truth for adapter registration.
+    Used by both the background worker and the API router endpoints.
+    """
+    registry = AdapterRegistry()
+
+    if settings is None:
+        from app.config import settings as default_settings
+        settings = default_settings
+
+    # ATS adapters (Tier 0)
+    for name, module_path, class_name in [
+        ("greenhouse", "app.scraping.scrapers.greenhouse", "GreenhouseScraper"),
+        ("lever", "app.scraping.scrapers.lever", "LeverScraper"),
+        ("ashby", "app.scraping.scrapers.ashby", "AshbyScraper"),
+        ("workday", "app.scraping.scrapers.workday", "WorkdayScraper"),
+    ]:
+        try:
+            import importlib
+            mod = importlib.import_module(module_path)
+            cls = getattr(mod, class_name)
+            registry.register_ats(name, cls(settings))
+        except Exception as e:
+            logger.warning("adapter_skip", name=name, reason=str(e))
+
+    # Fetchers (Tier 1)
+    try:
+        from app.scraping.execution.cloudscraper_fetcher import CloudscraperFetcher
+        registry.register_fetcher("cloudscraper", CloudscraperFetcher())
+    except Exception as e:
+        logger.warning("adapter_skip", name="cloudscraper", reason=str(e))
+
+    # Scrapling dual-mode (Tier 1 fetch + Tier 2 render)
+    try:
+        from app.scraping.execution.scrapling_fetcher import ScraplingFetcher
+        scrapling = ScraplingFetcher()
+        registry.register_fetcher("scrapling_fast", scrapling)
+        registry.register_browser("scrapling_stealth", scrapling)
+    except Exception as e:
+        logger.warning("adapter_skip", name="scrapling", reason=str(e))
+
+    # Browsers (Tier 2-3)
+    try:
+        from app.scraping.execution.nodriver_browser import NodriverBrowser
+        registry.register_browser("nodriver", NodriverBrowser())
+    except Exception as e:
+        logger.warning("adapter_skip", name="nodriver", reason=str(e))
+
+    try:
+        from app.scraping.execution.camoufox_browser import CamoufoxBrowser
+        registry.register_browser("camoufox", CamoufoxBrowser())
+    except Exception as e:
+        logger.warning("adapter_skip", name="camoufox", reason=str(e))
+
+    try:
+        from app.scraping.execution.seleniumbase_browser import SeleniumBaseBrowser
+        registry.register_browser("seleniumbase", SeleniumBaseBrowser())
+    except Exception as e:
+        logger.warning("adapter_skip", name="seleniumbase", reason=str(e))
+
+    logger.info("adapter_registry_built", registered=registry.registered_names)
+    return registry

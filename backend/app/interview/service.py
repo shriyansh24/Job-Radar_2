@@ -21,7 +21,7 @@ from app.interview.schemas import (
     InterviewPrepResponse,
 )
 from app.nlp.model_router import ModelRouter
-from app.shared.errors import NotFoundError
+from app.shared.errors import AppError, NotFoundError
 
 logger = structlog.get_logger()
 _JSON_SYSTEM = {"role": "system", "content": "Return ONLY valid JSON."}
@@ -81,9 +81,9 @@ class InterviewService:
             )
             questions = data.get("questions", [])
             logger.info("interview.questions_generated", count=len(questions), user_id=str(user_id))
-        except RuntimeError:
+        except RuntimeError as exc:
             logger.exception("interview.generate_questions_failed", user_id=str(user_id))
-            questions = [{"type": t, "question": f"Sample {t} question"} for t in types]
+            raise AppError("Question generation failed", status_code=502) from exc
 
         session = InterviewSession(
             user_id=user_id, job_id=request.job_id,

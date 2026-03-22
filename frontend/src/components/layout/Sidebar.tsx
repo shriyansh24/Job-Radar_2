@@ -25,16 +25,22 @@ import { pipelineApi } from "../../api/pipeline";
 import { cn } from "../../lib/utils";
 import { useUIStore } from "../../store/useUIStore";
 
-const navItems = [
+const mainNav = [
   { to: "/", icon: SquaresFour, label: "Dashboard" },
   { to: "/jobs", icon: Briefcase, label: "Job Board" },
   { to: "/pipeline", icon: Kanban, label: "Pipeline" },
   { to: "/auto-apply", icon: Lightning, label: "Auto Apply" },
+];
+
+const toolsNav = [
   { to: "/resume", icon: FileText, label: "Resume" },
   { to: "/interview", icon: ChatsCircle, label: "Interview" },
   { to: "/salary", icon: CurrencyDollar, label: "Salary" },
   { to: "/vault", icon: Archive, label: "Vault" },
   { to: "/analytics", icon: ChartBar, label: "Analytics" },
+];
+
+const adminNav = [
   { to: "/settings", icon: GearSix, label: "Settings" },
   { to: "/companies", icon: Buildings, label: "Companies" },
   { to: "/sources", icon: Heartbeat, label: "Sources" },
@@ -42,6 +48,12 @@ const navItems = [
   { to: "/search-expansion", icon: MagnifyingGlassPlus, label: "Search Expansion" },
   { to: "/targets", icon: Crosshair, label: "Targets" },
   { to: "/admin", icon: ShieldCheck, label: "Admin" },
+];
+
+const navSections = [
+  { items: mainNav },
+  { label: "Tools", items: toolsNav },
+  { label: "Manage", items: adminNav },
 ];
 
 export default function Sidebar() {
@@ -81,54 +93,69 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        "min-h-[100dvh] bg-bg-secondary border-r border-border flex flex-col transition-[width] duration-[var(--transition-normal)]",
-        collapsed ? "w-[4.25rem]" : "w-72"
+        "min-h-[100dvh] border-r border-border flex flex-col transition-[width] duration-[var(--transition-normal)]",
+        collapsed ? "w-[4.25rem]" : "w-60",
+        "bg-[var(--sidebar-bg)]"
       )}
     >
-      <div className="p-4 border-b border-border">
+      <div className="h-14 flex items-center px-4 border-b border-border">
         <h1
           className={cn(
             "font-semibold tracking-tight text-text-primary",
-            collapsed ? "text-center text-sm" : "text-base"
+            collapsed ? "text-center text-sm w-full" : "text-sm"
           )}
         >
           {collapsed ? (
-            <span className="font-mono text-text-secondary">JR</span>
+            <span className="font-mono text-accent-primary font-bold">JR</span>
           ) : (
-            <span className="flex items-baseline gap-2">
-              <span>JobRadar</span>
-              <span className="font-mono text-xs text-text-muted">v2</span>
+            <span className="flex items-baseline gap-1.5">
+              <span className="tracking-[-0.02em]">JobRadar</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-accent-primary/10 text-accent-primary font-medium">
+                v2
+              </span>
             </span>
           )}
         </h1>
       </div>
-      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-        {navItems.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            onMouseEnter={() => prefetchMap[to]?.()}
-            className={({ isActive }) =>
-              cn(
-                "group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-md)] text-sm transition-[background-color,color,transform] duration-[var(--transition-fast)]",
-                isActive
-                  ? "bg-bg-tertiary text-text-primary"
-                  : "text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
-              )
-            }
-          >
-            <motion.span
-              aria-hidden="true"
-              className="inline-flex"
-              whileHover={{ x: 2 }}
-              transition={{ type: "spring", stiffness: 220, damping: 18 }}
-            >
-              <Icon size={20} weight="bold" />
-            </motion.span>
-            {!collapsed && (
-              <span className="truncate">{label}</span>
+      <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-5">
+        {navSections.map((section, i) => (
+          <div key={i}>
+            {section.label && !collapsed && (
+              <div className="label px-3 mb-1.5">{section.label}</div>
             )}
-          </NavLink>
+            {collapsed && i > 0 && (
+              <div className="mx-3 mb-2 h-px bg-border" />
+            )}
+            <div className="space-y-0.5">
+              {section.items.map(({ to, icon: Icon, label }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onMouseEnter={() => prefetchMap[to]?.()}
+                  className={({ isActive }) =>
+                    cn(
+                      "group relative flex items-center gap-3 px-3 py-2 rounded-[var(--radius-md)] text-[13px] transition-[background-color,color] duration-[var(--transition-fast)]",
+                      isActive
+                        ? "bg-accent-primary/8 text-accent-primary font-medium sidebar-active-indicator"
+                        : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
+                    )
+                  }
+                >
+                  <motion.span
+                    aria-hidden="true"
+                    className="inline-flex shrink-0"
+                    whileHover={{ x: 2 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    <Icon size={18} weight="bold" />
+                  </motion.span>
+                  {!collapsed && (
+                    <span className="truncate">{label}</span>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
     </aside>

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import uuid
 
 import pytest
 from types import SimpleNamespace
@@ -355,3 +356,91 @@ async def test_db_rollback_on_commit_failure():
     svc.db.rollback.assert_awaited_once()
     # Should still return results, not raise
     assert results["targets_attempted"] == 1
+
+
+@pytest.mark.asyncio
+async def test_batch_rolls_back_when_target_task_raises():
+    """An uncaught target task exception should abort the batch and roll back."""
+    from app.scraping.control.tier_router import ExecutionPlan, Step
+
+    svc = _mock_service()
+    good_id = uuid.uuid4()
+    bad_id = uuid.uuid4()
+    good_target = _target(id=good_id, ats_vendor="greenhouse", ats_board_token="test")
+    bad_target = _target(id=bad_id, ats_vendor="greenhouse", ats_board_token="broken")
+    registry = _registry_for_ats(jobs_result=[{"title": "job"}])
+    pool = MagicMock()
+
+    good_plan = ExecutionPlan(
+        primary_tier=0,
+        max_tier=0,
+        primary_step=Step(tier=0, scraper_name="greenhouse", parser_name="greenhouse_api"),
+        fallback_chain=(),
+        rate_policy="greenhouse",
+    )
+
+    def route(target):
+        if target.id == bad_id:
+            raise RuntimeError("route failed")
+        return good_plan
+
+    with patch("app.scraping.control.tier_router.TierRouter.route", side_effect=route):
+        results = await svc.run_target_batch(
+            targets=[good_target, bad_target],
+            run_id="run1",
+            adapter_registry=registry,
+            browser_pool=pool,
+        )
+
+    svc.db.rollback.assert_awaited_once()
+    svc.db.commit.assert_not_awaited()
+    assert results["targets_failed"] == 1
+    assert any("route failed" in error for error in results["errors"])
+
+
+@pytest.mark.asyncio
+async def test_pagination_timeout_aborts_crawl_without_hanging():
+    """Pagination should be bounded by the service timeout."""
+    from app.scraping.control.tier_router import ExecutionPlan, Step
+
+    svc = _mock_service()
+    target = _target(
+        id=uuid.uuid4(),
+        url="https://example.com/jobs",
+        company_name="Example",
+        ats_vendor=None,
+        source_kind="career_page",
+        start_tier=1,
+        max_tier=1,
+    )
+    registry = _registry_for_fetcher()
+    pool = MagicMock()
+
+    async def slow_crawl(*args, **kwargs):
+        await asyncio.sleep(0.05)
+        return None
+
+    plan = ExecutionPlan(
+        primary_tier=1,
+        max_tier=1,
+        primary_step=Step(tier=1, scraper_name="cloudscraper", timeout_s=1),
+        fallback_chain=(),
+        rate_policy="generic",
+    )
+
+    with (
+        patch("app.scraping.control.tier_router.TierRouter.route", return_value=plan),
+        patch("app.scraping.execution.escalation_engine.should_escalate", return_value=None),
+        patch("app.scraping.execution.page_crawler.PageCrawler.crawl", side_effect=slow_crawl),
+    ):
+        svc.PAGINATION_TIMEOUT_S = 0.01
+        results = await svc.run_target_batch(
+            targets=[target],
+            run_id="run1",
+            adapter_registry=registry,
+            browser_pool=pool,
+        )
+
+    svc.db.commit.assert_awaited_once()
+    assert results["targets_succeeded"] == 1
+    assert results["targets_failed"] == 0

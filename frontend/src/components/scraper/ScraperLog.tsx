@@ -1,6 +1,6 @@
-import { CaretDown, Pause, Play, X } from "@phosphor-icons/react";
+import { CaretDown, DotsSixVertical, Pause, Play, X } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { scraperApi, type ScraperEvent } from "../../api/scraper";
 
 interface LogEntry {
@@ -17,6 +17,42 @@ export default function ScraperLog() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const idCounter = useRef(0);
 
+  // Draggable toggle button position
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const dragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      dragging.current = true;
+      dragStart.current = { x: e.clientX, y: e.clientY, posX: pos.x, posY: pos.y };
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    [pos],
+  );
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    setPos({ x: dragStart.current.posX + dx, y: dragStart.current.posY + dy });
+  }, []);
+
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragging.current) return;
+      dragging.current = false;
+      const dx = Math.abs(e.clientX - dragStart.current.x);
+      const dy = Math.abs(e.clientY - dragStart.current.y);
+      // If moved less than 4px, treat as click
+      if (dx < 4 && dy < 4) {
+        setOpen((o) => !o);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!open) return;
 
@@ -28,7 +64,7 @@ export default function ScraperLog() {
       try {
         const parsed = JSON.parse(event.data) as ScraperEvent;
         setLogs((prev) => [
-          ...prev.slice(-200), // Keep last 200 entries
+          ...prev.slice(-200),
           {
             id: ++idCounter.current,
             type: parsed.type,
@@ -37,7 +73,6 @@ export default function ScraperLog() {
           },
         ]);
       } catch {
-        // Non-JSON event — add as raw text
         setLogs((prev) => [
           ...prev.slice(-200),
           {
@@ -88,11 +123,19 @@ export default function ScraperLog() {
 
   return (
     <>
-      {/* Toggle button */}
+      {/* Draggable toggle button */}
       <button
-        onClick={() => setOpen(!open)}
-        className="fixed bottom-4 right-4 z-40 flex items-center gap-2 px-3 py-2 rounded-[var(--radius-lg)] bg-bg-secondary border border-border shadow-lg text-sm text-text-secondary hover:text-text-primary transition-colors"
+        ref={btnRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        style={{
+          transform: `translate(${pos.x}px, ${pos.y}px)`,
+          touchAction: "none",
+        }}
+        className="fixed bottom-4 right-4 z-40 flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-lg)] bg-bg-secondary border border-border shadow-lg text-sm text-text-secondary hover:text-text-primary transition-colors select-none cursor-grab active:cursor-grabbing"
       >
+        <DotsSixVertical size={12} className="text-text-muted shrink-0" />
         <CaretDown size={14} className={open ? "rotate-180 transition-transform" : "transition-transform"} />
         Scraper Log
         {logs.length > 0 && (

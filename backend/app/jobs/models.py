@@ -51,7 +51,7 @@ class Job(Base):
     job_type: Mapped[str | None] = mapped_column(String(30))
     posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     scraped_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    expires_at: Mapped[datetime | None] = mapped_column()
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Enrichment
     is_enriched: Mapped[bool] = mapped_column(Boolean, default=False)
     enriched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -84,8 +84,16 @@ class Job(Base):
     seen_count: Mapped[int] = mapped_column(Integer, default=1)
     source_target_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("scrape_targets.id"))
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     # Relationships
-    applications: Mapped[list["Application"]] = relationship("Application", back_populates="job")
+    applications: Mapped[list["Application"]] = relationship(
+        "Application",
+        back_populates="job",
+        lazy="selectin",
+    )

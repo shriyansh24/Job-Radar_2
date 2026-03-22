@@ -63,10 +63,8 @@ async def test_tier3_separate_from_tier2():
 async def test_cleanup_idle_domains():
     """cleanup_idle_domains removes semaphores for domains not in the active set."""
     pool = BrowserPool(max_tier2=10, max_tier3=3)
-    async with pool.acquire(tier=2, domain="active.com"):
-        pass
-    async with pool.acquire(tier=2, domain="stale.com"):
-        pass
+    pool._domain_sems["active.com"] = asyncio.Semaphore(2)
+    pool._domain_sems["stale.com"] = asyncio.Semaphore(2)
     await pool.cleanup_idle_domains(active_domains={"active.com"})
     assert "stale.com" not in pool._domain_sems
     assert "active.com" in pool._domain_sems
@@ -111,7 +109,7 @@ async def test_domain_sem_created_lazily():
     assert len(pool._domain_sems) == 0
     async with pool.acquire(tier=2, domain="new.com"):
         assert "new.com" in pool._domain_sems
-    assert len(pool._domain_sems) == 1
+    assert len(pool._domain_sems) == 0
 
 
 @pytest.mark.asyncio
@@ -151,12 +149,9 @@ async def test_no_domain_sem_when_domain_is_none():
 async def test_cleanup_does_not_remove_active_domain():
     """cleanup_idle_domains must keep domains still in the active set."""
     pool = BrowserPool(max_tier2=10, max_tier3=3)
-    async with pool.acquire(tier=2, domain="keep.com"):
-        pass
-    async with pool.acquire(tier=2, domain="remove.com"):
-        pass
-    async with pool.acquire(tier=2, domain="also-keep.com"):
-        pass
+    pool._domain_sems["keep.com"] = asyncio.Semaphore(2)
+    pool._domain_sems["remove.com"] = asyncio.Semaphore(2)
+    pool._domain_sems["also-keep.com"] = asyncio.Semaphore(2)
 
     await pool.cleanup_idle_domains(active_domains={"keep.com", "also-keep.com"})
     assert "keep.com" in pool._domain_sems

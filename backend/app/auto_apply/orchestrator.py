@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
+from tempfile import gettempdir
 from typing import TYPE_CHECKING
 
 import structlog
@@ -32,6 +34,10 @@ class AutoApplyOrchestrator:
         self.db = db
         self.settings = settings
         self.llm = llm_client
+
+    def _build_screenshot_path(self, run_id: uuid.UUID) -> str:
+        """Build a cross-platform temp path for review screenshots."""
+        return str(Path(gettempdir()) / f"auto_apply_{run_id}.png")
 
     async def apply_to_job(
         self,
@@ -102,7 +108,7 @@ class AutoApplyOrchestrator:
 
                 # Take screenshot
                 screenshot = await page.screenshot(full_page=True)
-                ss_path = f"/tmp/auto_apply_{run.id}.png"
+                ss_path = self._build_screenshot_path(run.id)
                 with open(ss_path, "wb") as f:
                     f.write(screenshot)
                 run.screenshots = [ss_path]

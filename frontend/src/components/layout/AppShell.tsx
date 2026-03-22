@@ -1,4 +1,4 @@
-import { List, Moon, SignOut, Sun, UserCircle } from "@phosphor-icons/react";
+import { List, Moon, SignOut, Sun } from "@phosphor-icons/react";
 import { Outlet } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useUIStore } from "../../store/useUIStore";
@@ -17,53 +17,48 @@ export default function AppShell() {
     <div className="flex min-h-[100dvh] bg-bg-primary">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-14 border-b border-border bg-bg-secondary/80 supports-[backdrop-filter]:bg-bg-secondary/70 backdrop-blur flex items-center justify-between px-4">
-          <div className="flex items-center gap-2">
+        <header className="h-12 border-b border-border bg-bg-secondary/80 supports-[backdrop-filter]:bg-bg-secondary/60 backdrop-blur-xl flex items-center justify-between px-3">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-[var(--radius-md)] hover:bg-bg-tertiary text-text-secondary transition-[background-color,color] duration-[var(--transition-fast)]"
+              className="p-1.5 rounded-[var(--radius-md)] hover:bg-bg-hover text-text-muted transition-[background-color,color] duration-[var(--transition-fast)]"
               aria-label="Toggle sidebar"
             >
-              <List size={20} weight="bold" />
+              <List size={18} weight="bold" />
             </button>
-
-            <div className="hidden md:flex items-center gap-2 px-2 py-1 rounded-[var(--radius-md)] border border-border bg-bg-secondary">
-              <span className="text-xs text-text-muted tracking-tight">
-                JobRadar
-              </span>
-              <span className="text-xs font-mono text-text-secondary">
-                v2
-              </span>
-            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <NotificationBell />
 
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-[var(--radius-md)] hover:bg-bg-tertiary text-text-secondary transition-[background-color,color] duration-[var(--transition-fast)]"
+              className="p-1.5 rounded-[var(--radius-md)] hover:bg-bg-hover text-text-muted transition-[background-color,color] duration-[var(--transition-fast)]"
               aria-label="Toggle theme"
             >
               {theme === "dark" ? (
-                <Sun size={18} weight="bold" />
+                <Sun size={16} weight="bold" />
               ) : (
-                <Moon size={18} weight="bold" />
+                <Moon size={16} weight="bold" />
               )}
             </button>
 
-            <div className="hidden sm:flex items-center gap-2 px-2 py-1.5 rounded-[var(--radius-md)] border border-border bg-bg-secondary">
-              <UserCircle size={18} weight="fill" className="text-text-muted" />
-              <span className="text-sm text-text-secondary">
+            <div className="hidden sm:flex items-center gap-2 ml-1 pl-2 border-l border-border">
+              <div className="h-6 w-6 rounded-full bg-accent-primary/15 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-accent-primary">
+                  {(user?.display_name || user?.email || "U")[0].toUpperCase()}
+                </span>
+              </div>
+              <span className="text-xs text-text-secondary">
                 {user?.display_name || user?.email}
               </span>
             </div>
 
             <button
               onClick={logout}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius-md)] text-sm text-text-secondary hover:bg-bg-tertiary transition-[background-color,color,transform] duration-[var(--transition-fast)] active:translate-y-[1px]"
+              className="flex items-center gap-1.5 ml-1 px-2 py-1 rounded-[var(--radius-md)] text-xs text-text-muted hover:bg-bg-hover hover:text-text-primary transition-[background-color,color] duration-[var(--transition-fast)]"
             >
-              <SignOut size={16} weight="bold" />
+              <SignOut size={14} weight="bold" />
               <span className="hidden sm:inline">Logout</span>
             </button>
           </div>

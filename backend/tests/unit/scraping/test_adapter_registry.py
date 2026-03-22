@@ -1,6 +1,14 @@
-"""Tests for AdapterRegistry — maps scraper_name strings to adapter instances and methods."""
+"""Tests for AdapterRegistry - maps scraper_name strings to adapter instances and methods."""
+from __future__ import annotations
+
+import importlib
+
 import pytest
-from app.scraping.execution.adapter_registry import AdapterRegistry, AdapterBinding
+
+from app.scraping.execution.adapter_registry import (
+    AdapterRegistry,
+    build_default_registry,
+)
 
 
 def test_register_and_resolve_fetcher():
@@ -70,3 +78,20 @@ def test_dual_mode_scrapling():
     assert inst1 is inst2  # same instance
     assert method1 == adapter.fetch
     assert method2 == adapter.render
+
+
+def test_build_default_registry_logs_warnings_for_missing_adapters(capsys):
+    real_import_module = importlib.import_module
+
+    def fake_import_module(name, package=None):
+        if name == "app.scraping.scrapers.greenhouse":
+            raise ImportError("missing greenhouse")
+        return real_import_module(name, package)
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(importlib, "import_module", fake_import_module)
+        build_default_registry()
+
+    captured = capsys.readouterr()
+    assert "adapter_skip" in captured.out
+    assert "warning" in captured.out.lower()

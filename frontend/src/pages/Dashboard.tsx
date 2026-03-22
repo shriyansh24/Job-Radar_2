@@ -38,7 +38,7 @@ function RecentJobCard({ job }: { job: Job }) {
   return (
     <button
       type="button"
-      className="w-full text-left flex items-center gap-3 px-3 py-3 rounded-[var(--radius-md)] hover:bg-bg-tertiary cursor-pointer transition-[background-color,transform] duration-[var(--transition-fast)] active:translate-y-[1px]"
+      className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-md)] row-hover cursor-pointer active:translate-y-[1px]"
       onClick={() => navigate("/jobs")}
     >
       <div className="min-w-0 flex-1">
@@ -90,34 +90,46 @@ function KpiTile({
   label,
   value,
   icon,
+  accent = "blue",
 }: {
   label: string;
   value: string;
   icon: React.ReactNode;
+  accent?: "blue" | "violet" | "green" | "amber";
 }) {
+  const accentClasses = {
+    blue: "kpi-blue",
+    violet: "kpi-violet",
+    green: "kpi-green",
+    amber: "kpi-amber",
+  };
+  const dotColors = {
+    blue: "bg-accent-primary",
+    violet: "bg-accent-secondary",
+    green: "bg-accent-success",
+    amber: "bg-accent-warning",
+  };
+
   return (
-    <Card className="p-8">
+    <Card className={cn("p-6 card-hover", accentClasses[accent])}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-xs font-medium text-text-muted tracking-tight">
-            {label}
-          </div>
-          <div className="mt-2 text-3xl font-semibold text-text-primary font-mono tracking-tight">
+          <div className="label">{label}</div>
+          <div className="mt-2 text-3xl font-bold text-text-primary mono-num">
             {value}
           </div>
         </div>
-        <div className="shrink-0 text-text-muted">{icon}</div>
+        <div className="shrink-0 p-2 rounded-[var(--radius-md)] bg-bg-hover text-text-muted">
+          {icon}
+        </div>
       </div>
-      <div className="mt-5 h-px bg-border" />
       <div className="mt-4 flex items-center gap-2">
         <motion.span
-          className="h-2 w-2 rounded-full bg-accent-primary"
+          className={cn("h-1.5 w-1.5 rounded-full", dotColors[accent])}
           animate={{ opacity: [0.35, 1, 0.35] }}
           transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
         />
-        <span className="text-xs text-text-secondary">
-          Updated in real time
-        </span>
+        <span className="text-[11px] text-text-muted">Live</span>
       </div>
     </Card>
   );
@@ -163,32 +175,23 @@ export default function Dashboard() {
   const totalApps = pipelineCounts.reduce((sum, s) => sum + s.count, 0);
 
   return (
-    <div className="space-y-10">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <Card className="lg:col-span-7 p-10" hover={false}>
+    <div className="space-y-8 animate-fade-in">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <Card className="lg:col-span-7 p-8" hover={false}>
           <div className="flex items-start justify-between gap-6">
             <div className="min-w-0">
-              <div className="text-xs font-medium text-text-muted tracking-tight">
-                Overview
-              </div>
-              <h1 className="mt-3 text-3xl md:text-4xl font-semibold tracking-tight text-text-primary">
+              <div className="label">Overview</div>
+              <h1 className="mt-2 heading-xl text-text-primary">
                 Dashboard
               </h1>
-              <p className="mt-3 text-sm text-text-secondary max-w-[60ch]">
+              <p className="mt-2 text-sm text-text-secondary max-w-[55ch] leading-relaxed">
                 Track new roles, push applications forward, and keep your
                 pipeline honest—without drowning in tabs.
               </p>
             </div>
-            <div className="hidden md:block">
-              <motion.div
-                className="h-24 w-24 rounded-[1.75rem] border border-border bg-bg-tertiary shadow-[var(--shadow-sm)]"
-                animate={{ y: [0, -4, 0] }}
-                transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut" }}
-              />
-            </div>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <Button
               variant="primary"
               className="justify-start"
@@ -216,7 +219,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3 stagger-children">
           {loadingOverview ? (
             Array.from({ length: 4 }).map((_, i) => (
               <div
@@ -235,36 +238,38 @@ export default function Dashboard() {
               <KpiTile
                 label="Total Jobs"
                 value={stats.total_jobs.toLocaleString()}
-                icon={<Briefcase size={22} weight="bold" />}
+                icon={<Briefcase size={20} weight="bold" />}
+                accent="blue"
               />
               <KpiTile
                 label="Applications"
                 value={stats.total_applications.toLocaleString()}
-                icon={<PaperPlaneTilt size={22} weight="bold" />}
+                icon={<PaperPlaneTilt size={20} weight="bold" />}
+                accent="violet"
               />
               <KpiTile
                 label="Interviews"
                 value={stats.total_interviews.toLocaleString()}
-                icon={<UsersThree size={22} weight="bold" />}
+                icon={<UsersThree size={20} weight="bold" />}
+                accent="green"
               />
               <KpiTile
                 label="Offers"
                 value={stats.total_offers.toLocaleString()}
-                icon={<Trophy size={22} weight="bold" />}
+                icon={<Trophy size={20} weight="bold" />}
+                accent="amber"
               />
             </>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <Card className="lg:col-span-7" padding="none">
-          <div className="flex items-center justify-between px-8 py-6 border-b border-border">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-border">
             <div>
-              <div className="text-xs font-medium text-text-muted tracking-tight">
-                Stream
-              </div>
-              <h2 className="mt-1 text-base font-semibold text-text-primary">
+              <div className="label">Stream</div>
+              <h2 className="mt-1 heading-sm text-text-primary">
                 Recent jobs
               </h2>
             </div>
@@ -302,13 +307,11 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="lg:col-span-5 p-10">
+        <Card className="lg:col-span-5 p-6">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <div className="text-xs font-medium text-text-muted tracking-tight">
-                Pipeline
-              </div>
-              <h2 className="mt-1 text-base font-semibold text-text-primary">
+              <div className="label">Pipeline</div>
+              <h2 className="mt-1 heading-sm text-text-primary">
                 Summary
               </h2>
             </div>

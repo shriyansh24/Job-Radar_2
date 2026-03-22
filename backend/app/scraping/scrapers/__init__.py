@@ -9,7 +9,6 @@ from app.scraping.scrapers.ai_scraper import AIScraper
 from app.scraping.scrapers.adaptive_parser import AdaptiveCareerParser
 from app.scraping.scrapers.content_hasher import ContentHasher
 from app.scraping.scrapers.detail_extractor import DetailPageExtractor
-from app.scraping.scrapers.scrapingbee import ScrapingBeeScraper
 from app.scraping.scrapers.scrapling import ScraplingScraper
 from app.scraping.scrapers.workday import WorkdayScraper
 
@@ -18,7 +17,6 @@ __all__ = [
     "AdaptiveCareerParser",
     "ContentHasher",
     "DetailPageExtractor",
-    "ScrapingBeeScraper",
     "ScraplingScraper",
     "WorkdayScraper",
 ]

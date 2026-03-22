@@ -23,7 +23,8 @@ logger = structlog.get_logger()
 _WORKDAY_URL_RE = re.compile(
     r"https?://(?P<tenant>[^.]+)\.(?P<subdomain>wd\d+)\.myworkdayjobs\.com"
     r"(?:/[a-z]{2}-[A-Z]{2,3})?"  # optional locale like /en-US
-    r"/(?P<section>[^/?#]+)"
+    r"/(?P<section>[^/?#]+)",
+    re.IGNORECASE,
 )
 
 
@@ -171,6 +172,12 @@ class WorkdayScraper(BaseScraper):
         )
         resp.raise_for_status()
         data = resp.json()
+        if not isinstance(data, dict):
+            logger.warning("workday.invalid_response_shape", url=query)
+            return []
+        if not isinstance(data.get("jobPostings", []), list):
+            logger.warning("workday.invalid_job_postings", url=query)
+            return []
 
         jobs = self._parse_response(data, base_url)
         logger.info("workday.fetched", count=len(jobs), total=data.get("total"))

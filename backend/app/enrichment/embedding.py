@@ -70,7 +70,7 @@ class EmbeddingService:
 
         jobs = (await self.db.scalars(query)).all()
 
-        count = 0
+        updates: list[dict[str, str]] = []
         for job in jobs:
             job_text = (
                 f"{job.title} {job.company_name or ''} "
@@ -81,16 +81,22 @@ class EmbeddingService:
             if embedding is None:
                 continue
 
-            # Store via raw SQL for pgvector compatibility
-            try:
+            updates.append({"emb": str(embedding), "id": job.id})
+
+        if not updates:
+            return 0
+
+        try:
+            for update in updates:
                 await self.db.execute(
                     text("UPDATE jobs SET embedding = :emb WHERE id = :id"),
-                    {"emb": str(embedding), "id": job.id},
+                    update,
                 )
-                count += 1
-            except Exception as e:
-                logger.debug("embedding_store_failed", job_id=job.id, error=str(e))
+            await self.db.commit()
+        except Exception as e:
+            await self.db.rollback()
+            logger.warning("embedding_batch_failed", error=str(e), attempted=len(updates))
+            return 0
 
-        await self.db.commit()
-        logger.info("embeddings_generated", count=count, total=len(jobs))
-        return count
+        logger.info("embeddings_generated", count=len(updates), total=len(jobs))
+        return len(updates)

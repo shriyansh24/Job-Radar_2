@@ -10,7 +10,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -30,12 +30,20 @@ class CanonicalJob(Base):
     remote_type: Mapped[str | None] = mapped_column(String(30))
     status: Mapped[str] = mapped_column(String(30), default="open")  # open, closed, stale
     source_count: Mapped[int] = mapped_column(Integer, default=1)
-    first_seen_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    last_refreshed_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    first_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    last_refreshed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     is_stale: Mapped[bool] = mapped_column(Boolean, default=False)
     merged_data: Mapped[dict | None] = mapped_column(JSONB)  # best-of-all-sources aggregate
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     sources: Mapped[list[RawJobSource]] = relationship(
         back_populates="canonical_job", cascade="all, delete-orphan"
@@ -54,7 +62,9 @@ class RawJobSource(Base):
     )
     source: Mapped[str] = mapped_column(String(50), nullable=False)
     source_url: Mapped[str | None] = mapped_column(Text)
-    scraped_at: Mapped[datetime | None] = mapped_column()
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    scraped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     canonical_job: Mapped[CanonicalJob] = relationship(back_populates="sources")

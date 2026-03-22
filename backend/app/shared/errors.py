@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from fastapi import HTTPException, status
 
+try:
+    HTTP_422_VALIDATION = status.HTTP_422_UNPROCESSABLE_CONTENT
+except AttributeError:  # pragma: no cover - compatibility with older FastAPI
+    HTTP_422_VALIDATION = status.HTTP_422_UNPROCESSABLE_ENTITY
+
 
 class AppError(HTTPException):
     def __init__(self, detail: str, status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR):
@@ -15,7 +20,7 @@ class NotFoundError(AppError):
 
 class ValidationError(AppError):
     def __init__(self, detail: str = "Validation error"):
-        super().__init__(detail=detail, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        super().__init__(detail=detail, status_code=HTTP_422_VALIDATION)
 
 
 class AuthError(AppError):

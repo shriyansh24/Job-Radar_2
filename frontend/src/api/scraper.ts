@@ -128,7 +128,7 @@ export const scraperApi = {
   triggerScraper: () =>
     apiClient.post<ScraperRunResult>('/scraper/run'),
   listTargets: (params?: TargetListParams) =>
-    apiClient.get<ScrapeTarget[]>('/scraper/targets', { params }),
+    apiClient.get<{ items: ScrapeTarget[]; total: number }>('/scraper/targets', { params }),
   getTarget: (id: string) =>
     apiClient.get<TargetWithAttempts>(`/scraper/targets/${id}`),
   importTargets: (targets: Partial<ScrapeTarget>[]) =>

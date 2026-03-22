@@ -81,3 +81,18 @@ def test_compute_next_run_failure_backoff():
     # Backoff: interval * min(2^failures, 8) = 120 * min(8, 8) = 960 minutes
     expected_min = datetime.now(UTC) + timedelta(minutes=900)
     assert next_at > expected_min
+
+
+def test_compute_next_run_clamps_invalid_intervals():
+    """Zero or negative intervals should fall back to a 1-minute minimum."""
+    zero_target = _target(schedule_interval_m=0)
+    negative_target = _target(schedule_interval_m=-15)
+
+    zero_next = compute_next_run(zero_target, success=True)
+    negative_next = compute_next_run(negative_target, success=False)
+
+    zero_min = datetime.now(UTC) + timedelta(seconds=30)
+    negative_min = datetime.now(UTC) + timedelta(seconds=30)
+
+    assert zero_next >= zero_min
+    assert negative_next >= negative_min

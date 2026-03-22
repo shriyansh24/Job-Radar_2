@@ -117,6 +117,15 @@ def test_extract_tenant_no_locale():
     assert result == ("netflix", "wd1", "NetflixJobs")
 
 
+def test_extract_tenant_uppercase_url():
+    """Workday URLs should parse regardless of hostname casing."""
+    scraper = WorkdayScraper.__new__(WorkdayScraper)
+    result = scraper._extract_tenant(
+        "https://NVIDIA.WD5.MYWORKDAYJOBS.COM/en-US/Careers"
+    )
+    assert result == ("NVIDIA", "WD5", "Careers")
+
+
 def test_extract_tenant_invalid_url():
     scraper = WorkdayScraper.__new__(WorkdayScraper)
     with pytest.raises(ValueError, match="Not a valid Workday URL"):

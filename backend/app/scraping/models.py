@@ -41,8 +41,8 @@ class ScraperRun(Base):
     tier_2_count: Mapped[int] = mapped_column(Integer, default=0)
     tier_3_count: Mapped[int] = mapped_column(Integer, default=0)
     tier_api_count: Mapped[int] = mapped_column(Integer, default=0)
-    started_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    completed_at: Mapped[datetime | None] = mapped_column()
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     duration_seconds: Mapped[Decimal | None] = mapped_column(Numeric)
 
 
@@ -117,6 +117,8 @@ class ScrapeAttempt(Base):
     content_hash_before: Mapped[str | None] = mapped_column(String(64))
     content_hash_after: Mapped[str | None] = mapped_column(String(64))
     content_changed: Mapped[bool | None] = mapped_column()
+    pages_crawled: Mapped[int | None] = mapped_column(Integer)
+    pagination_stopped_reason: Mapped[str | None] = mapped_column(String(100))
     error_class: Mapped[str | None] = mapped_column(String(100))
     error_message: Mapped[str | None] = mapped_column(Text)
     browser_used: Mapped[bool] = mapped_column(default=False)

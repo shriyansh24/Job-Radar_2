@@ -20,6 +20,10 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 
+class EnrichmentError(RuntimeError):
+    """Raised when the LLM enrichment response is missing or unusable."""
+
+
 class EnrichmentService:
     """AI-powered job enrichment: summary, skills, scoring."""
 
@@ -103,7 +107,7 @@ Return ONLY valid JSON, no markdown."""
         )
 
         if not response:
-            return {}
+            raise EnrichmentError("LLM enrichment returned an empty response")
 
         try:
             return json.loads(response)
@@ -115,7 +119,7 @@ Return ONLY valid JSON, no markdown."""
                 except json.JSONDecodeError:
                     pass
             logger.warning("llm_json_parse_failed", response_preview=response[:200])
-            return {}
+            raise EnrichmentError("LLM enrichment returned invalid JSON")
 
     async def enrich_batch(self, user_id: uuid.UUID | None = None, limit: int = 50) -> int:
         """Enrich unenriched jobs in batch."""

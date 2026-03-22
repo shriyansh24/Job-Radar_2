@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import time
 import uuid
@@ -37,6 +38,9 @@ class ScraperRunResult:
 
 class ScrapingService:
     """Orchestrates scraping across all sources."""
+
+    SOURCE_FETCH_TIMEOUT_S = 300.0
+    PAGINATION_TIMEOUT_S = 30.0
 
     def __init__(self, db: AsyncSession, settings: Settings):
         self.db = db
@@ -104,7 +108,10 @@ class ScrapingService:
 
             try:
                 source_start = time.monotonic()
-                jobs = await scraper.fetch_jobs(query, location)
+                jobs = await asyncio.wait_for(
+                    scraper.fetch_jobs(query, location),
+                    timeout=self.SOURCE_FETCH_TIMEOUT_S,
+                )
                 elapsed = time.monotonic() - source_start
                 all_jobs.extend(jobs)
                 cb.record_success()
@@ -115,13 +122,20 @@ class ScrapingService:
                     duration_s=round(elapsed, 2),
                 )
                 if event_callback:
-                    await event_callback(
-                        {
-                            "type": "scraper_progress",
-                            "source": source_name,
-                            "count": len(jobs),
-                        }
-                    )
+                    try:
+                        await event_callback(
+                            {
+                                "type": "scraper_progress",
+                                "source": source_name,
+                                "count": len(jobs),
+                            }
+                        )
+                    except Exception as exc:
+                        logger.warning(
+                            "scraper_progress_event_failed",
+                            source=source_name,
+                            error=str(exc),
+                        )
             except Exception as e:
                 cb.record_failure()
                 result.errors.append(f"{source_name}: {e!s}")
@@ -378,11 +392,14 @@ class ScrapingService:
 
                         crawler = PageCrawler()
                         try:
-                            pagination_result = await crawler.crawl(
-                                start_url=target.url,
-                                first_page_html=result.html,
-                                fetch_fn=_fetch_page,
-                                parse_fn=_parse_page,
+                            pagination_result = await asyncio.wait_for(
+                                crawler.crawl(
+                                    start_url=target.url,
+                                    first_page_html=result.html,
+                                    fetch_fn=_fetch_page,
+                                    parse_fn=_parse_page,
+                                ),
+                                timeout=self.PAGINATION_TIMEOUT_S,
                             )
                             # Record pagination metadata on the attempt
                             attempt.pages_crawled = pagination_result.pages_crawled
@@ -437,7 +454,17 @@ class ScrapingService:
             results["targets_attempted"] += 1
 
         tasks = [process_target(t) for t in targets]
-        await asyncio.gather(*tasks, return_exceptions=True)
+        task_results = await asyncio.gather(*tasks, return_exceptions=True)
+        batch_errors = [r for r in task_results if isinstance(r, Exception)]
+        if batch_errors:
+            results["targets_failed"] += len(batch_errors)
+            results["errors"].extend(str(error) for error in batch_errors)
+            logger.error(
+                "target_batch_aborted",
+                errors=[str(error) for error in batch_errors],
+            )
+            await self.db.rollback()
+            return results
 
         try:
             await self.db.commit()

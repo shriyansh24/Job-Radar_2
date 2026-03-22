@@ -30,11 +30,11 @@ export async function getMeApi(): Promise<User> {
   return data;
 }
 
-export async function refreshApi(
-  refreshToken: string
-): Promise<TokenResponse> {
-  const { data } = await apiClient.post<TokenResponse>("/auth/refresh", {
-    refresh_token: refreshToken,
-  });
+export async function refreshApi(): Promise<TokenResponse> {
+  const { data } = await apiClient.post<TokenResponse>("/auth/refresh", {});
   return data;
+}
+
+export async function logoutApi(): Promise<void> {
+  await apiClient.post("/auth/logout", {});
 }

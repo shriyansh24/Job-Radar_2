@@ -362,6 +362,28 @@ async def test_crawl_does_not_revisit_urls():
 
 
 @pytest.mark.asyncio
+async def test_crawl_normalizes_urls_before_loop_detection():
+    """Crawler should treat equivalent URLs as the same page."""
+    fetch_calls: list[str] = []
+
+    async def fetch(url: str) -> str:
+        fetch_calls.append(url)
+        return _make_html_no_pagination()
+
+    crawler = PageCrawler(max_pages=10, delay=0)
+    result = await crawler.crawl(
+        start_url="https://example.com/jobs?page=1&sort=asc",
+        first_page_html='<a rel="next" href="https://example.com/jobs/?sort=asc&page=1#fragment">Next</a>',
+        fetch_fn=fetch,
+        parse_fn=_one_job_parse,
+    )
+
+    assert result.pages_crawled == 1
+    assert fetch_calls == []
+    assert result.urls_visited == ["https://example.com/jobs?page=1&sort=asc"]
+
+
+@pytest.mark.asyncio
 async def test_crawl_parse_error_does_not_abort():
     """A parse exception on one page is caught; crawl continues."""
     pages = {

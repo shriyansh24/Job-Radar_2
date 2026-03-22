@@ -10,7 +10,9 @@ describe("Login", () => {
         <Login />
       </BrowserRouter>
     );
-    expect(screen.getByText("JobRadar V2")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /jobradar/i })
+    ).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("you@example.com")
     ).toBeInTheDocument();

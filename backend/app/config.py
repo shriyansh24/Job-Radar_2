@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import warnings
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_SECRET_KEY = "change-me-in-production"
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_prefix="JR_")
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="JR_", extra="ignore")
 
     # App
     app_name: str = "JobRadar V2"
@@ -14,17 +14,22 @@ class Settings(BaseSettings):
     api_prefix: str = "/api/v1"
 
     # Auth
-    secret_key: str = "change-me-in-production"
+    secret_key: str = DEFAULT_SECRET_KEY
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
+    access_cookie_name: str = "jr_access_token"
+    refresh_cookie_name: str = "jr_refresh_token"
+    cookie_secure: bool = False
+    cookie_samesite: str = "lax"
 
     # Database
     database_url: str = "postgresql+asyncpg://jobradar:jobradar@localhost:5432/jobradar"
     database_echo: bool = False
 
     # Redis
-    redis_url: str = "redis://localhost:6379/0"
+    redis_url: str = "redis://:change-me-redis-password@localhost:6379/0"
+    redis_use_tls: bool = False
 
     # LLM
     openrouter_api_key: str = ""
@@ -36,8 +41,6 @@ class Settings(BaseSettings):
     serpapi_api_key: str = ""
     theirstack_api_key: str = ""
     apify_api_key: str = ""
-    scrapingbee_api_key: str = ""
-    scrapling_enabled: bool = False
 
     # Auto-apply
     auto_apply_enabled: bool = False
@@ -46,13 +49,20 @@ class Settings(BaseSettings):
 
     # CORS
     cors_origins: list[str] = ["http://localhost:5173"]
+    cors_methods: list[str] = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    cors_headers: list[str] = ["Accept", "Authorization", "Content-Type", "X-Request-ID"]
+
+    # API rate limits
+    api_rate_limit_per_minute: int = 120
+    login_rate_limit_per_minute: int = 10
+
+
+def validate_runtime_settings(settings: Settings) -> None:
+    if settings.secret_key == DEFAULT_SECRET_KEY and not settings.debug:
+        raise RuntimeError(
+            "JR_SECRET_KEY is using the default value. Set a secure secret key "
+            "or enable JR_DEBUG for local-only development."
+        )
 
 
 settings = Settings()
-
-if settings.secret_key == "change-me-in-production" and not settings.debug:
-    warnings.warn(
-        "JR_SECRET_KEY is using the default value. Set a secure secret key "
-        "in production via the JR_SECRET_KEY environment variable.",
-        stacklevel=1,
-    )

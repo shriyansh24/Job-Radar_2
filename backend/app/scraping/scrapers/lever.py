@@ -25,9 +25,14 @@ class LeverScraper(BaseScraper):
         resp = await self.client.get(url, params=params)
         resp.raise_for_status()
         postings = resp.json()
+        if not isinstance(postings, list):
+            logger.warning("lever.invalid_response_shape", query=query)
+            return []
 
         jobs: list[ScrapedJob] = []
         for item in postings:
+            if not isinstance(item, dict):
+                continue
             cats = item.get("categories", {})
             jobs.append(
                 ScrapedJob(

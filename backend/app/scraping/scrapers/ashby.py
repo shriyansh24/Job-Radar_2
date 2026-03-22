@@ -37,11 +37,28 @@ class AshbyScraper(BaseScraper):
         resp = await self.client.post(self.GRAPHQL_URL, json=payload)
         resp.raise_for_status()
         data = resp.json()
+        if not isinstance(data, dict):
+            logger.warning("ashby.invalid_response_shape", query=query)
+            return []
+        if data.get("errors"):
+            logger.warning("ashby.graphql_errors", query=query)
+            return []
 
         jobs: list[ScrapedJob] = []
-        board = data.get("data", {}).get("jobBoard", {})
+        board_data = data.get("data", {})
+        if not isinstance(board_data, dict):
+            logger.warning("ashby.invalid_data_payload", query=query)
+            return []
+        board = board_data.get("jobBoard", {})
+        if not isinstance(board, dict):
+            logger.warning("ashby.invalid_board_payload", query=query)
+            return []
         for team in board.get("teams", []):
+            if not isinstance(team, dict):
+                continue
             for item in team.get("jobs", []):
+                if not isinstance(item, dict):
+                    continue
                 jobs.append(
                     ScrapedJob(
                         title=item["title"],

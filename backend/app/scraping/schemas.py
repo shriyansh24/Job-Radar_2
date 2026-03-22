@@ -163,6 +163,8 @@ class ScrapeAttemptResponse(BaseModel):
     content_hash_before: str | None = None
     content_hash_after: str | None = None
     content_changed: bool | None = None
+    pages_crawled: int | None = None
+    pagination_stopped_reason: str | None = None
     error_class: str | None = None
     error_message: str | None = None
     browser_used: bool

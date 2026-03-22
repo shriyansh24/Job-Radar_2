@@ -12,7 +12,6 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/health")
 async def health(
-    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     svc = AdminService(db)

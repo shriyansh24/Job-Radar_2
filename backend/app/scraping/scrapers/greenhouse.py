@@ -27,9 +27,18 @@ class GreenhouseScraper(BaseScraper):
         resp = await self.client.get(url, params=params)
         resp.raise_for_status()
         data = resp.json()
+        if not isinstance(data, dict):
+            logger.warning("greenhouse.invalid_response_shape", query=query)
+            return []
+        jobs_data = data.get("jobs", [])
+        if not isinstance(jobs_data, list):
+            logger.warning("greenhouse.invalid_jobs_payload", query=query)
+            return []
 
         jobs: list[ScrapedJob] = []
-        for item in data.get("jobs", []):
+        for item in jobs_data:
+            if not isinstance(item, dict):
+                continue
             loc = item.get("location", {}).get("name", "")
 
             posted_at = None

@@ -4,19 +4,39 @@ services:
     ports: ["8000:8000"]
     environment:
       JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
-      JR_REDIS_URL: redis://redis:6379/0
+      JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
       JR_SECRET_KEY: docker-dev-secret
       JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/admin/health', timeout=5).read()",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
   frontend:
     build: ./frontend
     ports: ["3000:80"]
-    depends_on: [backend]
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
 
   postgres:
     image: pgvector/pgvector:pg16
@@ -33,7 +53,25 @@ services:
 
   redis:
     image: redis:7-alpine
+    command:
+      [
+        "sh",
+        "-c",
+        "if [ -f /etc/redis/tls/redis.crt ] && [ -f /etc/redis/tls/redis.key ] && [ -f /etc/redis/tls/ca.crt ]; then exec redis-server --port 0 --tls-port 6379 --tls-cert-file /etc/redis/tls/redis.crt --tls-key-file /etc/redis/tls/redis.key --tls-ca-cert-file /etc/redis/tls/ca.crt --tls-auth-clients no --requirepass jobradar-redis; else exec redis-server --requirepass jobradar-redis; fi",
+      ]
     ports: ["6379:6379"]
+    volumes:
+      - ./infra/redis/tls:/etc/redis/tls:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "if [ -f /etc/redis/tls/ca.crt ]; then redis-cli --tls --cacert /etc/redis/tls/ca.crt -a jobradar-redis ping | grep -q PONG; else redis-cli -a jobradar-redis ping | grep -q PONG; fi",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
 volumes:
   pgdata:

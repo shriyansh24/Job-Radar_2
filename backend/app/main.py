@@ -6,10 +6,15 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings
+from app.config import settings, validate_runtime_settings
 from app.database import engine
 from app.shared.logging import setup_logging
-from app.shared.middleware import RequestIDMiddleware, TimingMiddleware
+from app.shared.middleware import (
+    ApiRateLimitMiddleware,
+    RequestIDMiddleware,
+    SecurityHeadersMiddleware,
+    TimingMiddleware,
+)
 
 logger = structlog.get_logger()
 
@@ -19,6 +24,7 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):  # noqa: ARG001
+        validate_runtime_settings(settings)
         logger.info("starting_up", app=settings.app_name)
 
         # Start background scheduler
@@ -42,12 +48,14 @@ def create_app() -> FastAPI:
     )
 
     # Middleware (order matters — outermost first)
+    app.add_middleware(ApiRateLimitMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=settings.cors_methods,
+        allow_headers=settings.cors_headers,
     )
     app.add_middleware(TimingMiddleware)
     app.add_middleware(RequestIDMiddleware)

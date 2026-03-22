@@ -33,6 +33,7 @@ class BrowserPool:
         self._tier2_sem = asyncio.Semaphore(max_tier2)
         self._tier3_sem = asyncio.Semaphore(max_tier3)
         self._domain_sems: dict[str, asyncio.Semaphore] = {}
+        self._domain_refs: dict[str, int] = {}
         self._domain_lock = asyncio.Lock()
         self._max_per_domain = max_per_domain
         self._active = 0
@@ -44,7 +45,17 @@ class BrowserPool:
                 self._domain_sems[domain] = asyncio.Semaphore(
                     self._max_per_domain
                 )
+            self._domain_refs[domain] = self._domain_refs.get(domain, 0) + 1
             return self._domain_sems[domain]
+
+    async def _release_domain_sem(self, domain: str) -> None:
+        async with self._domain_lock:
+            remaining = self._domain_refs.get(domain, 0) - 1
+            if remaining <= 0:
+                self._domain_refs.pop(domain, None)
+                self._domain_sems.pop(domain, None)
+                return
+            self._domain_refs[domain] = remaining
 
     @asynccontextmanager
     async def acquire(
@@ -74,6 +85,7 @@ class BrowserPool:
             sem.release()
             if domain_sem:
                 domain_sem.release()
+                await self._release_domain_sem(domain or "")
 
     @property
     def active_sessions(self) -> int:
@@ -89,4 +101,6 @@ class BrowserPool:
         async with self._domain_lock:
             stale = set(self._domain_sems) - active_domains
             for d in stale:
-                del self._domain_sems[d]
+                if self._domain_refs.get(d, 0) == 0:
+                    del self._domain_sems[d]
+                    self._domain_refs.pop(d, None)

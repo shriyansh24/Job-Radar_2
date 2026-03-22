@@ -1,8 +1,7 @@
-import { Buildings, MagnifyingGlass } from "@phosphor-icons/react";
+import { Buildings } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { companiesApi, type Company } from "../api/phase7a";
-import Badge from "../components/ui/Badge";
 
 const stateColors: Record<string, string> = {
   verified: "bg-green-500/10 text-green-400",

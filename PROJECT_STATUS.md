@@ -1,7 +1,7 @@
 # JobRadar V2 — Project Status & Roadmap
 
 > **Single source of truth across all sessions. Read this file first in every new session.**
-> Last updated: March 19, 2026
+> Last updated: March 20, 2026
 
 ---
 
@@ -9,16 +9,17 @@
 
 ### What's Working
 - Login/Auth system (JWT + refresh tokens)
-- Dashboard showing 26 real scraped ML jobs with KPI cards
+- Dashboard showing **135 real scraped ML/DS jobs** with KPI cards
 - Job Board displaying jobs with salary ranges, locations, badges
-- Full sidebar navigation (15 pages)
+- Full sidebar navigation (16 pages, including new Targets page)
 - Profile seeded with user data (Shriyansh Singh, ML Engineer, OPT, Austin TX)
 - Resume uploaded (Shriyansh__Sing__Resume.pdf)
 - PostgreSQL database with pgvector extension
 - Redis/Memurai for caching
-- API-based scrapers working: SerpAPI, JobSpy (Indeed), TheirStack, Greenhouse, Lever, Ashby
+- **Scraper platform fully operational** (see details below)
 - All v1 NLP/LLM features ported: 3-stage resume tailoring, gap analysis, council evaluation, interview prep, salary research, cover letter generation, copilot chat
 - Code decomposition done: resume (658->183), interview (454->200), copilot (223->187), pipeline (182->163)
+- **Frontend performance optimized**: staleTime 5min, gcTime 10min, prefetch on nav hover, lazy-loaded recharts, keepPreviousData pagination
 
 ### Scraper Platform (NEW — completed 2026-03-19)
 - **Database:** `scrape_targets` table (replaces career_pages), `scrape_attempts` table for telemetry, Job lifecycle columns (first_seen_at, last_seen_at, disappeared_at, seen_count)
@@ -30,31 +31,37 @@
 - **Testing:** 179 unit tests + 67 contract tests + ATS fixture files (Greenhouse, Lever, Ashby live + Workday synthetic)
 - **Dependencies added:** cloudscraper, nodriver, camoufox, seleniumbase, crawl4ai, browserforge, fake-useragent, protego, scrapling, typer, rich, openpyxl
 
-### How Current Scraping Works
-Two separate systems exist today:
+### How Scraping Works Now (Updated March 20, 2026)
 
-**System 1: KEYWORD SEARCH (breadth-based)**
-- User sets `search_queries` in profile: `[{"query": "ML Engineer", "location": "Austin"}]`
-- `POST /scraper/run` reads queries from profile (max 3), blasts to all scrapers
-- SerpAPI, JobSpy, TheirStack, Apify understand keywords -> search everywhere
-- Greenhouse/Lever/Ashby IGNORE keyword queries (they need company slugs)
-- CareerPage scraper IGNORES keywords (needs URLs)
-- Scheduler: `run_scheduled_scrape()` every 6 hours
-- Result: finds jobs from aggregators, but 24-72h behind actual career pages
+**Three modes running:**
 
-**System 2: CAREER PAGES (targeted)**
-- User manually saves URLs: `POST /scraper/career-pages {"url": "...", "company_name": "..."}`
-- Scheduler: `run_career_page_scrape()` every 12 hours
-- Uses basic CareerPageScraper (BeautifulSoup + JSON-LD) — no stealth, no ATS detection
-- Result: direct-from-source, but requires manual URL entry one by one
-- **Currently 0 career pages loaded** — the 1,473 H1B URLs sit unused in Excel
+1. **KEYWORD SEARCH** — `POST /scraper/run` blasts SerpAPI, JobSpy, TheirStack
+2. **TARGET BATCH** — `run_target_batch_job()` every 30min (career pages) + 2hr (watchlist)
+   - 1,381 H1B career pages imported and classified
+   - Smart tier routing: Tier 0 (ATS API) → Tier 1 (HTTP) → Tier 2 (browser) → Tier 3 (hardened)
+   - Adapters registered: cloudscraper, scrapling (dual-mode), nodriver, camoufox, seleniumbase
+   - ATS auto-detection: 141 Workday, 15 Greenhouse, 12 SmartRecruiters, 8 iCIMS, 5 Lever, 5 Ashby
+   - Watchlist companies (11): Amazon, Microsoft, Meta, Google, Uber, SAP, Snap, Airbnb, Lyft, OpenAI, Macrosoft
+3. **PAGINATED CRAWLING** — PageCrawler follows "Next" links across multi-page career listings
 
-**What's Missing:**
-- Mode 2 (career pages) has 0 URLs loaded — 1,473 H1B URLs unused
-- Mode 3 (watchlist priority) doesn't exist — dream companies not getting special treatment
-- No ATS auto-detection (Greenhouse URL fed to HTML parser instead of API parser)
-- No smart routing between scraper tiers
-- Scrapling (stealth scraper) is dead code, not wired up
+**End-to-end validated:** Triggered DoorDash (Greenhouse) → Tier 0 → 50 jobs extracted ✅
+
+### Frontend Scraper UI (Updated March 20, 2026)
+- **Targets page** (`/targets`): list 1,381 targets with filters, bulk import modal, trigger batch, per-target detail with attempt history
+- **ScraperControlPanel**: wired into Settings page with "Run All Scrapers" + per-source "Run Now" buttons
+- **ScraperLog**: draggable floating toggle on every page, SSE live stream
+- **API client**: 15 functions for targets, attempts, triggers, imports
+
+### What's Still Missing / Next Up
+- ~~Frontend performance fixes~~ ✅ DONE (staleTime 5min, gcTime 10min, prefetch, lazy recharts)
+- ~~Classification probing~~ ✅ DONE (probed 1,191 targets, reclassified 9: 7 iCIMS + 1 Workday + 1 SmartRecruiters)
+- ~~Tier testing~~ ✅ DONE (Greenhouse, Lever, Ashby, keyword search all working. 135 jobs in DB.)
+- **Workday scraper URL parsing fix** — NVIDIA URL format not parsed correctly (tenant extraction)
+- **Parser tuning** for complex JS-heavy career pages (Microsoft, Amazon, Meta need Tier 2+ rendering)
+- **Refero UI design research** — MCP server added, available next session for UI polish
+- **Vendoring scraper libraries** locally (currently pip-installed, long-term should be source-vendored)
+- **Docker deployment** preparation
+- **E2E Playwright tests** before production deploy
 
 ---
 

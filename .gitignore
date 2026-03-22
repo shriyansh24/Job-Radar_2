@@ -15,4 +15,9 @@ pgdata/
 *.db
 *.sqlite3
 .claude/worktrees/
+.claude/settings.local.json
 .cursor/
+current_ui_screenshots/
+job_radar_v2_folder_tree*.txt
+v2_*_files.txt
+v2_full_tree.txt

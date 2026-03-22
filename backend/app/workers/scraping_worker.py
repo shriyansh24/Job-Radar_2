@@ -137,8 +137,8 @@ async def run_target_batch_job(
 
             # 2. Build adapter registry and a lightweight browser pool stub
             #    (BrowserPool is provided by Chunk 4; if unavailable, use a no-op)
-            adapter_registry = AdapterRegistry()
-            _register_default_adapters(adapter_registry, settings)
+            from app.scraping.execution.adapter_registry import build_default_registry
+            adapter_registry = build_default_registry(settings)
 
             try:
                 from app.scraping.execution.browser_pool import BrowserPool
@@ -184,72 +184,6 @@ async def run_target_batch_job(
             logger.error(
                 "target_batch_job_failed", source_kind=source_kind, error=str(e)
             )
-
-
-def _register_default_adapters(registry, settings: Settings) -> None:
-    """Register available adapters into the registry based on installed packages."""
-    # ATS adapters
-    try:
-        from app.scraping.scrapers.greenhouse import GreenhouseScraper
-        registry.register_ats("greenhouse", GreenhouseScraper(settings))
-    except Exception:
-        pass
-
-    try:
-        from app.scraping.scrapers.lever import LeverScraper
-        registry.register_ats("lever", LeverScraper(settings))
-    except Exception:
-        pass
-
-    try:
-        from app.scraping.scrapers.ashby import AshbyScraper
-        registry.register_ats("ashby", AshbyScraper(settings))
-    except Exception:
-        pass
-
-    try:
-        from app.scraping.scrapers.workday import WorkdayScraper
-        registry.register_ats("workday", WorkdayScraper(settings))
-    except Exception:
-        pass
-
-    # Fetchers
-    try:
-        from app.scraping.execution.cloudscraper_fetcher import CloudscraperFetcher
-        registry.register_fetcher("cloudscraper", CloudscraperFetcher())
-    except Exception:
-        pass
-
-    try:
-        from app.scraping.execution.scrapling_fetcher import ScraplingFetcher
-        # ScraplingFetcher is a dual-mode adapter: same instance handles both
-        # fast HTTP fetching (scrapling_fast) and stealth browser rendering
-        # (scrapling_stealth).  No constructor arguments are accepted.
-        scrapling = ScraplingFetcher()
-        registry.register_fetcher("scrapling_fast", scrapling)
-        registry.register_browser("scrapling_stealth", scrapling)
-    except Exception:
-        pass
-
-    # Browsers
-    try:
-        from app.scraping.execution.nodriver_browser import NodriverBrowser
-        registry.register_browser("nodriver", NodriverBrowser())
-    except Exception:
-        pass
-
-    try:
-        from app.scraping.execution.camoufox_browser import CamoufoxBrowser
-        registry.register_browser("camoufox", CamoufoxBrowser())
-    except Exception:
-        pass
-
-    try:
-        from app.scraping.execution.seleniumbase_browser import SeleniumBaseBrowser
-        registry.register_browser("seleniumbase", SeleniumBaseBrowser())
-    except Exception:
-        pass
-
 
 class _NoOpBrowserPool:
     """Stub browser pool used when the real BrowserPool (Chunk 4) is not available."""

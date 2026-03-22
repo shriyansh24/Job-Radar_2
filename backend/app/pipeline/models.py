@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Numeric, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -19,16 +19,18 @@ class Application(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
-    job_id: Mapped[str | None] = mapped_column(ForeignKey("jobs.id"), nullable=True)
+    job_id: Mapped[str | None] = mapped_column(
+        ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True
+    )
     company_name: Mapped[str | None] = mapped_column(String(300))
     position_title: Mapped[str | None] = mapped_column(String(500))
     status: Mapped[str] = mapped_column(String(30), default="saved")
     source: Mapped[str | None] = mapped_column(String(50))
-    applied_at: Mapped[datetime | None] = mapped_column()
-    offer_at: Mapped[datetime | None] = mapped_column()
-    rejected_at: Mapped[datetime | None] = mapped_column()
-    follow_up_at: Mapped[datetime | None] = mapped_column()
-    reminder_at: Mapped[datetime | None] = mapped_column()
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    offer_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    rejected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    follow_up_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reminder_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     notes: Mapped[str | None] = mapped_column(Text)
     resume_version_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("resume_versions.id"), nullable=True
@@ -37,8 +39,12 @@ class Application(Base):
         ForeignKey("cover_letters.id"), nullable=True
     )
     salary_offered: Mapped[Decimal | None] = mapped_column(Numeric)
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     # Relationships
     job: Mapped[Job | None] = relationship(back_populates="applications")
@@ -58,7 +64,9 @@ class ApplicationStatusHistory(Base):
     new_status: Mapped[str] = mapped_column(String(30), nullable=False)
     change_source: Mapped[str | None] = mapped_column(String(50))
     note: Mapped[str | None] = mapped_column(Text)
-    changed_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     # Relationships
     application: Mapped[Application] = relationship(back_populates="status_history")

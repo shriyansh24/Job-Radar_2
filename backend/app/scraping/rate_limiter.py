@@ -144,7 +144,8 @@ class RateLimiter:
                     )
                     await asyncio.sleep(wait)
 
-        assert last_exc is not None
+        if last_exc is None:
+            raise RuntimeError("RateLimiter.with_retry exhausted without capturing an exception")
         raise last_exc
 
 
@@ -156,6 +157,7 @@ DEFAULT_POLICIES: dict[str, RatePolicy] = {
     "greenhouse": RatePolicy(rps=10.0, backoff_base=1.0, max_retries=3, circuit_threshold=5),
     "lever": RatePolicy(rps=5.0, backoff_base=1.0, max_retries=3, circuit_threshold=5),
     "ashby": RatePolicy(rps=5.0, backoff_base=1.0, max_retries=3, circuit_threshold=5),
+    "workday": RatePolicy(rps=5.0, backoff_base=1.0, max_retries=3, circuit_threshold=5),
     "serpapi": RatePolicy(rps=1.0, backoff_base=2.0, max_retries=3, circuit_threshold=5),
     "jobspy": RatePolicy(rps=0.5, backoff_base=2.0, max_retries=2, circuit_threshold=5),
     "theirstack": RatePolicy(rps=2.0, backoff_base=1.0, max_retries=3, circuit_threshold=5),

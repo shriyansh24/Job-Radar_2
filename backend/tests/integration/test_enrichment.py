@@ -8,7 +8,7 @@ import pytest
 
 from app.config import Settings
 from app.enrichment.llm_client import LLMClient
-from app.enrichment.service import EnrichmentService
+from app.enrichment.service import EnrichmentError, EnrichmentService
 
 
 def _settings() -> Settings:
@@ -136,7 +136,7 @@ class TestEnrichJob:
         assert result.summary_ai is None
 
     @pytest.mark.asyncio
-    async def test_empty_llm_response_graceful(self):
+    async def test_empty_llm_response_raises_explicit_error(self):
         llm = LLMClient(api_key="test-key")
         db = AsyncMock()
         svc = EnrichmentService(db, llm, _settings())
@@ -144,11 +144,11 @@ class TestEnrichJob:
         job = _fake_job()
 
         with patch.object(llm, "chat", new_callable=AsyncMock, return_value=""):
-            result = await svc.enrich_job(job)
+            with pytest.raises(EnrichmentError, match="empty response"):
+                await svc.enrich_job(job)
 
-        # Should still clean HTML even if LLM fails
-        assert result.description_clean is not None
-        assert result.is_enriched is True
+        assert job.description_clean is not None
+        assert job.is_enriched is False
 
     @pytest.mark.asyncio
     async def test_malformed_json_recovery(self):

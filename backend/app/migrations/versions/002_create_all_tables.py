@@ -533,3 +533,5 @@ def downgrade() -> None:
         op.execute("DROP INDEX IF EXISTS idx_jobs_search")
 
     op.drop_table("jobs")
+    if is_pg:
+        op.execute("DROP EXTENSION IF EXISTS vector")

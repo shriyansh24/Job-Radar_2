@@ -51,6 +51,7 @@ export interface AutoApplyProfileCreate {
 export interface AutoApplyRuleCreate {
   profile_id?: string;
   name?: string;
+  is_active?: boolean;
   priority?: number;
   min_match_score?: number;
   required_keywords?: string[];

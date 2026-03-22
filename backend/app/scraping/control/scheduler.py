@@ -6,6 +6,11 @@ from datetime import datetime, timedelta, UTC
 from app.scraping.control.priority_scorer import compute_priority_score
 
 
+def _validated_interval_minutes(interval: int | None) -> int:
+    """Clamp scheduler intervals to a positive minimum."""
+    return max(1, int(interval or 0))
+
+
 def select_due_targets(
     targets: list,
     batch_size: int = 50,
@@ -35,7 +40,7 @@ def select_due_targets(
 def compute_next_run(target, success: bool) -> datetime:
     """Compute next_scheduled_at based on outcome."""
     now = datetime.now(UTC)
-    interval = target.schedule_interval_m
+    interval = _validated_interval_minutes(target.schedule_interval_m)
 
     if success:
         return now + timedelta(minutes=interval)

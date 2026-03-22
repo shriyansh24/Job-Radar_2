@@ -330,7 +330,7 @@ async def trigger_target(
 ) -> ScrapeAttemptResponse:
     """Force-run a single scrape target immediately."""
     from app.config import settings
-    from app.scraping.execution.adapter_registry import AdapterRegistry
+    from app.scraping.execution.adapter_registry import build_default_registry
     from app.scraping.execution.browser_pool import BrowserPool
     from app.scraping.models import ScraperRun
     from app.scraping.service import ScrapingService
@@ -356,7 +356,7 @@ async def trigger_target(
     await db.refresh(run)
 
     service = ScrapingService(db, settings)
-    adapter_registry = AdapterRegistry()
+    adapter_registry = build_default_registry(settings)
     browser_pool = BrowserPool()
 
     await service.run_target_batch(
@@ -490,7 +490,7 @@ async def trigger_batch(
     """Trigger a batch scrape run for due targets."""
     from app.config import settings
     from app.scraping.control.scheduler import select_due_targets
-    from app.scraping.execution.adapter_registry import AdapterRegistry
+    from app.scraping.execution.adapter_registry import build_default_registry
     from app.scraping.execution.browser_pool import BrowserPool
     from app.scraping.models import ScraperRun
     from app.scraping.service import ScrapingService
@@ -535,7 +535,7 @@ async def trigger_batch(
         )
 
     service = ScrapingService(db, settings)
-    adapter_registry = AdapterRegistry()
+    adapter_registry = build_default_registry(settings)
     browser_pool = BrowserPool()
 
     batch_result = await service.run_target_batch(

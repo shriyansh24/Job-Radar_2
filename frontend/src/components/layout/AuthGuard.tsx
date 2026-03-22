@@ -4,14 +4,22 @@ import { useAuthStore } from "../../store/useAuthStore";
 
 export default function AuthGuard({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const initialized = useAuthStore((s) => s.initialized);
+  const loadFromSession = useAuthStore((s) => s.loadFromSession);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!initialized) {
+      void loadFromSession();
+    }
+  }, [initialized, loadFromSession]);
+
+  useEffect(() => {
+    if (initialized && !isAuthenticated) {
       navigate("/login", { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [initialized, isAuthenticated, navigate]);
 
-  if (!isAuthenticated) return null;
+  if (!initialized || !isAuthenticated) return null;
   return <>{children}</>;
 }

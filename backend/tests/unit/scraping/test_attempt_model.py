@@ -52,6 +52,7 @@ def test_scrape_attempt_has_required_columns():
         "scraper_name", "parser_name", "status", "http_status",
         "duration_ms", "retries", "escalations", "jobs_extracted",
         "content_hash_before", "content_hash_after", "content_changed",
+        "pages_crawled", "pagination_stopped_reason",
         "error_class", "error_message", "browser_used", "created_at",
     }
     assert required.issubset(columns), f"Missing columns: {required - columns}"

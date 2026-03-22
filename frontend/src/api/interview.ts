@@ -3,17 +3,23 @@ import apiClient from './client';
 export interface InterviewSession {
   id: string;
   job_id: string | null;
-  questions: Record<string, unknown>[];
+  questions: InterviewQuestion[];
   answers: Record<string, unknown>[];
-  scores: Record<string, unknown>[];
+  scores: InterviewScore[];
   overall_score: number | null;
   created_at: string;
 }
 
 export interface InterviewQuestion {
   question: string;
-  category: string;
-  difficulty: string;
+  category?: string | null;
+  type?: string | null;
+  difficulty?: string | null;
+}
+
+export interface InterviewScore {
+  question_index?: number;
+  score?: number | null;
 }
 
 export interface GenerateParams {

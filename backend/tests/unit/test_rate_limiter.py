@@ -5,7 +5,14 @@ import time
 
 import pytest
 
-from app.scraping.rate_limiter import CircuitBreaker, TokenBucketLimiter
+from app.scraping.rate_limiter import (
+    DEFAULT_POLICIES,
+    CircuitBreaker,
+    RateLimiter,
+    RatePolicy,
+    TokenBucketLimiter,
+    get_limiter,
+)
 
 
 class TestTokenBucketLimiter:
@@ -96,3 +103,22 @@ class TestCircuitBreaker:
         cb.can_execute()  # half-open
         cb.record_failure()
         assert cb.state == "open"
+
+
+def test_workday_has_dedicated_policy():
+    limiter = get_limiter("workday")
+
+    assert "workday" in DEFAULT_POLICIES
+    assert limiter._policy is DEFAULT_POLICIES["workday"]
+    assert limiter._policy.rps == 5.0
+
+
+@pytest.mark.asyncio
+async def test_with_retry_raises_runtime_error_when_no_attempts_run():
+    limiter = RateLimiter(RatePolicy(rps=1.0, max_retries=-1))
+
+    async def never_called():
+        raise AssertionError("callback should not run")
+
+    with pytest.raises(RuntimeError, match="without capturing an exception"):
+        await limiter.with_retry(never_called)

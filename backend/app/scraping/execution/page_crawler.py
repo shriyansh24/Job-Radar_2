@@ -10,7 +10,7 @@ import asyncio
 import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from urllib.parse import urljoin, urlparse, parse_qs, urlencode, urlunparse
+from urllib.parse import parse_qs, parse_qsl, urlencode, urljoin, urlparse, urlunparse
 
 import structlog
 
@@ -46,6 +46,22 @@ def _valid_href(href: str | None) -> bool:
         return False
     stripped = href.strip()
     return not stripped.startswith(("#", "javascript:", "mailto:"))
+
+
+def _normalize_visit_url(url: str) -> str:
+    """Normalize URLs so loop detection ignores fragments, slash noise, and param order."""
+    parsed = urlparse(url)
+    path = parsed.path.rstrip("/") or "/"
+    query = urlencode(sorted(parse_qsl(parsed.query, keep_blank_values=True)), doseq=True)
+    return urlunparse(
+        parsed._replace(
+            scheme=parsed.scheme.lower(),
+            netloc=parsed.netloc.lower(),
+            path=path,
+            query=query,
+            fragment="",
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -143,12 +159,13 @@ class PageCrawler:
         result = PaginationResult()
         visited: set[str] = set()
         current_url = start_url
+        current_visit_url = _normalize_visit_url(start_url)
         current_html = first_page_html
         stopped_reason = "no_more_pages"
 
         while True:
             # --- Guard against revisiting the same URL ---
-            if current_url in visited:
+            if current_visit_url in visited:
                 logger.warning(
                     "page_crawler_loop_detected",
                     url=current_url,
@@ -157,8 +174,8 @@ class PageCrawler:
                 stopped_reason = "no_more_pages"
                 break
 
-            visited.add(current_url)
-            result.urls_visited.append(current_url)
+            visited.add(current_visit_url)
+            result.urls_visited.append(current_visit_url)
             result.pages_crawled += 1
 
             # --- Extract jobs from current page ---
@@ -196,9 +213,10 @@ class PageCrawler:
             if not next_url:
                 stopped_reason = "no_more_pages"
                 break
+            next_visit_url = _normalize_visit_url(next_url)
 
             # --- Avoid refetching a URL we already have ---
-            if next_url in visited:
+            if next_visit_url in visited:
                 stopped_reason = "no_more_pages"
                 break
 
@@ -219,6 +237,7 @@ class PageCrawler:
                 break
 
             current_url = next_url
+            current_visit_url = next_visit_url
             current_html = next_html
 
         result.stopped_reason = stopped_reason
