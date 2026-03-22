@@ -11,6 +11,7 @@ from app.copilot.models import CoverLetter
 from app.followup.models import FollowupReminder
 from app.interview.models import InterviewSession
 from app.jobs.models import Job
+from app.notifications.models import Notification
 from app.pipeline.models import Application, ApplicationStatusHistory
 from app.profile.models import UserProfile
 from app.resume.models import ResumeVersion
@@ -38,6 +39,7 @@ from app.scraping.models import ScrapeAttempt
         (FollowupReminder, ["reminder_at", "created_at"]),
         (InterviewSession, ["created_at"]),
         (UserProfile, ["available_start", "created_at", "updated_at"]),
+        (Notification, ["created_at"]),
         (ResumeVersion, ["created_at"]),
         (SalaryCache, ["created_at"]),
         (QueryTemplate, ["created_at", "updated_at"]),

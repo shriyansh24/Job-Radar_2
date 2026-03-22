@@ -14,6 +14,7 @@ from typing import TypeVar
 import structlog
 
 logger = structlog.get_logger()
+_now = time.perf_counter
 
 T = TypeVar("T")
 
@@ -40,12 +41,12 @@ class TokenBucketLimiter:
         self.rate = rate
         self.burst = burst
         self.tokens = float(burst)
-        self.last_time = time.monotonic()
+        self.last_time = _now()
         self._lock = asyncio.Lock()
 
     async def acquire(self) -> None:
         async with self._lock:
-            now = time.monotonic()
+            now = _now()
             elapsed = now - self.last_time
             self.tokens = min(self.burst, self.tokens + elapsed * self.rate)
             self.last_time = now
@@ -76,8 +77,8 @@ class CircuitBreaker:
             return True
         if self.state == "open":
             if (
-                self.last_failure_time
-                and (time.monotonic() - self.last_failure_time) > self.recovery_timeout
+                self.last_failure_time is not None
+                and (_now() - self.last_failure_time) >= self.recovery_timeout
             ):
                 self.state = "half-open"
                 return True
@@ -90,7 +91,7 @@ class CircuitBreaker:
 
     def record_failure(self) -> None:
         self.failure_count += 1
-        self.last_failure_time = time.monotonic()
+        self.last_failure_time = _now()
         if self.failure_count >= self.failure_threshold:
             self.state = "open"
             logger.warning("circuit_breaker.opened", failures=self.failure_count)
