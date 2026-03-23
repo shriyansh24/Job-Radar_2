@@ -13,21 +13,27 @@ from sqlalchemy.ext.asyncio import create_async_engine
 # Import all models so Base.metadata is populated
 from app.config import settings
 from app.database import Base
-
 MODEL_MODULES = (
+    "app.analytics.models",
     "app.auth.models",
+    "app.auto_apply.form_learning",
     "app.auto_apply.models",
     "app.canonical_jobs.models",
     "app.companies.models",
     "app.copilot.models",
+    "app.email.models",
     "app.followup.models",
     "app.interview.models",
     "app.jobs.models",
+    "app.networking.models",
     "app.notifications.models",
+    "app.outcomes.models",
     "app.pipeline.models",
     "app.profile.models",
+    "app.resume.archetypes",
     "app.resume.models",
     "app.salary.models",
+    "app.scraping.dedup_feedback",
     "app.scraping.models",
     "app.search_expansion.models",
     "app.settings.models",

@@ -20,11 +20,11 @@ Key technical decisions made during the development of JobRadar V2.
 
 **Rationale**: The scraping layer is the most performance-sensitive part of the system. By defining clear interfaces, the Python implementation can be swapped for a Rust-based scraper in the future without touching the rest of the codebase.
 
-## 4. JWT Authentication from Day One
+## 4. Cookie-Based JWT Authentication
 
-**Decision**: Implement JWT-based auth with access + refresh tokens from the start.
+**Decision**: Implement cookie-based JWT auth with access + refresh tokens from the start.
 
-**Rationale**: Stateless authentication scales horizontally. Refresh tokens enable long-lived sessions without long-lived access tokens. The auth module is isolated and can be extended with OAuth providers later.
+**Rationale**: HTTP-only cookies prevent XSS token theft. Refresh tokens enable long-lived sessions without long-lived access tokens. Token revocation is supported via a `token_version` column. The auth module is isolated and can be extended with OAuth providers later.
 
 ## 5. pgvector for Embeddings
 

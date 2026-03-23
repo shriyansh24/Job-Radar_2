@@ -51,7 +51,7 @@ All third-party packages used in JobRadar V2.
 | @tanstack/react-query | MIT | Server state management |
 | Zustand | MIT | Client state management |
 | Axios | MIT | HTTP client |
-| Lucide React | ISC | Icon library |
+| @phosphor-icons/react | MIT | Icon library |
 | date-fns | MIT | Date utilities |
 | clsx | MIT | Classname utility |
 | recharts | MIT | Chart library |
@@ -62,4 +62,4 @@ All third-party packages used in JobRadar V2.
 | @testing-library/react | MIT | React testing utilities |
 | ESLint | MIT | JavaScript linter |
 | PostCSS | MIT | CSS processing |
-| Autoprefixer | MIT | CSS vendor prefixes |
+| @dnd-kit/core | MIT | Drag and drop (Kanban) |
