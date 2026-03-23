@@ -1,30 +1,25 @@
 # JobRadar V2 - Project Status
 
-> Last updated: 2026-03-22
+> Last updated: 2026-03-23
 > Canonical operational state lives in `docs/current-state/00-index.md`.
 
 ## Current Snapshot
 - See `docs/current-state/00-index.md` for the canonical live state.
-- Local validation is green for backend lint/tests/dependency checks and frontend audit/lint/tests/build.
-- Audit status remains `39 FIXED / 5 STALE / 0 OPEN / 0 PARTIAL`.
-- GitHub workflows are updated to current `actions/*@v6` releases and enforce lock-aware dependency checks in CI.
+- This pass combined stale-audit revalidation, CodeQL-style cleanup, CI hardening, and test-suite expansion.
+- Local validation completed in this pass:
+  - backend `539 passed`, coverage `60.10%`
+  - frontend `23` test files, `35` tests, coverage `43.19%` statements
+  - backend `pip check`, `pip-audit`, `bandit`, `ruff`, and targeted `mypy` all passed
+  - frontend `npm audit`, lint, build, and coverage-gated tests all passed
+- Audit status is now `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
 
-## What Is Stable
-- Cookie-based auth, refresh, revocation, rate limiting, and security headers
-- Target-based scraping platform with ATS detection, tier routing, pagination crawling, and attempt telemetry
-- Job enrichment, salary analysis, cover-letter generation, interview prep, resume tailoring, and application pipeline flows
-- Frontend theme system with light mode and high-contrast dark mode
-- Vault PATCH flows, admin cleanup, SSE credentialed transport, and current frontend build compatibility
-
-## Recent Fixes In The Latest Pass
-- Cleared the backend Ruff backlog that was failing GitHub Actions
-- Updated GitHub Actions runtimes and added dependency-health checks to CI
-- Hardened enrichment so failed LLM enrichment does not persist partial job mutations
-- Hardened interview generation and prep so empty model payloads fail explicitly
-- Fixed interview job-context loading to use `company_name`
-- Hardened router JSON fallback so all-empty model responses raise instead of silently returning `{}`
-- Aligned `Notification.created_at` with the timezone-aware database schema
-- Hardened scraper circuit-breaker timing for Windows/high-resolution clock behavior
+## Verified In This Pass
+- `.env` remains ignored by `.gitignore`, and this clone only tracks `.env.example`
+- Circuit-breaker recovery behavior is covered by the passing rate-limiter unit tests
+- `EventBus.publish()` still fans out through unbounded `asyncio.Queue()` subscribers, so the old full-queue claim does not match live code
+- SimHash determinism and the current dedup threshold behavior pass targeted unit tests
+- `ApifyScraper` remains wired into the live keyword-search scraping path via `ScrapingService.run_scrape()`
+- CI now enforces backend Bandit, targeted backend mypy, backend coverage `>=60%`, and frontend coverage `>=40%`
 
 ## Where To Read Next
 1. `docs/current-state/00-index.md`
@@ -34,7 +29,8 @@
 5. `README.md`
 
 ## Non-Blocking Residuals
-- Vitest prints a non-fatal `--localstorage-file` warning during frontend tests.
+- Repo-wide strict backend mypy remains deferred outside the current targeted CI scope.
+- Vitest still emits non-fatal `--localstorage-file` warnings.
 
 ## Deferred Work (Not Current Bugs)
 - Resume PDF generation and template polish

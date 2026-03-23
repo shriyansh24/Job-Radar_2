@@ -56,8 +56,10 @@ cd backend
 uv run python -m pip check
 uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt
 uv tool run pip-audit -r .ci-requirements.txt
+uv tool run bandit -r app/ -c pyproject.toml --severity-level medium
 uv run ruff check .
-uv run pytest
+uv run mypy app/auth/service.py app/config.py app/shared/middleware.py app/scraping/deduplication.py app/scraping/port.py --ignore-missing-imports
+uv run pytest --cov=app --cov-fail-under=60 tests/
 ```
 
 ### Frontend
@@ -67,6 +69,8 @@ cd frontend
 npm audit --audit-level high
 npm run lint
 npm run test -- --run
+npm install --no-save @vitest/coverage-v8
+npm run test -- --run --coverage --coverage.thresholds.statements=40
 npm run build
 ```
 

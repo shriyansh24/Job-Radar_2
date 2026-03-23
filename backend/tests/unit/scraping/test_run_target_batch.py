@@ -393,7 +393,7 @@ async def test_batch_rolls_back_when_target_task_raises():
     svc.db.rollback.assert_awaited_once()
     svc.db.commit.assert_not_awaited()
     assert results["targets_failed"] == 1
-    assert any("route failed" in error for error in results["errors"])
+    assert results["errors"] == ["target task failed"]
 
 
 @pytest.mark.asyncio

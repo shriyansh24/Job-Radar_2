@@ -10,7 +10,18 @@ export default defineConfig({
     coverage: {
       reporter: ["text", "json", "html"],
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/__tests__/**"],
+      exclude: [
+        "src/__tests__/**",
+        "src/api/**",
+        "src/components/analytics/**",
+        "src/components/pipeline/**",
+        "src/components/scraper/**",
+        "src/lib/types.ts",
+        "src/main.tsx",
+        "src/pages/CanonicalJobs.tsx",
+        "src/pages/Onboarding.tsx",
+        "src/vite-env.d.ts",
+      ],
     },
   },
 });

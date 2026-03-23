@@ -139,7 +139,8 @@ class TestScrapingServiceOrchestration:
         assert result.jobs_found == 1
         assert result.jobs_new == 1
         assert len(result.errors) == 1
-        assert "bad" in result.errors[0]
+        assert result.errors[0] == "bad: scrape failed"
+        assert "exploded" not in result.errors[0]
 
     @pytest.mark.asyncio
     async def test_circuit_breaker_skips_open_source(self):
@@ -165,7 +166,7 @@ class TestScrapingServiceOrchestration:
             result = await svc.run_scrape(sources=["open_cb"], query="python")
 
         assert result.jobs_found == 0
-        assert "circuit breaker open" in result.errors[0]
+        assert result.errors[0] == "open_cb: circuit breaker open"
 
     @pytest.mark.asyncio
     async def test_dedup_removes_duplicates(self):

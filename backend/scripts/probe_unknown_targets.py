@@ -1,29 +1,17 @@
 """Probe HTTP endpoints of scrape_targets with ats_vendor IS NULL to detect ATS vendor.
 
 Usage (from D:/jobradar-v2/backend):
-    python scripts/probe_unknown_targets.py
-    # or
     python -m scripts.probe_unknown_targets
 """
-
-# ruff: noqa: E402
 
 from __future__ import annotations
 
 import asyncio
-import sys
 from collections import defaultdict
-from pathlib import Path
-
-# ---------------------------------------------------------------------------
-# Make app importable when run as a plain script
-# ---------------------------------------------------------------------------
-_BACKEND = Path(__file__).resolve().parent.parent
-if str(_BACKEND) not in sys.path:
-    sys.path.insert(0, str(_BACKEND))
 
 import httpx
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Register FK-referenced tables before using ScrapeTarget
 import app.auth.models  # noqa: F401
@@ -42,18 +30,7 @@ from app.scraping.models import ScrapeTarget
 CONCURRENCY = 20  # max simultaneous HTTP connections
 BATCH_DELAY = 1.0  # seconds to sleep between batches
 REQUEST_TIMEOUT = 5.0  # seconds per request
-HEAD_CHUNK = 0  # HEAD has no body
 HTML_CHUNK = 10_240  # bytes of HTML body to fetch
-
-# Extra HTML/URL signatures not covered by ats_registry.py
-_EXTRA_HTML_RULES: list[dict] = [
-    # json_ld_capable flag (not a vendor, just a capability marker)
-    {
-        "vendor": "json_ld_capable",
-        "html_signatures": ['"@type"', '"@type": "JobPosting"', "@type:"],
-        "url_signatures": [],
-    },
-]
 
 # Additional URL-redirect patterns (checked against final response URL)
 _REDIRECT_URL_RULES: list[tuple[str, str]] = [
@@ -67,7 +44,7 @@ _REDIRECT_URL_RULES: list[tuple[str, str]] = [
     ("breezy.hr", "breezy"),
 ]
 
-# ATS vendor → start_tier mapping (mirrors ats_registry)
+# ATS vendor -> start_tier mapping (mirrors ats_registry)
 _VENDOR_START_TIER: dict[str, int] = {rule["vendor"]: rule["start_tier"] for rule in ATS_RULES}
 
 
@@ -135,62 +112,56 @@ async def probe_target(
     vendor: str | None = None
     json_ld = False
 
+    # ---- Step 1: HEAD request ----
     try:
-        # ---- Step 1: HEAD request ----
-        try:
-            head_resp = await client.head(url, follow_redirects=True)
-            final_url = str(head_resp.url)
+        head_resp = await client.head(url, follow_redirects=True)
+        final_url = str(head_resp.url)
 
-            # Check if redirect landed on a known ATS domain
+        # Check if redirect landed on a known ATS domain
+        if final_url.lower() != url.lower():
+            vendor = _vendor_from_redirect_url(final_url)
+            if vendor:
+                return vendor, False
+
+        # Check response headers
+        header_result = classify_headers(dict(head_resp.headers))
+        if header_result and header_result.vendor:
+            return header_result.vendor, False
+    except httpx.HTTPError:
+        pass  # HEAD failed; fall through to GET
+
+    if vendor:
+        return vendor, False
+
+    # ---- Step 2: Partial GET for HTML body ----
+    try:
+        async with client.stream("GET", url, follow_redirects=True) as get_resp:
+            final_url = str(get_resp.url)
+
+            # Check redirect URL first
             if final_url.lower() != url.lower():
                 vendor = _vendor_from_redirect_url(final_url)
                 if vendor:
                     return vendor, False
 
-            # Check response headers
-            header_result = classify_headers(dict(head_resp.headers))
+            # Check response headers from GET
+            header_result = classify_headers(dict(get_resp.headers))
             if header_result and header_result.vendor:
                 return header_result.vendor, False
 
-        except (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError):
-            pass  # HEAD failed — fall through to GET
+            # Read first HTML_CHUNK bytes
+            raw = b""
+            async for chunk in get_resp.aiter_bytes(chunk_size=4096):
+                raw += chunk
+                if len(raw) >= HTML_CHUNK:
+                    break
 
-        if vendor:
-            return vendor, False
+            html = raw.decode("utf-8", errors="replace")
 
-        # ---- Step 2: Partial GET for HTML body ----
-        try:
-            async with client.stream("GET", url, follow_redirects=True) as get_resp:
-                final_url = str(get_resp.url)
-
-                # Check redirect URL first
-                if final_url.lower() != url.lower():
-                    vendor = _vendor_from_redirect_url(final_url)
-                    if vendor:
-                        return vendor, False
-
-                # Check response headers from GET
-                header_result = classify_headers(dict(get_resp.headers))
-                if header_result and header_result.vendor:
-                    return header_result.vendor, False
-
-                # Read first HTML_CHUNK bytes
-                raw = b""
-                async for chunk in get_resp.aiter_bytes(chunk_size=4096):
-                    raw += chunk
-                    if len(raw) >= HTML_CHUNK:
-                        break
-
-                html = raw.decode("utf-8", errors="replace")
-
-                vendor = _vendor_from_html(html)
-                json_ld = _check_json_ld(html)
-
-        except (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError):
-            pass  # GET also failed — leave vendor as None
-
-    except Exception as exc:  # noqa: BLE001
-        print(f"  [ERROR] {url[:80]} — {type(exc).__name__}: {exc}")
+            vendor = _vendor_from_html(html)
+            json_ld = _check_json_ld(html)
+    except httpx.HTTPError:
+        pass  # GET also failed; leave vendor as None
 
     return vendor, json_ld
 
@@ -202,12 +173,12 @@ async def probe_target(
 
 async def update_target(
     target: ScrapeTarget,
-    db,
+    db: AsyncSession,
     vendor: str | None,
     json_ld: bool,
 ) -> bool:
     """
-    Update target record.  Returns True if a change was made.
+    Update target record. Returns True if a change was made.
     """
     changed = False
 
@@ -264,19 +235,18 @@ async def run_probe() -> None:
         max_keepalive_connections=CONCURRENCY,
     )
     headers = {
-        "User-Agent": ("Mozilla/5.0 (compatible; JobRadarBot/2.0; +https://jobradar.app/bot)")
+        "User-Agent": ("Mozilla/5.0 (compatible; JobRadarBot/2.0; +https://jobradar.app/bot)"),
     }
 
     async with httpx.AsyncClient(
         timeout=REQUEST_TIMEOUT,
         limits=limits,
         headers=headers,
-        verify=False,  # tolerate self-signed / expired certs gracefully
     ) as client:
         for batch_start in range(0, total, CONCURRENCY):
             batch = targets[batch_start : batch_start + CONCURRENCY]
 
-            tasks = [probe_target(client, t) for t in batch]
+            tasks = [probe_target(client, target) for target in batch]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
             # ---- Persist updates inside a single session per batch ----
@@ -284,12 +254,9 @@ async def run_probe() -> None:
                 for target, outcome in zip(batch, results):
                     processed += 1
 
-                    if isinstance(outcome, Exception):
+                    if isinstance(outcome, BaseException):
                         errors += 1
-                        print(
-                            f"  [GATHER ERROR] {target.url[:80]} — "
-                            f"{type(outcome).__name__}: {outcome}"
-                        )
+                        print(f"  [GATHER ERROR] {target.url[:80]} -> {type(outcome).__name__}")
                         continue
 
                     vendor, json_ld = outcome
@@ -310,7 +277,7 @@ async def run_probe() -> None:
             if processed % 50 == 0 or processed == total:
                 pct = processed / total * 100
                 print(
-                    f"  Progress: {processed}/{total} ({pct:.1f}%) — "
+                    f"  Progress: {processed}/{total} ({pct:.1f}%) -> "
                     f"reclassified={reclassified}, json_ld={json_ld_count}, "
                     f"errors={errors}"
                 )
@@ -330,7 +297,7 @@ async def run_probe() -> None:
     print(f"  Errors               : {errors}")
     if vendor_breakdown:
         print("\n  Vendor Breakdown:")
-        for vendor, count in sorted(vendor_breakdown.items(), key=lambda x: -x[1]):
+        for vendor, count in sorted(vendor_breakdown.items(), key=lambda item: -item[1]):
             print(f"    {vendor:<25} {count}")
     print("=" * 60)
 
@@ -340,9 +307,4 @@ async def run_probe() -> None:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    # Suppress SSL warnings from verify=False
-    import urllib3  # type: ignore[import]
-
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
     asyncio.run(run_probe())

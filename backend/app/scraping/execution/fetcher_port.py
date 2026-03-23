@@ -17,15 +17,18 @@ class FetchResult:
 class FetcherPort(ABC):
     @property
     @abstractmethod
-    def fetcher_name(self) -> str: ...
+    def fetcher_name(self) -> str:
+        raise NotImplementedError
 
     @abstractmethod
     async def fetch(
         self, url: str, timeout_s: int = 30, user_agent: str | None = None
-    ) -> FetchResult: ...
+    ) -> FetchResult:
+        raise NotImplementedError
 
     @abstractmethod
-    async def health_check(self) -> bool: ...
+    async def health_check(self) -> bool:
+        raise NotImplementedError
 
     async def close(self) -> None:
-        pass
+        return None

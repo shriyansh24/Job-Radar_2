@@ -83,8 +83,8 @@ class ApiRateLimitMiddleware(BaseHTTPMiddleware):
             try:
                 payload = await request.json()
                 email = str(payload.get("email", "unknown")).lower()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("login_rate_limit_payload_unavailable", error=str(exc))
             bucket = f"login:{email}"
         allowed, meta = await api_rate_limiter.check(
             key=f"{bucket}:{client_host}",
@@ -109,7 +109,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["Referrer-Policy"] = "same-origin"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
         response.headers["Content-Security-Policy"] = (
             "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"

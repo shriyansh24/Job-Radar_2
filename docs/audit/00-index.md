@@ -1,29 +1,43 @@
 # Codebase Audit Index - JobRadar V2
 
-> **Date:** 2026-03-21 | **Original Audit Issues:** 44
+> **Date:** 2026-03-23 | **Original Audit Issues:** 44
 >
-> **Current Outcome:** 39 `FIXED` | 5 `STALE` | 0 `OPEN` | 0 `PARTIAL`
+> **Current Outcome:** 39 `FIXED` | 1 `VERIFIED_CLEAN` | 4 `STALE` | 0 `OPEN` | 0 `PARTIAL`
 
 > This file is the bug ledger. For the current operational read order and live repo state, start at `docs/current-state/00-index.md`.
 
 ## Latest Validation Snapshot
 
-- Backend:
+- Full validation and stale-item recheck on `2026-03-23`:
+  - `git ls-files '.env' 'backend/.env' '.env.*' 'backend/.env.*'`
+  - `Get-ChildItem -Force .env*`
+  - `Get-ChildItem -Force backend\\.env*`
+  - `git grep -n "ApifyScraper|run_scrape|EventBus|DeduplicationService" backend/app backend/tests`
   - `cd backend && uv run python -m pip check`
   - `cd backend && uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
   - `cd backend && uv tool run pip-audit -r .ci-requirements.txt`
+  - `cd backend && uv tool run bandit -r app/ -c pyproject.toml --severity-level medium`
   - `cd backend && uv run ruff check .`
-  - `cd backend && uv run pytest`
-- Frontend:
+  - `cd backend && uv run mypy app/auth/service.py app/config.py app/shared/middleware.py app/scraping/deduplication.py app/scraping/port.py --ignore-missing-imports`
+  - `cd backend && uv run pytest --cov=app --cov-fail-under=60 tests/`
   - `cd frontend && npm audit --audit-level high`
   - `cd frontend && npm run lint`
   - `cd frontend && npm run test -- --run`
+  - `cd frontend && npm install --no-save @vitest/coverage-v8`
+  - `cd frontend && npm run test -- --run --coverage --coverage.thresholds.statements=40`
   - `cd frontend && npm run build`
+- Local results from this pass:
+  - no tracked `.env` file in this clone; only `.env.example`
+  - `ApifyScraper` is still imported and registered in the live `ScrapingService.run_scrape()` path
+  - backend full suite passed: `539 passed`, coverage `60.10%`
+  - frontend full suite passed: `23` test files, `35` tests, coverage `43.19%` statements
+  - `pip check`, `pip-audit`, `bandit`, backend `ruff`, targeted backend `mypy`, frontend `npm audit`, lint, and build all passed
 
 ## How to Use This Index
 
 1. Use the table below to find the current status of each audited item.
 2. `FIXED` means the issue was real and is now resolved in code.
+3. `VERIFIED_CLEAN` means the original issue claim was specifically rechecked and the repository is clean for that condition.
 3. `STALE` means the original audit claim no longer matches the live code path.
 
 ## Segment Files
@@ -41,7 +55,7 @@
 
 | ID | Sev | One-liner | Segment | Status |
 |----|-----|-----------|---------|--------|
-| SEC-01 | CRIT | Live API keys committed to `.env` in repo | security | STALE |
+| SEC-01 | CRIT | Live API keys committed to `.env` in repo | security | VERIFIED_CLEAN |
 | SEC-02 | CRIT | JWT tokens in localStorage (XSS vulnerable) | security | FIXED |
 | SEC-03 | CRIT | Default secret key `change-me-in-production` not blocked | security | FIXED |
 | SEC-04 | HIGH | CORS allows `*` methods and `*` headers | security | FIXED |
