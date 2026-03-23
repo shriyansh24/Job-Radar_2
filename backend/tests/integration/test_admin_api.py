@@ -83,3 +83,72 @@ async def test_admin_export_and_reindex_only_include_current_user(
     payload = json.loads(export_response.text)
     assert [job["id"] for job in payload["jobs"]] == ["admin-api-job"]
     assert [app["company_name"] for app in payload["applications"]] == ["OpsCo"]
+
+
+@pytest.mark.asyncio
+async def test_admin_clear_data_only_wipes_current_user_data(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    token, user_id = await _register_and_login(client)
+    other_token, other_user_id = await _register_and_login(client)
+
+    await client.post(
+        "/api/v1/settings/searches",
+        headers=_auth(token),
+        json={"name": "Remote Roles", "filters": {"remote": True}, "alert_enabled": True},
+    )
+    await client.put(
+        "/api/v1/settings/integrations/openrouter",
+        headers=_auth(token),
+        json={"api_key": "sk-test-1234567890"},
+    )
+
+    db_session.add(
+        Job(
+            id="wipe-job-1",
+            user_id=uuid.UUID(user_id),
+            source="manual",
+            title="To Wipe",
+        )
+    )
+    db_session.add(
+        Application(
+            user_id=uuid.UUID(user_id),
+            job_id="wipe-job-1",
+            company_name="WipeCo",
+            position_title="Engineer",
+            source="manual",
+        )
+    )
+    db_session.add(
+        Job(
+            id="keep-job-1",
+            user_id=uuid.UUID(other_user_id),
+            source="manual",
+            title="To Keep",
+        )
+    )
+    await db_session.commit()
+
+    cleared = await client.delete("/api/v1/admin/data", headers=_auth(token))
+    my_searches = await client.get("/api/v1/settings/searches", headers=_auth(token))
+    my_integrations = await client.get("/api/v1/settings/integrations", headers=_auth(token))
+    my_export = await client.post("/api/v1/admin/export", headers=_auth(token))
+    my_profile = await client.get("/api/v1/auth/me", headers=_auth(token))
+    other_export = await client.post("/api/v1/admin/export", headers=_auth(other_token))
+
+    assert cleared.status_code == 200
+    assert cleared.json()["status"] == "ok"
+    assert cleared.json()["rows_deleted"] >= 1
+    assert my_searches.json() == []
+    assert my_integrations.json()[0] == {
+        "provider": "openrouter",
+        "connected": False,
+        "status": "not_configured",
+        "masked_value": None,
+        "updated_at": None,
+    }
+    assert json.loads(my_export.text) == {"jobs": [], "applications": []}
+    assert my_profile.status_code == 200
+    assert [job["id"] for job in json.loads(other_export.text)["jobs"]] == ["keep-job-1"]

@@ -54,3 +54,12 @@ async def import_data(
 ) -> dict:
     svc = AdminService(db)
     return await svc.import_data(data, user.id)
+
+
+@router.delete("/data")
+async def clear_data(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    svc = AdminService(db)
+    return await svc.clear_data(user.id)

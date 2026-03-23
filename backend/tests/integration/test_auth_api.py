@@ -170,6 +170,101 @@ async def test_logout_revokes_existing_bearer_token(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_change_password_rotates_credentials(client: AsyncClient):
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "change-password@example.com", "password": "securepassword123"},
+    )
+    login_resp = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "change-password@example.com", "password": "securepassword123"},
+    )
+    old_token = login_resp.json()["access_token"]
+
+    changed = await client.post(
+        "/api/v1/auth/change-password",
+        headers={"Authorization": f"Bearer {old_token}"},
+        json={
+            "current_password": "securepassword123",
+            "new_password": "newsecurepassword456",
+        },
+    )
+    me_with_old_token = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {old_token}"},
+    )
+    login_with_old_password = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "change-password@example.com", "password": "securepassword123"},
+    )
+    login_with_new_password = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "change-password@example.com", "password": "newsecurepassword456"},
+    )
+
+    assert changed.status_code == 200
+    assert "access_token" in changed.json()
+    assert "refresh_token" in changed.json()
+    assert me_with_old_token.status_code == 401
+    assert login_with_old_password.status_code == 401
+    assert login_with_new_password.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_change_password_rejects_wrong_current_password(client: AsyncClient):
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "wrong-current@example.com", "password": "securepassword123"},
+    )
+    login_resp = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "wrong-current@example.com", "password": "securepassword123"},
+    )
+    token = login_resp.json()["access_token"]
+
+    changed = await client.post(
+        "/api/v1/auth/change-password",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "current_password": "badpassword",
+            "new_password": "newsecurepassword456",
+        },
+    )
+
+    assert changed.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_delete_account_removes_user_and_revokes_token(client: AsyncClient):
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "delete-account@example.com", "password": "securepassword123"},
+    )
+    login_resp = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "delete-account@example.com", "password": "securepassword123"},
+    )
+    token = login_resp.json()["access_token"]
+
+    deleted = await client.delete(
+        "/api/v1/auth/account",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    me_resp = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    login_resp_after_delete = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "delete-account@example.com", "password": "securepassword123"},
+    )
+
+    assert deleted.status_code == 204
+    assert me_resp.status_code == 401
+    assert login_resp_after_delete.status_code == 401
+
+
+@pytest.mark.asyncio
 async def test_security_headers_present(client: AsyncClient):
     resp = await client.get("/api/v1/admin/health")
     assert resp.status_code == 200
