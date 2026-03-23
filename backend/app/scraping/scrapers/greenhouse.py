@@ -45,8 +45,13 @@ class GreenhouseScraper(BaseScraper):
             if item.get("updated_at"):
                 try:
                     posted_at = datetime.fromisoformat(item["updated_at"].replace("Z", "+00:00"))
-                except (ValueError, TypeError):
-                    pass
+                except (ValueError, TypeError) as exc:
+                    logger.debug(
+                        "greenhouse.invalid_updated_at",
+                        query=query,
+                        raw_value=item.get("updated_at"),
+                        error=str(exc),
+                    )
 
             jobs.append(
                 ScrapedJob(
@@ -66,5 +71,6 @@ class GreenhouseScraper(BaseScraper):
         try:
             resp = await self.client.get("https://boards-api.greenhouse.io/v1/boards/test/jobs")
             return resp.status_code in (200, 404)
-        except Exception:
+        except Exception as exc:
+            logger.debug("greenhouse.health_check_failed", error=str(exc))
             return False

@@ -14,7 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Register FK-referenced tables before using ScrapeTarget
-import app.auth.models  # noqa: F401
+from app.auth import models as auth_models
 from app.database import async_session_factory
 from app.scraping.control.ats_registry import (
     ATS_RULES,
@@ -23,6 +23,8 @@ from app.scraping.control.ats_registry import (
     classify_url,
 )
 from app.scraping.models import ScrapeTarget
+
+_ = auth_models.User
 
 # ---------------------------------------------------------------------------
 # Constants

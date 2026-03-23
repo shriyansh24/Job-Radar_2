@@ -25,10 +25,11 @@ VALID_SALARY_PERIODS = {None, "annual", "hourly", "monthly"}
 
 def load_fixture() -> list[dict]:
     """Load the Lever postings fixture file."""
-    for f in FIXTURES.glob("*_postings.json"):
-        with open(f) as fh:
-            return json.load(fh)
-    pytest.skip("No lever fixture found")
+    fixture_path = next(FIXTURES.glob("*_postings.json"), None)
+    if fixture_path is None:
+        pytest.skip("No lever fixture found")
+    with fixture_path.open() as fh:
+        return json.load(fh)
 
 
 def load_expected() -> list[dict]:
@@ -36,7 +37,7 @@ def load_expected() -> list[dict]:
     path = FIXTURES / "expected_jobs.json"
     if not path.exists():
         pytest.skip("No expected_jobs.json found")
-    with open(path) as f:
+    with path.open() as f:
         return json.load(f)
 
 

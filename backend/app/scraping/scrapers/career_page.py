@@ -41,7 +41,12 @@ class CareerPageScraper(BaseScraper):
                             jobs.append(self._parse_jsonld(item, query))
                 elif data.get("@type") == "JobPosting":
                     jobs.append(self._parse_jsonld(data, query))
-            except (json.JSONDecodeError, TypeError):
+            except (json.JSONDecodeError, TypeError) as exc:
+                logger.debug(
+                    "career_page.invalid_jsonld",
+                    source_url=query,
+                    error=str(exc),
+                )
                 continue
 
         # Strategy 2: Common CSS selectors for job listings
@@ -80,8 +85,13 @@ class CareerPageScraper(BaseScraper):
         if data.get("datePosted"):
             try:
                 posted_at = datetime.fromisoformat(data["datePosted"])
-            except (ValueError, TypeError):
-                pass
+            except (ValueError, TypeError) as exc:
+                logger.debug(
+                    "career_page.invalid_date_posted",
+                    source_url=page_url,
+                    raw_value=data.get("datePosted"),
+                    error=str(exc),
+                )
 
         return ScrapedJob(
             title=data.get("title", ""),

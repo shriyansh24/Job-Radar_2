@@ -3,15 +3,12 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-
-if TYPE_CHECKING:
-    from app.jobs.models import Job
 
 
 class Application(Base):
@@ -47,7 +44,7 @@ class Application(Base):
     )
 
     # Relationships
-    job: Mapped[Job | None] = relationship(back_populates="applications")
+    job: Mapped[Any] = relationship("Job", back_populates="applications")
     status_history: Mapped[list[ApplicationStatusHistory]] = relationship(
         back_populates="application", cascade="all, delete-orphan"
     )

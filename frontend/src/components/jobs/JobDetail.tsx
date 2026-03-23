@@ -13,7 +13,7 @@ import { useState } from "react";
 import remarkGfm from "remark-gfm";
 import type { Job } from "../../api/jobs";
 import { pipelineApi } from "../../api/pipeline";
-import { cn } from "../../lib/utils";
+import { cn, getSafeExternalUrl } from "../../lib/utils";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
 import Card from "../ui/Card";
@@ -29,6 +29,7 @@ interface JobDetailProps {
 export default function JobDetail({ job, onClose }: JobDetailProps) {
   const queryClient = useQueryClient();
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const safeSourceUrl = getSafeExternalUrl(job.source_url);
 
   const applyMutation = useMutation({
     mutationFn: () =>
@@ -207,10 +208,10 @@ export default function JobDetail({ job, onClose }: JobDetailProps) {
         >
           Apply
         </Button>
-        {job.source_url && (
+        {safeSourceUrl && (
           <Button
             variant="secondary"
-            onClick={() => window.open(job.source_url!, "_blank")}
+            onClick={() => window.open(safeSourceUrl, "_blank", "noopener,noreferrer")}
             icon={<LinkSimple size={14} weight="bold" />}
           >
             Original

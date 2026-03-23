@@ -33,7 +33,7 @@ def select_due_targets(
             due.append(t)
 
     # Sort by priority score (highest first)
-    due.sort(key=lambda t: compute_priority_score(t), reverse=True)
+    due.sort(key=compute_priority_score, reverse=True)
 
     return due[:batch_size]
 

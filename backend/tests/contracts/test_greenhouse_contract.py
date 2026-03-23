@@ -26,10 +26,11 @@ VALID_SALARY_PERIODS = {None, "annual", "hourly", "monthly"}
 
 def load_fixture() -> dict:
     """Load the Greenhouse board fixture file."""
-    for f in FIXTURES.glob("*_board.json"):
-        with open(f) as fh:
-            return json.load(fh)
-    pytest.skip("No greenhouse fixture found")
+    fixture_path = next(FIXTURES.glob("*_board.json"), None)
+    if fixture_path is None:
+        pytest.skip("No greenhouse fixture found")
+    with fixture_path.open() as fh:
+        return json.load(fh)
 
 
 def load_expected() -> list[dict]:
@@ -37,7 +38,7 @@ def load_expected() -> list[dict]:
     path = FIXTURES / "expected_jobs.json"
     if not path.exists():
         pytest.skip("No expected_jobs.json found")
-    with open(path) as f:
+    with path.open() as f:
         return json.load(f)
 
 
@@ -58,7 +59,7 @@ def parse_fixture_to_scraped_jobs(data: dict, board_token: str = "gitlab") -> li
             try:
                 posted_at = datetime.fromisoformat(item["updated_at"].replace("Z", "+00:00"))
             except (ValueError, TypeError):
-                pass
+                posted_at = None
 
         # The fixture stores company_name at the top level; the real API
         # nests it under company.name.  Accept both formats.

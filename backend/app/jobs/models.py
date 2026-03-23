@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import Any
 
 from sqlalchemy import JSON as JSONB  # Use JSON for SQLite compat; works on PG too
 from sqlalchemy import (
@@ -21,9 +21,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-
-if TYPE_CHECKING:
-    from app.pipeline.models import Application
 
 
 class Job(Base):
@@ -104,7 +101,7 @@ class Job(Base):
     )
 
     # Relationships
-    applications: Mapped[list["Application"]] = relationship(
+    applications: Mapped[list[Any]] = relationship(
         "Application",
         back_populates="job",
         lazy="selectin",

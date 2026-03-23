@@ -152,7 +152,7 @@ class PageCrawler:
         current_url = start_url
         current_visit_url = _normalize_visit_url(start_url)
         current_html = first_page_html
-        stopped_reason = "no_more_pages"
+        result.stopped_reason = "no_more_pages"
 
         while True:
             # --- Guard against revisiting the same URL ---
@@ -162,7 +162,6 @@ class PageCrawler:
                     url=current_url,
                     pages_crawled=result.pages_crawled,
                 )
-                stopped_reason = "no_more_pages"
                 break
 
             visited.add(current_visit_url)
@@ -179,6 +178,7 @@ class PageCrawler:
                     error=str(exc),
                     page=result.pages_crawled,
                 )
+                result.stopped_reason = "error"
                 page_jobs = []
 
             result.jobs.extend(page_jobs)
@@ -192,23 +192,21 @@ class PageCrawler:
 
             # --- Check limits AFTER extracting jobs from current page ---
             if len(result.jobs) >= self.max_jobs:
-                stopped_reason = "max_jobs"
+                result.stopped_reason = "max_jobs"
                 break
 
             if result.pages_crawled >= self.max_pages:
-                stopped_reason = "max_pages"
+                result.stopped_reason = "max_pages"
                 break
 
             # --- Detect next page URL ---
             next_url = self._detect_next_url(current_html, current_url)
             if not next_url:
-                stopped_reason = "no_more_pages"
                 break
             next_visit_url = _normalize_visit_url(next_url)
 
             # --- Avoid refetching a URL we already have ---
             if next_visit_url in visited:
-                stopped_reason = "no_more_pages"
                 break
 
             # --- Polite delay before fetching next page ---
@@ -224,20 +222,19 @@ class PageCrawler:
                     error=str(exc),
                     page=result.pages_crawled + 1,
                 )
-                stopped_reason = "error"
+                result.stopped_reason = "error"
                 break
 
             current_url = next_url
             current_visit_url = next_visit_url
             current_html = next_html
 
-        result.stopped_reason = stopped_reason
         logger.info(
             "page_crawler_finished",
             start_url=start_url,
             pages_crawled=result.pages_crawled,
             total_jobs=len(result.jobs),
-            stopped_reason=stopped_reason,
+            stopped_reason=result.stopped_reason,
         )
         return result
 
