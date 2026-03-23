@@ -4,9 +4,11 @@ import pickle
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from functools import partial
 
 import numpy as np
 import structlog
+from anyio import to_thread
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.model_selection import cross_val_score
 from sqlalchemy import select
@@ -14,13 +16,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analytics.models import MLModelArtifact
 from app.jobs.models import Job
-from app.outcomes.models import ApplicationOutcome, CompanyInsight
 from app.pipeline.models import Application
 
 logger = structlog.get_logger()
 
 MODEL_NAME = "match_predictor"
 MIN_SAMPLES = 20
+MIN_CLASS_SAMPLES = 2
+POSITIVE_STATUSES = frozenset({"screening", "interviewing", "offer", "accepted"})
 FEATURE_NAMES = [
     "title_similarity",
     "company_familiarity",
@@ -29,7 +32,7 @@ FEATURE_NAMES = [
     "location_match",
     "experience_match",
     "job_freshness",
-    "referral_used",
+    "source_familiarity",
 ]
 
 
@@ -107,8 +110,10 @@ class MatchPredictor:
         if model is None:
             return None
 
-        # Load the job
-        job = await self.db.get(Job, job_id)
+        result = await self.db.execute(
+            select(Job).where(Job.id == job_id, Job.user_id == user_id)
+        )
+        job = result.scalar_one_or_none()
         if job is None:
             return None
 
@@ -146,6 +151,22 @@ class MatchPredictor:
         y_data = np.array([r["label"] for r in rows])
 
         positive_rate = float(np.mean(y_data))
+        label_counts = np.bincount(y_data.astype(int), minlength=2)
+        present_classes = int(np.count_nonzero(label_counts))
+        if present_classes < 2:
+            return TrainResult(
+                status="insufficient_class_diversity",
+                n_samples=len(rows),
+                positive_rate=positive_rate,
+            )
+
+        minority_samples = int(label_counts[label_counts > 0].min())
+        if minority_samples < MIN_CLASS_SAMPLES:
+            return TrainResult(
+                status="insufficient_minority_samples",
+                n_samples=len(rows),
+                positive_rate=positive_rate,
+            )
 
         model = HistGradientBoostingClassifier(
             max_iter=100,
@@ -154,11 +175,20 @@ class MatchPredictor:
             max_depth=4,
         )
 
-        n_folds = min(5, max(2, len(rows) // 10))
-        scores = cross_val_score(model, x_data, y_data, cv=n_folds, scoring="accuracy")
+        n_folds = min(5, max(2, len(rows) // 10), minority_samples)
+        scores = await to_thread.run_sync(
+            partial(
+                cross_val_score,
+                model,
+                x_data,
+                y_data,
+                cv=n_folds,
+                scoring="accuracy",
+            )
+        )
         cv_accuracy = float(np.mean(scores))
 
-        model.fit(x_data, y_data)
+        await to_thread.run_sync(model.fit, x_data, y_data)
 
         # Determine version
         result = await self.db.execute(
@@ -238,30 +268,19 @@ class MatchPredictor:
         self, user_id: uuid.UUID
     ) -> list[dict[str, object]]:
         result = await self.db.execute(
-            select(ApplicationOutcome, Application, Job)
-            .join(
-                Application,
-                Application.id == ApplicationOutcome.application_id,
+            select(Application, Job)
+            .join(Job, Job.id == Application.job_id)
+            .where(
+                Application.user_id == user_id,
+                Job.user_id == user_id,
             )
-            .outerjoin(Job, Job.id == Application.job_id)
-            .where(ApplicationOutcome.user_id == user_id)
         )
         rows_raw = result.all()
 
         training_data: list[dict[str, object]] = []
-        for outcome, application, job in rows_raw:
-            if job is None:
-                continue
-
-            positive_stages = {
-                "screening",
-                "interviewing",
-                "offer",
-                "accepted",
-            }
-            label = 1 if outcome.stage_reached in positive_stages else 0
-
-            features = await self._build_features(user_id, job, application, outcome)
+        for application, job in rows_raw:
+            label = 1 if self._is_positive_status(application.status) else 0
+            features = await self._build_features(user_id, job, application)
             training_data.append({"features": features, "label": label})
 
         return training_data
@@ -271,18 +290,24 @@ class MatchPredictor:
         user_id: uuid.UUID,
         job: Job,
         application: Application | None = None,
-        outcome: ApplicationOutcome | None = None,
     ) -> list[float]:
+        exclude_application_id = application.id if application is not None else None
         title_sim = await self._title_similarity(user_id, job.title or "")
         company_score = await self._company_familiarity(
-            user_id, job.company_name or ""
+            user_id,
+            job.company_name or "",
+            exclude_application_id=exclude_application_id,
         )
         skill_overlap = self._compute_skill_overlap(job)
         salary_match = self._compute_salary_match(job)
         location_match = self._compute_location_match(job)
         experience_match = self._compute_experience_match(job)
         freshness = self._compute_freshness(job)
-        referral = float(outcome.referral_used) if outcome else 0.0
+        source_score = await self._source_familiarity(
+            user_id,
+            job.source or "",
+            exclude_application_id=exclude_application_id,
+        )
 
         return [
             title_sim,
@@ -292,7 +317,7 @@ class MatchPredictor:
             location_match,
             experience_match,
             freshness,
-            referral,
+            source_score,
         ]
 
     async def _title_similarity(
@@ -325,27 +350,60 @@ class MatchPredictor:
         return best_sim
 
     async def _company_familiarity(
-        self, user_id: uuid.UUID, company_name: str
+        self,
+        user_id: uuid.UUID,
+        company_name: str,
+        exclude_application_id: uuid.UUID | None = None,
     ) -> float:
         if not company_name:
             return 0.0
 
-        result = await self.db.execute(
-            select(CompanyInsight).where(
-                CompanyInsight.user_id == user_id,
-                CompanyInsight.company_name == company_name,
-            )
+        query = select(Application.status).where(
+            Application.user_id == user_id,
+            Application.company_name == company_name,
         )
-        insight = result.scalar_one_or_none()
-        if insight is None:
+        if exclude_application_id is not None:
+            query = query.where(Application.id != exclude_application_id)
+
+        result = await self.db.execute(query)
+        statuses = [row[0] for row in result.all() if row[0]]
+
+        return self._historical_success_score(statuses)
+
+    async def _source_familiarity(
+        self,
+        user_id: uuid.UUID,
+        source_name: str,
+        exclude_application_id: uuid.UUID | None = None,
+    ) -> float:
+        if not source_name:
             return 0.0
 
-        if insight.total_applications > 0 and insight.callback_count > 0:
-            return min(
-                1.0,
-                insight.callback_count / insight.total_applications,
+        query = (
+            select(Application.status)
+            .join(Job, Job.id == Application.job_id)
+            .where(
+                Application.user_id == user_id,
+                Job.user_id == user_id,
+                Job.source == source_name,
             )
-        return 0.1
+        )
+        if exclude_application_id is not None:
+            query = query.where(Application.id != exclude_application_id)
+
+        result = await self.db.execute(query)
+        statuses = [row[0] for row in result.all() if row[0]]
+        return self._historical_success_score(statuses)
+
+    def _historical_success_score(self, statuses: list[str]) -> float:
+        if not statuses:
+            return 0.0
+
+        positive_count = sum(1 for status in statuses if self._is_positive_status(status))
+        return max(0.1, positive_count / len(statuses))
+
+    def _is_positive_status(self, status: str | None) -> bool:
+        return status in POSITIVE_STATUSES
 
     def _compute_skill_overlap(self, job: Job) -> float:
         skills = job.skills_required or []

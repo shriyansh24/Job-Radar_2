@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +17,6 @@ from app.analytics.predictor import (
 )
 from app.auth.models import User
 from app.jobs.models import Job
-from app.outcomes.models import ApplicationOutcome
 from app.pipeline.models import Application
 
 
@@ -42,6 +42,7 @@ async def _create_job(
     user: User,
     title: str = "Software Engineer",
     company: str = "TestCo",
+    source: str = "test",
     remote_type: str | None = "remote",
     experience_level: str | None = "senior",
     skills: list[str] | None = None,
@@ -54,7 +55,7 @@ async def _create_job(
     job = Job(
         id=job_id,
         user_id=user.id,
-        source="test",
+        source=source,
         title=title,
         company_name=company,
         remote_type=remote_type,
@@ -75,6 +76,7 @@ async def _create_application(
     user: User,
     job: Job,
     status: str = "applied",
+    source: str | None = None,
 ) -> Application:
     app = Application(
         id=uuid.uuid4(),
@@ -83,29 +85,11 @@ async def _create_application(
         company_name=job.company_name,
         position_title=job.title,
         status=status,
+        source=source,
     )
     db.add(app)
     await db.flush()
     return app
-
-
-async def _create_outcome(
-    db: AsyncSession,
-    user: User,
-    application: Application,
-    stage: str = "applied",
-    referral: bool = False,
-) -> ApplicationOutcome:
-    outcome = ApplicationOutcome(
-        id=uuid.uuid4(),
-        application_id=application.id,
-        user_id=user.id,
-        stage_reached=stage,
-        referral_used=referral,
-    )
-    db.add(outcome)
-    await db.flush()
-    return outcome
 
 
 async def _seed_training_data(
@@ -113,21 +97,24 @@ async def _seed_training_data(
     user: User,
     n_samples: int = 60,
 ) -> None:
-    """Create n_samples of jobs + applications + outcomes with varied labels."""
-    positive_stages = ["screening", "interviewing", "offer", "accepted"]
-    negative_stages = ["applied", "applied", "applied"]
+    """Create jobs + applications with varied labels from application status."""
+    positive_statuses = ["screening", "interviewing", "offer", "accepted"]
+    negative_statuses = ["applied", "rejected", "withdrawn"]
+    sources = ["linkedin", "company_site", "indeed"]
 
     for i in range(n_samples):
         title = f"Engineer {i}" if i % 2 == 0 else f"Manager {i}"
         company = f"Company{i % 10}"
         remote = "remote" if i % 3 == 0 else "hybrid" if i % 3 == 1 else "onsite"
         level = "senior" if i % 4 == 0 else "mid" if i % 4 == 1 else "junior"
+        source = sources[i % len(sources)]
 
         job = await _create_job(
             db,
             user,
             title=title,
             company=company,
+            source=source,
             remote_type=remote,
             experience_level=level,
             skills=["python", "sql"] if i % 2 == 0 else ["java"],
@@ -135,16 +122,19 @@ async def _seed_training_data(
             salary_max=150000 if i % 3 == 0 else None,
             posted_days_ago=i % 30,
         )
-        application = await _create_application(db, user, job)
 
         # Make roughly 40% positive outcomes
         if i % 5 < 2:
-            stage = positive_stages[i % len(positive_stages)]
+            status = positive_statuses[i % len(positive_statuses)]
         else:
-            stage = negative_stages[i % len(negative_stages)]
+            status = negative_statuses[i % len(negative_statuses)]
 
-        await _create_outcome(
-            db, user, application, stage=stage, referral=(i % 7 == 0)
+        await _create_application(
+            db,
+            user,
+            job,
+            status=status,
+            source="referral" if i % 7 == 0 else "manual",
         )
 
     await db.commit()
@@ -175,8 +165,7 @@ async def test_train_insufficient_data(db_session: AsyncSession) -> None:
     # Create only 5 samples (below MIN_SAMPLES)
     for i in range(5):
         job = await _create_job(db_session, user, title=f"Job {i}")
-        app = await _create_application(db_session, user, job)
-        await _create_outcome(db_session, user, app, stage="applied")
+        await _create_application(db_session, user, job, status="applied")
     await db_session.commit()
 
     predictor = MatchPredictor(db_session)
@@ -246,6 +235,83 @@ async def test_predict_nonexistent_job(db_session: AsyncSession) -> None:
 
     result = await predictor.predict(user.id, "nonexistent_job_id")
     assert result is None
+
+
+@pytest.mark.asyncio
+async def test_predict_scopes_job_lookup_by_user_id(db_session: AsyncSession) -> None:
+    user = await _create_user(db_session)
+    other_user = await _create_user(db_session)
+    await _seed_training_data(db_session, user, n_samples=30)
+    other_job = await _create_job(db_session, other_user, title="Other User Job")
+    await db_session.commit()
+
+    predictor = MatchPredictor(db_session)
+    await predictor.train(user.id)
+
+    result = await predictor.predict(user.id, other_job.id)
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_train_handles_single_class_data(db_session: AsyncSession) -> None:
+    user = await _create_user(db_session)
+    for i in range(MIN_SAMPLES):
+        job = await _create_job(db_session, user, title=f"Single Class Job {i}")
+        await _create_application(db_session, user, job, status="applied")
+    await db_session.commit()
+
+    predictor = MatchPredictor(db_session)
+    result = await predictor.train(user.id)
+
+    assert result.status == "insufficient_class_diversity"
+    assert result.n_samples == MIN_SAMPLES
+    assert result.cv_accuracy is None
+    assert result.model_version == 0
+
+    status = await predictor.get_model_status(user.id)
+    assert status.is_trained is False
+
+
+@pytest.mark.asyncio
+async def test_train_handles_insufficient_minority_samples(
+    db_session: AsyncSession,
+) -> None:
+    user = await _create_user(db_session)
+    for i in range(MIN_SAMPLES):
+        job = await _create_job(db_session, user, title=f"Imbalanced Job {i}")
+        status = "screening" if i == 0 else "applied"
+        await _create_application(db_session, user, job, status=status)
+    await db_session.commit()
+
+    predictor = MatchPredictor(db_session)
+    result = await predictor.train(user.id)
+
+    assert result.status == "insufficient_minority_samples"
+    assert result.n_samples == MIN_SAMPLES
+    assert result.cv_accuracy is None
+    assert result.model_version == 0
+
+
+@pytest.mark.asyncio
+async def test_train_offloads_sklearn_work_to_threads(
+    db_session: AsyncSession,
+) -> None:
+    user = await _create_user(db_session)
+    await _seed_training_data(db_session, user, n_samples=30)
+
+    predictor = MatchPredictor(db_session)
+
+    async def fake_run_sync(func, *args, **kwargs):
+        return func(*args, **kwargs)
+
+    with patch(
+        "app.analytics.predictor.to_thread.run_sync",
+        side_effect=fake_run_sync,
+    ) as mocked_run_sync:
+        result = await predictor.train(user.id)
+
+    assert result.status == "trained"
+    assert mocked_run_sync.await_count == 2
 
 
 @pytest.mark.asyncio

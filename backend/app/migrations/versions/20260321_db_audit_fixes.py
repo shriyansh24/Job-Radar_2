@@ -8,7 +8,7 @@ Create Date: 2026-03-21
 from __future__ import annotations
 
 import sqlalchemy as sa
-from alembic import op
+from alembic import context, op
 
 revision = "20260321_db_audit_fixes"
 down_revision = "e5d40ea7c9db"
@@ -24,16 +24,20 @@ def _replace_fk(
     ondelete: str | None = None,
 ) -> None:
     referred_columns = referred_columns or ["id"]
-    inspector = sa.inspect(op.get_bind())
     old_name = None
-    for fk in inspector.get_foreign_keys(table_name):
-        if (
-            fk.get("constrained_columns") == constrained_columns
-            and fk.get("referred_table") == referred_table
-            and fk.get("referred_columns") == referred_columns
-        ):
-            old_name = fk.get("name")
-            break
+
+    if context.is_offline_mode():
+        old_name = f"{table_name}_{'_'.join(constrained_columns)}_fkey"
+    else:
+        inspector = sa.inspect(op.get_bind())
+        for fk in inspector.get_foreign_keys(table_name):
+            if (
+                fk.get("constrained_columns") == constrained_columns
+                and fk.get("referred_table") == referred_table
+                and fk.get("referred_columns") == referred_columns
+            ):
+                old_name = fk.get("name")
+                break
 
     if old_name:
         op.drop_constraint(old_name, table_name, type_="foreignkey")

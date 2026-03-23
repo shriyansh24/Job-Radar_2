@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from app.config import Settings
+from app.scraping.deduplication import DeduplicationService
 from app.scraping.port import ScrapedJob, ScraperPort
 from app.scraping.rate_limiter import CircuitBreaker, TokenBucketLimiter
 from app.scraping.service import ScrapingService
@@ -37,6 +39,24 @@ class SlowScraper(ScraperPort):
         return True
 
 
+class FailingScraper(ScraperPort):
+    def __init__(self, name: str, message: str):
+        self._name = name
+        self._message = message
+
+    @property
+    def source_name(self) -> str:
+        return self._name
+
+    async def fetch_jobs(
+        self, query: str, location: str | None = None, limit: int = 50
+    ) -> list[ScrapedJob]:
+        raise RuntimeError(self._message)
+
+    async def health_check(self) -> bool:
+        return True
+
+
 def _settings() -> Settings:
     return Settings(
         database_url="sqlite+aiosqlite:///test.db",
@@ -50,8 +70,16 @@ def _job(
     title: str = "Software Engineer",
     company: str = "Acme Inc",
     source: str = "test",
+    url: str | None = None,
+    description: str | None = None,
 ) -> ScrapedJob:
-    return ScrapedJob(title=title, company_name=company, source=source)
+    return ScrapedJob(
+        title=title,
+        company_name=company,
+        source=source,
+        source_url=url,
+        description_raw=description,
+    )
 
 
 def _service_with_scraper(scraper: ScraperPort) -> ScrapingService:
@@ -75,7 +103,17 @@ async def test_run_scrape_times_out_slow_source():
     result = await svc.run_scrape(query="python")
 
     assert result.jobs_found == 0
-    assert result.errors and result.errors[0].startswith("slow:")
+    assert result.errors == ["slow: scrape timed out"]
+
+
+@pytest.mark.asyncio
+async def test_run_scrape_redacts_source_failures():
+    svc = _service_with_scraper(FailingScraper("boom", "database password leaked"))
+
+    result = await svc.run_scrape(query="python")
+
+    assert result.jobs_found == 0
+    assert result.errors == ["boom: scrape failed"]
 
 
 @pytest.mark.asyncio
@@ -88,3 +126,39 @@ async def test_run_scrape_event_callback_failure_is_non_fatal():
     assert result.jobs_found == 1
     assert result.errors == []
     callback.assert_awaited_once()
+
+
+def _feedback_key(title: str, company: str) -> str:
+    normalized = f"{title.lower().strip()}|{company.lower().strip()}"
+    return hashlib.sha256(normalized.encode()).hexdigest()
+
+
+def test_dedup_feedback_override_keeps_reviewed_pair():
+    desc = "We are looking for a talented software engineer to join our platform team."
+    job_a = _job(
+        title="Software Engineer",
+        company="Acme",
+        url="https://example.com/jobs/1",
+        description=desc,
+    )
+    job_b = _job(
+        title="Software Developer",
+        company="Acme Inc",
+        url="https://example.com/jobs/2",
+        description=desc + " Apply today.",
+    )
+    pair = tuple(
+        sorted(
+            [
+                _feedback_key(job_a.title, job_a.company_name),
+                _feedback_key(job_b.title, job_b.company_name),
+            ]
+        )
+    )
+    overrides = {
+        pair: False,
+    }
+
+    result = DeduplicationService(feedback_overrides=overrides).deduplicate([job_a, job_b])
+
+    assert len(result) == 2

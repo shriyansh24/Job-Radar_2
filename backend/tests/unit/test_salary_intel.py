@@ -55,6 +55,7 @@ def _build_service(
 
 @pytest.mark.asyncio
 async def test_generate_brief_returns_brief():
+    user_id = uuid.uuid4()
     job = _mock_job()
     # First scalar call: Job lookup
     # Second scalar call: Company lookup (returns None)
@@ -93,7 +94,7 @@ async def test_generate_brief_returns_brief():
     with patch("app.salary.service._build_router", return_value=mock_router):
         brief = await service.generate_brief(
             "abc123",
-            uuid.uuid4(),
+            user_id,
             SalaryBriefRequest(key_skills=["Python", "FastAPI"]),
         )
 
@@ -105,16 +106,19 @@ async def test_generate_brief_returns_brief():
     assert brief.leverage_points[0].category == "skills"
     assert len(brief.talking_points) == 2
     assert brief.counter_offer_template == "I appreciate the offer..."
+    assert "jobs.user_id" in str(db.scalar.await_args_list[0].args[0])
 
 
 @pytest.mark.asyncio
 async def test_generate_brief_job_not_found():
+    user_id = uuid.uuid4()
     service, db = _build_service(scalar_return=None)
 
     with pytest.raises(Exception) as exc_info:
-        await service.generate_brief("nonexistent", uuid.uuid4())
+        await service.generate_brief("nonexistent", user_id)
 
     assert "not found" in str(exc_info.value.detail).lower()
+    assert "jobs.user_id" in str(db.scalar.await_args_list[0].args[0])
 
 
 @pytest.mark.asyncio

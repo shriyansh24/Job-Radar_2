@@ -482,7 +482,7 @@ async def get_dedup_review(
     from app.scraping.dedup_feedback import DedupFeedbackService
 
     service = DedupFeedbackService(db)
-    return await service.get_pending_reviews(limit=limit)
+    return await service.get_pending_reviews(user.id, limit=limit)
 
 
 @router.get("/dedup/accuracy")
@@ -494,7 +494,7 @@ async def get_dedup_accuracy(
     from app.scraping.dedup_feedback import DedupFeedbackService
 
     service = DedupFeedbackService(db)
-    return await service.get_accuracy_stats()
+    return await service.get_accuracy_stats(user.id)
 
 
 @router.get("/attempts", response_model=list[ScrapeAttemptResponse])

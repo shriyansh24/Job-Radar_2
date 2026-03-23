@@ -1,7 +1,7 @@
 """add form learning and application dedup tables
 
 Revision ID: 20260323_form_learning
-Revises: 20260321_db_audit_fixes
+Revises: 20260323_create_dedup_feedback
 Create Date: 2026-03-23
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "20260323_form_learning"
-down_revision = "20260321_db_audit_fixes"
+down_revision = "20260323_create_dedup_feedback"
 branch_labels = None
 depends_on = None
 

@@ -33,6 +33,7 @@ class DeduplicationService:
         seen_urls: set[str] = set()
         unique: list[ScrapedJob] = []
         simhashes: list[int] = []
+        feedback_keys: list[str] = []
 
         for job in jobs:
             # Layer 1: Exact content hash
@@ -50,14 +51,26 @@ class DeduplicationService:
 
             # Layer 3: Simhash for near-duplicates
             simhash = self._compute_simhash(job)
+            feedback_key = self._feedback_key(job)
             is_near_dup = False
-            for existing_hash in simhashes:
+            for existing_hash, existing_feedback_key in zip(
+                simhashes,
+                feedback_keys,
+                strict=False,
+            ):
+                override = self._feedback_override(feedback_key, existing_feedback_key)
+                if override is False:
+                    continue
+                if override is True:
+                    is_near_dup = True
+                    break
                 if self._hamming_distance(simhash, existing_hash) < 3:
                     is_near_dup = True
                     break
             if not is_near_dup:
                 unique.append(job)
                 simhashes.append(simhash)
+                feedback_keys.append(feedback_key)
 
         removed = len(jobs) - len(unique)
         if removed > 0:
@@ -68,6 +81,18 @@ class DeduplicationService:
         """MD5 of normalized title + company."""
         content = f"{job.title.lower().strip()}|{job.company_name.lower().strip()}"
         return hashlib.md5(content.encode()).hexdigest()
+
+    def _feedback_key(self, job: ScrapedJob) -> str:
+        normalized = f"{job.title.lower().strip()}|{job.company_name.lower().strip()}"
+        return hashlib.sha256(normalized.encode()).hexdigest()
+
+    def _feedback_override(self, job_a_key: str, job_b_key: str) -> bool | None:
+        if not self._feedback_overrides:
+            return None
+
+        from app.scraping.dedup_feedback import check_feedback_override
+
+        return check_feedback_override(self._feedback_overrides, job_a_key, job_b_key)
 
     def _normalize_url(self, url: str) -> str:
         """Remove tracking params, fragment; lowercase host."""

@@ -50,6 +50,7 @@ async def _create_job(
         title=title,
         company_name=company,
         source="test",
+        user_id=user_id,
     )
     db.add(job)
     await db.commit()
@@ -66,8 +67,8 @@ class TestRecordFeedback:
     @pytest.mark.asyncio
     async def test_record_same(self, db_session: AsyncSession) -> None:
         user = await _create_user(db_session)
-        job_a = await _create_job(db_session, "Engineer A", "Co A")
-        job_b = await _create_job(db_session, "Engineer B", "Co B")
+        job_a = await _create_job(db_session, "Engineer A", "Co A", user.id)
+        job_b = await _create_job(db_session, "Engineer B", "Co B", user.id)
 
         svc = DedupFeedbackService(db_session)
         fb = await svc.record_feedback(job_a.id, job_b.id, "same", user.id)
@@ -79,8 +80,8 @@ class TestRecordFeedback:
     @pytest.mark.asyncio
     async def test_record_different(self, db_session: AsyncSession) -> None:
         user = await _create_user(db_session)
-        job_a = await _create_job(db_session, "Engineer C", "Co C")
-        job_b = await _create_job(db_session, "Chef D", "Restaurant D")
+        job_a = await _create_job(db_session, "Engineer C", "Co C", user.id)
+        job_b = await _create_job(db_session, "Chef D", "Restaurant D", user.id)
 
         svc = DedupFeedbackService(db_session)
         fb = await svc.record_feedback(job_a.id, job_b.id, "different", user.id)
@@ -91,8 +92,8 @@ class TestRecordFeedback:
     async def test_canonical_ordering(self, db_session: AsyncSession) -> None:
         """(a,b) and (b,a) should produce the same canonical pair."""
         user = await _create_user(db_session)
-        job_a = await _create_job(db_session, "Dev E", "Co E")
-        job_b = await _create_job(db_session, "Dev F", "Co F")
+        job_a = await _create_job(db_session, "Dev E", "Co E", user.id)
+        job_b = await _create_job(db_session, "Dev F", "Co F", user.id)
 
         svc = DedupFeedbackService(db_session)
         fb1 = await svc.record_feedback(job_a.id, job_b.id, "same", user.id)
@@ -105,8 +106,8 @@ class TestRecordFeedback:
     @pytest.mark.asyncio
     async def test_computes_features(self, db_session: AsyncSession) -> None:
         user = await _create_user(db_session)
-        job_a = await _create_job(db_session, "Software Engineer", "Google")
-        job_b = await _create_job(db_session, "Software Engineer", "Google Inc")
+        job_a = await _create_job(db_session, "Software Engineer", "Google", user.id)
+        job_b = await _create_job(db_session, "Software Engineer", "Google Inc", user.id)
 
         svc = DedupFeedbackService(db_session)
         fb = await svc.record_feedback(job_a.id, job_b.id, "same", user.id)
@@ -125,35 +126,73 @@ class TestLookupPair:
     @pytest.mark.asyncio
     async def test_lookup_existing(self, db_session: AsyncSession) -> None:
         user = await _create_user(db_session)
-        job_a = await _create_job(db_session, "Lookup A", "Co A")
-        job_b = await _create_job(db_session, "Lookup B", "Co B")
+        job_a = await _create_job(db_session, "Lookup A", "Co A", user.id)
+        job_b = await _create_job(db_session, "Lookup B", "Co B", user.id)
 
         svc = DedupFeedbackService(db_session)
         await svc.record_feedback(job_a.id, job_b.id, "same", user.id)
 
-        result = await svc.lookup_pair(job_a.id, job_b.id)
+        result = await svc.lookup_pair(job_a.id, job_b.id, user.id)
         assert result is not None
         assert result.is_duplicate is True
 
     @pytest.mark.asyncio
     async def test_lookup_reversed_order(self, db_session: AsyncSession) -> None:
         user = await _create_user(db_session)
-        job_a = await _create_job(db_session, "RevA", "CoX")
-        job_b = await _create_job(db_session, "RevB", "CoY")
+        job_a = await _create_job(db_session, "RevA", "CoX", user.id)
+        job_b = await _create_job(db_session, "RevB", "CoY", user.id)
 
         svc = DedupFeedbackService(db_session)
         await svc.record_feedback(job_a.id, job_b.id, "different", user.id)
 
         # Lookup in reversed order
-        result = await svc.lookup_pair(job_b.id, job_a.id)
+        result = await svc.lookup_pair(job_b.id, job_a.id, user.id)
         assert result is not None
         assert result.is_duplicate is False
 
     @pytest.mark.asyncio
     async def test_lookup_nonexistent(self, db_session: AsyncSession) -> None:
+        user = await _create_user(db_session)
         svc = DedupFeedbackService(db_session)
-        result = await svc.lookup_pair("nonexistent_a", "nonexistent_b")
+        result = await svc.lookup_pair("nonexistent_a", "nonexistent_b", user.id)
         assert result is None
+
+    @pytest.mark.asyncio
+    async def test_lookup_hidden_from_other_user(self, db_session: AsyncSession) -> None:
+        user = await _create_user(db_session, "owner")
+        other_user = await _create_user(db_session, "other")
+        job_a = await _create_job(db_session, "Hidden A", "Hidden Co", user.id)
+        job_b = await _create_job(db_session, "Hidden B", "Hidden Co", user.id)
+
+        svc = DedupFeedbackService(db_session)
+        await svc.record_feedback(job_a.id, job_b.id, "same", user.id)
+
+        result = await svc.lookup_pair(job_a.id, job_b.id, other_user.id)
+        assert result is None
+
+
+# ---------------------------------------------------------------------------
+# pending review tests
+# ---------------------------------------------------------------------------
+
+
+class TestPendingReviews:
+    @pytest.mark.asyncio
+    async def test_pending_reviews_are_user_scoped(self, db_session: AsyncSession) -> None:
+        user = await _create_user(db_session, "owner")
+        other_user = await _create_user(db_session, "other")
+
+        user_a = await _create_job(db_session, "Software Engineer", "Acme", user.id)
+        user_b = await _create_job(db_session, "Senior Engineer", "Acme LLC", user.id)
+        other_a = await _create_job(db_session, "Data Analyst", "OtherCo", other_user.id)
+        other_b = await _create_job(db_session, "Business Analyst", "OtherCo Inc", other_user.id)
+
+        svc = DedupFeedbackService(db_session)
+        reviews = await svc.get_pending_reviews(user.id, limit=10)
+
+        user_pairs = {frozenset((item.job_a_id, item.job_b_id)) for item in reviews}
+        assert frozenset((user_a.id, user_b.id)) in user_pairs
+        assert frozenset((other_a.id, other_b.id)) not in user_pairs
 
 
 # ---------------------------------------------------------------------------
@@ -164,8 +203,9 @@ class TestLookupPair:
 class TestAccuracyStats:
     @pytest.mark.asyncio
     async def test_empty_stats(self, db_session: AsyncSession) -> None:
+        user = await _create_user(db_session)
         svc = DedupFeedbackService(db_session)
-        stats = await svc.get_accuracy_stats()
+        stats = await svc.get_accuracy_stats(user.id)
 
         assert stats.total_feedback == 0
         assert stats.confirmed_duplicates == 0
@@ -176,12 +216,13 @@ class TestAccuracyStats:
     @pytest.mark.asyncio
     async def test_stats_with_feedback(self, db_session: AsyncSession) -> None:
         user = await _create_user(db_session)
+        other_user = await _create_user(db_session, "other")
 
         # Create several job pairs with varying similarity
         pairs = []
         for i in range(12):
-            a = await _create_job(db_session, f"Role {i}a", f"Company {i}")
-            b = await _create_job(db_session, f"Role {i}b", f"Company {i}")
+            a = await _create_job(db_session, f"Role {i}a", f"Company {i}", user.id)
+            b = await _create_job(db_session, f"Role {i}b", f"Company {i}", user.id)
             pairs.append((a, b))
 
         svc = DedupFeedbackService(db_session)
@@ -192,7 +233,11 @@ class TestAccuracyStats:
         for i in range(6, 12):
             await svc.record_feedback(pairs[i][0].id, pairs[i][1].id, "different", user.id)
 
-        stats = await svc.get_accuracy_stats()
+        other_a = await _create_job(db_session, "Other Role A", "Other Co", other_user.id)
+        other_b = await _create_job(db_session, "Other Role B", "Other Co", other_user.id)
+        await svc.record_feedback(other_a.id, other_b.id, "same", other_user.id)
+
+        stats = await svc.get_accuracy_stats(user.id)
         assert stats.total_feedback == 12
         assert stats.confirmed_duplicates == 6
         assert stats.confirmed_different == 6
@@ -220,8 +265,8 @@ class TestAdjustThresholds:
 
         # Create 10+ pairs
         for i in range(12):
-            a = await _create_job(db_session, f"Adj {i}a", f"Corp {i}")
-            b = await _create_job(db_session, f"Adj {i}b", f"Corp {i}")
+            a = await _create_job(db_session, f"Adj {i}a", f"Corp {i}", user.id)
+            b = await _create_job(db_session, f"Adj {i}b", f"Corp {i}", user.id)
             decision = "same" if i < 6 else "different"
             await svc.record_feedback(a.id, b.id, decision, user.id)
 

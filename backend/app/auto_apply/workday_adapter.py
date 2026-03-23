@@ -322,8 +322,8 @@ class WorkdayBrowserAdapter:
                 )
                 if btn_text and "submit" in btn_text.lower():
                     return WizardStep.REVIEW
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("workday.review_button_probe_failed", error=str(exc))
 
         # Match against known step indicators
         best_step = WizardStep.UNKNOWN
@@ -404,8 +404,8 @@ class WorkdayBrowserAdapter:
                 else:
                     await locator.first.fill(value)
                 return True
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("workday.locator_fill_failed", selector=selector, error=str(exc))
 
         # Attempt 2: JS shadow DOM traversal
         try:
@@ -441,8 +441,8 @@ class WorkdayBrowserAdapter:
                 await locator.first.set_input_files(resume_path)
                 logger.info("workday.resume_uploaded", method="set_input_files")
                 return True
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("workday.resume_input_upload_failed", error=str(exc))
 
         # Attempt 2: click the upload button and use file chooser
         try:

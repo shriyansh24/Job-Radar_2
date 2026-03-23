@@ -119,7 +119,8 @@ class EmailParser:
     """Parse common job-related email formats and extract structured data."""
 
     def parse(self, sender: str, subject: str, body: str) -> ParsedEmail | None:
-        combined = f"{subject} {body}".lower()
+        combined = f"{subject} {body}"
+        combined_lower = combined.lower()
         ats_source = self._detect_ats(sender)
         company = self._extract_company(sender, combined)
         job_title = self._extract_job_title(subject, body)
@@ -133,7 +134,7 @@ class EmailParser:
             ("outreach", _OUTREACH_PATTERNS, 0.70),
         ]:
             for pattern in patterns:
-                if re.search(pattern, combined):
+                if re.search(pattern, combined_lower):
                     confidence = base_confidence
                     # Boost confidence if from a known ATS
                     if ats_source:
@@ -172,10 +173,12 @@ class EmailParser:
                 return domain.replace("-", " ").title()
 
         # Fallback: "at <Company>" pattern
-        at_pat = r"\bat\s+([A-Z][\w\s&.-]{1,50}?)(?:\.|,|\s+for|\s+and|\s*$)"
-        at_match = re.search(at_pat, combined_text)
+        at_pat = r"\bat\s+([\w][\w\s&.-]{1,50}?)(?:\.|,|\s+for|\s+and|\s*$)"
+        at_match = re.search(at_pat, combined_text, flags=re.IGNORECASE)
         if at_match:
-            return at_match.group(1).strip()
+            company = re.sub(r"\s+", " ", at_match.group(1)).strip(" -")
+            if company:
+                return company if any(ch.isupper() for ch in company) else company.title()
 
         return None
 

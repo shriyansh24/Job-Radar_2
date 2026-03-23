@@ -40,6 +40,7 @@ def _mock_contact(**overrides: object) -> SimpleNamespace:
 def _mock_job(**overrides: object) -> SimpleNamespace:
     defaults = {
         "id": "job-abc123",
+        "user_id": uuid.uuid4(),
         "title": "Software Engineer",
         "company_name": "Acme Corp",
         "location": "San Francisco",
@@ -178,7 +179,8 @@ async def test_find_connections():
 @pytest.mark.asyncio
 async def test_suggest_referral_finds_contacts():
     svc, db = _build_service()
-    job = _mock_job()
+    user_id = uuid.uuid4()
+    job = _mock_job(user_id=user_id)
     contact = _mock_contact(company="Acme Corp")
 
     db.scalar = AsyncMock(return_value=job)
@@ -189,10 +191,11 @@ async def test_suggest_referral_finds_contacts():
     result_mock.scalars.return_value = scalars_mock
     db.execute = AsyncMock(return_value=result_mock)
 
-    suggestions = await svc.suggest_referral(uuid.uuid4(), "job-abc123")
+    suggestions = await svc.suggest_referral(user_id, "job-abc123")
     assert len(suggestions) == 1
     assert isinstance(suggestions[0], ReferralSuggestion)
     assert "Acme Corp" in suggestions[0].relevance_reason
+    assert "jobs.user_id" in str(db.scalar.await_args_list[0].args[0])
 
 
 @pytest.mark.asyncio
@@ -215,7 +218,7 @@ async def test_suggest_referral_job_not_found():
 async def test_generate_outreach_success():
     svc, db = _build_service()
     contact = _mock_contact()
-    job = _mock_job()
+    job = _mock_job(user_id=contact.user_id)
 
     db.scalar = AsyncMock(side_effect=[contact, job])
 
@@ -229,13 +232,14 @@ async def test_generate_outreach_success():
 
     assert "Alice" in message
     mock_router.complete.assert_awaited_once()
+    assert "jobs.user_id" in str(db.scalar.await_args_list[1].args[0])
 
 
 @pytest.mark.asyncio
 async def test_generate_outreach_llm_failure():
     svc, db = _build_service()
     contact = _mock_contact()
-    job = _mock_job()
+    job = _mock_job(user_id=contact.user_id)
 
     db.scalar = AsyncMock(side_effect=[contact, job])
 
@@ -271,10 +275,11 @@ async def test_generate_outreach_contact_not_found():
 async def test_create_referral_request():
     svc, db = _build_service()
     contact = _mock_contact()
+    job = _mock_job(user_id=contact.user_id)
     user_id = contact.user_id
 
-    # get_contact returns the contact (validation)
-    db.scalar = AsyncMock(return_value=contact)
+    # get_contact returns the contact; job lookup returns the user's job
+    db.scalar = AsyncMock(side_effect=[contact, job])
 
     await svc.create_referral_request(
         ReferralRequestCreate(
@@ -286,6 +291,28 @@ async def test_create_referral_request():
     )
     db.add.assert_called_once()
     db.commit.assert_awaited_once()
+    assert "jobs.user_id" in str(db.scalar.await_args_list[1].args[0])
+
+
+@pytest.mark.asyncio
+async def test_create_referral_request_rejects_foreign_job():
+    svc, db = _build_service()
+    contact = _mock_contact()
+
+    db.scalar = AsyncMock(side_effect=[contact, None])
+
+    with pytest.raises(Exception) as exc_info:
+        await svc.create_referral_request(
+            ReferralRequestCreate(
+                contact_id=contact.id,
+                job_id="foreign-job",
+                message_template="Hi, I'd love a referral...",
+            ),
+            contact.user_id,
+        )
+
+    assert "not found" in str(exc_info.value.detail).lower()
+    assert "jobs.user_id" in str(db.scalar.await_args_list[1].args[0])
 
 
 @pytest.mark.asyncio

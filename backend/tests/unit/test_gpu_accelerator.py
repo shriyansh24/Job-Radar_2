@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 from dataclasses import asdict
 from unittest.mock import MagicMock, patch
 
@@ -275,12 +276,20 @@ class TestEmbeddingServiceGPU:
 
         from app.enrichment.embedding import EmbeddingService
 
+        real_import = builtins.__import__
+
+        def _guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if name == "sentence_transformers":
+                raise ImportError("sentence-transformers not installed in test")
+            return real_import(name, globals, locals, fromlist, level)
+
         db = AsyncMock()
         svc = EmbeddingService(db)
         # Force model to None (sentence-transformers not installed in CI)
         svc._model = None
         # embed_text should return None gracefully
-        assert svc.embed_text("hello") is None
+        with patch("builtins.__import__", side_effect=_guarded_import):
+            assert svc.embed_text("hello") is None
 
     def test_gpu_optimized_flag_set_on_attempt(self) -> None:
         from unittest.mock import AsyncMock

@@ -53,6 +53,16 @@ class NetworkingService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
+    async def _get_job(self, job_id: str, user_id: uuid.UUID):
+        from app.jobs.models import Job
+
+        job = await self.db.scalar(
+            select(Job).where(Job.id == job_id, Job.user_id == user_id)
+        )
+        if job is None:
+            raise NotFoundError("Job not found")
+        return job
+
     # ------------------------------------------------------------------
     # Contact CRUD
     # ------------------------------------------------------------------
@@ -130,11 +140,7 @@ class NetworkingService:
     async def suggest_referral(
         self, user_id: uuid.UUID, job_id: str
     ) -> list[ReferralSuggestion]:
-        from app.jobs.models import Job
-
-        job = await self.db.scalar(select(Job).where(Job.id == job_id))
-        if job is None:
-            raise NotFoundError("Job not found")
+        job = await self._get_job(job_id, user_id)
 
         company_name = job.company_name or ""
         suggestions: list[ReferralSuggestion] = []
@@ -162,12 +168,8 @@ class NetworkingService:
         job_id: str,
         user_id: uuid.UUID,
     ) -> str:
-        from app.jobs.models import Job
-
         contact = await self.get_contact(contact_id, user_id)
-        job = await self.db.scalar(select(Job).where(Job.id == job_id))
-        if job is None:
-            raise NotFoundError("Job not found")
+        job = await self._get_job(job_id, user_id)
 
         summary = (job.summary_ai or job.description_clean or "")[:500]
 
@@ -217,6 +219,7 @@ class NetworkingService:
     ) -> ReferralRequest:
         # Validate contact belongs to user
         await self.get_contact(data.contact_id, user_id)
+        await self._get_job(data.job_id, user_id)
 
         rr = ReferralRequest(user_id=user_id, **data.model_dump())
         self.db.add(rr)

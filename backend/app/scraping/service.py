@@ -131,15 +131,15 @@ class ScrapingService:
                             }
                         )
                     except Exception as exc:
-                        logger.warning(
+                        logger.exception(
                             "scraper_progress_event_failed",
                             source=source_name,
                             error=str(exc),
                         )
-            except Exception as e:
+            except Exception as exc:
                 cb.record_failure()
-                result.errors.append(f"{source_name}: {e!s}")
-                logger.error("scraper_failed", source=source_name, error=str(e))
+                result.errors.append(self._redact_source_error(source_name, exc))
+                logger.exception("scraper_failed", source=source_name, error=str(exc))
 
         # Dedup
         deduper = DeduplicationService()
@@ -204,8 +204,12 @@ class ScrapingService:
                 run.completed_at = datetime.now(UTC)
                 run.duration_seconds = round(elapsed, 2)
             await self.db.commit()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.exception(
+                "scraper_run_record_update_failed",
+                run_id=str(run_id),
+                error=str(exc),
+            )
 
     async def _persist_jobs(
         self, jobs: list[ScrapedJob], user_id: uuid.UUID | None
@@ -236,8 +240,8 @@ class ScrapingService:
 
         try:
             await self.db.commit()
-        except Exception as e:
-            logger.error("persist_jobs_failed", error=str(e))
+        except Exception as exc:
+            logger.exception("persist_jobs_failed", error=str(exc))
             await self.db.rollback()
 
         return new_count, updated_count
@@ -457,10 +461,10 @@ class ScrapingService:
         batch_errors = [r for r in task_results if isinstance(r, Exception)]
         if batch_errors:
             results["targets_failed"] += len(batch_errors)
-            results["errors"].extend(str(error) for error in batch_errors)
+            results["errors"].extend("target batch failed" for _ in batch_errors)
             logger.error(
                 "target_batch_aborted",
-                errors=[str(error) for error in batch_errors],
+                errors=[repr(error) for error in batch_errors],
             )
             await self.db.rollback()
             return results
@@ -476,3 +480,9 @@ class ScrapingService:
         """Cleanup all scraper resources."""
         for scraper in self._scrapers.values():
             await scraper.close()
+
+    @staticmethod
+    def _redact_source_error(source_name: str, exc: Exception) -> str:
+        if isinstance(exc, asyncio.TimeoutError):
+            return f"{source_name}: scrape timed out"
+        return f"{source_name}: scrape failed"

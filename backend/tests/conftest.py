@@ -8,17 +8,22 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Import ALL models so Base.metadata is fully populated
+import app.analytics.models  # noqa: F401
 import app.auth.models  # noqa: F401
 import app.auto_apply.form_learning  # noqa: F401
 import app.auto_apply.models  # noqa: F401
 import app.companies.models  # noqa: F401
 import app.copilot.models  # noqa: F401
+import app.email.models  # noqa: F401
 import app.interview.models  # noqa: F401
 import app.jobs.models  # noqa: F401
+import app.networking.models  # noqa: F401
 import app.pipeline.models  # noqa: F401
 import app.profile.models  # noqa: F401
+import app.resume.archetypes  # noqa: F401
 import app.resume.models  # noqa: F401
 import app.salary.models  # noqa: F401
+import app.scraping.dedup_feedback  # noqa: F401
 import app.scraping.models  # noqa: F401
 import app.settings.models  # noqa: F401
 import app.source_health.models  # noqa: F401

@@ -280,7 +280,9 @@ class SalaryService:
         request = request or SalaryBriefRequest()
 
         # Load job
-        job = await self.db.scalar(select(Job).where(Job.id == job_id))
+        job = await self.db.scalar(
+            select(Job).where(Job.id == job_id, Job.user_id == user_id)
+        )
         if job is None:
             raise NotFoundError("Job not found")
 

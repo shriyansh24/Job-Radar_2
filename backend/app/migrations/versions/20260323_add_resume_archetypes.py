@@ -1,7 +1,7 @@
 """add resume_archetypes table (B5)
 
 Revision ID: 20260323_archetypes
-Revises: 20260321_db_audit_fixes
+Revises: 20260323_networking
 Create Date: 2026-03-23
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "20260323_archetypes"
-down_revision = "20260321_db_audit_fixes"
+down_revision = "20260323_networking"
 branch_labels = None
 depends_on = None
 

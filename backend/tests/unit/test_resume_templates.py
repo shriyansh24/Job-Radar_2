@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from app.resume.ir_schema import (
     ContactInfo,
     Education,

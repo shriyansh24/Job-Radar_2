@@ -16,24 +16,21 @@ logger = structlog.get_logger()
 # Everything degrades gracefully to CPU when absent.
 # ---------------------------------------------------------------------------
 
-_openvino_available = False
-_ipex_available = False
+OVCore: Any | None = None
 
 try:
-    import openvino as ov  # type: ignore[import-untyped]
     from openvino.runtime import Core as OVCore  # type: ignore[import-untyped]
-
-    _openvino_available = True
 except ImportError:
-    ov = None  # type: ignore[assignment]
-    OVCore = None  # type: ignore[assignment,misc]
+    OVCore = None
+
+_openvino_available = OVCore is not None
 
 try:
-    import intel_extension_for_pytorch as ipex  # type: ignore[import-untyped]  # noqa: F401
-
-    _ipex_available = True
+    import intel_extension_for_pytorch  # type: ignore[import-untyped]  # noqa: F401
 except ImportError:
-    ipex = None  # type: ignore[assignment]
+    _ipex_available = False
+else:
+    _ipex_available = True
 
 
 # ---------------------------------------------------------------------------

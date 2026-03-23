@@ -44,8 +44,8 @@ async def run_scheduled_scrape(ctx: dict | None = None) -> None:
                         found=result.jobs_found,
                         new=result.jobs_new,
                     )
-        except Exception as e:
-            logger.error("scheduled_scrape_failed", error=str(e))
+        except Exception as exc:
+            logger.exception("scheduled_scrape_failed", error=str(exc))
         finally:
             await service.close()
 
@@ -78,15 +78,19 @@ async def run_career_page_scrape(ctx: dict | None = None) -> None:
                     target.last_success_at = datetime.now(UTC)
                     target.consecutive_failures = 0
                     logger.info("career_page_scraped", url=target.url, jobs=len(jobs))
-                except Exception as e:
+                except Exception as exc:
                     target.consecutive_failures += 1
                     target.last_failure_at = datetime.now(UTC)
-                    logger.error("career_page_scrape_failed", url=target.url, error=str(e))
+                    logger.exception(
+                        "career_page_scrape_failed",
+                        url=target.url,
+                        error=str(exc),
+                    )
 
             await db.commit()
             await scraper.close()
-        except Exception as e:
-            logger.error("career_page_worker_failed", error=str(e))
+        except Exception as exc:
+            logger.exception("career_page_worker_failed", error=str(exc))
 
 
 async def run_target_batch_job(
@@ -174,8 +178,8 @@ async def run_target_batch_job(
             finally:
                 await service.close()
 
-        except Exception as e:
-            logger.error("target_batch_job_failed", source_kind=source_kind, error=str(e))
+        except Exception as exc:
+            logger.exception("target_batch_job_failed", source_kind=source_kind, error=str(exc))
 
 
 class _NoOpBrowserPool:
