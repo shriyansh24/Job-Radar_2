@@ -107,7 +107,7 @@ class WorkdayScraper(BaseScraper):
                 try:
                     posted_at = datetime.fromisoformat(posted_on)
                 except (ValueError, TypeError):
-                    pass
+                    logger.debug("workday.invalid_posted_on", value=posted_on)
 
             # Extract job type from bullet fields (e.g. "Full-time", "Contract")
             job_type = bullet_fields[0] if bullet_fields else None
@@ -188,5 +188,6 @@ class WorkdayScraper(BaseScraper):
                 follow_redirects=True,
             )
             return resp.status_code < 500
-        except Exception:
+        except Exception as exc:
+            logger.debug("workday.health_check_failed", error=str(exc))
             return False

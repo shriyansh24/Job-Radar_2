@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 
 class JobBase(BaseModel):
@@ -53,6 +54,7 @@ class JobResponse(JobBase):
     green_flags: list[str] = []
     match_score: Decimal | None = None
     tfidf_score: Decimal | None = None
+    freshness_score: float | None = None
     status: str
     is_starred: bool
     is_enriched: bool
@@ -60,6 +62,21 @@ class JobResponse(JobBase):
     posted_at: datetime | None = None
     scraped_at: datetime
     created_at: datetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_freshness_score(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if data.get("freshness_score") is None:
+                data = dict(data)
+                data["freshness_score"] = _derive_freshness_score(data)
+            return data
+
+        if getattr(data, "freshness_score", None) is None:
+            freshness_score = _derive_freshness_score(data)
+            if freshness_score is not None:
+                setattr(data, "freshness_score", freshness_score)
+        return data
 
 
 class JobListParams(BaseModel):
@@ -91,3 +108,29 @@ class SemanticSearchRequest(BaseModel):
 class JobExportRequest(BaseModel):
     format: str = "json"
     filters: JobListParams | None = None
+
+
+def _derive_freshness_score(data: Any) -> float | None:
+    """Best-effort freshness score for API responses when the model lacks a stored value."""
+    if isinstance(data, dict) and data.get("freshness_score") is not None:
+        return float(data["freshness_score"])
+
+    first_seen_at = getattr(data, "first_seen_at", None)
+    last_seen_at = getattr(data, "last_seen_at", None)
+    scraped_at = getattr(data, "scraped_at", None)
+    anchor = first_seen_at or last_seen_at or scraped_at
+    if anchor is None:
+        return None
+
+    try:
+        now = (
+            datetime.now(anchor.tzinfo)
+            if getattr(anchor, "tzinfo", None)
+            else datetime.now()
+        )
+        age_days = max(0.0, (now - anchor).total_seconds() / 86400)
+    except Exception:
+        return None
+
+    # 0 days old -> 1.0, 30+ days old -> 0.0, linear decay in between.
+    return round(max(0.0, 1.0 - min(age_days, 30.0) / 30.0), 4)
