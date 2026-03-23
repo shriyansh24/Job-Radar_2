@@ -1,5 +1,6 @@
 # app/scraping/ops.py
 """CLI operations tool for scraper platform management."""
+
 from __future__ import annotations
 
 import asyncio
@@ -37,13 +38,9 @@ def import_targets(
 
             from app.profile.models import UserProfile
 
-            profile = await db.scalar(
-                select(UserProfile).where(UserProfile.user_id == user_id)
-            )
+            profile = await db.scalar(select(UserProfile).where(UserProfile.user_id == user_id))
             watchlist = (
-                profile.watchlist_companies
-                if profile and profile.watchlist_companies
-                else []
+                profile.watchlist_companies if profile and profile.watchlist_companies else []
             )
 
             stats = await import_from_excel(
@@ -124,9 +121,10 @@ def list_targets_cmd(
 @quarantine_app.command("list")
 def quarantine_list() -> None:
     """Show all quarantined targets with failure reasons."""
+    from sqlalchemy import select
+
     from app.database import async_session_factory
     from app.scraping.models import ScrapeTarget
-    from sqlalchemy import select
 
     async def _run() -> None:
         async with async_session_factory() as db:
@@ -161,10 +159,12 @@ def quarantine_review(
     target_id: str = typer.Argument(..., help="Target UUID"),
 ) -> None:
     """Show last 5 attempts and failure traces for a target."""
+    import uuid as uuid_mod
+
+    from sqlalchemy import select
+
     from app.database import async_session_factory
     from app.scraping.models import ScrapeAttempt, ScrapeTarget
-    from sqlalchemy import select
-    import uuid as uuid_mod
 
     async def _run() -> None:
         async with async_session_factory() as db:
@@ -193,9 +193,7 @@ def quarantine_review(
         table.add_column("Error", style="red", max_width=40)
         for a in attempts.all():
             table.add_row(
-                str(a.created_at.strftime("%Y-%m-%d %H:%M"))
-                if a.created_at
-                else "—",
+                str(a.created_at.strftime("%Y-%m-%d %H:%M")) if a.created_at else "—",
                 str(a.actual_tier_used),
                 a.scraper_name,
                 a.status,
@@ -212,9 +210,8 @@ def quarantine_release(
     force_tier: int = typer.Option(None, help="Force starting tier after release"),
 ) -> None:
     """Un-quarantine and reset failure count."""
-    from datetime import UTC, datetime
-
     import uuid as uuid_mod
+    from datetime import UTC, datetime
 
     from app.database import async_session_factory
     from app.scraping.models import ScrapeTarget
@@ -234,8 +231,7 @@ def quarantine_release(
                 target.start_tier = force_tier
             await db.commit()
             console.print(
-                f"[green]Released {target.company_name or target_id}"
-                f" from quarantine[/green]"
+                f"[green]Released {target.company_name or target_id} from quarantine[/green]"
             )
 
     asyncio.run(_run())
@@ -264,12 +260,8 @@ def health_cmd() -> None:
                 select(
                     ScrapeAttempt.scraper_name,
                     func.count().label("total"),
-                    func.count()
-                    .filter(ScrapeAttempt.status == "success")
-                    .label("success"),
-                    func.count()
-                    .filter(ScrapeAttempt.status == "failed")
-                    .label("failed"),
+                    func.count().filter(ScrapeAttempt.status == "success").label("success"),
+                    func.count().filter(ScrapeAttempt.status == "failed").label("failed"),
                     func.avg(ScrapeAttempt.duration_ms).label("avg_ms"),
                 )
                 .where(ScrapeAttempt.created_at >= cutoff)
@@ -284,11 +276,7 @@ def health_cmd() -> None:
         table.add_column("Rate", style="yellow")
         table.add_column("Avg ms")
         for row in result.all():
-            rate = (
-                f"{(row.success / row.total * 100):.0f}%"
-                if row.total
-                else "—"
-            )
+            rate = f"{(row.success / row.total * 100):.0f}%" if row.total else "—"
             table.add_row(
                 row.scraper_name,
                 str(row.total),
@@ -337,8 +325,7 @@ def test_fetch(
 
     if plan.fallback_chain:
         console.print(
-            f"Fallback chain: "
-            f"{' -> '.join(s.scraper_name for s in plan.fallback_chain)}"
+            f"Fallback chain: {' -> '.join(s.scraper_name for s in plan.fallback_chain)}"
         )
 
     if dry_run:
@@ -346,8 +333,7 @@ def test_fetch(
         return
 
     console.print(
-        "\n[yellow]Live fetch not implemented yet"
-        " — use --dry-run to see execution plan[/yellow]"
+        "\n[yellow]Live fetch not implemented yet — use --dry-run to see execution plan[/yellow]"
     )
 
 

@@ -91,9 +91,7 @@ class SalaryService:
     # Salary research
     # ------------------------------------------------------------------
 
-    async def research_salary(
-        self, request: SalaryResearchRequest, user_id: uuid.UUID
-    ) -> dict:
+    async def research_salary(self, request: SalaryResearchRequest, user_id: uuid.UUID) -> dict:
         """Return percentile salary data, YoE brackets, and competing companies.
 
         Checks ``SalaryCache`` for a hit within the last 24 hours before
@@ -169,9 +167,7 @@ class SalaryService:
     # Offer evaluation
     # ------------------------------------------------------------------
 
-    async def evaluate_offer(
-        self, request: OfferEvalRequest, user_id: uuid.UUID
-    ) -> dict:
+    async def evaluate_offer(self, request: OfferEvalRequest, user_id: uuid.UUID) -> dict:
         """Evaluate an offer against market data and return negotiation guidance.
 
         If cached market data exists it is fed into the evaluation prompt
@@ -232,9 +228,7 @@ class SalaryService:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    async def _get_valid_cache(
-        self, job_title: str, location: str
-    ) -> SalaryCache | None:
+    async def _get_valid_cache(self, job_title: str, location: str) -> SalaryCache | None:
         """Return a cache entry younger than ``_CACHE_TTL``, or ``None``."""
         cutoff = datetime.now(timezone.utc) - _CACHE_TTL
 

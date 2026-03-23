@@ -4,6 +4,7 @@ Revision ID: 20260321_db_audit_fixes
 Revises: e5d40ea7c9db
 Create Date: 2026-03-21
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

@@ -6,6 +6,7 @@ Implements BOTH FetcherPort (Tier 1) and BrowserPort (Tier 2):
 
 Gracefully degrades if scrapling is not installed.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -53,7 +54,10 @@ class ScraplingFetcher(FetcherPort, BrowserPort):
         # Attempt to request Chrome-like TLS fingerprinting when supported.
         try:
             resp = await asyncio.to_thread(
-                fetcher.get, url, **kwargs, impersonate="chrome",
+                fetcher.get,
+                url,
+                **kwargs,
+                impersonate="chrome",
             )
         except TypeError:
             # Older scrapling versions may not support the impersonate kwarg.

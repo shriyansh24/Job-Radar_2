@@ -1,4 +1,5 @@
 """Crawl4AI-based HTML-to-markdown extractor."""
+
 from __future__ import annotations
 
 import re

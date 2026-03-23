@@ -1,12 +1,13 @@
-import pytest
-from app.scraping.control.tier_router import TierRouter, ExecutionPlan, Step
+from app.scraping.control.tier_router import TierRouter
 
 
 def _make_target(**kwargs):
     """Create a minimal target-like object for testing."""
     from types import SimpleNamespace
-    defaults = dict(ats_vendor=None, start_tier=1, max_tier=3,
-                    last_success_tier=None, consecutive_failures=0)
+
+    defaults = dict(
+        ats_vendor=None, start_tier=1, max_tier=3, last_success_tier=None, consecutive_failures=0
+    )
     defaults.update(kwargs)
     return SimpleNamespace(**defaults)
 

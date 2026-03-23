@@ -10,13 +10,13 @@ from sse_starlette.sse import EventSourceResponse
 
 from app.auth.models import User
 from app.dependencies import get_current_user, get_db
-from app.scraping.models import ScrapeAttempt, ScrapeTarget, ScraperRun
+from app.scraping.models import ScrapeAttempt, ScraperRun, ScrapeTarget
 from app.scraping.schemas import (
     CareerPageCreate,
     CareerPageResponse,
     CareerPageUpdate,
-    ScraperRunResponse,
     ScrapeAttemptResponse,
+    ScraperRunResponse,
     ScrapeTargetImportItem,
     ScrapeTargetImportResponse,
     ScrapeTargetListResponse,
@@ -43,9 +43,7 @@ async def trigger_scrape(
     from app.profile.models import UserProfile
     from app.scraping.service import ScrapingService
 
-    profile = await db.scalar(
-        select(UserProfile).where(UserProfile.user_id == user.id)
-    )
+    profile = await db.scalar(select(UserProfile).where(UserProfile.user_id == user.id))
     if not profile or not profile.search_queries:
         return {"status": "error", "message": "No search queries configured in your profile"}
 
@@ -64,11 +62,13 @@ async def trigger_scrape(
                 location=location,
                 user_id=user.id,
             )
-            results.append({
-                "query": query,
-                "jobs_found": getattr(result, "jobs_found", 0),
-                "jobs_new": getattr(result, "jobs_new", 0),
-            })
+            results.append(
+                {
+                    "query": query,
+                    "jobs_found": getattr(result, "jobs_found", 0),
+                    "jobs_new": getattr(result, "jobs_new", 0),
+                }
+            )
         except Exception as e:
             results.append({"query": query, "error": str(e)})
 
@@ -211,9 +211,7 @@ async def list_targets(
         base_query = base_query.where(ScrapeTarget.enabled == enabled)
 
     # Count total matching rows
-    count_result = await db.scalar(
-        select(func.count()).select_from(base_query.subquery())
-    )
+    count_result = await db.scalar(select(func.count()).select_from(base_query.subquery()))
     total = count_result or 0
 
     # Fetch page
@@ -248,9 +246,7 @@ async def get_target(
         .order_by(ScrapeAttempt.created_at.desc())
         .limit(5)
     )
-    recent_attempts = [
-        ScrapeAttemptResponse.model_validate(a) for a in attempts_result.all()
-    ]
+    recent_attempts = [ScrapeAttemptResponse.model_validate(a) for a in attempts_result.all()]
 
     return ScrapeTargetWithAttemptsResponse(
         target=ScrapeTargetResponse.model_validate(target),
@@ -502,9 +498,7 @@ async def trigger_batch(
         ScrapeTarget.quarantined == False,  # noqa: E712
     )
     if data.priority_class is not None:
-        targets_query = targets_query.where(
-            ScrapeTarget.priority_class == data.priority_class
-        )
+        targets_query = targets_query.where(ScrapeTarget.priority_class == data.priority_class)
 
     all_targets_result = await db.scalars(targets_query)
     all_targets = list(all_targets_result.all())

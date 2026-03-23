@@ -2,16 +2,17 @@
 
 Tests cover all detection strategies and crawl-control limits.
 """
+
 from __future__ import annotations
 
 import pytest
 
 from app.scraping.execution.page_crawler import PageCrawler, PaginationResult
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_html_with_rel_next(href: str) -> str:
     return f'<html><body><a rel="next" href="{href}">Next</a></body></html>'
@@ -26,7 +27,7 @@ def _make_html_with_aria(href: str) -> str:
 
 
 def _make_html_no_pagination() -> str:
-    return '<html><body><p>No jobs here</p></body></html>'
+    return "<html><body><p>No jobs here</p></body></html>"
 
 
 def _noop_parse(html: str, url: str) -> list[dict]:
@@ -47,6 +48,7 @@ def _five_jobs_parse(html: str, url: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # _detect_next_url  — unit-level strategy tests
 # ---------------------------------------------------------------------------
+
 
 class TestDetectNextUrl:
     def setup_method(self):
@@ -191,6 +193,7 @@ class TestDetectNextUrl:
 # crawl()  — integration-level tests using mocked fetch_fn / parse_fn
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_crawl_single_page_no_pagination():
     """A page with no next link results in a single-page crawl."""
@@ -256,12 +259,14 @@ async def test_crawl_follows_pages():
 @pytest.mark.asyncio
 async def test_crawl_respects_max_pages():
     """Crawler stops at max_pages even if more pages exist."""
+
     def _page_html(page: int) -> str:
         return f'<a rel="next" href="/jobs?page={page + 1}">Next</a>'
 
     async def fetch(url: str) -> str:
         # Extract page number and return next-link HTML
-        from urllib.parse import urlparse, parse_qs
+        from urllib.parse import parse_qs, urlparse
+
         params = parse_qs(urlparse(url).query)
         page = int(params.get("page", ["1"])[0])
         return _page_html(page)
@@ -281,12 +286,14 @@ async def test_crawl_respects_max_pages():
 @pytest.mark.asyncio
 async def test_crawl_respects_max_jobs():
     """Crawler stops when accumulated jobs reach max_jobs."""
+
     # 5 jobs per page, 20 pages of pagination
     def _page_html(page: int) -> str:
         return f'<a rel="next" href="/jobs?page={page + 1}">Next</a>'
 
     async def fetch(url: str) -> str:
-        from urllib.parse import urlparse, parse_qs
+        from urllib.parse import parse_qs, urlparse
+
         params = parse_qs(urlparse(url).query)
         page = int(params.get("page", ["1"])[0])
         return _page_html(page)

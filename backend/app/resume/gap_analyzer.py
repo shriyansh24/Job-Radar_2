@@ -16,8 +16,35 @@ from app.nlp.core import build_freq_map, cosine_similarity, tokenize
 # ---------------------------------------------------------------------------
 
 TRANSFERABLE_CLUSTERS: list[frozenset[str]] = [
-    frozenset({"python", "java", "javascript", "typescript", "c#", "c++", "go", "ruby", "rust", "kotlin", "scala", "swift"}),
-    frozenset({"fastapi", "flask", "django", "spring", "spring boot", "express", "rails", "laravel", "asp.net"}),
+    frozenset(
+        {
+            "python",
+            "java",
+            "javascript",
+            "typescript",
+            "c#",
+            "c++",
+            "go",
+            "ruby",
+            "rust",
+            "kotlin",
+            "scala",
+            "swift",
+        }
+    ),
+    frozenset(
+        {
+            "fastapi",
+            "flask",
+            "django",
+            "spring",
+            "spring boot",
+            "express",
+            "rails",
+            "laravel",
+            "asp.net",
+        }
+    ),
     frozenset({"postgresql", "mysql", "sqlite", "mssql", "oracle", "mariadb"}),
     frozenset({"aws", "azure", "gcp", "google cloud"}),
     frozenset({"docker", "kubernetes", "helm", "podman"}),
@@ -27,16 +54,28 @@ TRANSFERABLE_CLUSTERS: list[frozenset[str]] = [
 ]
 
 SENIORITY_WORDS: dict[str, float] = {
-    "intern": 0.1, "junior": 0.2, "entry": 0.2, "associate": 0.3,
-    "mid": 0.5, "intermediate": 0.5, "senior": 0.8, "staff": 0.85,
-    "principal": 0.9, "lead": 0.85, "manager": 0.8, "director": 0.9,
-    "vp": 0.95, "head": 0.9, "chief": 1.0,
+    "intern": 0.1,
+    "junior": 0.2,
+    "entry": 0.2,
+    "associate": 0.3,
+    "mid": 0.5,
+    "intermediate": 0.5,
+    "senior": 0.8,
+    "staff": 0.85,
+    "principal": 0.9,
+    "lead": 0.85,
+    "manager": 0.8,
+    "director": 0.9,
+    "vp": 0.95,
+    "head": 0.9,
+    "chief": 1.0,
 }
 
 
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
+
 
 def _normalize(text: str) -> str:
     return text.lower().strip()
@@ -47,7 +86,7 @@ def _skill_set(resume: dict, job_data: dict) -> tuple[frozenset[str], frozenset[
     resume_skills: set[str] = {_normalize(s) for s in resume.get("skills", []) if s}
     job_skills: set[str] = set()
     for key in ("skills_required", "skills_nice_to_have", "tech_stack"):
-        for s in (job_data.get(key) or []):
+        for s in job_data.get(key) or []:
             if s:
                 job_skills.add(_normalize(s))
     return frozenset(resume_skills), frozenset(job_skills)
@@ -79,7 +118,8 @@ def _experience_fit(resume_text: str, jd_text: str) -> float:
     def _dominant(text: str) -> float:
         text_lower = text.lower()
         scores = [
-            score for word, score in SENIORITY_WORDS.items()
+            score
+            for word, score in SENIORITY_WORDS.items()
             if re.search(r"\b" + re.escape(word) + r"\b", text_lower)
         ]
         return sum(scores) / len(scores) if scores else 0.5
@@ -127,21 +167,26 @@ def _ats_suggestions(missing_skills: list[str], jd_text: str, resume_text: str) 
     resume_set = set(tokenize(resume_text))
     freq = build_freq_map(jd_tokens)
     high_freq_missing = [
-        tok for tok, cnt in sorted(freq.items(), key=lambda x: -x[1])
+        tok
+        for tok, cnt in sorted(freq.items(), key=lambda x: -x[1])
         if cnt >= 2 and tok not in resume_set
     ][:5]
     if high_freq_missing:
         suggestions.append(
-            f"Consider weaving these high-frequency JD terms into your resume: {', '.join(high_freq_missing)}"
+            "Consider weaving these high-frequency JD terms into your resume: "
+            f"{', '.join(high_freq_missing)}"
         )
     if not suggestions:
-        suggestions.append("Your resume already contains the primary keywords from the job description.")
+        suggestions.append(
+            "Your resume already contains the primary keywords from the job description."
+        )
     return suggestions
 
 
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
+
 
 def run_gap_analysis(resume_parsed: dict, job_data: dict) -> dict[str, Any]:
     """Pure-Python gap analysis (no LLM).
@@ -159,8 +204,9 @@ def run_gap_analysis(resume_parsed: dict, job_data: dict) -> dict[str, Any]:
     """
     resume_text: str = resume_parsed.get("text", "") or ""
     sections: dict = resume_parsed.get("sections", {}) or {}
-    jd_text: str = ((job_data.get("description_clean", "") or "")
-                     + " " + (job_data.get("title", "") or ""))
+    jd_text: str = (
+        (job_data.get("description_clean", "") or "") + " " + (job_data.get("title", "") or "")
+    )
 
     resume_skills, job_skills = _skill_set(resume_parsed, job_data)
 

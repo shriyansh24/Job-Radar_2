@@ -72,9 +72,7 @@ class AutoApplyService:
         )
         return list(result.all())
 
-    async def create_rule(
-        self, data: RuleCreate, user_id: uuid.UUID
-    ) -> AutoApplyRule:
+    async def create_rule(self, data: RuleCreate, user_id: uuid.UUID) -> AutoApplyRule:
         rule = AutoApplyRule(
             user_id=user_id,
             **data.model_dump(),
@@ -146,33 +144,42 @@ class AutoApplyService:
 
     async def get_stats(self, user_id: uuid.UUID) -> dict:
         # Total runs
-        total = await self.db.scalar(
-            select(func.count()).where(AutoApplyRun.user_id == user_id)
-        ) or 0
+        total = (
+            await self.db.scalar(select(func.count()).where(AutoApplyRun.user_id == user_id)) or 0
+        )
 
         # Successful runs
-        successful = await self.db.scalar(
-            select(func.count()).where(
-                AutoApplyRun.user_id == user_id,
-                AutoApplyRun.status == "success",
+        successful = (
+            await self.db.scalar(
+                select(func.count()).where(
+                    AutoApplyRun.user_id == user_id,
+                    AutoApplyRun.status == "success",
+                )
             )
-        ) or 0
+            or 0
+        )
 
         # Failed runs
-        failed = await self.db.scalar(
-            select(func.count()).where(
-                AutoApplyRun.user_id == user_id,
-                AutoApplyRun.status == "failed",
+        failed = (
+            await self.db.scalar(
+                select(func.count()).where(
+                    AutoApplyRun.user_id == user_id,
+                    AutoApplyRun.status == "failed",
+                )
             )
-        ) or 0
+            or 0
+        )
 
         # Pending runs
-        pending = await self.db.scalar(
-            select(func.count()).where(
-                AutoApplyRun.user_id == user_id,
-                AutoApplyRun.status == "pending",
+        pending = (
+            await self.db.scalar(
+                select(func.count()).where(
+                    AutoApplyRun.user_id == user_id,
+                    AutoApplyRun.status == "pending",
+                )
             )
-        ) or 0
+            or 0
+        )
 
         return {
             "total_runs": total,

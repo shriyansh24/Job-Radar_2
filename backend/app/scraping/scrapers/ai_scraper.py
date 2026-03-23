@@ -82,7 +82,9 @@ class AIScraper(ScraperPort):
 
         content_hash = hashlib.sha256(html.encode("utf-8", errors="replace")).hexdigest()[:32]
         if content_hash in self._content_cache:
-            logger.info("ai_scraper.cache_hit", url=url, count=len(self._content_cache[content_hash]))
+            logger.info(
+                "ai_scraper.cache_hit", url=url, count=len(self._content_cache[content_hash])
+            )
             return self._content_cache[content_hash][:limit]
 
         truncated = self._prepare_html(html)

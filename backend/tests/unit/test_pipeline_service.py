@@ -32,9 +32,7 @@ async def sample_job(db_session: AsyncSession, user_id: uuid.UUID) -> Job:
 
 
 @pytest.fixture
-async def sample_app(
-    db_session: AsyncSession, user_id: uuid.UUID, sample_job: Job
-) -> Application:
+async def sample_app(db_session: AsyncSession, user_id: uuid.UUID, sample_job: Job) -> Application:
     svc = PipelineService(db_session)
     return await svc.create_application(
         ApplicationCreate(
@@ -48,9 +46,7 @@ async def sample_app(
 
 
 @pytest.mark.asyncio
-async def test_create_application(
-    db_session: AsyncSession, user_id: uuid.UUID, sample_job: Job
-):
+async def test_create_application(db_session: AsyncSession, user_id: uuid.UUID, sample_job: Job):
     svc = PipelineService(db_session)
     app = await svc.create_application(
         ApplicationCreate(
@@ -152,9 +148,7 @@ async def test_full_pipeline_flow(
 
 
 @pytest.mark.asyncio
-async def test_get_history(
-    db_session: AsyncSession, user_id: uuid.UUID, sample_app: Application
-):
+async def test_get_history(db_session: AsyncSession, user_id: uuid.UUID, sample_app: Application):
     svc = PipelineService(db_session)
     await svc.transition_status(
         sample_app.id,
@@ -179,9 +173,7 @@ async def test_pipeline_view(
 
 
 @pytest.mark.asyncio
-async def test_get_application_not_found(
-    db_session: AsyncSession, user_id: uuid.UUID
-):
+async def test_get_application_not_found(db_session: AsyncSession, user_id: uuid.UUID):
     svc = PipelineService(db_session)
     with pytest.raises(NotFoundError):
         await svc.get_application(uuid.uuid4(), user_id)

@@ -39,9 +39,7 @@ async def test_applications_require_auth(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_create_and_list_application(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_create_and_list_application(client: AsyncClient, db_session: AsyncSession):
     token, user_id = await _register_and_login(client)
 
     # Create a job first
@@ -69,7 +67,6 @@ async def test_create_and_list_application(
     assert resp.status_code == 201
     app_data = resp.json()
     assert app_data["status"] == "saved"
-    app_id = app_data["id"]
 
     # List applications
     resp = await client.get("/api/v1/applications", headers=_auth(token))
@@ -78,9 +75,7 @@ async def test_create_and_list_application(
 
 
 @pytest.mark.asyncio
-async def test_transition_and_history(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_transition_and_history(client: AsyncClient, db_session: AsyncSession):
     token, user_id = await _register_and_login(client)
 
     job = Job(
@@ -135,9 +130,7 @@ async def test_transition_and_history(
 
 
 @pytest.mark.asyncio
-async def test_invalid_transition_returns_422(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_invalid_transition_returns_422(client: AsyncClient, db_session: AsyncSession):
     token, user_id = await _register_and_login(client)
 
     job = Job(
@@ -172,9 +165,7 @@ async def test_invalid_transition_returns_422(
 
 
 @pytest.mark.asyncio
-async def test_pipeline_view(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_pipeline_view(client: AsyncClient, db_session: AsyncSession):
     token, user_id = await _register_and_login(client)
 
     job = Job(

@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.jobs.models import Job
 from app.pipeline.models import Application
-from app.shared.errors import NotFoundError
 
 logger = structlog.get_logger()
 
@@ -33,12 +32,8 @@ class AdminService:
         }
 
     async def diagnostics(self) -> dict:
-        job_count = await self.db.scalar(
-            select(func.count()).select_from(Job)
-        ) or 0
-        app_count = await self.db.scalar(
-            select(func.count()).select_from(Application)
-        ) or 0
+        job_count = await self.db.scalar(select(func.count()).select_from(Job)) or 0
+        app_count = await self.db.scalar(select(func.count()).select_from(Application)) or 0
 
         return {
             "python_version": sys.version,
@@ -49,17 +44,18 @@ class AdminService:
 
     async def reindex(self, user_id: uuid.UUID) -> dict:
         # Placeholder — full implementation needs tsvector update + embedding recalc
-        count = await self.db.scalar(
-            select(func.count()).select_from(
-                select(Job).where(Job.user_id == user_id).subquery()
+        count = (
+            await self.db.scalar(
+                select(func.count()).select_from(
+                    select(Job).where(Job.user_id == user_id).subquery()
+                )
             )
-        ) or 0
+            or 0
+        )
         return {"status": "complete", "jobs_reindexed": count}
 
     async def export_data(self, user_id: uuid.UUID) -> bytes:
-        jobs_result = await self.db.scalars(
-            select(Job).where(Job.user_id == user_id)
-        )
+        jobs_result = await self.db.scalars(select(Job).where(Job.user_id == user_id))
         apps_result = await self.db.scalars(
             select(Application).where(Application.user_id == user_id)
         )
@@ -68,9 +64,7 @@ class AdminService:
         from app.pipeline.schemas import ApplicationResponse
 
         data = {
-            "jobs": [
-                JobResponse.model_validate(j).model_dump(mode="json") for j in jobs_result
-            ],
+            "jobs": [JobResponse.model_validate(j).model_dump(mode="json") for j in jobs_result],
             "applications": [
                 ApplicationResponse.model_validate(a).model_dump(mode="json") for a in apps_result
             ],

@@ -7,6 +7,7 @@ URL format:
     https://{tenant}.{subdomain}.myworkdayjobs.com/{locale}/{section}
     e.g. https://microsoft.wd5.myworkdayjobs.com/en-US/Global
 """
+
 from __future__ import annotations
 
 import re
@@ -54,10 +55,7 @@ class WorkdayScraper(BaseScraper):
 
     def _build_api_url(self, tenant: str, subdomain: str, section: str) -> str:
         """Build the Workday jobs API endpoint URL."""
-        return (
-            f"https://{tenant}.{subdomain}.myworkdayjobs.com"
-            f"/wday/cxs/{tenant}/{section}/jobs"
-        )
+        return f"https://{tenant}.{subdomain}.myworkdayjobs.com/wday/cxs/{tenant}/{section}/jobs"
 
     def _build_payload(
         self,
@@ -78,9 +76,7 @@ class WorkdayScraper(BaseScraper):
             payload["locations"] = [{"value": location}]
         return payload
 
-    def _parse_response(
-        self, data: dict, base_url: str
-    ) -> list[ScrapedJob]:
+    def _parse_response(self, data: dict, base_url: str) -> list[ScrapedJob]:
         """Parse Workday API JSON response into ScrapedJob objects.
 
         Args:

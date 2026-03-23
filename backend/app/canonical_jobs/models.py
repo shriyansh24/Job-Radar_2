@@ -10,12 +10,11 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
+from sqlalchemy import JSON as JSONB
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-
-from sqlalchemy import JSON as JSONB
 
 
 class CanonicalJob(Base):

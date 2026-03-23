@@ -5,6 +5,7 @@ These tests exercise the test-fetch dry-run path which is pure logic
 (no DB required). DB-dependent commands (quarantine list/review/release,
 health) are tested via integration tests.
 """
+
 from __future__ import annotations
 
 from typer.testing import CliRunner
@@ -26,9 +27,7 @@ def test_test_fetch_dry_run_greenhouse():
 
 def test_test_fetch_dry_run_unknown():
     """Unknown career page should be classified with unknown ATS."""
-    result = runner.invoke(
-        app, ["test-fetch", "https://careers.example.com", "--dry-run"]
-    )
+    result = runner.invoke(app, ["test-fetch", "https://careers.example.com", "--dry-run"])
     assert result.exit_code == 0
     assert "unknown" in result.output.lower()
 
@@ -46,9 +45,7 @@ def test_test_fetch_dry_run_with_tier():
 
 def test_test_fetch_dry_run_lever():
     """Lever URL should be classified as ATS with tier 0."""
-    result = runner.invoke(
-        app, ["test-fetch", "https://jobs.lever.co/company", "--dry-run"]
-    )
+    result = runner.invoke(app, ["test-fetch", "https://jobs.lever.co/company", "--dry-run"])
     assert result.exit_code == 0
     assert "lever" in result.output.lower()
     assert "Dry run" in result.output
@@ -56,9 +53,7 @@ def test_test_fetch_dry_run_lever():
 
 def test_test_fetch_dry_run_shows_scraper_name():
     """Dry run output should include the primary scraper name."""
-    result = runner.invoke(
-        app, ["test-fetch", "https://boards.greenhouse.io/test", "--dry-run"]
-    )
+    result = runner.invoke(app, ["test-fetch", "https://boards.greenhouse.io/test", "--dry-run"])
     assert result.exit_code == 0
     # Greenhouse uses the "greenhouse" scraper
     assert "greenhouse" in result.output.lower()
@@ -66,9 +61,7 @@ def test_test_fetch_dry_run_shows_scraper_name():
 
 def test_test_fetch_dry_run_career_page_shows_fallback():
     """Career page dry run should show fallback chain."""
-    result = runner.invoke(
-        app, ["test-fetch", "https://careers.example.com/jobs", "--dry-run"]
-    )
+    result = runner.invoke(app, ["test-fetch", "https://careers.example.com/jobs", "--dry-run"])
     assert result.exit_code == 0
     # Career pages get a fallback chain
     assert "allback" in result.output  # "Fallback" with capital F

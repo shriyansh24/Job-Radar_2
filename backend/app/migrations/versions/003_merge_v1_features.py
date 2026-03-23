@@ -1,9 +1,11 @@
-"""merge v1 features — notifications, canonical_jobs, followup_reminders, search expansion, profile enhancements
+"""merge v1 features — notifications, canonical_jobs, followup_reminders,
+search expansion, profile enhancements
 
 Revision ID: 003
 Revises: 002
 Create Date: 2026-03-18
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -135,7 +137,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_followup_reminders_user_id", "followup_reminders", ["user_id"])
-    op.create_index("ix_followup_reminders_application_id", "followup_reminders", ["application_id"])
+    op.create_index(
+        "ix_followup_reminders_application_id", "followup_reminders", ["application_id"]
+    )
 
     # ---------------------------------------------------------------
     # NEW TABLE: query_templates
@@ -199,10 +203,14 @@ def upgrade() -> None:
         batch_op.add_column(sa.Column("ats_slug", sa.String(100), nullable=True))
         batch_op.add_column(_jsonb_col("board_urls"))
         batch_op.add_column(_jsonb_col("domain_aliases"))
-        batch_op.add_column(sa.Column("last_validated_at", sa.DateTime(timezone=True), nullable=True))
+        batch_op.add_column(
+            sa.Column("last_validated_at", sa.DateTime(timezone=True), nullable=True)
+        )
         batch_op.add_column(sa.Column("last_probe_at", sa.DateTime(timezone=True), nullable=True))
         batch_op.add_column(sa.Column("probe_error", sa.Text(), nullable=True))
-        batch_op.add_column(sa.Column("manual_override", sa.Boolean(), server_default=sa.text("false")))
+        batch_op.add_column(
+            sa.Column("manual_override", sa.Boolean(), server_default=sa.text("false"))
+        )
         batch_op.add_column(_jsonb_col("override_fields"))
 
     # ---------------------------------------------------------------
@@ -224,7 +232,9 @@ def upgrade() -> None:
         batch_op.add_column(sa.Column("country", sa.String(100), nullable=True))
         batch_op.add_column(sa.Column("requires_sponsorship", sa.Boolean(), nullable=True))
         batch_op.add_column(sa.Column("notice_period", sa.String(100), nullable=True))
-        batch_op.add_column(sa.Column("available_start", sa.DateTime(timezone=True), nullable=True))
+        batch_op.add_column(
+            sa.Column("available_start", sa.DateTime(timezone=True), nullable=True)
+        )
         batch_op.add_column(sa.Column("current_title", sa.String(200), nullable=True))
         batch_op.add_column(sa.Column("current_company", sa.String(200), nullable=True))
         batch_op.add_column(sa.Column("graduation_year", sa.Integer(), nullable=True))
@@ -234,7 +244,9 @@ def upgrade() -> None:
     # ALTER TABLE: saved_searches — add last_checked_at
     # ---------------------------------------------------------------
     with op.batch_alter_table("saved_searches") as batch_op:
-        batch_op.add_column(sa.Column("last_checked_at", sa.DateTime(timezone=True), nullable=True))
+        batch_op.add_column(
+            sa.Column("last_checked_at", sa.DateTime(timezone=True), nullable=True)
+        )
 
 
 def downgrade() -> None:
@@ -244,9 +256,18 @@ def downgrade() -> None:
 
     with op.batch_alter_table("user_profiles") as batch_op:
         for col in [
-            "address", "city", "state", "zip_code", "country",
-            "requires_sponsorship", "notice_period", "available_start",
-            "current_title", "current_company", "graduation_year", "highest_degree",
+            "address",
+            "city",
+            "state",
+            "zip_code",
+            "country",
+            "requires_sponsorship",
+            "notice_period",
+            "available_start",
+            "current_title",
+            "current_company",
+            "graduation_year",
+            "highest_degree",
         ]:
             batch_op.drop_column(col)
 
@@ -257,9 +278,14 @@ def downgrade() -> None:
 
     with op.batch_alter_table("companies") as batch_op:
         for col in [
-            "ats_slug", "board_urls", "domain_aliases",
-            "last_validated_at", "last_probe_at", "probe_error",
-            "manual_override", "override_fields",
+            "ats_slug",
+            "board_urls",
+            "domain_aliases",
+            "last_validated_at",
+            "last_probe_at",
+            "probe_error",
+            "manual_override",
+            "override_fields",
         ]:
             batch_op.drop_column(col)
 

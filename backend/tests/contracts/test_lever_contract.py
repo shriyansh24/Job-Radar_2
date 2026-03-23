@@ -3,6 +3,7 @@
 Loads fixture data, parses it using the same logic as LeverScraper,
 and validates that all outputs conform to ScrapedJob interface requirements.
 """
+
 from __future__ import annotations
 
 import json
@@ -125,9 +126,7 @@ class TestLeverExpectedJobs:
     def test_expected_jobs_source_is_lever(self):
         expected = load_expected()
         for job in expected:
-            assert job["source"] == "lever", (
-                f"Expected job has wrong source: {job['source']}"
-            )
+            assert job["source"] == "lever", f"Expected job has wrong source: {job['source']}"
 
     def test_expected_jobs_have_urls(self):
         expected = load_expected()
@@ -154,7 +153,7 @@ class TestLeverParserContract:
         postings = load_fixture()
         jobs = parse_fixture_to_scraped_jobs(postings)
         for job in jobs:
-            assert job.title, f"Job has empty title"
+            assert job.title, "Job has empty title"
 
     def test_all_jobs_have_company_name(self):
         postings = load_fixture()
@@ -178,9 +177,7 @@ class TestLeverParserContract:
         postings = load_fixture()
         jobs = parse_fixture_to_scraped_jobs(postings)
         for job in jobs:
-            assert _is_valid_url(job.source_url), (
-                f"Malformed source_url: {job.source_url}"
-            )
+            assert _is_valid_url(job.source_url), f"Malformed source_url: {job.source_url}"
             assert _is_valid_url(job.company_logo_url), (
                 f"Malformed company_logo_url: {job.company_logo_url}"
             )
@@ -189,9 +186,7 @@ class TestLeverParserContract:
         postings = load_fixture()
         jobs = parse_fixture_to_scraped_jobs(postings)
         for job in jobs:
-            assert job.remote_type in VALID_REMOTE_TYPES, (
-                f"Invalid remote_type: {job.remote_type}"
-            )
+            assert job.remote_type in VALID_REMOTE_TYPES, f"Invalid remote_type: {job.remote_type}"
 
     def test_valid_experience_level_enum(self):
         postings = load_fixture()
@@ -245,8 +240,7 @@ class TestLeverParserContract:
             if exp_url in parsed_by_url:
                 parsed_job = parsed_by_url[exp_url]
                 assert parsed_job.title == exp["title"], (
-                    f"Title mismatch: parsed={parsed_job.title}, "
-                    f"expected={exp['title']}"
+                    f"Title mismatch: parsed={parsed_job.title}, expected={exp['title']}"
                 )
 
     def test_lever_salary_data_from_fixture(self):

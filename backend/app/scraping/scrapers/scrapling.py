@@ -17,6 +17,7 @@ logger = structlog.get_logger()
 
 try:
     from scrapling import Fetcher, StealthyFetcher
+
     SCRAPLING_AVAILABLE = True
 except ImportError:
     SCRAPLING_AVAILABLE = False
@@ -58,15 +59,17 @@ class ScraplingScraper(ScraperPort):
 
         results: list[ScrapedJob] = []
         for listing in raw_listings:
-            results.append(ScrapedJob(
-                title=listing.get("title", ""),
-                company_name=listing.get("company_name", company_name),
-                source=self.source_name,
-                source_url=listing.get("url", ""),
-                location=listing.get("location"),
-                description_raw=listing.get("description_raw", ""),
-                job_type=listing.get("job_type"),
-            ))
+            results.append(
+                ScrapedJob(
+                    title=listing.get("title", ""),
+                    company_name=listing.get("company_name", company_name),
+                    source=self.source_name,
+                    source_url=listing.get("url", ""),
+                    location=listing.get("location"),
+                    description_raw=listing.get("description_raw", ""),
+                    job_type=listing.get("job_type"),
+                )
+            )
 
         logger.info("scrapling.scraped", url=url, company=company_name, count=len(results))
         return results

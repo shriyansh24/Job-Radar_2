@@ -58,7 +58,8 @@ class CoverLetterResult:
     reading_level: str
 
 
-_COVER_LETTER_PROMPT = """You are a professional cover letter writer. Generate a cover letter for the given job.
+_COVER_LETTER_PROMPT = """You are a professional cover letter writer.
+Generate a cover letter for the given job.
 
 STYLE INSTRUCTIONS: {style_instructions}
 
@@ -129,9 +130,7 @@ async def generate_cover_letter(
         RuntimeError: If the LLM call fails.
     """
     if style not in VALID_STYLES:
-        raise ValueError(
-            f"Invalid style {style!r}. Must be one of: {sorted(VALID_STYLES)}"
-        )
+        raise ValueError(f"Invalid style {style!r}. Must be one of: {sorted(VALID_STYLES)}")
 
     # Resolve template -- default to "formal" when not specified.
     resolved_template_name: str = template if template is not None else "formal"

@@ -1,4 +1,5 @@
 """Tests for CloudscraperFetcher adapter."""
+
 from __future__ import annotations
 
 import hashlib
@@ -41,7 +42,9 @@ async def test_fetch_returns_fetch_result():
     assert result.html == "<html><body>Hello</body></html>"
     assert result.status_code == 200
     assert result.url_final == "https://example.com/final"
-    assert result.content_hash == hashlib.sha256(b"<html><body>Hello</body></html>").hexdigest()[:64]
+    assert (
+        result.content_hash == hashlib.sha256(b"<html><body>Hello</body></html>").hexdigest()[:64]
+    )
     assert result.duration_ms >= 0
     assert result.headers == {"Content-Type": "text/html"}
     mock_scraper.close.assert_called_once()

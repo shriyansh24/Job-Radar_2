@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 BASE_PRIORITY = {"watchlist": 100, "hot": 70, "warm": 40, "cool": 10}
 

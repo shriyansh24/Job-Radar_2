@@ -61,9 +61,7 @@ class TheirStackScraper(BaseScraper):
             return False
         try:
             headers = {"Authorization": f"Bearer {self.settings.theirstack_api_key}"}
-            resp = await self.client.get(
-                "https://api.theirstack.com/v1/health", headers=headers
-            )
+            resp = await self.client.get("https://api.theirstack.com/v1/health", headers=headers)
             return resp.status_code == 200
         except Exception:
             return False

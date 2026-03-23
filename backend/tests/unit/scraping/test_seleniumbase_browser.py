@@ -1,4 +1,5 @@
 """Tests for SeleniumBaseBrowser adapter."""
+
 from __future__ import annotations
 
 import hashlib
@@ -56,12 +57,15 @@ async def test_render_returns_browser_result():
     mock_driver = MagicMock()
     mock_driver.page_source = html_content
 
-    with patch(
-        "app.scraping.execution.seleniumbase_browser.SELENIUMBASE_AVAILABLE",
-        True,
-    ), patch(
-        "app.scraping.execution.seleniumbase_browser._import_driver",
-        return_value=MagicMock(return_value=mock_driver),
+    with (
+        patch(
+            "app.scraping.execution.seleniumbase_browser.SELENIUMBASE_AVAILABLE",
+            True,
+        ),
+        patch(
+            "app.scraping.execution.seleniumbase_browser._import_driver",
+            return_value=MagicMock(return_value=mock_driver),
+        ),
     ):
         b = SeleniumBaseBrowser()
         result = await b.render("https://example.com")
@@ -85,12 +89,15 @@ async def test_render_with_wait_for_selector():
     mock_driver = MagicMock()
     mock_driver.page_source = html_content
 
-    with patch(
-        "app.scraping.execution.seleniumbase_browser.SELENIUMBASE_AVAILABLE",
-        True,
-    ), patch(
-        "app.scraping.execution.seleniumbase_browser._import_driver",
-        return_value=MagicMock(return_value=mock_driver),
+    with (
+        patch(
+            "app.scraping.execution.seleniumbase_browser.SELENIUMBASE_AVAILABLE",
+            True,
+        ),
+        patch(
+            "app.scraping.execution.seleniumbase_browser._import_driver",
+            return_value=MagicMock(return_value=mock_driver),
+        ),
     ):
         b = SeleniumBaseBrowser()
         result = await b.render(
@@ -109,12 +116,15 @@ async def test_render_quits_driver_on_exception():
     mock_driver = MagicMock()
     mock_driver.get.side_effect = TimeoutError("page load timeout")
 
-    with patch(
-        "app.scraping.execution.seleniumbase_browser.SELENIUMBASE_AVAILABLE",
-        True,
-    ), patch(
-        "app.scraping.execution.seleniumbase_browser._import_driver",
-        return_value=MagicMock(return_value=mock_driver),
+    with (
+        patch(
+            "app.scraping.execution.seleniumbase_browser.SELENIUMBASE_AVAILABLE",
+            True,
+        ),
+        patch(
+            "app.scraping.execution.seleniumbase_browser._import_driver",
+            return_value=MagicMock(return_value=mock_driver),
+        ),
     ):
         b = SeleniumBaseBrowser()
         with pytest.raises(TimeoutError):

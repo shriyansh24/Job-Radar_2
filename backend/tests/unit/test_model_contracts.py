@@ -16,10 +16,10 @@ from app.pipeline.models import Application, ApplicationStatusHistory
 from app.profile.models import UserProfile
 from app.resume.models import ResumeVersion
 from app.salary.models import SalaryCache
+from app.scraping.models import ScrapeAttempt
 from app.search_expansion.models import ExpansionRule, QueryPerformance, QueryTemplate
 from app.settings.models import SavedSearch
 from app.source_health.models import SourceCheckLog, SourceRegistry
-from app.scraping.models import ScrapeAttempt
 
 
 @pytest.mark.parametrize(
@@ -30,7 +30,18 @@ from app.scraping.models import ScrapeAttempt
         (AutoApplyRule, ["created_at"]),
         (AutoApplyRun, ["started_at", "completed_at"]),
         (Job, ["expires_at"]),
-        (Application, ["applied_at", "offer_at", "rejected_at", "follow_up_at", "reminder_at", "created_at", "updated_at"]),
+        (
+            Application,
+            [
+                "applied_at",
+                "offer_at",
+                "rejected_at",
+                "follow_up_at",
+                "reminder_at",
+                "created_at",
+                "updated_at",
+            ],
+        ),
         (ApplicationStatusHistory, ["changed_at"]),
         (CanonicalJob, ["first_seen_at", "last_refreshed_at", "created_at", "updated_at"]),
         (RawJobSource, ["scraped_at", "created_at"]),

@@ -37,3 +37,13 @@
 - **Detail:** Test tooling now lives in uv's `dev` dependency group and incompatible optional scraper integrations are declared as conflicts, so `uv run pytest` resolves and runs cleanly.
 - **Evidence:** `uv run pytest`
 - **Status:** FIXED
+
+## INF-F02 - FIXED: Workflow Action Runtimes Were Still On Deprecated Node 20
+- **Files:** `.github/workflows/ci.yml`, `.github/workflows/codeql.yml`, `.github/workflows/dependency-review.yml`
+- **Detail:** GitHub Actions now use the current `actions/*@v6` releases, removing the Node 20 runtime deprecation warnings from the workflow surface.
+- **Status:** FIXED
+
+## INF-F03 - FIXED: CI Did Not Enforce Dependency-Health Checks
+- **Files:** `.github/workflows/ci.yml`
+- **Detail:** CI now runs backend `pip check` and `pip-audit` plus frontend `npm audit --audit-level high`, aligning GitHub validation with the local dependency-health checks used during the fix pass.
+- **Status:** FIXED

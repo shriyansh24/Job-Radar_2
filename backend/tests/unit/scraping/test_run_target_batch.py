@@ -1,12 +1,13 @@
 """Tests for ScrapingService.run_target_batch() — target-based pipeline integration."""
+
 from __future__ import annotations
 
 import asyncio
 import uuid
-
-import pytest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 
 def _mock_service():
@@ -178,9 +179,7 @@ async def test_fetcher_success_no_escalation():
     registry = _registry_for_fetcher()
     pool = MagicMock()
 
-    with patch(
-        "app.scraping.execution.escalation_engine.should_escalate", return_value=None
-    ):
+    with patch("app.scraping.execution.escalation_engine.should_escalate", return_value=None):
         results = await svc.run_target_batch(
             targets=[target],
             run_id="run1",
@@ -202,9 +201,7 @@ async def test_fetcher_escalation_exhausts_all_tiers():
     pool = MagicMock()
 
     decision = EscalationDecision(reason=EscalationReason.EMPTY_RESPONSE)
-    with patch(
-        "app.scraping.execution.escalation_engine.should_escalate", return_value=decision
-    ):
+    with patch("app.scraping.execution.escalation_engine.should_escalate", return_value=decision):
         results = await svc.run_target_batch(
             targets=[target],
             run_id="run1",
@@ -238,9 +235,7 @@ async def test_browser_target_acquires_pool():
     pool = MagicMock()
     pool.acquire.return_value = pool_cm
 
-    with patch(
-        "app.scraping.execution.escalation_engine.should_escalate", return_value=None
-    ):
+    with patch("app.scraping.execution.escalation_engine.should_escalate", return_value=None):
         results = await svc.run_target_batch(
             targets=[target],
             run_id="run1",
@@ -261,7 +256,10 @@ async def test_exception_in_adapter_records_failure():
     registry = MagicMock()
     binding = MagicMock(method="fetch", is_browser=False)
     registry.get.return_value = binding
-    registry.resolve.return_value = (MagicMock(), AsyncMock(side_effect=ConnectionError("refused")))
+    registry.resolve.return_value = (
+        MagicMock(),
+        AsyncMock(side_effect=ConnectionError("refused")),
+    )
 
     target = _target(ats_vendor="unknown_ats", start_tier=1, max_tier=1)
     pool = MagicMock()

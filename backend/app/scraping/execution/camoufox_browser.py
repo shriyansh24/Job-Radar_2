@@ -6,6 +6,7 @@ render() call via async context manager to avoid state leakage.
 
 Gracefully degrades if camoufox is not installed.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -44,9 +45,7 @@ class CamoufoxBrowser(BrowserPort):
             page = await browser.new_page()
             await page.goto(url, timeout=timeout_s * 1000)
             if wait_for_selector:
-                await page.wait_for_selector(
-                    wait_for_selector, timeout=timeout_s * 1000
-                )
+                await page.wait_for_selector(wait_for_selector, timeout=timeout_s * 1000)
             html = await page.content()
             url_final = page.url
         duration = int((time.monotonic() - start) * 1000)

@@ -18,12 +18,17 @@ class EscalationReason(Enum):
 class EscalationDecision:
     reason: EscalationReason
     skip_to_tier: int | None = None  # if set, skip directly to this tier
-    retry_same: bool = False          # retry same tier before escalating
-    backoff_seconds: float = 0        # wait before retry
+    retry_same: bool = False  # retry same tier before escalating
+    backoff_seconds: float = 0  # wait before retry
 
 
-CF_SIGNATURES = ["checking your browser", "cloudflare", "cf-browser-verification",
-                  "ray id", "enable javascript and cookies"]
+CF_SIGNATURES = [
+    "checking your browser",
+    "cloudflare",
+    "cf-browser-verification",
+    "ray id",
+    "enable javascript and cookies",
+]
 
 
 def should_escalate(
@@ -39,18 +44,17 @@ def should_escalate(
         return EscalationDecision(reason=EscalationReason.TIMEOUT)
 
     if status_code == 429:
-        return EscalationDecision(reason=EscalationReason.RATE_LIMITED,
-                                  retry_same=True, backoff_seconds=30)
+        return EscalationDecision(
+            reason=EscalationReason.RATE_LIMITED, retry_same=True, backoff_seconds=30
+        )
 
     if status_code == 403:
         if _is_cloudflare(html_snippet):
-            return EscalationDecision(reason=EscalationReason.CLOUDFLARE_CHALLENGE,
-                                      skip_to_tier=2)
+            return EscalationDecision(reason=EscalationReason.CLOUDFLARE_CHALLENGE, skip_to_tier=2)
         return EscalationDecision(reason=EscalationReason.HTTP_FORBIDDEN)
 
     if status_code and status_code >= 500:
-        return EscalationDecision(reason=EscalationReason.SERVER_ERROR,
-                                  retry_same=True)
+        return EscalationDecision(reason=EscalationReason.SERVER_ERROR, retry_same=True)
 
     if status_code == 200 and html_length == 0:
         return EscalationDecision(reason=EscalationReason.EMPTY_RESPONSE)

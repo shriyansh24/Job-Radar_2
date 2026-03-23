@@ -8,6 +8,7 @@ blocking the event loop.
 Creates and destroys a driver per render() call to avoid state leakage.
 Gracefully degrades if seleniumbase is not installed.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -54,14 +55,12 @@ class SeleniumBaseBrowser(BrowserPort):
         start = time.monotonic()
 
         def _sync_render() -> str:
-            Driver = _import_driver()
-            driver = Driver(uc=True, headless=True)
+            driver_cls = _import_driver()
+            driver = driver_cls(uc=True, headless=True)
             try:
                 driver.get(url)
                 if wait_for_selector:
-                    driver.wait_for_element(
-                        wait_for_selector, timeout=timeout_s
-                    )
+                    driver.wait_for_element(wait_for_selector, timeout=timeout_s)
                 return driver.page_source
             finally:
                 driver.quit()

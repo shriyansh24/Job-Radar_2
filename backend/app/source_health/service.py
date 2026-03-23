@@ -18,9 +18,7 @@ class SourceHealthService:
         self.db = db
 
     async def list_sources(self) -> list[SourceRegistry]:
-        result = await self.db.scalars(
-            select(SourceRegistry).order_by(SourceRegistry.source_name)
-        )
+        result = await self.db.scalars(select(SourceRegistry).order_by(SourceRegistry.source_name))
         return list(result.all())
 
     async def get_source_health(

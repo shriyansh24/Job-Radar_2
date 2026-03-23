@@ -24,7 +24,9 @@ class DetailPageExtractor:
     SALARY_PATTERNS = [
         re.compile(r"\$(\d{2,3})[kK]\s*[-\u2013\u2014to]+\s*\$(\d{2,3})[kK]"),
         re.compile(r"\$([\d,]+)\s*[-\u2013\u2014to]+\s*\$([\d,]+)"),
-        re.compile(r"\$(\d+)\s*/\s*(?:hr|hour)\s*[-\u2013\u2014to]+\s*\$(\d+)\s*/\s*(?:hr|hour)", re.I),
+        re.compile(
+            r"\$(\d+)\s*/\s*(?:hr|hour)\s*[-\u2013\u2014to]+\s*\$(\d+)\s*/\s*(?:hr|hour)", re.I
+        ),
     ]
 
     @classmethod
@@ -84,9 +86,14 @@ class DetailPageExtractor:
         result: dict = {}
 
         desc_selectors = [
-            ".job-description", ".description", ".posting-description",
-            "#job-description", "[data-qa='job-description']",
-            "article", ".content-body", ".job-details",
+            ".job-description",
+            ".description",
+            ".posting-description",
+            "#job-description",
+            "[data-qa='job-description']",
+            "article",
+            ".content-body",
+            ".job-details",
         ]
         for sel in desc_selectors:
             el = soup.select_one(sel)

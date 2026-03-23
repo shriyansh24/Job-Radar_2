@@ -10,23 +10,27 @@ from sqlalchemy.ext.asyncio import create_async_engine
 # Import all models so Base.metadata is populated
 from app.auth.models import User  # noqa: F401
 from app.auto_apply.models import AutoApplyProfile, AutoApplyRule, AutoApplyRun  # noqa: F401
+from app.canonical_jobs.models import CanonicalJob, RawJobSource  # noqa: F401
 from app.companies.models import Company  # noqa: F401
 from app.config import settings
 from app.copilot.models import CoverLetter  # noqa: F401
 from app.database import Base
+from app.followup.models import FollowupReminder  # noqa: F401
 from app.interview.models import InterviewSession  # noqa: F401
 from app.jobs.models import Job  # noqa: F401
+from app.notifications.models import Notification  # noqa: F401
 from app.pipeline.models import Application, ApplicationStatusHistory  # noqa: F401
 from app.profile.models import UserProfile  # noqa: F401
 from app.resume.models import ResumeVersion  # noqa: F401
 from app.salary.models import SalaryCache  # noqa: F401
-from app.scraping.models import ScrapeAttempt, ScrapeTarget, ScraperRun  # noqa: F401
+from app.scraping.models import ScrapeAttempt, ScraperRun, ScrapeTarget  # noqa: F401
+from app.search_expansion.models import (  # noqa: F401
+    ExpansionRule,
+    QueryPerformance,
+    QueryTemplate,
+)
 from app.settings.models import SavedSearch  # noqa: F401
 from app.source_health.models import SourceCheckLog, SourceRegistry  # noqa: F401
-from app.notifications.models import Notification  # noqa: F401
-from app.canonical_jobs.models import CanonicalJob, RawJobSource  # noqa: F401
-from app.followup.models import FollowupReminder  # noqa: F401
-from app.search_expansion.models import QueryTemplate, ExpansionRule, QueryPerformance  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

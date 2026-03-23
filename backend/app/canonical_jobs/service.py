@@ -8,7 +8,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.canonical_jobs.models import CanonicalJob, RawJobSource
+from app.canonical_jobs.models import CanonicalJob
 from app.shared.errors import NotFoundError
 
 logger = structlog.get_logger()
@@ -44,9 +44,7 @@ class CanonicalJobService:
         result = await self.db.scalars(query)
         return list(result.all())
 
-    async def get_canonical_job(
-        self, job_id: uuid.UUID, user_id: uuid.UUID
-    ) -> CanonicalJob:
+    async def get_canonical_job(self, job_id: uuid.UUID, user_id: uuid.UUID) -> CanonicalJob:
         query = (
             select(CanonicalJob)
             .options(selectinload(CanonicalJob.sources))

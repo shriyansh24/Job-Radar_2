@@ -40,9 +40,7 @@ class SerpAPIScraper(BaseScraper):
             related = item.get("related_links") or [{}]
             extensions = item.get("detected_extensions", {})
             remote_raw = "remote" if extensions.get("work_from_home") else None
-            sal_min, sal_max, sal_period = self._extract_salary(
-                item.get("description", "")
-            )
+            sal_min, sal_max, sal_period = self._extract_salary(item.get("description", ""))
 
             jobs.append(
                 ScrapedJob(

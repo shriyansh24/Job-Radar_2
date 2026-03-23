@@ -1,4 +1,5 @@
 """Tests for AdapterRegistry - maps scraper_name strings to adapter instances and methods."""
+
 from __future__ import annotations
 
 import importlib

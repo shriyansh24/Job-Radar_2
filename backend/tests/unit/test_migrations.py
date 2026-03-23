@@ -6,13 +6,7 @@ from types import SimpleNamespace
 
 
 def _load_migration_module(module_name: str, filename: str):
-    path = (
-        Path(__file__).resolve().parents[2]
-        / "app"
-        / "migrations"
-        / "versions"
-        / filename
-    )
+    path = Path(__file__).resolve().parents[2] / "app" / "migrations" / "versions" / filename
     spec = importlib.util.spec_from_file_location(module_name, path)
     module = importlib.util.module_from_spec(spec)
     assert spec is not None and spec.loader is not None

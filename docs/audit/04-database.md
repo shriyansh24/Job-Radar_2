@@ -35,3 +35,10 @@
 - **Detail:** Fixed. `Job.applications` now uses `lazy="selectin"` instead of the default lazy loading.
 - **Evidence:** `backend/tests/unit/test_job_model.py`
 - **Status:** FIXED
+
+## Verified Fixes Since Initial Audit
+
+## DB-F01 - FIXED: Notification Timestamp ORM Type Did Not Match Schema
+- **Files:** `backend/app/notifications/models.py`, `backend/tests/unit/test_model_contracts.py`
+- **Detail:** `Notification.created_at` is now explicitly `DateTime(timezone=True)` so the ORM contract matches the migration-defined database column.
+- **Status:** FIXED

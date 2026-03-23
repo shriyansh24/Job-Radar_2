@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
@@ -27,6 +26,7 @@ class JobBase(BaseModel):
             return d
         except (InvalidOperation, ValueError, TypeError):
             return None
+
     experience_level: str | None = None
     job_type: str | None = None
 

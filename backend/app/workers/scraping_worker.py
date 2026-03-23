@@ -77,15 +77,11 @@ async def run_career_page_scrape(ctx: dict | None = None) -> None:
                     jobs = await scraper.fetch_jobs(target.url)
                     target.last_success_at = datetime.now(UTC)
                     target.consecutive_failures = 0
-                    logger.info(
-                        "career_page_scraped", url=target.url, jobs=len(jobs)
-                    )
+                    logger.info("career_page_scraped", url=target.url, jobs=len(jobs))
                 except Exception as e:
                     target.consecutive_failures += 1
                     target.last_failure_at = datetime.now(UTC)
-                    logger.error(
-                        "career_page_scrape_failed", url=target.url, error=str(e)
-                    )
+                    logger.error("career_page_scrape_failed", url=target.url, error=str(e))
 
             await db.commit()
             await scraper.close()
@@ -111,12 +107,9 @@ async def run_target_batch_job(
     settings = Settings()
     async with async_session_factory() as db:
         try:
-            from datetime import UTC, datetime
-
             from sqlalchemy import select
 
             from app.scraping.control.scheduler import compute_next_run, select_due_targets
-            from app.scraping.execution.adapter_registry import AdapterRegistry
             from app.scraping.models import ScrapeTarget
 
             # 1. Load enabled, non-quarantined targets of the requested kind
@@ -138,10 +131,12 @@ async def run_target_batch_job(
             # 2. Build adapter registry and a lightweight browser pool stub
             #    (BrowserPool is provided by Chunk 4; if unavailable, use a no-op)
             from app.scraping.execution.adapter_registry import build_default_registry
+
             adapter_registry = build_default_registry(settings)
 
             try:
                 from app.scraping.execution.browser_pool import BrowserPool
+
                 browser_pool = BrowserPool()
             except ImportError:
                 browser_pool = _NoOpBrowserPool()
@@ -158,7 +153,6 @@ async def run_target_batch_job(
                 )
 
                 # 4. Update target metadata based on per-target results
-                now = datetime.now(UTC)
                 succeeded_ids = results.get("succeeded_target_ids", set())
                 for target in due:
                     target.next_scheduled_at = compute_next_run(
@@ -181,9 +175,8 @@ async def run_target_batch_job(
                 await service.close()
 
         except Exception as e:
-            logger.error(
-                "target_batch_job_failed", source_kind=source_kind, error=str(e)
-            )
+            logger.error("target_batch_job_failed", source_kind=source_kind, error=str(e))
+
 
 class _NoOpBrowserPool:
     """Stub browser pool used when the real BrowserPool (Chunk 4) is not available."""

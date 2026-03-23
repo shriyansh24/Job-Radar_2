@@ -1,122 +1,109 @@
 # JobRadar V2
 
-AI-powered job hunting assistant with intelligent scraping, enrichment, and auto-apply.
+AI-powered job hunting assistant with direct-job scraping, enrichment, pipeline tracking, interview prep, resume tooling, and auto-apply support.
+
+## Start Here
+- Current repo state: `docs/current-state/00-index.md`
+- Audit ledger: `docs/audit/00-index.md`
+- Agent preferences and frontend expectations: `AGENTS.md`
+- Agent playbook and command surface: `CLAUDE.md`
+- High-level project summary: `PROJECT_STATUS.md`
+
+## Stack
+- Backend: Python 3.12, FastAPI, SQLAlchemy async, PostgreSQL, Redis, Alembic, `uv`
+- Frontend: React 19, Vite 6, TypeScript, Tailwind CSS v4, Zustand, React Query
+- AI/LLM: OpenRouter-backed services for enrichment, interview prep, salary analysis, resume tailoring, and cover letters
+- Scraping: ATS adapters, target scheduler, browser pool, page crawler, deduplication, telemetry
 
 ## Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose
-- Node.js 22+ (for frontend dev)
-- Python 3.12+ (for backend dev)
+- Docker
+- Node.js 22+
+- Python 3.12+
 
-### Development
+### Infrastructure
 
 ```bash
-# Start infrastructure
-docker-compose up -d postgres redis
+docker compose up -d postgres redis
+```
 
-# Backend
+### Backend
+
+```bash
 cd backend
-uv sync
-alembic upgrade head
-uvicorn app.main:app --reload
+uv sync --frozen
+uv run alembic upgrade head
+uv run uvicorn app.main:app --reload
+```
 
-# Frontend
+### Frontend
+
+```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-### Docker (full stack)
+Open `http://localhost:5173`.
+
+## Validation Commands
+
+### Backend
 
 ```bash
-docker-compose up
+cd backend
+uv run python -m pip check
+uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt
+uv tool run pip-audit -r .ci-requirements.txt
+uv run ruff check .
+uv run pytest
 ```
 
-Open http://localhost:5173 (dev) or http://localhost:3000 (docker)
+### Frontend
 
-## Architecture
-
-- **Backend**: Python/FastAPI + SQLAlchemy 2.0 async + PostgreSQL + Redis
-- **Frontend**: React 19 + Vite 6 + TypeScript 5.6 strict + Tailwind CSS v4
-- **AI**: OpenRouter (LLM), sentence-transformers (embeddings), pgvector
-- **Auto-apply**: Playwright browser automation with ATS detection
-- **Background jobs**: APScheduler (scraping, enrichment, auto-apply)
-- **Real-time**: SSE (Server-Sent Events) for live updates
-
-## Project Structure
-
+```bash
+cd frontend
+npm audit --audit-level high
+npm run lint
+npm run test -- --run
+npm run build
 ```
+
+## Common Make Targets
+
+```bash
+make dev
+make test
+make lint
+make migrate
+```
+
+## Repo Layout
+
+```text
 jobradar-v2/
-├── backend/                  # FastAPI application
-│   ├── app/                  # Source code
-│   │   ├── admin/            # Admin dashboard API
-│   │   ├── analytics/        # Usage analytics
-│   │   ├── auth/             # JWT authentication
-│   │   ├── auto_apply/       # Auto-apply engine (Playwright)
-│   │   ├── companies/        # Company enrichment
-│   │   ├── copilot/          # AI copilot chat
-│   │   ├── enrichment/       # Job enrichment + LLM client
-│   │   ├── interview/        # Interview prep AI
-│   │   ├── jobs/             # Job CRUD + search
-│   │   ├── pipeline/         # Application pipeline
-│   │   ├── profile/          # User profiles
-│   │   ├── resume/           # Resume builder
-│   │   ├── salary/           # Salary insights
-│   │   ├── scraping/         # Job scraper (multi-source)
-│   │   ├── search_expansion/ # Query expansion
-│   │   ├── settings/         # User settings
-│   │   ├── shared/           # Middleware, logging, utils
-│   │   ├── source_health/    # Scraper health monitoring
-│   │   ├── vault/            # Document vault
-│   │   └── workers/          # Background job workers
-│   └── tests/                # pytest tests
-├── frontend/                 # React application
-│   ├── src/
-│   │   ├── api/              # API client modules (13)
-│   │   ├── components/       # UI components (15+)
-│   │   ├── hooks/            # Custom React hooks
-│   │   ├── pages/            # Page components (13)
-│   │   └── stores/           # Zustand state stores
-│   └── dist/                 # Production build
-├── docker-compose.yml
-├── Makefile
-├── DECISIONS.md              # Architectural decisions
-└── THIRD_PARTY_CODE.md       # Third-party licenses
+|-- backend/
+|   |-- app/
+|   |-- scripts/
+|   `-- tests/
+|-- frontend/
+|   |-- src/
+|   `-- dist/
+|-- docs/
+|   |-- audit/
+|   |-- current-state/
+|   |-- research/
+|   `-- superpowers/
+|-- infra/
+|-- .github/workflows/
+|-- AGENTS.md
+|-- CLAUDE.md
+|-- PROJECT_STATUS.md
+`-- README.md
 ```
 
-## Features
-
-- **Smart Job Scraping**: Multi-source scraping with deduplication (SimHash + exact hash)
-- **AI Enrichment**: LLM-powered summaries, skill extraction, red/green flag detection
-- **Semantic Search**: pgvector embeddings + TF-IDF scoring for job matching
-- **Application Pipeline**: Kanban-style tracking (Saved → Applied → Interview → Offer)
-- **Auto-Apply Engine**: Playwright-powered form filling with ATS detection (Greenhouse, Lever, Workday, etc.)
-- **Interview Prep**: AI-generated questions with answer evaluation
-- **Salary Insights**: Market data comparison and negotiation tips
-- **Resume Builder**: Multiple templates with AI-assisted content
-- **Document Vault**: Centralized storage for resumes, cover letters, references
-- **Analytics Dashboard**: Application trends, response rates, pipeline metrics
-- **Real-time Updates**: SSE-powered live notifications
-
-## Development Commands
-
-```bash
-make dev      # Start dev environment with hot reload
-make test     # Run all tests
-make lint     # Lint backend + frontend
-make migrate  # Run database migrations
-```
-
-## Testing
-
-```bash
-# Backend
-cd backend && python -m pytest tests/ -v
-
-# Frontend
-cd frontend && npm test -- --run
-
-# Build check
-cd frontend && npm run build
-```
+## Notes
+- Use `uv run` for backend commands and `npm` for frontend commands.
+- The current live product state is documented under `docs/current-state/`.
+- `docs/superpowers/` contains historical scraper-build planning, not the current execution queue.

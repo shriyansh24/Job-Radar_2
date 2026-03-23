@@ -5,12 +5,22 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, func
+from sqlalchemy import JSON as JSONB  # Use JSON for SQLite compat; works on PG too
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-
-from sqlalchemy import JSON as JSONB  # Use JSON for SQLite compat; works on PG too
 
 if TYPE_CHECKING:
     from app.pipeline.models import Application
@@ -50,7 +60,9 @@ class Job(Base):
     seniority_score: Mapped[int | None] = mapped_column(Integer)
     job_type: Mapped[str | None] = mapped_column(String(30))
     posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    scraped_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    scraped_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Enrichment
     is_enriched: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import structlog
-from sqlalchemy import select, update
+from sqlalchemy import select
 
 from app.database import async_session_factory
 
@@ -18,8 +18,8 @@ logger = structlog.get_logger()
 
 async def run_staleness_sweep() -> None:
     """Mark canonical jobs not refreshed in 14 days as stale."""
-    from app.canonical_jobs.service import CanonicalJobService
     from app.auth.models import User
+    from app.canonical_jobs.service import CanonicalJobService
 
     async with async_session_factory() as db:
         # Run for all users
@@ -38,8 +38,8 @@ async def run_staleness_sweep() -> None:
 
 async def run_source_health_checks() -> None:
     """Update source health metrics based on recent scraper runs."""
-    from app.source_health.models import SourceRegistry
     from app.scraping.models import ScraperRun
+    from app.source_health.models import SourceRegistry
 
     async with async_session_factory() as db:
         # Get all registered sources
@@ -75,7 +75,9 @@ async def run_source_health_checks() -> None:
 
                 source.last_check_at = datetime.now(timezone.utc)
             except Exception as exc:
-                logger.error("phase7a.source_health_check_failed", source=source.source_name, error=str(exc))
+                logger.error(
+                    "phase7a.source_health_check_failed", source=source.source_name, error=str(exc)
+                )
 
         await db.commit()
         logger.info("phase7a.source_health_checks_done")
@@ -91,12 +93,9 @@ async def run_followup_reminders() -> None:
         now = datetime.now(timezone.utc)
 
         # Find unsent reminders that are due
-        query = (
-            select(FollowupReminder)
-            .where(
-                FollowupReminder.is_sent == False,  # noqa: E712
-                FollowupReminder.reminder_at <= now,
-            )
+        query = select(FollowupReminder).where(
+            FollowupReminder.is_sent == False,  # noqa: E712
+            FollowupReminder.reminder_at <= now,
         )
         result = await db.scalars(query)
         reminders = list(result.all())
@@ -106,17 +105,20 @@ async def run_followup_reminders() -> None:
             app = await db.scalar(
                 select(Application).where(Application.id == reminder.application_id)
             )
-            title = f"Follow-up reminder"
+            title = "Follow-up reminder"
             body = reminder.reminder_note or "Time to follow up on your application"
             if app:
-                title = f"Follow up: {app.position_title or 'Application'} at {app.company_name or 'company'}"
+                title = (
+                    f"Follow up: {app.position_title or 'Application'} at "
+                    f"{app.company_name or 'company'}"
+                )
 
             notif = Notification(
                 user_id=reminder.user_id,
                 title=title,
                 body=body,
                 notification_type="followup",
-                link=f"/pipeline",
+                link="/pipeline",
             )
             db.add(notif)
             reminder.is_sent = True

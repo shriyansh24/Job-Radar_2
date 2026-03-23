@@ -31,7 +31,5 @@ async def generate_cover_letter(
     db: AsyncSession = Depends(get_db),
 ) -> CoverLetterResponse:
     svc = CopilotService(db)
-    cl = await svc.generate_cover_letter(
-        data.job_id, data.style, user.id, template=data.template
-    )
+    cl = await svc.generate_cover_letter(data.job_id, data.style, user.id, template=data.template)
     return CoverLetterResponse.model_validate(cl)

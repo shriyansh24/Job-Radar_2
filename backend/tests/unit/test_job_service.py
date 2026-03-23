@@ -43,9 +43,7 @@ async def test_list_jobs_empty(db_session: AsyncSession, user_id: uuid.UUID):
 
 
 @pytest.mark.asyncio
-async def test_list_jobs_with_data(
-    db_session: AsyncSession, user_id: uuid.UUID, sample_job: Job
-):
+async def test_list_jobs_with_data(db_session: AsyncSession, user_id: uuid.UUID, sample_job: Job):
     svc = JobService(db_session)
     result = await svc.list_jobs(JobListParams(), user_id)
     assert result.total == 1
@@ -78,9 +76,7 @@ async def test_list_jobs_text_search(
 
 
 @pytest.mark.asyncio
-async def test_get_job(
-    db_session: AsyncSession, user_id: uuid.UUID, sample_job: Job
-):
+async def test_get_job(db_session: AsyncSession, user_id: uuid.UUID, sample_job: Job):
     svc = JobService(db_session)
     job = await svc.get_job("test-job-001", user_id)
     assert job.title == "Software Engineer"
@@ -94,20 +90,14 @@ async def test_get_job_not_found(db_session: AsyncSession, user_id: uuid.UUID):
 
 
 @pytest.mark.asyncio
-async def test_update_job(
-    db_session: AsyncSession, user_id: uuid.UUID, sample_job: Job
-):
+async def test_update_job(db_session: AsyncSession, user_id: uuid.UUID, sample_job: Job):
     svc = JobService(db_session)
-    updated = await svc.update_job(
-        "test-job-001", JobUpdate(is_starred=True), user_id
-    )
+    updated = await svc.update_job("test-job-001", JobUpdate(is_starred=True), user_id)
     assert updated.is_starred is True
 
 
 @pytest.mark.asyncio
-async def test_delete_job_soft(
-    db_session: AsyncSession, user_id: uuid.UUID, sample_job: Job
-):
+async def test_delete_job_soft(db_session: AsyncSession, user_id: uuid.UUID, sample_job: Job):
     svc = JobService(db_session)
     await svc.delete_job("test-job-001", user_id)
     # After soft delete, job should not appear in listings

@@ -50,9 +50,7 @@ class RuleEngine:
 
         # Excluded companies
         if rule.excluded_companies:
-            if any(
-                c.lower() in (job.company_name or "").lower() for c in rule.excluded_companies
-            ):
+            if any(c.lower() in (job.company_name or "").lower() for c in rule.excluded_companies):
                 return False
 
         # Experience levels

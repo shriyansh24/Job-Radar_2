@@ -78,3 +78,10 @@
 - **File:** `backend/app/scraping/scrapers/apify.py`
 - **Detail:** Stale. `ApifyScraper` is still registered in the live scraping service and remains a real runtime integration.
 - **Status:** STALE
+
+## Verified Fixes Since Initial Audit
+
+## SC-F01 - FIXED: Circuit Breaker Recovery Timing Was Flaky On Windows
+- **Files:** `backend/app/scraping/rate_limiter.py`, `backend/tests/unit/test_rate_limiter.py`
+- **Detail:** The live issue was not the original audited "stuck half-open" claim, but a Windows clock-resolution edge case. The breaker now uses the hardened monotonic timing path and the regression tests avoid sleep-based flakiness.
+- **Status:** FIXED

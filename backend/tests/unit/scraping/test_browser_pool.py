@@ -1,6 +1,9 @@
 """Tests for BrowserPool tier-separated concurrency governance."""
-import pytest
+
 import asyncio
+
+import pytest
+
 from app.scraping.execution.browser_pool import BrowserPool
 
 

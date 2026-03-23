@@ -20,9 +20,13 @@ class BrowserPort(ABC):
     def browser_name(self) -> str: ...
 
     @abstractmethod
-    async def render(self, url: str, timeout_s: int = 60,
-                     fingerprint: dict | None = None,
-                     wait_for_selector: str | None = None) -> BrowserResult: ...
+    async def render(
+        self,
+        url: str,
+        timeout_s: int = 60,
+        fingerprint: dict | None = None,
+        wait_for_selector: str | None = None,
+    ) -> BrowserResult: ...
 
     @abstractmethod
     async def health_check(self) -> bool: ...

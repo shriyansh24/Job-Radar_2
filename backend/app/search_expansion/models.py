@@ -3,12 +3,11 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
+from sqlalchemy import JSON as JSONB
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-
-from sqlalchemy import JSON as JSONB
 
 
 class QueryTemplate(Base):
@@ -21,7 +20,9 @@ class QueryTemplate(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     base_query: Mapped[str] = mapped_column(Text, nullable=False)
     expanded_queries: Mapped[list | None] = mapped_column(JSONB)  # list of expanded query strings
-    strictness: Mapped[str] = mapped_column(String(20), default="balanced")  # loose, balanced, strict
+    strictness: Mapped[str] = mapped_column(
+        String(20), default="balanced"
+    )  # loose, balanced, strict
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -40,7 +41,9 @@ class ExpansionRule(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     source_term: Mapped[str] = mapped_column(String(200), nullable=False)
     expanded_terms: Mapped[list] = mapped_column(JSONB, nullable=False)
-    rule_type: Mapped[str] = mapped_column(String(30), default="synonym")  # synonym, related, broader
+    rule_type: Mapped[str] = mapped_column(
+        String(30), default="synonym"
+    )  # synonym, related, broader
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

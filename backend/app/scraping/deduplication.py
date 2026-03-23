@@ -61,11 +61,7 @@ class DeduplicationService:
     def _normalize_url(self, url: str) -> str:
         """Remove tracking params, fragment; lowercase host."""
         parsed = urlparse(url)
-        params = {
-            k: v
-            for k, v in parse_qs(parsed.query).items()
-            if k not in TRACKING_PARAMS
-        }
+        params = {k: v for k, v in parse_qs(parsed.query).items() if k not in TRACKING_PARAMS}
         return urlunparse(
             parsed._replace(
                 netloc=parsed.netloc.lower(),

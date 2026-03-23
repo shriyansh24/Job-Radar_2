@@ -4,12 +4,11 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
+from sqlalchemy import JSON as JSONB  # Use JSON for SQLite compat; works on PG too
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-
-from sqlalchemy import JSON as JSONB  # Use JSON for SQLite compat; works on PG too
 
 
 class UserProfile(Base):

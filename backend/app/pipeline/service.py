@@ -16,8 +16,6 @@ from app.pipeline.schemas import (
     StatusTransition,
 )
 from app.pipeline.state_machine import (
-    VALID_STATUSES,
-    VALID_TRANSITIONS,
     validate_transition,
 )
 from app.shared.errors import NotFoundError
@@ -34,14 +32,12 @@ class PipelineService:
         self, user_id: uuid.UUID, page: int = 1, page_size: int = 50
     ) -> PaginatedResponse:
         from sqlalchemy import func
+
         query = select(Application).where(Application.user_id == user_id)
-        total = await self.db.scalar(
-            select(func.count()).select_from(query.subquery())
-        ) or 0
+        total = await self.db.scalar(select(func.count()).select_from(query.subquery())) or 0
         offset = (page - 1) * page_size
         result = await self.db.scalars(
-            query.order_by(Application.updated_at.desc())
-            .offset(offset).limit(page_size)
+            query.order_by(Application.updated_at.desc()).offset(offset).limit(page_size)
         )
         return PaginatedResponse(
             items=list(result.all()),
@@ -50,9 +46,7 @@ class PipelineService:
             page_size=page_size,
         )
 
-    async def create_application(
-        self, data: ApplicationCreate, user_id: uuid.UUID
-    ) -> Application:
+    async def create_application(self, data: ApplicationCreate, user_id: uuid.UUID) -> Application:
         app = Application(
             user_id=user_id,
             job_id=data.job_id,
@@ -79,9 +73,7 @@ class PipelineService:
         await self.db.refresh(app)
         return app
 
-    async def get_application(
-        self, app_id: uuid.UUID, user_id: uuid.UUID
-    ) -> Application:
+    async def get_application(self, app_id: uuid.UUID, user_id: uuid.UUID) -> Application:
         result = await self.db.execute(
             select(Application).where(
                 Application.id == app_id,

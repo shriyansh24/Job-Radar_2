@@ -3,6 +3,7 @@
 IMPORTANT: cloudscraper uses requests.Session which is NOT thread-safe.
 A new scraper session is created per call to avoid concurrency issues.
 """
+
 from __future__ import annotations
 
 import asyncio

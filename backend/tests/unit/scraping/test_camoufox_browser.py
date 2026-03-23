@@ -1,8 +1,9 @@
 """Tests for CamoufoxBrowser adapter."""
+
 from __future__ import annotations
 
 import hashlib
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -22,9 +23,7 @@ def test_browser_name():
 @pytest.mark.asyncio
 async def test_render_when_camoufox_unavailable():
     """render() should raise RuntimeError when camoufox is not installed."""
-    with patch(
-        "app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", False
-    ):
+    with patch("app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", False):
         b = CamoufoxBrowser()
         with pytest.raises(RuntimeError, match="camoufox not installed"):
             await b.render("https://example.com")
@@ -39,9 +38,7 @@ async def test_health_check_reflects_availability():
 
 @pytest.mark.asyncio
 async def test_health_check_false_when_unavailable():
-    with patch(
-        "app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", False
-    ):
+    with patch("app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", False):
         b = CamoufoxBrowser()
         assert await b.health_check() is False
 
@@ -63,11 +60,12 @@ async def test_render_returns_browser_result():
     mock_ctx.__aenter__ = AsyncMock(return_value=mock_browser)
     mock_ctx.__aexit__ = AsyncMock(return_value=False)
 
-    with patch(
-        "app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", True
-    ), patch(
-        "app.scraping.execution.camoufox_browser.AsyncCamoufox",
-        return_value=mock_ctx,
+    with (
+        patch("app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", True),
+        patch(
+            "app.scraping.execution.camoufox_browser.AsyncCamoufox",
+            return_value=mock_ctx,
+        ),
     ):
         b = CamoufoxBrowser()
         result = await b.render("https://example.com")
@@ -79,9 +77,7 @@ async def test_render_returns_browser_result():
     expected_hash = hashlib.sha256(html_content.encode()).hexdigest()[:64]
     assert result.content_hash == expected_hash
     assert result.duration_ms >= 0
-    mock_page.goto.assert_called_once_with(
-        "https://example.com", timeout=60000
-    )
+    mock_page.goto.assert_called_once_with("https://example.com", timeout=60000)
 
 
 @pytest.mark.asyncio
@@ -100,11 +96,12 @@ async def test_render_with_wait_for_selector():
     mock_ctx.__aenter__ = AsyncMock(return_value=mock_browser)
     mock_ctx.__aexit__ = AsyncMock(return_value=False)
 
-    with patch(
-        "app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", True
-    ), patch(
-        "app.scraping.execution.camoufox_browser.AsyncCamoufox",
-        return_value=mock_ctx,
+    with (
+        patch("app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", True),
+        patch(
+            "app.scraping.execution.camoufox_browser.AsyncCamoufox",
+            return_value=mock_ctx,
+        ),
     ):
         b = CamoufoxBrowser()
         result = await b.render(
@@ -113,9 +110,7 @@ async def test_render_with_wait_for_selector():
             timeout_s=30,
         )
 
-    mock_page.wait_for_selector.assert_called_once_with(
-        "#jobs", timeout=30000
-    )
+    mock_page.wait_for_selector.assert_called_once_with("#jobs", timeout=30000)
     assert result.html == html_content
 
 
@@ -136,18 +131,17 @@ async def test_render_with_fingerprint_config():
     mock_ctx.__aenter__ = AsyncMock(return_value=mock_browser)
     mock_ctx.__aexit__ = AsyncMock(return_value=False)
 
-    with patch(
-        "app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", True
-    ), patch(
-        "app.scraping.execution.camoufox_browser.AsyncCamoufox",
-        return_value=mock_ctx,
-    ) as mock_async_camoufox:
+    with (
+        patch("app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", True),
+        patch(
+            "app.scraping.execution.camoufox_browser.AsyncCamoufox",
+            return_value=mock_ctx,
+        ) as mock_async_camoufox,
+    ):
         b = CamoufoxBrowser()
         await b.render("https://example.com", fingerprint=fp_config)
 
-    mock_async_camoufox.assert_called_once_with(
-        config=fp_config, headless=True
-    )
+    mock_async_camoufox.assert_called_once_with(config=fp_config, headless=True)
 
 
 @pytest.mark.asyncio
@@ -166,12 +160,13 @@ async def test_render_default_empty_fingerprint():
     mock_ctx.__aenter__ = AsyncMock(return_value=mock_browser)
     mock_ctx.__aexit__ = AsyncMock(return_value=False)
 
-    with patch(
-        "app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", True
-    ), patch(
-        "app.scraping.execution.camoufox_browser.AsyncCamoufox",
-        return_value=mock_ctx,
-    ) as mock_async_camoufox:
+    with (
+        patch("app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", True),
+        patch(
+            "app.scraping.execution.camoufox_browser.AsyncCamoufox",
+            return_value=mock_ctx,
+        ) as mock_async_camoufox,
+    ):
         b = CamoufoxBrowser()
         await b.render("https://example.com")
 
@@ -182,16 +177,15 @@ async def test_render_default_empty_fingerprint():
 async def test_render_propagates_exceptions():
     """Errors from camoufox should propagate to the caller."""
     mock_ctx = AsyncMock()
-    mock_ctx.__aenter__ = AsyncMock(
-        side_effect=TimeoutError("browser launch timeout")
-    )
+    mock_ctx.__aenter__ = AsyncMock(side_effect=TimeoutError("browser launch timeout"))
     mock_ctx.__aexit__ = AsyncMock(return_value=False)
 
-    with patch(
-        "app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", True
-    ), patch(
-        "app.scraping.execution.camoufox_browser.AsyncCamoufox",
-        return_value=mock_ctx,
+    with (
+        patch("app.scraping.execution.camoufox_browser.CAMOUFOX_AVAILABLE", True),
+        patch(
+            "app.scraping.execution.camoufox_browser.AsyncCamoufox",
+            return_value=mock_ctx,
+        ),
     ):
         b = CamoufoxBrowser()
         with pytest.raises(TimeoutError):

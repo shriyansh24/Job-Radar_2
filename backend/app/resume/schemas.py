@@ -46,6 +46,7 @@ class KeywordCoverage(BaseModel):
 
 class Stage1Output(BaseModel):
     """Stage 1: Job description analysis output."""
+
     hard_requirements: list[str] = []
     soft_requirements: list[str] = []
     key_technologies: list[str] = []
@@ -57,6 +58,7 @@ class Stage1Output(BaseModel):
 
 class Stage2Output(BaseModel):
     """Stage 2: Gap mapping output."""
+
     matched_requirements: list[str] = []
     partial_matches: list[PartialMatch] = []
     missing_requirements: list[str] = []

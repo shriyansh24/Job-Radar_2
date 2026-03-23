@@ -62,10 +62,7 @@ class AutoApplyOrchestrator:
                 browser = await p.chromium.launch(headless=True)
                 context = await browser.new_context(
                     viewport={"width": 1280, "height": 720},
-                    user_agent=(
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36"
-                    ),
+                    user_agent=("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"),
                 )
                 page = await context.new_page()
 
@@ -167,9 +164,7 @@ class AutoApplyOrchestrator:
         from app.jobs.models import Job
 
         applied_job_ids_result = (
-            await self.db.scalars(
-                select(Application.job_id).where(Application.user_id == user_id)
-            )
+            await self.db.scalars(select(Application.job_id).where(Application.user_id == user_id))
         ).all()
 
         stmt = select(Job).where(

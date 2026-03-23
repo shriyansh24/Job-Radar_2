@@ -41,42 +41,69 @@ class EnrichmentService:
         if not desc_raw:
             return job
 
-        # 1. Clean description
-        job.description_clean = self._clean_html(desc_raw)  # type: ignore[attr-defined]
-        job.description_markdown = self._html_to_markdown(desc_raw)  # type: ignore[attr-defined]
+        tracked_fields = (
+            "description_clean",
+            "description_markdown",
+            "summary_ai",
+            "skills_required",
+            "skills_nice_to_have",
+            "tech_stack",
+            "red_flags",
+            "green_flags",
+            "salary_min",
+            "salary_max",
+            "salary_period",
+            "experience_level",
+            "seniority_score",
+            "is_enriched",
+            "enriched_at",
+        )
+        snapshot = {field: getattr(job, field, None) for field in tracked_fields}
 
-        # 2. LLM enrichment (summary + skills + flags)
-        enrichment = await self._llm_enrich(job)
-        job.summary_ai = enrichment.get("summary")  # type: ignore[attr-defined]
-        job.skills_required = enrichment.get("skills_required", [])  # type: ignore[attr-defined]
-        job.skills_nice_to_have = enrichment.get("skills_nice_to_have", [])  # type: ignore[attr-defined]
-        job.tech_stack = enrichment.get("tech_stack", [])  # type: ignore[attr-defined]
-        job.red_flags = enrichment.get("red_flags", [])  # type: ignore[attr-defined]
-        job.green_flags = enrichment.get("green_flags", [])  # type: ignore[attr-defined]
+        try:
+            clean_description = self._clean_html(desc_raw)
+            markdown_description = self._html_to_markdown(desc_raw)
 
-        # 3. Extract salary if not present
-        if not getattr(job, "salary_min", None) and not getattr(job, "salary_max", None):
-            sal = enrichment.get("salary_estimate")
-            if sal and isinstance(sal, dict):
-                job.salary_min = sal.get("min")  # type: ignore[attr-defined]
-                job.salary_max = sal.get("max")  # type: ignore[attr-defined]
-                job.salary_period = sal.get("period", "annual")  # type: ignore[attr-defined]
+            # 1. LLM enrichment (summary + skills + flags)
+            enrichment = await self._llm_enrich(job, clean_description)
 
-        # 4. Determine experience level if missing
-        if not getattr(job, "experience_level", None):
-            job.experience_level = enrichment.get("experience_level")  # type: ignore[attr-defined]
-            job.seniority_score = enrichment.get("seniority_score")  # type: ignore[attr-defined]
+            # 2. Persist cleaned description and enrichment payload only after success.
+            job.description_clean = clean_description  # type: ignore[attr-defined]
+            job.description_markdown = markdown_description  # type: ignore[attr-defined]
+            job.summary_ai = enrichment.get("summary")  # type: ignore[attr-defined]
+            job.skills_required = enrichment.get("skills_required", [])  # type: ignore[attr-defined]
+            job.skills_nice_to_have = enrichment.get("skills_nice_to_have", [])  # type: ignore[attr-defined]
+            job.tech_stack = enrichment.get("tech_stack", [])  # type: ignore[attr-defined]
+            job.red_flags = enrichment.get("red_flags", [])  # type: ignore[attr-defined]
+            job.green_flags = enrichment.get("green_flags", [])  # type: ignore[attr-defined]
 
-        job.is_enriched = True  # type: ignore[attr-defined]
-        job.enriched_at = datetime.now(UTC)  # type: ignore[attr-defined]
-        return job
+            # 3. Extract salary if not present
+            if not getattr(job, "salary_min", None) and not getattr(job, "salary_max", None):
+                sal = enrichment.get("salary_estimate")
+                if sal and isinstance(sal, dict):
+                    job.salary_min = sal.get("min")  # type: ignore[attr-defined]
+                    job.salary_max = sal.get("max")  # type: ignore[attr-defined]
+                    job.salary_period = sal.get("period", "annual")  # type: ignore[attr-defined]
 
-    async def _llm_enrich(self, job: object) -> dict:
+            # 4. Determine experience level if missing
+            if not getattr(job, "experience_level", None):
+                job.experience_level = enrichment.get("experience_level")  # type: ignore[attr-defined]
+                job.seniority_score = enrichment.get("seniority_score")  # type: ignore[attr-defined]
+
+            job.is_enriched = True  # type: ignore[attr-defined]
+            job.enriched_at = datetime.now(UTC)  # type: ignore[attr-defined]
+            return job
+        except Exception:
+            for field, value in snapshot.items():
+                setattr(job, field, value)
+            raise
+
+    async def _llm_enrich(self, job: object, description_clean: str) -> dict:
         """Call LLM to extract structured info from job description."""
         title = getattr(job, "title", "")
         company = getattr(job, "company_name", "")
         location = getattr(job, "location", "")
-        desc = getattr(job, "description_clean", "")
+        desc = description_clean
 
         prompt = f"""Analyze this job posting and extract structured information.
 

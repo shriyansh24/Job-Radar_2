@@ -6,6 +6,7 @@ and an asyncio lock to avoid spawning a new Chromium process per call.
 
 Gracefully degrades if nodriver is not installed.
 """
+
 from __future__ import annotations
 
 import asyncio

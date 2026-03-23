@@ -4,16 +4,14 @@ Run from backend directory: python seed_data.py
 """
 
 import asyncio
-import uuid
-from datetime import datetime, timezone
 from pathlib import Path
+
 
 async def main():
     # Setup Django-style imports
-    from app.config import settings
-    from app.database import async_session_factory, engine, Base
     from app.auth.models import User
     from app.auth.service import hash_password
+    from app.database import async_session_factory
     from app.profile.models import UserProfile
     from app.resume.models import ResumeVersion
 
@@ -21,9 +19,7 @@ async def main():
         from sqlalchemy import select
 
         # ── 1. Create User ──────────────────────────────────────────────
-        existing = await db.scalar(
-            select(User).where(User.email == "shriyansh.singh24@gmail.com")
-        )
+        existing = await db.scalar(select(User).where(User.email == "shriyansh.singh24@gmail.com"))
         if existing:
             user = existing
             print(f"User already exists: {user.id}")
@@ -41,9 +37,7 @@ async def main():
         user_id = user.id
 
         # ── 2. Create/Update Profile ────────────────────────────────────
-        profile = await db.scalar(
-            select(UserProfile).where(UserProfile.user_id == user_id)
-        )
+        profile = await db.scalar(select(UserProfile).where(UserProfile.user_id == user_id))
         if not profile:
             profile = UserProfile(user_id=user_id)
             db.add(profile)
@@ -57,7 +51,9 @@ async def main():
         # Links
         profile.linkedin_url = "https://www.linkedin.com/in/shriyansh-bir-singh/"
         profile.github_url = "https://github.com/shriyansh24"
-        profile.portfolio_url = "https://personalwebsite-9n7xiqgwk-shriyansh24s-projects.vercel.app/"
+        profile.portfolio_url = (
+            "https://personalwebsite-9n7xiqgwk-shriyansh24s-projects.vercel.app/"
+        )
 
         # Work Authorization
         profile.work_authorization = "OPT"
@@ -98,6 +94,7 @@ async def main():
 
         # Salary
         from decimal import Decimal
+
         profile.salary_min = Decimal("120000")
         profile.salary_max = Decimal("200000")
 
@@ -145,15 +142,32 @@ async def main():
 
         # Answer Bank (common application questions)
         profile.answer_bank = {
-            "Are you authorized to work in the US?": "Yes, I am authorized to work in the US on OPT.",
-            "Will you now or in the future require visa sponsorship?": "Yes, I will require H-1B visa sponsorship.",
+            "Are you authorized to work in the US?": (
+                "Yes, I am authorized to work in the US on OPT."
+            ),
+            "Will you now or in the future require visa sponsorship?": (
+                "Yes, I will require H-1B visa sponsorship."
+            ),
             "What is your desired salary?": "$120,000 - $200,000",
             "Are you willing to relocate?": "Yes, I am willing to relocate anywhere in the USA.",
-            "How many years of experience do you have?": "1 year of professional experience plus 2 years of academic project experience.",
-            "What is your highest level of education?": "Master of Science in Data Science from Indiana University Bloomington.",
+            "How many years of experience do you have?": (
+                "1 year of professional experience plus 2 years of academic "
+                "project experience."
+            ),
+            "What is your highest level of education?": (
+                "Master of Science in Data Science from Indiana University "
+                "Bloomington."
+            ),
             "Are you over 18 years of age?": "Yes",
-            "Do you have experience with Python?": "Yes, Python is my primary programming language with 4+ years of experience.",
-            "Do you have experience with machine learning?": "Yes, I have hands-on experience building and deploying ML models including NLP, computer vision, and recommendation systems.",
+            "Do you have experience with Python?": (
+                "Yes, Python is my primary programming language with 4+ years "
+                "of experience."
+            ),
+            "Do you have experience with machine learning?": (
+                "Yes, I have hands-on experience building and deploying ML "
+                "models including NLP, computer vision, and recommendation "
+                "systems."
+            ),
         }
 
         # Theme
@@ -171,11 +185,11 @@ async def main():
             )
             if not existing_resume:
                 # Read and store resume text (basic extraction)
-                resume_bytes = resume_path.read_bytes()
                 # Try to extract text from PDF
                 resume_text = ""
                 try:
                     import fitz  # PyMuPDF
+
                     doc = fitz.open(str(resume_path))
                     for page in doc:
                         resume_text += page.get_text()

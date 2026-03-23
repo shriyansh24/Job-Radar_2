@@ -1,7 +1,7 @@
-import pytest
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
-from app.scraping.control.scheduler import select_due_targets, compute_next_run
+
+from app.scraping.control.scheduler import compute_next_run, select_due_targets
 
 
 def _target(**kw):

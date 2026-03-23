@@ -1,4 +1,5 @@
 """Tests for ScraperRun model tier counter columns."""
+
 from app.scraping.models import ScraperRun
 
 
@@ -15,9 +16,7 @@ def test_scraper_run_has_tier_counters():
         "tier_3_count",
         "tier_api_count",
     }
-    assert tier_cols.issubset(columns), (
-        f"Missing tier counter columns: {tier_cols - columns}"
-    )
+    assert tier_cols.issubset(columns), f"Missing tier counter columns: {tier_cols - columns}"
 
 
 def test_scraper_run_tier_defaults():

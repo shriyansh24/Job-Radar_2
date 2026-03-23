@@ -130,8 +130,7 @@ class ModelRouter:
                 last_exc = exc
 
         raise RuntimeError(
-            f"ModelRouter: all models exhausted for task '{task}'. "
-            f"Last error: {last_exc}"
+            f"ModelRouter: all models exhausted for task '{task}'. Last error: {last_exc}"
         ) from last_exc
 
     async def complete_json(
@@ -166,6 +165,9 @@ class ModelRouter:
                     return result
                 # Empty result — try next model
                 logger.warning("model_router_json_empty", task=task, model=model)
+                last_exc = RuntimeError(
+                    f"ModelRouter: model '{model}' returned empty JSON for task '{task}'"
+                )
             except (httpx.HTTPStatusError, httpx.TimeoutException, json.JSONDecodeError) as exc:
                 logger.warning(
                     "model_router_json_failed",
@@ -183,9 +185,10 @@ class ModelRouter:
                 )
                 last_exc = exc
 
-        if last_exc:
-            raise RuntimeError(
-                f"ModelRouter: all models exhausted for JSON task '{task}'. "
-                f"Last error: {last_exc}"
-            ) from last_exc
-        return {}
+        if last_exc is None:
+            last_exc = RuntimeError(
+                f"ModelRouter: no models configured for JSON task '{task}'"
+            )
+        raise RuntimeError(
+            f"ModelRouter: all models exhausted for JSON task '{task}'. Last error: {last_exc}"
+        ) from last_exc

@@ -44,9 +44,7 @@ class GreenhouseScraper(BaseScraper):
             posted_at = None
             if item.get("updated_at"):
                 try:
-                    posted_at = datetime.fromisoformat(
-                        item["updated_at"].replace("Z", "+00:00")
-                    )
+                    posted_at = datetime.fromisoformat(item["updated_at"].replace("Z", "+00:00"))
                 except (ValueError, TypeError):
                     pass
 
@@ -66,9 +64,7 @@ class GreenhouseScraper(BaseScraper):
 
     async def health_check(self) -> bool:
         try:
-            resp = await self.client.get(
-                "https://boards-api.greenhouse.io/v1/boards/test/jobs"
-            )
+            resp = await self.client.get("https://boards-api.greenhouse.io/v1/boards/test/jobs")
             return resp.status_code in (200, 404)
         except Exception:
             return False

@@ -4,8 +4,9 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
+import jwt
 from fastapi import Response
-from jose import JWTError, jwt
+from jwt import InvalidTokenError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -73,7 +74,7 @@ def decode_token_payload(token: str, expected_type: str | None = None) -> dict:
         if payload.get("sub") is None:
             raise AuthError("Invalid token")
         return payload
-    except JWTError:
+    except InvalidTokenError:
         raise AuthError("Invalid token")
 
 

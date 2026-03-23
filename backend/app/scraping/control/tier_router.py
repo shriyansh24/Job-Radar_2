@@ -24,25 +24,49 @@ class ExecutionPlan:
 TIER_0_VENDORS = {"greenhouse", "lever", "ashby", "workday"}
 
 ATS_SCRAPER_MAP = {
-    "greenhouse": "greenhouse", "lever": "lever",
-    "ashby": "ashby", "workday": "workday",
+    "greenhouse": "greenhouse",
+    "lever": "lever",
+    "ashby": "ashby",
+    "workday": "workday",
 }
 ATS_PARSER_MAP = {
-    "greenhouse": "greenhouse_api", "lever": "lever_api",
-    "ashby": "ashby_graphql", "workday": "workday_json",
+    "greenhouse": "greenhouse_api",
+    "lever": "lever_api",
+    "ashby": "ashby_graphql",
+    "workday": "workday_json",
 }
 
 FULL_FALLBACK_CHAIN = [
     Step(tier=1, scraper_name="cloudscraper", parser_name="adaptive"),
     Step(tier=1, scraper_name="scrapling_fast", parser_name="adaptive"),
-    Step(tier=2, scraper_name="nodriver", parser_name="adaptive",
-         timeout_s=60, browser_required=True),
-    Step(tier=2, scraper_name="scrapling_stealth", parser_name="adaptive",
-         timeout_s=60, browser_required=True),
-    Step(tier=3, scraper_name="camoufox", parser_name="adaptive",
-         timeout_s=90, browser_required=True),
-    Step(tier=3, scraper_name="seleniumbase", parser_name="adaptive",
-         timeout_s=90, browser_required=True),
+    Step(
+        tier=2,
+        scraper_name="nodriver",
+        parser_name="adaptive",
+        timeout_s=60,
+        browser_required=True,
+    ),
+    Step(
+        tier=2,
+        scraper_name="scrapling_stealth",
+        parser_name="adaptive",
+        timeout_s=60,
+        browser_required=True,
+    ),
+    Step(
+        tier=3,
+        scraper_name="camoufox",
+        parser_name="adaptive",
+        timeout_s=90,
+        browser_required=True,
+    ),
+    Step(
+        tier=3,
+        scraper_name="seleniumbase",
+        parser_name="adaptive",
+        timeout_s=90,
+        browser_required=True,
+    ),
 ]
 
 
@@ -63,8 +87,11 @@ class TierRouter:
             )
 
         effective_start = target.last_success_tier or target.start_tier
-        pruned = [s for s in FULL_FALLBACK_CHAIN
-                  if s.tier >= effective_start and s.tier <= target.max_tier]
+        pruned = [
+            s
+            for s in FULL_FALLBACK_CHAIN
+            if s.tier >= effective_start and s.tier <= target.max_tier
+        ]
 
         if not pruned:
             pruned = [Step(tier=1, scraper_name="cloudscraper")]

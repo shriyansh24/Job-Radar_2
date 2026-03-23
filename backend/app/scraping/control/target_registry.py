@@ -1,5 +1,6 @@
 # app/scraping/control/target_registry.py
 """ScrapeTarget CRUD operations and bulk import."""
+
 from __future__ import annotations
 
 import uuid
@@ -50,9 +51,7 @@ async def import_from_excel(
 
         # Check for duplicate URL
         existing = await db.scalar(
-            select(ScrapeTarget).where(
-                ScrapeTarget.url == url, ScrapeTarget.user_id == user_id
-            )
+            select(ScrapeTarget).where(ScrapeTarget.url == url, ScrapeTarget.user_id == user_id)
         )
         if existing:
             stats["skipped_duplicate"] += 1

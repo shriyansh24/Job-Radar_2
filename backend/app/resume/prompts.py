@@ -58,8 +58,9 @@ Return ONLY valid JSON:
 # Stage 3 — Keyword injection / resume rewrite
 # ---------------------------------------------------------------------------
 
-STAGE3_PROMPT = """Rewrite this resume for the target job. Use the gap analysis to inject missing keywords
-where the candidate has relevant experience. Never fabricate experience.
+STAGE3_PROMPT = """Rewrite this resume for the target job.
+Use the gap analysis to inject missing keywords where the candidate has relevant experience.
+Never fabricate experience.
 
 RESUME:
 {resume_text}

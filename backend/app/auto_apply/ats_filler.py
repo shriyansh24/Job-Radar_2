@@ -65,9 +65,7 @@ class GenericATSFiller:
         """Match field to profile data."""
         label = field["label"].lower()
 
-        first_name = (
-            (self.profile.full_name or "").split()[0] if self.profile.full_name else None
-        )
+        first_name = (self.profile.full_name or "").split()[0] if self.profile.full_name else None
         last_name = (
             (self.profile.full_name or "").split()[-1]
             if self.profile.full_name and " " in self.profile.full_name
@@ -144,7 +142,5 @@ class GenericATSFiller:
             if label:
                 return await label.inner_text()
         # Try parent label
-        parent_label: str = await element.evaluate(
-            'el => el.closest("label")?.innerText || ""'
-        )
+        parent_label: str = await element.evaluate('el => el.closest("label")?.innerText || ""')
         return parent_label

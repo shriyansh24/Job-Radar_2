@@ -4,18 +4,20 @@ import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
+from app.workers.alert_worker import check_saved_search_alerts
+from app.workers.auto_apply_worker import run_auto_apply_batch
 from app.workers.enrichment_worker import (
     run_embedding_batch,
     run_enrichment_batch,
     run_tfidf_scoring,
 )
 from app.workers.maintenance_worker import run_cleanup, run_source_health_check
-from app.workers.alert_worker import check_saved_search_alerts
-from app.workers.auto_apply_worker import run_auto_apply_batch
 from app.workers.phase7a_worker import (
     run_followup_reminders,
-    run_source_health_checks as run_phase7a_source_health,
     run_staleness_sweep,
+)
+from app.workers.phase7a_worker import (
+    run_source_health_checks as run_phase7a_source_health,
 )
 from app.workers.scraping_worker import (
     run_career_page_scrape,

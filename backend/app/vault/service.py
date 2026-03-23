@@ -31,9 +31,7 @@ class VaultService:
         result = await self.db.scalars(query)
         return list(result.all())
 
-    async def delete_resume(
-        self, resume_id: uuid.UUID, user_id: uuid.UUID
-    ) -> None:
+    async def delete_resume(self, resume_id: uuid.UUID, user_id: uuid.UUID) -> None:
         """Delete a resume version owned by the user."""
         logger.info(
             "vault.delete_resume",
@@ -50,9 +48,7 @@ class VaultService:
         await self.db.delete(resume)
         await self.db.commit()
 
-    async def delete_cover_letter(
-        self, letter_id: uuid.UUID, user_id: uuid.UUID
-    ) -> None:
+    async def delete_cover_letter(self, letter_id: uuid.UUID, user_id: uuid.UUID) -> None:
         """Delete a cover letter owned by the user."""
         logger.info(
             "vault.delete_cover_letter",

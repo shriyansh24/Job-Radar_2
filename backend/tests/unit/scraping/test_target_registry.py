@@ -1,9 +1,10 @@
 # tests/unit/scraping/test_target_registry.py
 """Tests for target_registry import logic."""
+
 from __future__ import annotations
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -52,17 +53,17 @@ def _make_mock_db(*, duplicates: set[str] | None = None) -> AsyncMock:
 @pytest.mark.asyncio
 async def test_import_dry_run_does_not_commit():
     """Dry run should not call db.commit() or db.add()."""
-    mock_wb = _make_mock_workbook([
-        (1, "Google", "Tech", "https://careers.google.com/jobs", 5000),
-        (2, "Meta", "Tech", "https://boards.greenhouse.io/meta", 3000),
-    ])
+    mock_wb = _make_mock_workbook(
+        [
+            (1, "Google", "Tech", "https://careers.google.com/jobs", 5000),
+            (2, "Meta", "Tech", "https://boards.greenhouse.io/meta", 3000),
+        ]
+    )
     mock_db = _make_mock_db()
 
     with patch("app.scraping.control.target_registry.openpyxl") as mock_openpyxl:
         mock_openpyxl.load_workbook.return_value = mock_wb
-        stats = await import_from_excel(
-            mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=True
-        )
+        stats = await import_from_excel(mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=True)
 
     assert stats["total"] == 2
     assert stats["imported"] == 2
@@ -75,17 +76,17 @@ async def test_import_dry_run_does_not_commit():
 @pytest.mark.asyncio
 async def test_import_commits_on_real_run():
     """Non-dry-run should call db.add() for each valid row and commit once."""
-    mock_wb = _make_mock_workbook([
-        (1, "Google", "Tech", "https://careers.google.com/jobs", 5000),
-        (2, "Meta", "Tech", "https://boards.greenhouse.io/meta", 3000),
-    ])
+    mock_wb = _make_mock_workbook(
+        [
+            (1, "Google", "Tech", "https://careers.google.com/jobs", 5000),
+            (2, "Meta", "Tech", "https://boards.greenhouse.io/meta", 3000),
+        ]
+    )
     mock_db = _make_mock_db()
 
     with patch("app.scraping.control.target_registry.openpyxl") as mock_openpyxl:
         mock_openpyxl.load_workbook.return_value = mock_wb
-        stats = await import_from_excel(
-            mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=False
-        )
+        stats = await import_from_excel(mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=False)
 
     assert stats["total"] == 2
     assert stats["imported"] == 2
@@ -96,20 +97,20 @@ async def test_import_commits_on_real_run():
 @pytest.mark.asyncio
 async def test_import_skips_rows_without_url():
     """Rows with missing or non-HTTP URLs are skipped."""
-    mock_wb = _make_mock_workbook([
-        (1, "Google", "Tech", "https://careers.google.com/jobs", 5000),
-        (2, "BadCo", "Tech", None, 100),           # no URL
-        (3, "BadCo2", "Tech", "", 100),             # empty URL
-        (4, "BadCo3", "Tech", "not-a-url", 100),    # non-HTTP URL
-        (5, "Meta", "Tech", "https://meta.com/careers", 3000),
-    ])
+    mock_wb = _make_mock_workbook(
+        [
+            (1, "Google", "Tech", "https://careers.google.com/jobs", 5000),
+            (2, "BadCo", "Tech", None, 100),  # no URL
+            (3, "BadCo2", "Tech", "", 100),  # empty URL
+            (4, "BadCo3", "Tech", "not-a-url", 100),  # non-HTTP URL
+            (5, "Meta", "Tech", "https://meta.com/careers", 3000),
+        ]
+    )
     mock_db = _make_mock_db()
 
     with patch("app.scraping.control.target_registry.openpyxl") as mock_openpyxl:
         mock_openpyxl.load_workbook.return_value = mock_wb
-        stats = await import_from_excel(
-            mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=True
-        )
+        stats = await import_from_excel(mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=True)
 
     assert stats["total"] == 5
     assert stats["imported"] == 2
@@ -119,19 +120,19 @@ async def test_import_skips_rows_without_url():
 @pytest.mark.asyncio
 async def test_import_skips_short_rows():
     """Rows with fewer than 4 columns are silently skipped."""
-    mock_wb = _make_mock_workbook([
-        (1, "Google", "Tech", "https://careers.google.com/jobs", 5000),
-        (2, "Short"),         # too short
-        (3, "Short", "Tech"), # still too short
-        None,                 # None row
-    ])
+    mock_wb = _make_mock_workbook(
+        [
+            (1, "Google", "Tech", "https://careers.google.com/jobs", 5000),
+            (2, "Short"),  # too short
+            (3, "Short", "Tech"),  # still too short
+            None,  # None row
+        ]
+    )
     mock_db = _make_mock_db()
 
     with patch("app.scraping.control.target_registry.openpyxl") as mock_openpyxl:
         mock_openpyxl.load_workbook.return_value = mock_wb
-        stats = await import_from_excel(
-            mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=True
-        )
+        stats = await import_from_excel(mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=True)
 
     assert stats["total"] == 1
     assert stats["imported"] == 1
@@ -140,19 +141,19 @@ async def test_import_skips_short_rows():
 @pytest.mark.asyncio
 async def test_import_skips_duplicates():
     """Rows with URLs already in the database are skipped."""
-    mock_wb = _make_mock_workbook([
-        (1, "Google", "Tech", "https://careers.google.com/jobs", 5000),
-        (2, "Meta", "Tech", "https://meta.com/careers", 3000),
-    ])
+    mock_wb = _make_mock_workbook(
+        [
+            (1, "Google", "Tech", "https://careers.google.com/jobs", 5000),
+            (2, "Meta", "Tech", "https://meta.com/careers", 3000),
+        ]
+    )
     mock_db = _make_mock_db()
     # First call returns an existing record, second returns None
     mock_db.scalar = AsyncMock(side_effect=[MagicMock(), None])
 
     with patch("app.scraping.control.target_registry.openpyxl") as mock_openpyxl:
         mock_openpyxl.load_workbook.return_value = mock_wb
-        stats = await import_from_excel(
-            mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=True
-        )
+        stats = await import_from_excel(mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=True)
 
     assert stats["total"] == 2
     assert stats["imported"] == 1
@@ -162,16 +163,16 @@ async def test_import_skips_duplicates():
 @pytest.mark.asyncio
 async def test_import_handles_missing_lca_filings():
     """Rows without LCA filings column should import with lca_filings=None."""
-    mock_wb = _make_mock_workbook([
-        (1, "Company", "Tech", "https://example.com/careers"),  # no 5th column
-    ])
+    mock_wb = _make_mock_workbook(
+        [
+            (1, "Company", "Tech", "https://example.com/careers"),  # no 5th column
+        ]
+    )
     mock_db = _make_mock_db()
 
     with patch("app.scraping.control.target_registry.openpyxl") as mock_openpyxl:
         mock_openpyxl.load_workbook.return_value = mock_wb
-        stats = await import_from_excel(
-            mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=False
-        )
+        stats = await import_from_excel(mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=False)
 
     assert stats["total"] == 1
     assert stats["imported"] == 1
@@ -183,16 +184,16 @@ async def test_import_handles_missing_lca_filings():
 @pytest.mark.asyncio
 async def test_import_calls_classification():
     """Import should classify each URL and assign priority."""
-    mock_wb = _make_mock_workbook([
-        (1, "HugFace", "Tech", "https://boards.greenhouse.io/huggingface", 2000),
-    ])
+    mock_wb = _make_mock_workbook(
+        [
+            (1, "HugFace", "Tech", "https://boards.greenhouse.io/huggingface", 2000),
+        ]
+    )
     mock_db = _make_mock_db()
 
     with patch("app.scraping.control.target_registry.openpyxl") as mock_openpyxl:
         mock_openpyxl.load_workbook.return_value = mock_wb
-        stats = await import_from_excel(
-            mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=False
-        )
+        stats = await import_from_excel(mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=False)
 
     assert stats["imported"] == 1
     added_obj = mock_db.add.call_args[0][0]
@@ -208,9 +209,11 @@ async def test_import_calls_classification():
 @pytest.mark.asyncio
 async def test_import_watchlist_priority():
     """Companies on the watchlist should get watchlist priority."""
-    mock_wb = _make_mock_workbook([
-        (1, "Google", "Tech", "https://careers.google.com/jobs", 50),
-    ])
+    mock_wb = _make_mock_workbook(
+        [
+            (1, "Google", "Tech", "https://careers.google.com/jobs", 50),
+        ]
+    )
     mock_db = _make_mock_db()
 
     with patch("app.scraping.control.target_registry.openpyxl") as mock_openpyxl:
@@ -227,16 +230,16 @@ async def test_import_watchlist_priority():
 @pytest.mark.asyncio
 async def test_import_strips_whitespace():
     """URL, company_name, and industry should have whitespace stripped."""
-    mock_wb = _make_mock_workbook([
-        (1, "  Google  ", "  Tech  ", "  https://careers.google.com/jobs  ", 5000),
-    ])
+    mock_wb = _make_mock_workbook(
+        [
+            (1, "  Google  ", "  Tech  ", "  https://careers.google.com/jobs  ", 5000),
+        ]
+    )
     mock_db = _make_mock_db()
 
     with patch("app.scraping.control.target_registry.openpyxl") as mock_openpyxl:
         mock_openpyxl.load_workbook.return_value = mock_wb
-        stats = await import_from_excel(
-            mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=False
-        )
+        stats = await import_from_excel(mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=False)
 
     assert stats["imported"] == 1
     added_obj = mock_db.add.call_args[0][0]
@@ -253,9 +256,7 @@ async def test_import_empty_workbook():
 
     with patch("app.scraping.control.target_registry.openpyxl") as mock_openpyxl:
         mock_openpyxl.load_workbook.return_value = mock_wb
-        stats = await import_from_excel(
-            mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=False
-        )
+        stats = await import_from_excel(mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=False)
 
     assert stats["total"] == 0
     assert stats["imported"] == 0
@@ -269,15 +270,15 @@ async def test_import_empty_workbook():
 @pytest.mark.asyncio
 async def test_import_workbook_closed_after_reading():
     """The workbook should be closed after reading rows."""
-    mock_wb = _make_mock_workbook([
-        (1, "Google", "Tech", "https://careers.google.com/jobs", 5000),
-    ])
+    mock_wb = _make_mock_workbook(
+        [
+            (1, "Google", "Tech", "https://careers.google.com/jobs", 5000),
+        ]
+    )
     mock_db = _make_mock_db()
 
     with patch("app.scraping.control.target_registry.openpyxl") as mock_openpyxl:
         mock_openpyxl.load_workbook.return_value = mock_wb
-        await import_from_excel(
-            mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=True
-        )
+        await import_from_excel(mock_db, "fake.xlsx", uuid.uuid4(), [], dry_run=True)
 
     mock_wb.close.assert_called_once()

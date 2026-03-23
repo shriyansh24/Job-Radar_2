@@ -5,6 +5,9 @@ Usage (from D:/jobradar-v2/backend):
     # or
     python scripts/import_h1b_targets.py
 """
+
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import asyncio
@@ -24,12 +27,10 @@ if str(_BACKEND) not in sys.path:
 import openpyxl
 from sqlalchemy import select, text
 
-from app.database import async_session_factory
-
 # Import auth models first so SQLAlchemy registers the `users` table in metadata
 # before we try to flush ScrapeTarget rows (which have a FK to users.id).
 import app.auth.models  # noqa: F401
-
+from app.database import async_session_factory
 from app.scraping.control.classifier import assign_priority, classify_target
 from app.scraping.models import ScrapeTarget
 
@@ -70,6 +71,7 @@ DATA_START_ROW = 5  # 1-indexed; rows 1-4 are metadata/header
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _load_excel(path: Path) -> list[tuple]:
     """Return all data rows from the Excel file."""
@@ -114,6 +116,7 @@ def _parse_row(row: tuple) -> dict | None:
 # Main import logic
 # ---------------------------------------------------------------------------
 
+
 async def run_import() -> None:
     print(f"Loading Excel: {EXCEL_PATH}")
     rows = _load_excel(EXCEL_PATH)
@@ -136,13 +139,9 @@ async def run_import() -> None:
         try:
             from app.profile.models import UserProfile  # noqa: PLC0415
 
-            profile = await db.scalar(
-                select(UserProfile).where(UserProfile.user_id == user_id)
-            )
+            profile = await db.scalar(select(UserProfile).where(UserProfile.user_id == user_id))
             db_watchlist: list[str] = (
-                profile.watchlist_companies
-                if profile and profile.watchlist_companies
-                else []
+                profile.watchlist_companies if profile and profile.watchlist_companies else []
             )
         except Exception:  # profile model may not exist yet
             db_watchlist = []
@@ -185,9 +184,7 @@ async def run_import() -> None:
             # Classify ATS vendor
             classification = classify_target(url, parsed["company_name"])
             # Assign priority
-            priority = assign_priority(
-                parsed["lca_filings"], parsed["company_name"], watchlist
-            )
+            priority = assign_priority(parsed["lca_filings"], parsed["company_name"], watchlist)
 
             target = ScrapeTarget(
                 user_id=user_id,
@@ -208,8 +205,7 @@ async def run_import() -> None:
 
             if stats["imported"] % 100 == 0:
                 print(
-                    f"  Progress: {stats['imported']} staged"
-                    f" ({i + 1}/{len(rows)} rows scanned)..."
+                    f"  Progress: {stats['imported']} staged ({i + 1}/{len(rows)} rows scanned)..."
                 )
 
         # ---- Bulk insert ----

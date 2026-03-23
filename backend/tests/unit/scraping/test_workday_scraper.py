@@ -1,11 +1,11 @@
 """Tests for WorkdayScraper ATS adapter."""
+
 from __future__ import annotations
 
 import pytest
 
-from app.scraping.port import ScrapedJob, ScraperPort
+from app.scraping.port import ScraperPort
 from app.scraping.scrapers.workday import WorkdayScraper
-
 
 MOCK_RESPONSE = {
     "total": 2,
@@ -39,9 +39,7 @@ def test_source_name():
 
 def test_parse_workday_response():
     scraper = WorkdayScraper.__new__(WorkdayScraper)
-    jobs = scraper._parse_response(
-        MOCK_RESPONSE, "https://microsoft.wd5.myworkdayjobs.com"
-    )
+    jobs = scraper._parse_response(MOCK_RESPONSE, "https://microsoft.wd5.myworkdayjobs.com")
     assert len(jobs) == 2
     assert jobs[0].title == "ML Engineer"
     assert jobs[0].location == "Seattle, WA"
@@ -53,9 +51,7 @@ def test_parse_workday_response():
 
 def test_parse_workday_response_second_job():
     scraper = WorkdayScraper.__new__(WorkdayScraper)
-    jobs = scraper._parse_response(
-        MOCK_RESPONSE, "https://microsoft.wd5.myworkdayjobs.com"
-    )
+    jobs = scraper._parse_response(MOCK_RESPONSE, "https://microsoft.wd5.myworkdayjobs.com")
     assert jobs[1].title == "Data Scientist"
     assert jobs[1].location == "Remote"
     assert jobs[1].remote_type == "remote"
@@ -82,9 +78,7 @@ def test_parse_missing_fields():
             }
         ],
     }
-    jobs = scraper._parse_response(
-        data, "https://acme.wd1.myworkdayjobs.com"
-    )
+    jobs = scraper._parse_response(data, "https://acme.wd1.myworkdayjobs.com")
     assert len(jobs) == 1
     assert jobs[0].title == "Test Role"
     assert jobs[0].company_name == "acme"
@@ -94,35 +88,27 @@ def test_parse_missing_fields():
 
 def test_extract_tenant_from_url():
     scraper = WorkdayScraper.__new__(WorkdayScraper)
-    result = scraper._extract_tenant(
-        "https://microsoft.wd5.myworkdayjobs.com/en-US/Global"
-    )
+    result = scraper._extract_tenant("https://microsoft.wd5.myworkdayjobs.com/en-US/Global")
     assert result == ("microsoft", "wd5", "Global")
 
 
 def test_extract_tenant_different_subdomain():
     scraper = WorkdayScraper.__new__(WorkdayScraper)
-    result = scraper._extract_tenant(
-        "https://amazon.wd5.myworkdayjobs.com/en-US/AmazonNew"
-    )
+    result = scraper._extract_tenant("https://amazon.wd5.myworkdayjobs.com/en-US/AmazonNew")
     assert result == ("amazon", "wd5", "AmazonNew")
 
 
 def test_extract_tenant_no_locale():
     """URL without locale prefix should still parse."""
     scraper = WorkdayScraper.__new__(WorkdayScraper)
-    result = scraper._extract_tenant(
-        "https://netflix.wd1.myworkdayjobs.com/NetflixJobs"
-    )
+    result = scraper._extract_tenant("https://netflix.wd1.myworkdayjobs.com/NetflixJobs")
     assert result == ("netflix", "wd1", "NetflixJobs")
 
 
 def test_extract_tenant_uppercase_url():
     """Workday URLs should parse regardless of hostname casing."""
     scraper = WorkdayScraper.__new__(WorkdayScraper)
-    result = scraper._extract_tenant(
-        "https://NVIDIA.WD5.MYWORKDAYJOBS.COM/en-US/Careers"
-    )
+    result = scraper._extract_tenant("https://NVIDIA.WD5.MYWORKDAYJOBS.COM/en-US/Careers")
     assert result == ("NVIDIA", "WD5", "Careers")
 
 
@@ -134,9 +120,7 @@ def test_extract_tenant_invalid_url():
 
 def test_parse_posted_date():
     scraper = WorkdayScraper.__new__(WorkdayScraper)
-    jobs = scraper._parse_response(
-        MOCK_RESPONSE, "https://microsoft.wd5.myworkdayjobs.com"
-    )
+    jobs = scraper._parse_response(MOCK_RESPONSE, "https://microsoft.wd5.myworkdayjobs.com")
     assert jobs[0].posted_at is not None
     assert jobs[0].posted_at.year == 2026
     assert jobs[0].posted_at.month == 3
@@ -165,10 +149,5 @@ def test_build_payload_with_query():
 
 def test_build_payload_with_location():
     scraper = WorkdayScraper.__new__(WorkdayScraper)
-    payload = scraper._build_payload(
-        limit=20, offset=0, location="Seattle"
-    )
-    assert any(
-        loc.get("value") == "Seattle"
-        for loc in payload.get("locations", [])
-    )
+    payload = scraper._build_payload(limit=20, offset=0, location="Seattle")
+    assert any(loc.get("value") == "Seattle" for loc in payload.get("locations", []))

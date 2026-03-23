@@ -14,12 +14,25 @@ from bs4 import BeautifulSoup
 logger = structlog.get_logger()
 
 ADAPTIVE_SELECTORS = [
-    ".job-listing", ".job-card", ".career-item", ".position-card",
-    ".opening", "[data-job]", "[data-job-id]", ".jobs-list__item",
-    ".job-post", "li.position",
-    ".careers-list li", ".openings-list li", ".positions li",
-    ".posting", ".job-board__item", ".careers-posting",
-    "[data-posting-id]", ".lever-job", ".greenhouse-job",
+    ".job-listing",
+    ".job-card",
+    ".career-item",
+    ".position-card",
+    ".opening",
+    "[data-job]",
+    "[data-job-id]",
+    ".jobs-list__item",
+    ".job-post",
+    "li.position",
+    ".careers-list li",
+    ".openings-list li",
+    ".positions li",
+    ".posting",
+    ".job-board__item",
+    ".careers-posting",
+    "[data-posting-id]",
+    ".lever-job",
+    ".greenhouse-job",
 ]
 
 
@@ -112,12 +125,14 @@ class AdaptiveCareerParser:
             href_lower = href.lower()
 
             if any(kw in href_lower for kw in job_keywords) and len(text) > 5:
-                listings.append({
-                    "title": text,
-                    "url": urljoin(self.base_url, href),
-                    "company_name": self.company_name,
-                    "location": "",
-                    "description_raw": "",
-                })
+                listings.append(
+                    {
+                        "title": text,
+                        "url": urljoin(self.base_url, href),
+                        "company_name": self.company_name,
+                        "location": "",
+                        "description_raw": "",
+                    }
+                )
 
         return listings

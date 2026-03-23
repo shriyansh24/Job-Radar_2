@@ -4,10 +4,10 @@ from decimal import Decimal
 
 from pydantic import BaseModel
 
-
 # ---------------------------------------------------------------------------
 # Shared sub-models
 # ---------------------------------------------------------------------------
+
 
 class YoEBracket(BaseModel):
     years: str
@@ -17,6 +17,7 @@ class YoEBracket(BaseModel):
 # ---------------------------------------------------------------------------
 # Requests
 # ---------------------------------------------------------------------------
+
 
 class SalaryResearchRequest(BaseModel):
     job_title: str
@@ -35,6 +36,7 @@ class OfferEvalRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # Responses
 # ---------------------------------------------------------------------------
+
 
 class SalaryResearchResponse(BaseModel):
     job_title: str

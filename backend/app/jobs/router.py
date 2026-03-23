@@ -36,11 +36,18 @@ async def list_jobs(
     db: AsyncSession = Depends(get_db),
 ) -> PaginatedResponse:
     params = JobListParams(
-        q=q, source=source, remote_type=remote_type,
-        experience_level=experience_level, job_type=job_type,
-        min_match_score=min_match_score, status=status,
-        is_starred=is_starred, sort_by=sort_by, sort_order=sort_order,
-        page=page, page_size=page_size,
+        q=q,
+        source=source,
+        remote_type=remote_type,
+        experience_level=experience_level,
+        job_type=job_type,
+        min_match_score=min_match_score,
+        status=status,
+        is_starred=is_starred,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        page=page,
+        page_size=page_size,
     )
     svc = JobService(db)
     return await svc.list_jobs(params, user.id)

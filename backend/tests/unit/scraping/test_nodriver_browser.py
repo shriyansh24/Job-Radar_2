@@ -1,4 +1,5 @@
 """Tests for NodriverBrowser adapter."""
+
 from __future__ import annotations
 
 import asyncio
@@ -30,9 +31,7 @@ def test_init_sets_browser_none_and_lock():
 @pytest.mark.asyncio
 async def test_render_when_nodriver_unavailable():
     """render() should raise RuntimeError when nodriver is not installed."""
-    with patch(
-        "app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", False
-    ):
+    with patch("app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", False):
         b = NodriverBrowser()
         with pytest.raises(RuntimeError, match="nodriver not installed"):
             await b.render("https://example.com")
@@ -47,9 +46,7 @@ async def test_health_check_reflects_availability():
 
 @pytest.mark.asyncio
 async def test_health_check_false_when_unavailable():
-    with patch(
-        "app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", False
-    ):
+    with patch("app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", False):
         b = NodriverBrowser()
         assert await b.health_check() is False
 
@@ -69,12 +66,8 @@ async def test_render_returns_browser_result():
     mock_browser.stop = MagicMock()
 
     with (
-        patch(
-            "app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", True
-        ),
-        patch(
-            "app.scraping.execution.nodriver_browser.uc"
-        ) as mock_uc,
+        patch("app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", True),
+        patch("app.scraping.execution.nodriver_browser.uc") as mock_uc,
     ):
         mock_uc.start = AsyncMock(return_value=mock_browser)
 
@@ -107,12 +100,8 @@ async def test_render_with_wait_for_selector():
     mock_browser.stop = MagicMock()
 
     with (
-        patch(
-            "app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", True
-        ),
-        patch(
-            "app.scraping.execution.nodriver_browser.uc"
-        ) as mock_uc,
+        patch("app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", True),
+        patch("app.scraping.execution.nodriver_browser.uc") as mock_uc,
     ):
         mock_uc.start = AsyncMock(return_value=mock_browser)
 
@@ -136,12 +125,8 @@ async def test_render_does_not_stop_browser_on_exception():
     mock_browser.stop = MagicMock()
 
     with (
-        patch(
-            "app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", True
-        ),
-        patch(
-            "app.scraping.execution.nodriver_browser.uc"
-        ) as mock_uc,
+        patch("app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", True),
+        patch("app.scraping.execution.nodriver_browser.uc") as mock_uc,
     ):
         mock_uc.start = AsyncMock(return_value=mock_browser)
 
@@ -159,12 +144,8 @@ async def test_get_browser_lazy_init():
     mock_browser = AsyncMock()
 
     with (
-        patch(
-            "app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", True
-        ),
-        patch(
-            "app.scraping.execution.nodriver_browser.uc"
-        ) as mock_uc,
+        patch("app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", True),
+        patch("app.scraping.execution.nodriver_browser.uc") as mock_uc,
     ):
         mock_uc.start = AsyncMock(return_value=mock_browser)
 
@@ -192,12 +173,8 @@ async def test_render_reuses_browser_across_calls():
     mock_browser.get.return_value = mock_page
 
     with (
-        patch(
-            "app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", True
-        ),
-        patch(
-            "app.scraping.execution.nodriver_browser.uc"
-        ) as mock_uc,
+        patch("app.scraping.execution.nodriver_browser.NODRIVER_AVAILABLE", True),
+        patch("app.scraping.execution.nodriver_browser.uc") as mock_uc,
     ):
         mock_uc.start = AsyncMock(return_value=mock_browser)
 

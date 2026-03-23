@@ -60,3 +60,18 @@
 - **Files:** `backend/app/admin/router.py`, `backend/tests/integration/test_auth_api.py`
 - **Detail:** `GET /api/v1/admin/health` no longer requires auth, which restores health probes and the backend integration check.
 - **Status:** FIXED
+
+## BE-F02 - FIXED: Failed Enrichment No Longer Persists Partial Job Mutations
+- **Files:** `backend/app/enrichment/service.py`, `backend/tests/integration/test_enrichment.py`
+- **Detail:** The enrichment pipeline now snapshots and restores the mutable enrichment fields on failure, so a job that fails LLM enrichment does not commit cleaned-description or partial enrichment state.
+- **Status:** FIXED
+
+## BE-F03 - FIXED: Interview Generation / Prep Reject Empty Model Payloads
+- **Files:** `backend/app/interview/service.py`, `backend/app/nlp/model_router.py`, `backend/tests/unit/test_interview_service.py`, `backend/tests/unit/test_model_router.py`
+- **Detail:** Empty JSON results now raise out of the model router, question generation no longer persists empty sessions, and interview prep now surfaces empty model payloads as `502` failures.
+- **Status:** FIXED
+
+## BE-F04 - FIXED: Interview Job Context Uses `company_name`
+- **Files:** `backend/app/interview/service.py`, `backend/tests/unit/test_interview_service.py`
+- **Detail:** The interview service now loads company context from `jobs.company_name` instead of the non-existent `jobs.company` attribute.
+- **Status:** FIXED

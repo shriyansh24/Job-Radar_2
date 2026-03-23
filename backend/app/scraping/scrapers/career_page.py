@@ -50,8 +50,7 @@ class CareerPageScraper(BaseScraper):
                 href = link["href"]
                 text = link.get_text(strip=True)
                 if any(
-                    kw in href.lower()
-                    for kw in ["/job/", "/position/", "/opening/", "/career/"]
+                    kw in href.lower() for kw in ["/job/", "/position/", "/opening/", "/career/"]
                 ):
                     if text and len(text) > 5:
                         jobs.append(

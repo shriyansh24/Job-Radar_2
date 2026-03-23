@@ -5,6 +5,9 @@ Usage (from D:/jobradar-v2/backend):
     # or
     python -m scripts.probe_unknown_targets
 """
+
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import asyncio
@@ -24,7 +27,6 @@ from sqlalchemy import select
 
 # Register FK-referenced tables before using ScrapeTarget
 import app.auth.models  # noqa: F401
-
 from app.database import async_session_factory
 from app.scraping.control.ats_registry import (
     ATS_RULES,
@@ -37,11 +39,11 @@ from app.scraping.models import ScrapeTarget
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-CONCURRENCY = 20          # max simultaneous HTTP connections
-BATCH_DELAY = 1.0         # seconds to sleep between batches
-REQUEST_TIMEOUT = 5.0     # seconds per request
-HEAD_CHUNK = 0            # HEAD has no body
-HTML_CHUNK = 10_240       # bytes of HTML body to fetch
+CONCURRENCY = 20  # max simultaneous HTTP connections
+BATCH_DELAY = 1.0  # seconds to sleep between batches
+REQUEST_TIMEOUT = 5.0  # seconds per request
+HEAD_CHUNK = 0  # HEAD has no body
+HTML_CHUNK = 10_240  # bytes of HTML body to fetch
 
 # Extra HTML/URL signatures not covered by ats_registry.py
 _EXTRA_HTML_RULES: list[dict] = [
@@ -66,14 +68,13 @@ _REDIRECT_URL_RULES: list[tuple[str, str]] = [
 ]
 
 # ATS vendor → start_tier mapping (mirrors ats_registry)
-_VENDOR_START_TIER: dict[str, int] = {
-    rule["vendor"]: rule["start_tier"] for rule in ATS_RULES
-}
+_VENDOR_START_TIER: dict[str, int] = {rule["vendor"]: rule["start_tier"] for rule in ATS_RULES}
 
 
 # ---------------------------------------------------------------------------
 # HTTP probe logic
 # ---------------------------------------------------------------------------
+
 
 def _vendor_from_redirect_url(url: str) -> str | None:
     """Check the final (post-redirect) URL for known ATS patterns."""
@@ -198,6 +199,7 @@ async def probe_target(
 # Database update helpers
 # ---------------------------------------------------------------------------
 
+
 async def update_target(
     target: ScrapeTarget,
     db,
@@ -230,6 +232,7 @@ async def update_target(
 # Main runner
 # ---------------------------------------------------------------------------
 
+
 async def run_probe() -> None:
     # ---- Load unknown targets ----
     async with async_session_factory() as db:
@@ -261,10 +264,7 @@ async def run_probe() -> None:
         max_keepalive_connections=CONCURRENCY,
     )
     headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (compatible; JobRadarBot/2.0; "
-            "+https://jobradar.app/bot)"
-        )
+        "User-Agent": ("Mozilla/5.0 (compatible; JobRadarBot/2.0; +https://jobradar.app/bot)")
     }
 
     async with httpx.AsyncClient(
@@ -342,6 +342,7 @@ async def run_probe() -> None:
 if __name__ == "__main__":
     # Suppress SSL warnings from verify=False
     import urllib3  # type: ignore[import]
+
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     asyncio.run(run_probe())

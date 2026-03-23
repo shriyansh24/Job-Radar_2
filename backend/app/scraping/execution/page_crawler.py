@@ -4,6 +4,7 @@ Detects "Next" links via multiple strategies (rel="next", text content,
 aria-label, URL patterns) and follows them up to configurable limits.
 Designed to work with whatever fetcher tier successfully fetched page 1.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -20,6 +21,7 @@ logger = structlog.get_logger()
 # ---------------------------------------------------------------------------
 # Result container
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class PaginationResult:
@@ -71,7 +73,7 @@ def _normalize_visit_url(url: str) -> str:
 # Compiled patterns used by _detect_next_url
 _REL_NEXT_RE = re.compile(
     r'<a\b[^>]*\brel=["\']next["\'][^>]*href=["\']([^"\']+)["\']'
-    r'|'
+    r"|"
     r'<a\b[^>]*\bhref=["\']([^"\']+)["\'][^>]*\brel=["\']next["\']',
     re.IGNORECASE,
 )
@@ -89,7 +91,7 @@ _NEXT_TEXT_PATTERNS = (
 
 # Regex to extract <a …> … </a> blocks efficiently
 _ANCHOR_RE = re.compile(
-    r'<a\b(?P<attrs>[^>]*)>(?P<text>[^<]*(?:<(?!/?a\b)[^<]*)*)</a>',
+    r"<a\b(?P<attrs>[^>]*)>(?P<text>[^<]*(?:<(?!/?a\b)[^<]*)*)</a>",
     re.IGNORECASE | re.DOTALL,
 )
 _HREF_ATTR_RE = re.compile(r'\bhref=["\']([^"\']+)["\']', re.IGNORECASE)

@@ -1,9 +1,11 @@
 """Maps scraper_name strings from ExecutionPlan Steps to adapter instances and methods."""
+
 from __future__ import annotations
 
-import structlog
 from dataclasses import dataclass
 from typing import Any, Callable
+
+import structlog
 
 logger = structlog.get_logger()
 
@@ -34,15 +36,11 @@ class AdapterRegistry:
 
     def register_fetcher(self, name: str, adapter: Any) -> None:
         """Register an HTTP fetcher adapter under the given name."""
-        self._bindings[name] = AdapterBinding(
-            instance=adapter, method="fetch", is_browser=False
-        )
+        self._bindings[name] = AdapterBinding(instance=adapter, method="fetch", is_browser=False)
 
     def register_browser(self, name: str, adapter: Any) -> None:
         """Register a headless-browser adapter under the given name."""
-        self._bindings[name] = AdapterBinding(
-            instance=adapter, method="render", is_browser=True
-        )
+        self._bindings[name] = AdapterBinding(instance=adapter, method="render", is_browser=True)
 
     def register_ats(self, name: str, adapter: Any) -> None:
         """Register an ATS (Applicant Tracking System) API adapter under the given name."""
@@ -82,6 +80,7 @@ def build_default_registry(settings: Any = None) -> AdapterRegistry:
 
     if settings is None:
         from app.config import settings as default_settings
+
         settings = default_settings
 
     # ATS adapters (Tier 0)
@@ -93,6 +92,7 @@ def build_default_registry(settings: Any = None) -> AdapterRegistry:
     ]:
         try:
             import importlib
+
             mod = importlib.import_module(module_path)
             cls = getattr(mod, class_name)
             registry.register_ats(name, cls(settings))
@@ -102,6 +102,7 @@ def build_default_registry(settings: Any = None) -> AdapterRegistry:
     # Fetchers (Tier 1)
     try:
         from app.scraping.execution.cloudscraper_fetcher import CloudscraperFetcher
+
         registry.register_fetcher("cloudscraper", CloudscraperFetcher())
     except Exception as e:
         logger.warning("adapter_skip", name="cloudscraper", reason=str(e))
@@ -109,6 +110,7 @@ def build_default_registry(settings: Any = None) -> AdapterRegistry:
     # Scrapling dual-mode (Tier 1 fetch + Tier 2 render)
     try:
         from app.scraping.execution.scrapling_fetcher import ScraplingFetcher
+
         scrapling = ScraplingFetcher()
         registry.register_fetcher("scrapling_fast", scrapling)
         registry.register_browser("scrapling_stealth", scrapling)
@@ -118,18 +120,21 @@ def build_default_registry(settings: Any = None) -> AdapterRegistry:
     # Browsers (Tier 2-3)
     try:
         from app.scraping.execution.nodriver_browser import NodriverBrowser
+
         registry.register_browser("nodriver", NodriverBrowser())
     except Exception as e:
         logger.warning("adapter_skip", name="nodriver", reason=str(e))
 
     try:
         from app.scraping.execution.camoufox_browser import CamoufoxBrowser
+
         registry.register_browser("camoufox", CamoufoxBrowser())
     except Exception as e:
         logger.warning("adapter_skip", name="camoufox", reason=str(e))
 
     try:
         from app.scraping.execution.seleniumbase_browser import SeleniumBaseBrowser
+
         registry.register_browser("seleniumbase", SeleniumBaseBrowser())
     except Exception as e:
         logger.warning("adapter_skip", name="seleniumbase", reason=str(e))

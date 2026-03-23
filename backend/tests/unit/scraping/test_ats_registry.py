@@ -1,6 +1,5 @@
 # tests/unit/scraping/test_ats_registry.py
-import pytest
-from app.scraping.control.ats_registry import classify_url, ATS_RULES
+from app.scraping.control.ats_registry import ATS_RULES, classify_url
 
 
 def test_greenhouse_url():

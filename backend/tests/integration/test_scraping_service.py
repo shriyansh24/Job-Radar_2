@@ -70,27 +70,28 @@ def _inject_scrapers(
 ) -> None:
     """Replace real scrapers and create matching limiters/breakers."""
     svc._scrapers = scrapers
-    svc._rate_limiters = {
-        n: TokenBucketLimiter(rate=1.0, burst=5) for n in scrapers
-    }
-    svc._circuit_breakers = {
-        n: CircuitBreaker() for n in scrapers
-    }
+    svc._rate_limiters = {n: TokenBucketLimiter(rate=1.0, burst=5) for n in scrapers}
+    svc._circuit_breakers = {n: CircuitBreaker() for n in scrapers}
 
 
 def _stub_db(svc, persist_return=(0, 0)):
     """Return context managers that stub all DB operations."""
     return (
         patch.object(
-            svc, "_persist_jobs",
-            new_callable=AsyncMock, return_value=persist_return,
+            svc,
+            "_persist_jobs",
+            new_callable=AsyncMock,
+            return_value=persist_return,
         ),
         patch.object(
-            svc, "_create_run_record",
-            new_callable=AsyncMock, return_value=None,
+            svc,
+            "_create_run_record",
+            new_callable=AsyncMock,
+            return_value=None,
         ),
         patch.object(
-            svc, "_complete_run_record",
+            svc,
+            "_complete_run_record",
             new_callable=AsyncMock,
         ),
     )
@@ -103,14 +104,13 @@ class TestScrapingServiceOrchestration:
     async def test_aggregates_from_multiple_sources(self):
         db = AsyncMock()
         svc = ScrapingService(db, _settings())
-        _inject_scrapers(svc, {
-            "alpha": FakeScraper(
-                "alpha", [_job(title="Alpha Job", source="alpha")]
-            ),
-            "beta": FakeScraper(
-                "beta", [_job(title="Beta Job", source="beta")]
-            ),
-        })
+        _inject_scrapers(
+            svc,
+            {
+                "alpha": FakeScraper("alpha", [_job(title="Alpha Job", source="alpha")]),
+                "beta": FakeScraper("beta", [_job(title="Beta Job", source="beta")]),
+            },
+        )
 
         p1, p2, p3 = _stub_db(svc, persist_return=(2, 0))
         with p1, p2, p3:
@@ -124,12 +124,13 @@ class TestScrapingServiceOrchestration:
     async def test_failing_scraper_records_error(self):
         db = AsyncMock()
         svc = ScrapingService(db, _settings())
-        _inject_scrapers(svc, {
-            "good": FakeScraper(
-                "good", [_job(title="Good Job", source="good")]
-            ),
-            "bad": FakeScraper("bad", fail=True),
-        })
+        _inject_scrapers(
+            svc,
+            {
+                "good": FakeScraper("good", [_job(title="Good Job", source="good")]),
+                "bad": FakeScraper("bad", fail=True),
+            },
+        )
 
         p1, p2, p3 = _stub_db(svc, persist_return=(1, 0))
         with p1, p2, p3:
@@ -144,12 +145,15 @@ class TestScrapingServiceOrchestration:
     async def test_circuit_breaker_skips_open_source(self):
         db = AsyncMock()
         svc = ScrapingService(db, _settings())
-        _inject_scrapers(svc, {
-            "open_cb": FakeScraper(
-                "open_cb",
-                [_job(title="Unreachable", source="open_cb")],
-            ),
-        })
+        _inject_scrapers(
+            svc,
+            {
+                "open_cb": FakeScraper(
+                    "open_cb",
+                    [_job(title="Unreachable", source="open_cb")],
+                ),
+            },
+        )
 
         # Force circuit open
         cb = svc._circuit_breakers["open_cb"]
@@ -158,9 +162,7 @@ class TestScrapingServiceOrchestration:
 
         p1, p2, p3 = _stub_db(svc)
         with p1, p2, p3:
-            result = await svc.run_scrape(
-                sources=["open_cb"], query="python"
-            )
+            result = await svc.run_scrape(sources=["open_cb"], query="python")
 
         assert result.jobs_found == 0
         assert "circuit breaker open" in result.errors[0]
@@ -169,13 +171,14 @@ class TestScrapingServiceOrchestration:
     async def test_dedup_removes_duplicates(self):
         db = AsyncMock()
         svc = ScrapingService(db, _settings())
-        duplicate = _job(
-            title="Dupe Job", company="SameCo", source="a"
+        duplicate = _job(title="Dupe Job", company="SameCo", source="a")
+        _inject_scrapers(
+            svc,
+            {
+                "src1": FakeScraper("src1", [duplicate]),
+                "src2": FakeScraper("src2", [duplicate]),
+            },
         )
-        _inject_scrapers(svc, {
-            "src1": FakeScraper("src1", [duplicate]),
-            "src2": FakeScraper("src2", [duplicate]),
-        })
 
         persisted_count: list[int] = []
 
@@ -184,15 +187,16 @@ class TestScrapingServiceOrchestration:
             return (len(jobs), 0)
 
         with (
+            patch.object(svc, "_persist_jobs", side_effect=mock_persist),
             patch.object(
-                svc, "_persist_jobs", side_effect=mock_persist
+                svc,
+                "_create_run_record",
+                new_callable=AsyncMock,
+                return_value=None,
             ),
             patch.object(
-                svc, "_create_run_record",
-                new_callable=AsyncMock, return_value=None,
-            ),
-            patch.object(
-                svc, "_complete_run_record",
+                svc,
+                "_complete_run_record",
                 new_callable=AsyncMock,
             ),
         ):
@@ -205,19 +209,18 @@ class TestScrapingServiceOrchestration:
     async def test_event_callback_called(self):
         db = AsyncMock()
         svc = ScrapingService(db, _settings())
-        _inject_scrapers(svc, {
-            "evented": FakeScraper(
-                "evented", [_job(source="evented")]
-            ),
-        })
+        _inject_scrapers(
+            svc,
+            {
+                "evented": FakeScraper("evented", [_job(source="evented")]),
+            },
+        )
 
         callback = AsyncMock()
 
         p1, p2, p3 = _stub_db(svc, persist_return=(1, 0))
         with p1, p2, p3:
-            await svc.run_scrape(
-                query="python", event_callback=callback
-            )
+            await svc.run_scrape(query="python", event_callback=callback)
 
         callback.assert_called_once()
         event = callback.call_args[0][0]
@@ -228,20 +231,17 @@ class TestScrapingServiceOrchestration:
     async def test_source_filter_respected(self):
         db = AsyncMock()
         svc = ScrapingService(db, _settings())
-        _inject_scrapers(svc, {
-            "wanted": FakeScraper(
-                "wanted", [_job(source="wanted")]
-            ),
-            "unwanted": FakeScraper(
-                "unwanted", [_job(source="unwanted")]
-            ),
-        })
+        _inject_scrapers(
+            svc,
+            {
+                "wanted": FakeScraper("wanted", [_job(source="wanted")]),
+                "unwanted": FakeScraper("unwanted", [_job(source="unwanted")]),
+            },
+        )
 
         p1, p2, p3 = _stub_db(svc, persist_return=(1, 0))
         with p1, p2, p3:
-            result = await svc.run_scrape(
-                sources=["wanted"], query="python"
-            )
+            result = await svc.run_scrape(sources=["wanted"], query="python")
 
         assert result.jobs_found == 1
         assert result.jobs_new == 1
@@ -258,10 +258,7 @@ class TestComputeJobId:
     def test_different_jobs_different_ids(self):
         j1 = _job(title="Frontend", company="A")
         j2 = _job(title="Backend", company="B")
-        assert (
-            ScrapingService._compute_job_id(j1)
-            != ScrapingService._compute_job_id(j2)
-        )
+        assert ScrapingService._compute_job_id(j1) != ScrapingService._compute_job_id(j2)
 
 
 class TestScrapedToDict:

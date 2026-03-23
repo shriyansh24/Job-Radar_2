@@ -3,6 +3,7 @@
 Loads fixture data, runs it through WorkdayScraper._parse_response,
 and validates that all outputs conform to ScrapedJob interface requirements.
 """
+
 from __future__ import annotations
 
 import json
@@ -77,9 +78,7 @@ class TestWorkdayFixtureStructure:
     def test_all_postings_have_title(self):
         data = load_fixture()
         for posting in data["jobPostings"]:
-            assert "title" in posting and posting["title"], (
-                f"Posting missing title"
-            )
+            assert "title" in posting and posting["title"], "Posting missing title"
 
     def test_all_postings_have_external_path(self):
         data = load_fixture()
@@ -102,16 +101,13 @@ class TestWorkdayExpectedJobs:
     def test_expected_jobs_source_is_workday(self):
         expected = load_expected()
         for job in expected:
-            assert job["source"] == "workday", (
-                f"Expected job has wrong source: {job['source']}"
-            )
+            assert job["source"] == "workday", f"Expected job has wrong source: {job['source']}"
 
     def test_expected_jobs_match_fixture_count(self):
         data = load_fixture()
         expected = load_expected()
         assert len(expected) == len(data["jobPostings"]), (
-            f"Expected {len(expected)} jobs but fixture has "
-            f"{len(data['jobPostings'])} postings"
+            f"Expected {len(expected)} jobs but fixture has {len(data['jobPostings'])} postings"
         )
 
 
@@ -142,7 +138,7 @@ class TestWorkdayParserContract:
     def test_all_jobs_have_title(self):
         jobs = parse_fixture()
         for job in jobs:
-            assert job.title, f"Job has empty title"
+            assert job.title, "Job has empty title"
 
     def test_all_jobs_have_company_name(self):
         jobs = parse_fixture()
@@ -152,9 +148,7 @@ class TestWorkdayParserContract:
     def test_all_jobs_have_source(self):
         jobs = parse_fixture()
         for job in jobs:
-            assert job.source == "workday", (
-                f"Job has wrong source: {job.source}"
-            )
+            assert job.source == "workday", f"Job has wrong source: {job.source}"
 
     def test_all_jobs_have_source_url(self):
         jobs = parse_fixture()
@@ -164,9 +158,7 @@ class TestWorkdayParserContract:
     def test_no_malformed_urls(self):
         jobs = parse_fixture()
         for job in jobs:
-            assert _is_valid_url(job.source_url), (
-                f"Malformed source_url: {job.source_url}"
-            )
+            assert _is_valid_url(job.source_url), f"Malformed source_url: {job.source_url}"
             assert _is_valid_url(job.company_logo_url), (
                 f"Malformed company_logo_url: {job.company_logo_url}"
             )
@@ -182,9 +174,7 @@ class TestWorkdayParserContract:
     def test_valid_remote_type_enum(self):
         jobs = parse_fixture()
         for job in jobs:
-            assert job.remote_type in VALID_REMOTE_TYPES, (
-                f"Invalid remote_type: {job.remote_type}"
-            )
+            assert job.remote_type in VALID_REMOTE_TYPES, f"Invalid remote_type: {job.remote_type}"
 
     def test_valid_experience_level_enum(self):
         jobs = parse_fixture()
@@ -232,8 +222,7 @@ class TestWorkdayParserContract:
         parsed_titles = [j.title for j in jobs]
         expected_titles = [e["title"] for e in expected]
         assert parsed_titles == expected_titles, (
-            f"Title order mismatch: parsed={parsed_titles}, "
-            f"expected={expected_titles}"
+            f"Title order mismatch: parsed={parsed_titles}, expected={expected_titles}"
         )
 
     def test_expected_job_locations_match(self):

@@ -8,6 +8,7 @@ Tier mapping:
   - Tier 2: lightweight browser sessions (e.g. Nodriver)
   - Tier 3: heavyweight browser sessions (e.g. Camoufox, SeleniumBase UC)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -42,9 +43,7 @@ class BrowserPool:
         """Return (or lazily create) the per-domain semaphore."""
         async with self._domain_lock:
             if domain not in self._domain_sems:
-                self._domain_sems[domain] = asyncio.Semaphore(
-                    self._max_per_domain
-                )
+                self._domain_sems[domain] = asyncio.Semaphore(self._max_per_domain)
             self._domain_refs[domain] = self._domain_refs.get(domain, 0) + 1
             return self._domain_sems[domain]
 
@@ -58,9 +57,7 @@ class BrowserPool:
             self._domain_refs[domain] = remaining
 
     @asynccontextmanager
-    async def acquire(
-        self, tier: int, domain: str | None = None
-    ) -> AsyncIterator[None]:
+    async def acquire(self, tier: int, domain: str | None = None) -> AsyncIterator[None]:
         """Acquire a browser session slot.  Blocks until available.
 
         Args:
@@ -69,9 +66,7 @@ class BrowserPool:
             domain: Optional domain name for per-domain throttling.
         """
         sem = self._tier3_sem if tier >= 3 else self._tier2_sem
-        domain_sem = (
-            await self._get_domain_sem(domain) if domain else None
-        )
+        domain_sem = await self._get_domain_sem(domain) if domain else None
 
         # Acquire domain semaphore first (more specific), then tier
         if domain_sem:

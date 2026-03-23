@@ -3,12 +3,11 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
+from sqlalchemy import JSON as JSONB
 from sqlalchemy import Boolean, DateTime, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-
-from sqlalchemy import JSON as JSONB
 
 
 class Company(Base):
@@ -28,9 +27,7 @@ class Company(Base):
     ats_slug: Mapped[str | None] = mapped_column(String(100))
     board_urls: Mapped[list | None] = mapped_column(JSONB)
     domain_aliases: Mapped[list | None] = mapped_column(JSONB)
-    last_validated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True)
-    )
+    last_validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_probe_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     probe_error: Mapped[str | None] = mapped_column(Text)
     manual_override: Mapped[bool] = mapped_column(Boolean, default=False)

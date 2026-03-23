@@ -1,7 +1,8 @@
 """Scoring-based target scheduler for batch selection."""
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 
 from app.scraping.control.priority_scorer import compute_priority_score
 
@@ -46,5 +47,5 @@ def compute_next_run(target, success: bool) -> datetime:
         return now + timedelta(minutes=interval)
     else:
         # Exponential backoff on failure, capped at 8x interval
-        backoff_multiplier = min(2 ** target.consecutive_failures, 8)
+        backoff_multiplier = min(2**target.consecutive_failures, 8)
         return now + timedelta(minutes=interval * backoff_multiplier)

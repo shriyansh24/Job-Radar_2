@@ -3,8 +3,8 @@ from __future__ import annotations
 from app.auth.service import (
     create_access_token,
     create_refresh_token,
-    decode_token_payload,
     decode_refresh_token,
+    decode_token_payload,
     hash_password,
     verify_password,
 )

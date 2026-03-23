@@ -1,30 +1,37 @@
-from app.scraping.control.priority_scorer import compute_priority_score
+from datetime import UTC, datetime
 from types import SimpleNamespace
-from datetime import datetime, timedelta, UTC
+
+from app.scraping.control.priority_scorer import compute_priority_score
 
 
 def _target(**kw):
-    defaults = dict(priority_class="cool", consecutive_failures=0,
-                    last_success_tier=1, last_success_at=None,
-                    next_scheduled_at=None, schedule_interval_m=720)
+    defaults = dict(
+        priority_class="cool",
+        consecutive_failures=0,
+        last_success_tier=1,
+        last_success_at=None,
+        next_scheduled_at=None,
+        schedule_interval_m=720,
+    )
     defaults.update(kw)
     return SimpleNamespace(**defaults)
 
 
 def test_watchlist_highest():
-    assert compute_priority_score(_target(priority_class="watchlist")) > \
-           compute_priority_score(_target(priority_class="hot"))
+    assert compute_priority_score(_target(priority_class="watchlist")) > compute_priority_score(
+        _target(priority_class="hot")
+    )
 
 
 def test_hot_above_warm():
-    assert compute_priority_score(_target(priority_class="hot")) > \
-           compute_priority_score(_target(priority_class="warm"))
+    assert compute_priority_score(_target(priority_class="hot")) > compute_priority_score(
+        _target(priority_class="warm")
+    )
 
 
 def test_never_scraped_gets_bonus():
     never = compute_priority_score(_target(last_success_at=None))
-    recent = compute_priority_score(_target(
-        last_success_at=datetime.now(UTC)))
+    recent = compute_priority_score(_target(last_success_at=datetime.now(UTC)))
     assert never > recent
 
 
@@ -43,8 +50,10 @@ def test_expensive_tier_penalized():
 def test_overdue_bonus_requires_both_fields():
     """Overdue bonus only applies when BOTH last_success_at and next_scheduled_at exist."""
     # Has last_success_at but no next_scheduled_at — should NOT crash
-    score = compute_priority_score(_target(
-        last_success_at=datetime.now(UTC),
-        next_scheduled_at=None,
-    ))
+    score = compute_priority_score(
+        _target(
+            last_success_at=datetime.now(UTC),
+            next_scheduled_at=None,
+        )
+    )
     assert isinstance(score, (int, float))

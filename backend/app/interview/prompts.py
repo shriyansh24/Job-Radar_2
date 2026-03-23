@@ -10,7 +10,8 @@ from __future__ import annotations
 # Full interview-preparation bundle
 # ---------------------------------------------------------------------------
 
-INTERVIEW_PREP_PROMPT = """You are an expert interview coach. Prepare this candidate for their interview.
+INTERVIEW_PREP_PROMPT = """You are an expert interview coach.
+Prepare this candidate for their interview.
 
 Return ONLY valid JSON:
 {{
@@ -50,7 +51,8 @@ REQUIRED SKILLS: {required_skills}
 # Question generation
 # ---------------------------------------------------------------------------
 
-GENERATE_QUESTIONS_PROMPT = """You are an expert interview coach. Generate {count} interview questions for the following job.
+GENERATE_QUESTIONS_PROMPT = """You are an expert interview coach.
+Generate {count} interview questions for the following job.
 
 Return ONLY valid JSON:
 {{

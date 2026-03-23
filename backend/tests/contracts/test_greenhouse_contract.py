@@ -3,10 +3,10 @@
 Loads fixture data, parses it using the same logic as GreenhouseScraper,
 and validates that all outputs conform to ScrapedJob interface requirements.
 """
+
 from __future__ import annotations
 
 import json
-import re
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
@@ -56,19 +56,13 @@ def parse_fixture_to_scraped_jobs(data: dict, board_token: str = "gitlab") -> li
         posted_at = None
         if item.get("updated_at"):
             try:
-                posted_at = datetime.fromisoformat(
-                    item["updated_at"].replace("Z", "+00:00")
-                )
+                posted_at = datetime.fromisoformat(item["updated_at"].replace("Z", "+00:00"))
             except (ValueError, TypeError):
                 pass
 
         # The fixture stores company_name at the top level; the real API
         # nests it under company.name.  Accept both formats.
-        company = (
-            item.get("company", {}).get("name")
-            or item.get("company_name")
-            or board_token
-        )
+        company = item.get("company", {}).get("name") or item.get("company_name") or board_token
 
         jobs.append(
             ScrapedJob(
@@ -111,9 +105,7 @@ class TestGreenhouseFixtureStructure:
     def test_all_jobs_have_location(self):
         data = load_fixture()
         for job in data["jobs"]:
-            assert "location" in job, (
-                f"Job missing location key: {job.get('title', 'unknown')}"
-            )
+            assert "location" in job, f"Job missing location key: {job.get('title', 'unknown')}"
 
     def test_all_jobs_have_absolute_url(self):
         data = load_fixture()
@@ -138,9 +130,7 @@ class TestGreenhouseExpectedJobs:
     def test_expected_jobs_source_is_greenhouse(self):
         expected = load_expected()
         for job in expected:
-            assert job["source"] == "greenhouse", (
-                f"Expected job has wrong source: {job['source']}"
-            )
+            assert job["source"] == "greenhouse", f"Expected job has wrong source: {job['source']}"
 
     def test_expected_jobs_have_urls(self):
         expected = load_expected()
@@ -167,7 +157,7 @@ class TestGreenhouseParserContract:
         data = load_fixture()
         jobs = parse_fixture_to_scraped_jobs(data)
         for job in jobs:
-            assert job.title, f"Job has empty title"
+            assert job.title, "Job has empty title"
 
     def test_all_jobs_have_company_name(self):
         data = load_fixture()
@@ -179,9 +169,7 @@ class TestGreenhouseParserContract:
         data = load_fixture()
         jobs = parse_fixture_to_scraped_jobs(data)
         for job in jobs:
-            assert job.source == "greenhouse", (
-                f"Job has wrong source: {job.source}"
-            )
+            assert job.source == "greenhouse", f"Job has wrong source: {job.source}"
 
     def test_all_jobs_have_source_url(self):
         data = load_fixture()
@@ -193,9 +181,7 @@ class TestGreenhouseParserContract:
         data = load_fixture()
         jobs = parse_fixture_to_scraped_jobs(data)
         for job in jobs:
-            assert _is_valid_url(job.source_url), (
-                f"Malformed source_url: {job.source_url}"
-            )
+            assert _is_valid_url(job.source_url), f"Malformed source_url: {job.source_url}"
             assert _is_valid_url(job.company_logo_url), (
                 f"Malformed company_logo_url: {job.company_logo_url}"
             )
@@ -204,9 +190,7 @@ class TestGreenhouseParserContract:
         data = load_fixture()
         jobs = parse_fixture_to_scraped_jobs(data)
         for job in jobs:
-            assert job.remote_type in VALID_REMOTE_TYPES, (
-                f"Invalid remote_type: {job.remote_type}"
-            )
+            assert job.remote_type in VALID_REMOTE_TYPES, f"Invalid remote_type: {job.remote_type}"
 
     def test_valid_experience_level_enum(self):
         data = load_fixture()

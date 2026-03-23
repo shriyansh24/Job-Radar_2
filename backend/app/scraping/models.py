@@ -41,7 +41,9 @@ class ScraperRun(Base):
     tier_2_count: Mapped[int] = mapped_column(Integer, default=0)
     tier_3_count: Mapped[int] = mapped_column(Integer, default=0)
     tier_api_count: Mapped[int] = mapped_column(Integer, default=0)
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     duration_seconds: Mapped[Decimal | None] = mapped_column(Numeric)
 

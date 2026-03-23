@@ -1,4 +1,5 @@
 """Tests for ScraplingFetcher dual-mode adapter."""
+
 from __future__ import annotations
 
 import hashlib
@@ -34,9 +35,7 @@ async def test_health_check_reflects_availability():
 @pytest.mark.asyncio
 async def test_fetch_when_scrapling_unavailable():
     """fetch() should raise RuntimeError when scrapling is not installed."""
-    with patch(
-        "app.scraping.execution.scrapling_fetcher.SCRAPLING_AVAILABLE", False
-    ):
+    with patch("app.scraping.execution.scrapling_fetcher.SCRAPLING_AVAILABLE", False):
         f = ScraplingFetcher()
         with pytest.raises(RuntimeError, match="scrapling not installed"):
             await f.fetch("https://example.com")
@@ -45,9 +44,7 @@ async def test_fetch_when_scrapling_unavailable():
 @pytest.mark.asyncio
 async def test_render_when_scrapling_unavailable():
     """render() should raise RuntimeError when scrapling is not installed."""
-    with patch(
-        "app.scraping.execution.scrapling_fetcher.SCRAPLING_AVAILABLE", False
-    ):
+    with patch("app.scraping.execution.scrapling_fetcher.SCRAPLING_AVAILABLE", False):
         f = ScraplingFetcher()
         with pytest.raises(RuntimeError, match="scrapling not installed"):
             await f.render("https://example.com")
@@ -66,12 +63,8 @@ async def test_fetch_returns_fetch_result():
     mock_fetcher_cls.return_value = mock_fetcher_instance
 
     with (
-        patch(
-            "app.scraping.execution.scrapling_fetcher.SCRAPLING_AVAILABLE", True
-        ),
-        patch(
-            "app.scraping.execution.scrapling_fetcher.Fetcher", mock_fetcher_cls
-        ),
+        patch("app.scraping.execution.scrapling_fetcher.SCRAPLING_AVAILABLE", True),
+        patch("app.scraping.execution.scrapling_fetcher.Fetcher", mock_fetcher_cls),
     ):
         f = ScraplingFetcher()
         result = await f.fetch("https://example.com", timeout_s=15)
@@ -96,9 +89,7 @@ async def test_render_returns_browser_result():
     mock_stealth_cls.return_value = mock_stealth_instance
 
     with (
-        patch(
-            "app.scraping.execution.scrapling_fetcher.SCRAPLING_AVAILABLE", True
-        ),
+        patch("app.scraping.execution.scrapling_fetcher.SCRAPLING_AVAILABLE", True),
         patch(
             "app.scraping.execution.scrapling_fetcher.StealthyFetcher",
             mock_stealth_cls,

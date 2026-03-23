@@ -1,4 +1,5 @@
 """Tests for Job model lifecycle tracking columns."""
+
 from app.jobs.models import Job
 
 

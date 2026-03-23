@@ -19,9 +19,7 @@ class SettingsService:
         self.db = db
 
     async def list_saved_searches(self, user_id: uuid.UUID) -> list[SavedSearch]:
-        result = await self.db.scalars(
-            select(SavedSearch).where(SavedSearch.user_id == user_id)
-        )
+        result = await self.db.scalars(select(SavedSearch).where(SavedSearch.user_id == user_id))
         return list(result.all())
 
     async def create_saved_search(
@@ -39,12 +37,8 @@ class SettingsService:
         logger.info("saved_search_created", search_id=str(search.id), user_id=str(user_id))
         return search
 
-    async def delete_saved_search(
-        self, search_id: uuid.UUID, user_id: uuid.UUID
-    ) -> None:
-        result = await self.db.execute(
-            select(SavedSearch).where(SavedSearch.id == search_id)
-        )
+    async def delete_saved_search(self, search_id: uuid.UUID, user_id: uuid.UUID) -> None:
+        result = await self.db.execute(select(SavedSearch).where(SavedSearch.id == search_id))
         search = result.scalar_one_or_none()
         if search is None:
             raise NotFoundError(f"Saved search {search_id} not found")
@@ -55,9 +49,7 @@ class SettingsService:
         logger.info("saved_search_deleted", search_id=str(search_id), user_id=str(user_id))
 
     async def _get_or_create_profile(self, user_id: uuid.UUID) -> UserProfile:
-        result = await self.db.execute(
-            select(UserProfile).where(UserProfile.user_id == user_id)
-        )
+        result = await self.db.execute(select(UserProfile).where(UserProfile.user_id == user_id))
         profile = result.scalar_one_or_none()
         if profile is None:
             profile = UserProfile(user_id=user_id)
@@ -74,9 +66,7 @@ class SettingsService:
             "auto_apply_enabled": profile.auto_apply_enabled,
         }
 
-    async def update_settings(
-        self, data: AppSettingsUpdate, user_id: uuid.UUID
-    ) -> dict:
+    async def update_settings(self, data: AppSettingsUpdate, user_id: uuid.UUID) -> dict:
         profile = await self._get_or_create_profile(user_id)
         update_data = data.model_dump(exclude_unset=True)
         for key, value in update_data.items():

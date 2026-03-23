@@ -4,6 +4,7 @@ Revision ID: 002
 Revises: 001
 Create Date: 2026-03-17
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -87,11 +88,25 @@ def upgrade() -> None:
         sa.Column("is_enriched", sa.Boolean(), nullable=True, server_default=sa.text("false")),
         _ts("enriched_at", has_default=False),
         sa.Column("summary_ai", sa.Text(), nullable=True),
-        _jsonb_col("skills_required", server_default=sa.text("'[]'")) if is_pg else sa.Column("skills_required", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-        _jsonb_col("skills_nice_to_have", server_default=sa.text("'[]'")) if is_pg else sa.Column("skills_nice_to_have", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-        _jsonb_col("tech_stack", server_default=sa.text("'[]'")) if is_pg else sa.Column("tech_stack", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-        _jsonb_col("red_flags", server_default=sa.text("'[]'")) if is_pg else sa.Column("red_flags", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-        _jsonb_col("green_flags", server_default=sa.text("'[]'")) if is_pg else sa.Column("green_flags", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
+        _jsonb_col("skills_required", server_default=sa.text("'[]'"))
+        if is_pg
+        else sa.Column(
+            "skills_required", sa.JSON(), nullable=True, server_default=sa.text("'[]'")
+        ),
+        _jsonb_col("skills_nice_to_have", server_default=sa.text("'[]'"))
+        if is_pg
+        else sa.Column(
+            "skills_nice_to_have", sa.JSON(), nullable=True, server_default=sa.text("'[]'")
+        ),
+        _jsonb_col("tech_stack", server_default=sa.text("'[]'"))
+        if is_pg
+        else sa.Column("tech_stack", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
+        _jsonb_col("red_flags", server_default=sa.text("'[]'"))
+        if is_pg
+        else sa.Column("red_flags", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
+        _jsonb_col("green_flags", server_default=sa.text("'[]'"))
+        if is_pg
+        else sa.Column("green_flags", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
         sa.Column("match_score", sa.Numeric(5, 1), nullable=True),
         sa.Column("tfidf_score", sa.Numeric(5, 1), nullable=True),
         sa.Column("dedup_hash", sa.String(32), nullable=True),
@@ -112,7 +127,9 @@ def upgrade() -> None:
         from pgvector.sqlalchemy import Vector
 
         jobs_columns.insert(-2, sa.Column("embedding", Vector(384), nullable=True))
-        jobs_columns.insert(-2, sa.Column("search_vector", sa.dialects.postgresql.TSVECTOR(), nullable=True))
+        jobs_columns.insert(
+            -2, sa.Column("search_vector", sa.dialects.postgresql.TSVECTOR(), nullable=True)
+        )
 
     op.create_table("jobs", *jobs_columns)
 
@@ -125,9 +142,7 @@ def upgrade() -> None:
 
     if is_pg:
         # GIN index on search_vector
-        op.execute(
-            "CREATE INDEX idx_jobs_search ON jobs USING gin (search_vector)"
-        )
+        op.execute("CREATE INDEX idx_jobs_search ON jobs USING gin (search_vector)")
         # IVFFlat index on embedding
         op.execute(
             "CREATE INDEX idx_jobs_embedding ON jobs USING ivfflat (embedding vector_cosine_ops)"
@@ -139,7 +154,9 @@ def upgrade() -> None:
         _uuid_pk(),
         sa.Column("user_id", sa.Uuid(), nullable=True),
         sa.Column("name", sa.String(200), nullable=False),
-        _jsonb_col("filters", nullable=False) if is_pg else sa.Column("filters", sa.JSON(), nullable=False),
+        _jsonb_col("filters", nullable=False)
+        if is_pg
+        else sa.Column("filters", sa.JSON(), nullable=False),
         sa.Column("alert_enabled", sa.Boolean(), nullable=True, server_default=sa.text("false")),
         _ts("created_at"),
         sa.PrimaryKeyConstraint("id"),
@@ -196,49 +213,92 @@ def upgrade() -> None:
         user_profiles_cols.append(_jsonb_col("resume_parsed_structured"))
         user_profiles_cols.append(_jsonb_col("search_queries", server_default=sa.text("'[]'")))
         user_profiles_cols.append(_jsonb_col("search_locations", server_default=sa.text("'[]'")))
-        user_profiles_cols.append(_jsonb_col("watchlist_companies", server_default=sa.text("'[]'")))
+        user_profiles_cols.append(
+            _jsonb_col("watchlist_companies", server_default=sa.text("'[]'"))
+        )
     else:
         user_profiles_cols.append(sa.Column("resume_parsed_structured", sa.JSON(), nullable=True))
-        user_profiles_cols.append(sa.Column("search_queries", sa.JSON(), nullable=True, server_default=sa.text("'[]'")))
-        user_profiles_cols.append(sa.Column("search_locations", sa.JSON(), nullable=True, server_default=sa.text("'[]'")))
-        user_profiles_cols.append(sa.Column("watchlist_companies", sa.JSON(), nullable=True, server_default=sa.text("'[]'")))
-    user_profiles_cols.extend([
-        sa.Column("linkedin_url", sa.Text(), nullable=True),
-        sa.Column("github_url", sa.Text(), nullable=True),
-        sa.Column("portfolio_url", sa.Text(), nullable=True),
-    ])
+        user_profiles_cols.append(
+            sa.Column("search_queries", sa.JSON(), nullable=True, server_default=sa.text("'[]'"))
+        )
+        user_profiles_cols.append(
+            sa.Column("search_locations", sa.JSON(), nullable=True, server_default=sa.text("'[]'"))
+        )
+        user_profiles_cols.append(
+            sa.Column(
+                "watchlist_companies", sa.JSON(), nullable=True, server_default=sa.text("'[]'")
+            )
+        )
+    user_profiles_cols.extend(
+        [
+            sa.Column("linkedin_url", sa.Text(), nullable=True),
+            sa.Column("github_url", sa.Text(), nullable=True),
+            sa.Column("portfolio_url", sa.Text(), nullable=True),
+        ]
+    )
     if is_pg:
         user_profiles_cols.append(_jsonb_col("education", server_default=sa.text("'[]'")))
         user_profiles_cols.append(_jsonb_col("work_experience", server_default=sa.text("'[]'")))
     else:
-        user_profiles_cols.append(sa.Column("education", sa.JSON(), nullable=True, server_default=sa.text("'[]'")))
-        user_profiles_cols.append(sa.Column("work_experience", sa.JSON(), nullable=True, server_default=sa.text("'[]'")))
-    user_profiles_cols.extend([
-        sa.Column("work_authorization", sa.String(100), nullable=True),
-    ])
+        user_profiles_cols.append(
+            sa.Column("education", sa.JSON(), nullable=True, server_default=sa.text("'[]'"))
+        )
+        user_profiles_cols.append(
+            sa.Column("work_experience", sa.JSON(), nullable=True, server_default=sa.text("'[]'"))
+        )
+    user_profiles_cols.extend(
+        [
+            sa.Column("work_authorization", sa.String(100), nullable=True),
+        ]
+    )
     if is_pg:
-        user_profiles_cols.append(_jsonb_col("preferred_job_types", server_default=sa.text("'[]'")))
-        user_profiles_cols.append(_jsonb_col("preferred_remote_types", server_default=sa.text("'[]'")))
+        user_profiles_cols.append(
+            _jsonb_col("preferred_job_types", server_default=sa.text("'[]'"))
+        )
+        user_profiles_cols.append(
+            _jsonb_col("preferred_remote_types", server_default=sa.text("'[]'"))
+        )
     else:
-        user_profiles_cols.append(sa.Column("preferred_job_types", sa.JSON(), nullable=True, server_default=sa.text("'[]'")))
-        user_profiles_cols.append(sa.Column("preferred_remote_types", sa.JSON(), nullable=True, server_default=sa.text("'[]'")))
-    user_profiles_cols.extend([
-        sa.Column("salary_min", sa.Numeric(), nullable=True),
-        sa.Column("salary_max", sa.Numeric(), nullable=True),
-    ])
+        user_profiles_cols.append(
+            sa.Column(
+                "preferred_job_types", sa.JSON(), nullable=True, server_default=sa.text("'[]'")
+            )
+        )
+        user_profiles_cols.append(
+            sa.Column(
+                "preferred_remote_types", sa.JSON(), nullable=True, server_default=sa.text("'[]'")
+            )
+        )
+    user_profiles_cols.extend(
+        [
+            sa.Column("salary_min", sa.Numeric(), nullable=True),
+            sa.Column("salary_max", sa.Numeric(), nullable=True),
+        ]
+    )
     if is_pg:
         user_profiles_cols.append(_jsonb_col("answer_bank", server_default=sa.text("'{}'")))
     else:
-        user_profiles_cols.append(sa.Column("answer_bank", sa.JSON(), nullable=True, server_default=sa.text("'{}'")))
-    user_profiles_cols.extend([
-        sa.Column("theme", sa.String(20), nullable=True, server_default="dark"),
-        sa.Column("notifications_enabled", sa.Boolean(), nullable=True, server_default=sa.text("true")),
-        sa.Column("auto_apply_enabled", sa.Boolean(), nullable=True, server_default=sa.text("false")),
-        _ts("created_at"),
-        _ts("updated_at"),
-        sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
-    ])
+        user_profiles_cols.append(
+            sa.Column("answer_bank", sa.JSON(), nullable=True, server_default=sa.text("'{}'"))
+        )
+    user_profiles_cols.extend(
+        [
+            sa.Column("theme", sa.String(20), nullable=True, server_default="dark"),
+            sa.Column(
+                "notifications_enabled",
+                sa.Boolean(),
+                nullable=True,
+                server_default=sa.text("true"),
+            ),
+            sa.Column(
+                "auto_apply_enabled", sa.Boolean(), nullable=True, server_default=sa.text("false")
+            ),
+            _ts("created_at"),
+            _ts("updated_at"),
+            sa.PrimaryKeyConstraint("id"),
+            sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+        ]
+    )
 
     op.create_table("user_profiles", *user_profiles_cols)
 
@@ -255,12 +315,14 @@ def upgrade() -> None:
         resume_versions_cols.append(_jsonb_col("parsed_structured"))
     else:
         resume_versions_cols.append(sa.Column("parsed_structured", sa.JSON(), nullable=True))
-    resume_versions_cols.extend([
-        sa.Column("is_default", sa.Boolean(), nullable=True, server_default=sa.text("false")),
-        _ts("created_at"),
-        sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
-    ])
+    resume_versions_cols.extend(
+        [
+            sa.Column("is_default", sa.Boolean(), nullable=True, server_default=sa.text("false")),
+            _ts("created_at"),
+            sa.PrimaryKeyConstraint("id"),
+            sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+        ]
+    )
 
     op.create_table("resume_versions", *resume_versions_cols)
 
@@ -302,9 +364,7 @@ def upgrade() -> None:
         sa.Column("note", sa.Text(), nullable=True),
         _ts("changed_at"),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(
-            ["application_id"], ["applications.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["application_id"], ["applications.id"], ondelete="CASCADE"),
     )
 
     # ── auto_apply_profiles ──────────────────────────────────────────
@@ -337,29 +397,47 @@ def upgrade() -> None:
         sa.Column("min_match_score", sa.Numeric(), nullable=True),
     ]
     if is_pg:
-        auto_apply_rules_cols.extend([
-            _jsonb_col("required_keywords", server_default=sa.text("'[]'")),
-            _jsonb_col("excluded_keywords", server_default=sa.text("'[]'")),
-            _jsonb_col("required_companies", server_default=sa.text("'[]'")),
-            _jsonb_col("excluded_companies", server_default=sa.text("'[]'")),
-            _jsonb_col("experience_levels", server_default=sa.text("'[]'")),
-            _jsonb_col("remote_types", server_default=sa.text("'[]'")),
-        ])
+        auto_apply_rules_cols.extend(
+            [
+                _jsonb_col("required_keywords", server_default=sa.text("'[]'")),
+                _jsonb_col("excluded_keywords", server_default=sa.text("'[]'")),
+                _jsonb_col("required_companies", server_default=sa.text("'[]'")),
+                _jsonb_col("excluded_companies", server_default=sa.text("'[]'")),
+                _jsonb_col("experience_levels", server_default=sa.text("'[]'")),
+                _jsonb_col("remote_types", server_default=sa.text("'[]'")),
+            ]
+        )
     else:
-        auto_apply_rules_cols.extend([
-            sa.Column("required_keywords", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-            sa.Column("excluded_keywords", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-            sa.Column("required_companies", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-            sa.Column("excluded_companies", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-            sa.Column("experience_levels", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-            sa.Column("remote_types", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-        ])
-    auto_apply_rules_cols.extend([
-        _ts("created_at"),
-        sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
-        sa.ForeignKeyConstraint(["profile_id"], ["auto_apply_profiles.id"]),
-    ])
+        auto_apply_rules_cols.extend(
+            [
+                sa.Column(
+                    "required_keywords", sa.JSON(), nullable=True, server_default=sa.text("'[]'")
+                ),
+                sa.Column(
+                    "excluded_keywords", sa.JSON(), nullable=True, server_default=sa.text("'[]'")
+                ),
+                sa.Column(
+                    "required_companies", sa.JSON(), nullable=True, server_default=sa.text("'[]'")
+                ),
+                sa.Column(
+                    "excluded_companies", sa.JSON(), nullable=True, server_default=sa.text("'[]'")
+                ),
+                sa.Column(
+                    "experience_levels", sa.JSON(), nullable=True, server_default=sa.text("'[]'")
+                ),
+                sa.Column(
+                    "remote_types", sa.JSON(), nullable=True, server_default=sa.text("'[]'")
+                ),
+            ]
+        )
+    auto_apply_rules_cols.extend(
+        [
+            _ts("created_at"),
+            sa.PrimaryKeyConstraint("id"),
+            sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+            sa.ForeignKeyConstraint(["profile_id"], ["auto_apply_profiles.id"]),
+        ]
+    )
 
     op.create_table("auto_apply_rules", *auto_apply_rules_cols)
 
@@ -373,26 +451,36 @@ def upgrade() -> None:
         sa.Column("ats_provider", sa.String(50), nullable=True),
     ]
     if is_pg:
-        auto_apply_runs_cols.extend([
-            _jsonb_col("fields_filled", server_default=sa.text("'{}'")),
-            _jsonb_col("fields_missed", server_default=sa.text("'[]'")),
-            _jsonb_col("screenshots", server_default=sa.text("'[]'")),
-        ])
+        auto_apply_runs_cols.extend(
+            [
+                _jsonb_col("fields_filled", server_default=sa.text("'{}'")),
+                _jsonb_col("fields_missed", server_default=sa.text("'[]'")),
+                _jsonb_col("screenshots", server_default=sa.text("'[]'")),
+            ]
+        )
     else:
-        auto_apply_runs_cols.extend([
-            sa.Column("fields_filled", sa.JSON(), nullable=True, server_default=sa.text("'{}'")),
-            sa.Column("fields_missed", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-            sa.Column("screenshots", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-        ])
-    auto_apply_runs_cols.extend([
-        sa.Column("error_message", sa.Text(), nullable=True),
-        _ts("started_at", has_default=False),
-        _ts("completed_at", has_default=False),
-        sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
-        sa.ForeignKeyConstraint(["job_id"], ["jobs.id"]),
-        sa.ForeignKeyConstraint(["rule_id"], ["auto_apply_rules.id"]),
-    ])
+        auto_apply_runs_cols.extend(
+            [
+                sa.Column(
+                    "fields_filled", sa.JSON(), nullable=True, server_default=sa.text("'{}'")
+                ),
+                sa.Column(
+                    "fields_missed", sa.JSON(), nullable=True, server_default=sa.text("'[]'")
+                ),
+                sa.Column("screenshots", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
+            ]
+        )
+    auto_apply_runs_cols.extend(
+        [
+            sa.Column("error_message", sa.Text(), nullable=True),
+            _ts("started_at", has_default=False),
+            _ts("completed_at", has_default=False),
+            sa.PrimaryKeyConstraint("id"),
+            sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+            sa.ForeignKeyConstraint(["job_id"], ["jobs.id"]),
+            sa.ForeignKeyConstraint(["rule_id"], ["auto_apply_rules.id"]),
+        ]
+    )
 
     op.create_table("auto_apply_runs", *auto_apply_runs_cols)
 
@@ -417,24 +505,30 @@ def upgrade() -> None:
         sa.Column("job_id", sa.String(64), nullable=True),
     ]
     if is_pg:
-        interview_cols.extend([
-            _jsonb_col("questions", nullable=False),
-            _jsonb_col("answers", server_default=sa.text("'[]'")),
-            _jsonb_col("scores", server_default=sa.text("'[]'")),
-        ])
+        interview_cols.extend(
+            [
+                _jsonb_col("questions", nullable=False),
+                _jsonb_col("answers", server_default=sa.text("'[]'")),
+                _jsonb_col("scores", server_default=sa.text("'[]'")),
+            ]
+        )
     else:
-        interview_cols.extend([
-            sa.Column("questions", sa.JSON(), nullable=False),
-            sa.Column("answers", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-            sa.Column("scores", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
-        ])
-    interview_cols.extend([
-        sa.Column("overall_score", sa.Numeric(), nullable=True),
-        _ts("created_at"),
-        sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
-        sa.ForeignKeyConstraint(["job_id"], ["jobs.id"]),
-    ])
+        interview_cols.extend(
+            [
+                sa.Column("questions", sa.JSON(), nullable=False),
+                sa.Column("answers", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
+                sa.Column("scores", sa.JSON(), nullable=True, server_default=sa.text("'[]'")),
+            ]
+        )
+    interview_cols.extend(
+        [
+            sa.Column("overall_score", sa.Numeric(), nullable=True),
+            _ts("created_at"),
+            sa.PrimaryKeyConstraint("id"),
+            sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+            sa.ForeignKeyConstraint(["job_id"], ["jobs.id"]),
+        ]
+    )
 
     op.create_table("interview_sessions", *interview_cols)
 
@@ -450,11 +544,13 @@ def upgrade() -> None:
         salary_cache_cols.append(_jsonb_col("market_data"))
     else:
         salary_cache_cols.append(sa.Column("market_data", sa.JSON(), nullable=True))
-    salary_cache_cols.extend([
-        _ts("created_at"),
-        sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
-    ])
+    salary_cache_cols.extend(
+        [
+            _ts("created_at"),
+            sa.PrimaryKeyConstraint("id"),
+            sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+        ]
+    )
 
     op.create_table("salary_cache", *salary_cache_cols)
 

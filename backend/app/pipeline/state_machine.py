@@ -5,8 +5,14 @@ from __future__ import annotations
 from app.shared.errors import ValidationError
 
 VALID_STATUSES: list[str] = [
-    "saved", "applied", "screening", "interviewing",
-    "offer", "rejected", "withdrawn", "accepted",
+    "saved",
+    "applied",
+    "screening",
+    "interviewing",
+    "offer",
+    "rejected",
+    "withdrawn",
+    "accepted",
 ]
 
 VALID_TRANSITIONS: dict[str, list[str]] = {
@@ -34,6 +40,5 @@ def validate_transition(current_status: str, new_status: str) -> None:
     allowed = VALID_TRANSITIONS.get(current_status, [])
     if new_status not in allowed:
         raise ValidationError(
-            f"Cannot transition from '{current_status}' to '{new_status}'. "
-            f"Allowed: {allowed}"
+            f"Cannot transition from '{current_status}' to '{new_status}'. Allowed: {allowed}"
         )

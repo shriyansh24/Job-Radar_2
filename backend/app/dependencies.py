@@ -10,9 +10,9 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.service import decode_token_payload, get_token_version
 from app.config import Settings, settings
 from app.database import async_session_factory
-from app.auth.service import decode_token_payload, get_token_version
 from app.shared.errors import AuthError
 
 if TYPE_CHECKING:

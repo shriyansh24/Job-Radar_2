@@ -107,18 +107,22 @@ class ApplicationValidator:
     def _check_required_fields(self, filled_form: dict, issues: list[ValidationIssue]) -> None:
         for req_field in sorted(_REQUIRED_FIELDS):
             if not filled_form.get(req_field):
-                issues.append(ValidationIssue(
-                    field=req_field,
-                    message=f"Required field '{req_field}' is missing or empty.",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        field=req_field,
+                        message=f"Required field '{req_field}' is missing or empty.",
+                    )
+                )
 
     def _check_resume_attached(self, filled_form: dict, issues: list[ValidationIssue]) -> None:
         if not filled_form.get("resume_upload"):
             if not any(i.field == "resume_upload" for i in issues):
-                issues.append(ValidationIssue(
-                    field="resume_upload",
-                    message="Resume has not been attached to the application.",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        field="resume_upload",
+                        message="Resume has not been attached to the application.",
+                    )
+                )
 
     def _check_essay_length(self, filled_form: dict, issues: list[ValidationIssue]) -> None:
         for key, value in filled_form.items():
@@ -127,11 +131,16 @@ class ApplicationValidator:
             if _ESSAY_KEY_PATTERNS.search(key) or key.startswith("question:"):
                 stripped = value.strip()
                 if 0 < len(stripped) < self.min_essay_chars:
-                    issues.append(ValidationIssue(
-                        field=key,
-                        message=f"Essay answer for '{key}' is too short ({len(stripped)} chars; minimum {self.min_essay_chars}).",
-                        severity=IssueSeverity.WARNING,
-                    ))
+                    issues.append(
+                        ValidationIssue(
+                            field=key,
+                            message=(
+                                f"Essay answer for '{key}' is too short "
+                                f"({len(stripped)} chars; minimum {self.min_essay_chars})."
+                            ),
+                            severity=IssueSeverity.WARNING,
+                        )
+                    )
 
     def _check_placeholder_text(self, filled_form: dict, issues: list[ValidationIssue]) -> None:
         for key, value in filled_form.items():
@@ -139,10 +148,12 @@ class ApplicationValidator:
                 continue
             for pattern in _PLACEHOLDER_PATTERNS:
                 if pattern.search(value):
-                    issues.append(ValidationIssue(
-                        field=key,
-                        message=f"Field '{key}' contains placeholder text.",
-                    ))
+                    issues.append(
+                        ValidationIssue(
+                            field=key,
+                            message=f"Field '{key}' contains placeholder text.",
+                        )
+                    )
                     break
 
     def _check_company_name(
@@ -158,8 +169,14 @@ class ApplicationValidator:
             if re.search(r"\bcompany\b", key, re.IGNORECASE):
                 filled = value.strip().lower()
                 if filled and filled != expected:
-                    issues.append(ValidationIssue(
-                        field=key,
-                        message=f"Company name mismatch: form has '{value}' but job company is '{job.get('company') or job.get('company_name')}'.",
-                        severity=IssueSeverity.WARNING,
-                    ))
+                    issues.append(
+                        ValidationIssue(
+                            field=key,
+                            message=(
+                                "Company name mismatch: form has "
+                                f"'{value}' but job company is "
+                                f"'{job.get('company') or job.get('company_name')}'."
+                            ),
+                            severity=IssueSeverity.WARNING,
+                        )
+                    )

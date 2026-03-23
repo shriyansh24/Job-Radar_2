@@ -9,10 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import FrozenSet, List
 
-
-VALID_TEMPLATES: FrozenSet[str] = frozenset(
-    {"formal", "startup", "career-change", "technical"}
-)
+VALID_TEMPLATES: FrozenSet[str] = frozenset({"formal", "startup", "career-change", "technical"})
 
 
 @dataclass(frozen=True)
@@ -218,9 +215,7 @@ def get_template(name: str) -> CoverLetterTemplate:
     """
     template = TEMPLATE_REGISTRY.get(name)
     if template is None:
-        raise ValueError(
-            f"Unknown template {name!r}. Valid templates: {sorted(VALID_TEMPLATES)}"
-        )
+        raise ValueError(f"Unknown template {name!r}. Valid templates: {sorted(VALID_TEMPLATES)}")
     return template
 
 
@@ -233,9 +228,7 @@ def build_template_prompt_section(template: CoverLetterTemplate) -> str:
     Returns:
         A multi-line string describing the template structure and tone to the LLM.
     """
-    flow_items = "\n".join(
-        f"  {i + 1}. {step}" for i, step in enumerate(template.paragraph_flow)
-    )
+    flow_items = "\n".join(f"  {i + 1}. {step}" for i, step in enumerate(template.paragraph_flow))
     return (
         f"TEMPLATE: {template.display_name}\n\n"
         f"GREETING STYLE:\n{template.greeting_style}\n\n"

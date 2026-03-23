@@ -1,5 +1,5 @@
 # tests/unit/scraping/test_classifier.py
-from app.scraping.control.classifier import classify_target, assign_priority
+from app.scraping.control.classifier import assign_priority, classify_target
 
 
 def test_classify_greenhouse_target():
@@ -24,8 +24,9 @@ def test_classify_unknown_target():
 
 
 def test_assign_priority_watchlist():
-    p = assign_priority(lca_filings=5000, company_name="Google",
-                        watchlist=["Google", "Meta", "OpenAI"])
+    p = assign_priority(
+        lca_filings=5000, company_name="Google", watchlist=["Google", "Meta", "OpenAI"]
+    )
     assert p["priority_class"] == "watchlist"
     assert p["schedule_interval_m"] == 120
 
@@ -48,6 +49,5 @@ def test_assign_priority_cool():
 
 def test_watchlist_override_low_filings():
     """Watchlist companies get watchlist priority regardless of LCA count."""
-    p = assign_priority(lca_filings=10, company_name="OpenAI",
-                        watchlist=["OpenAI"])
+    p = assign_priority(lca_filings=10, company_name="OpenAI", watchlist=["OpenAI"])
     assert p["priority_class"] == "watchlist"

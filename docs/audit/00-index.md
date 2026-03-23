@@ -4,6 +4,22 @@
 >
 > **Current Outcome:** 39 `FIXED` | 5 `STALE` | 0 `OPEN` | 0 `PARTIAL`
 
+> This file is the bug ledger. For the current operational read order and live repo state, start at `docs/current-state/00-index.md`.
+
+## Latest Validation Snapshot
+
+- Backend:
+  - `cd backend && uv run python -m pip check`
+  - `cd backend && uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
+  - `cd backend && uv tool run pip-audit -r .ci-requirements.txt`
+  - `cd backend && uv run ruff check .`
+  - `cd backend && uv run pytest`
+- Frontend:
+  - `cd frontend && npm audit --audit-level high`
+  - `cd frontend && npm run lint`
+  - `cd frontend && npm run test -- --run`
+  - `cd frontend && npm run build`
+
 ## How to Use This Index
 
 1. Use the table below to find the current status of each audited item.
@@ -92,3 +108,8 @@
 | FIX-02 | infra | `uv run pytest` now resolves correctly via `[dependency-groups].dev` and explicit conflicting extras metadata | FIXED |
 | FIX-03 | frontend | TypeScript nullability regressions in Auto Apply / Interview Prep / Vault / Resume Builder no longer fail `npm run build` | FIXED |
 | FIX-04 | frontend | Login test now matches current heading markup instead of brittle combined text lookup | FIXED |
+| FIX-05 | database | `Notification.created_at` now matches the timezone-aware schema and is covered by the model contract test | FIXED |
+| FIX-06 | scraper | `CircuitBreaker` timing is hardened with a high-resolution monotonic clock path and deterministic recovery tests | FIXED |
+| FIX-07 | backend | Failed enrichment no longer persists partial job cleanup/enrichment field mutations | FIXED |
+| FIX-08 | backend | Interview generation/prep now fail on empty model payloads, and job context loads `company_name` correctly | FIXED |
+| FIX-09 | infra | CI workflows are updated to `actions/*@v6` and now enforce lock-aware dependency-health checks (`pip check`, exported-requirements `pip-audit`, `npm audit`) | FIXED |

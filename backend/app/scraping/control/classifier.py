@@ -1,4 +1,5 @@
 """Target classification: ATS type + priority assignment."""
+
 from __future__ import annotations
 
 from difflib import SequenceMatcher

@@ -42,9 +42,7 @@ class ProfileService:
             "current_answers": profile.answer_bank or {},
         }
 
-    async def update_profile(
-        self, data: ProfileUpdate, user_id: uuid.UUID
-    ) -> UserProfile:
+    async def update_profile(self, data: ProfileUpdate, user_id: uuid.UUID) -> UserProfile:
         """Update the user profile with the provided fields."""
         logger.info("profile.update_profile", user_id=str(user_id))
         profile = await self.get_profile(user_id)

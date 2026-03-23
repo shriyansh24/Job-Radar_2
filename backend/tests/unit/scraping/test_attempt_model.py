@@ -1,4 +1,5 @@
 """Unit tests for ScrapeAttempt model structure (no DB required)."""
+
 from __future__ import annotations
 
 import uuid
@@ -48,12 +49,28 @@ def test_scrape_attempt_has_required_columns():
     """ScrapeAttempt should have all columns defined in spec."""
     columns = {c.name for c in ScrapeAttempt.__table__.columns}
     required = {
-        "id", "run_id", "target_id", "selected_tier", "actual_tier_used",
-        "scraper_name", "parser_name", "status", "http_status",
-        "duration_ms", "retries", "escalations", "jobs_extracted",
-        "content_hash_before", "content_hash_after", "content_changed",
-        "pages_crawled", "pagination_stopped_reason",
-        "error_class", "error_message", "browser_used", "created_at",
+        "id",
+        "run_id",
+        "target_id",
+        "selected_tier",
+        "actual_tier_used",
+        "scraper_name",
+        "parser_name",
+        "status",
+        "http_status",
+        "duration_ms",
+        "retries",
+        "escalations",
+        "jobs_extracted",
+        "content_hash_before",
+        "content_hash_after",
+        "content_changed",
+        "pages_crawled",
+        "pagination_stopped_reason",
+        "error_class",
+        "error_message",
+        "browser_used",
+        "created_at",
     }
     assert required.issubset(columns), f"Missing columns: {required - columns}"
 
@@ -70,6 +87,7 @@ def test_scrape_attempt_foreign_keys():
 def test_scrape_attempt_datetime_timezone():
     """All DateTime columns must use timezone=True."""
     from sqlalchemy import DateTime
+
     col = ScrapeAttempt.__table__.columns
     assert isinstance(col["created_at"].type, DateTime)
     assert col["created_at"].type.timezone is True

@@ -71,9 +71,7 @@ async def _check_single_alert(db: AsyncSession, search: SavedSearch) -> None:
     # Update last_checked_at
     now = datetime.now(timezone.utc)
     await db.execute(
-        update(SavedSearch)
-        .where(SavedSearch.id == search.id)
-        .values(last_checked_at=now)
+        update(SavedSearch).where(SavedSearch.id == search.id).values(last_checked_at=now)
     )
 
     if new_jobs and search.user_id:

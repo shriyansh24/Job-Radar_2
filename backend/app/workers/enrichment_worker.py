@@ -54,11 +54,7 @@ async def run_tfidf_scoring(ctx: dict | None = None) -> None:
                 return
 
             jobs = (
-                await db.scalars(
-                    select(Job)
-                    .where(Job.tfidf_score.is_(None))
-                    .limit(200)
-                )
+                await db.scalars(select(Job).where(Job.tfidf_score.is_(None)).limit(200))
             ).all()
             if not jobs:
                 return
@@ -66,9 +62,7 @@ async def run_tfidf_scoring(ctx: dict | None = None) -> None:
             scorer = TFIDFScorer()
             scores = scorer.score_jobs(profile.resume_text, jobs)
             for job_id, score in scores:
-                await db.execute(
-                    update(Job).where(Job.id == job_id).values(tfidf_score=score)
-                )
+                await db.execute(update(Job).where(Job.id == job_id).values(tfidf_score=score))
             await db.commit()
             logger.info("tfidf_scoring_completed", jobs_scored=len(scores))
         except Exception as e:

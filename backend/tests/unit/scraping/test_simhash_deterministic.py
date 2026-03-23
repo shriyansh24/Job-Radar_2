@@ -55,15 +55,14 @@ def test_simhash_similar_for_similar_input():
         "5+ years experience required. Python, PyTorch, distributed systems."
     )
 
-    h_base = svc._compute_simhash(
-        _make_job("Senior ML Engineer", "Google", base_desc)
-    )
-    h_similar = svc._compute_simhash(
-        _make_job("Senior ML Engineer", "Google", variant_desc)
-    )
+    h_base = svc._compute_simhash(_make_job("Senior ML Engineer", "Google", base_desc))
+    h_similar = svc._compute_simhash(_make_job("Senior ML Engineer", "Google", variant_desc))
     h_different = svc._compute_simhash(
-        _make_job("Marketing Manager", "Amazon",
-                  "Lead brand campaigns across EMEA region. MBA preferred.")
+        _make_job(
+            "Marketing Manager",
+            "Amazon",
+            "Lead brand campaigns across EMEA region. MBA preferred.",
+        )
     )
 
     dist_similar = bin(h_base ^ h_similar).count("1")
@@ -122,6 +121,5 @@ def test_simhash_deterministic_across_processes():
         results.append(int(proc.stdout.strip()))
 
     assert results[0] == results[1], (
-        f"Simhash differs across processes: seed=111 -> {results[0]}, "
-        f"seed=999 -> {results[1]}"
+        f"Simhash differs across processes: seed=111 -> {results[0]}, seed=999 -> {results[1]}"
     )

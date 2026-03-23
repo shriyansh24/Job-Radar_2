@@ -25,9 +25,7 @@ class TFIDFScorer:
             try:
                 from sklearn.feature_extraction.text import TfidfVectorizer
 
-                self._vectorizer = TfidfVectorizer(
-                    max_features=5000, stop_words="english"
-                )
+                self._vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
             except ImportError:
                 logger.warning(
                     "scikit_learn_not_installed",
@@ -36,9 +34,7 @@ class TFIDFScorer:
                 return None
         return self._vectorizer
 
-    def score_jobs(
-        self, resume_text: str, jobs: list
-    ) -> list[tuple[str, float]]:
+    def score_jobs(self, resume_text: str, jobs: list) -> list[tuple[str, float]]:
         """Score jobs against resume text. Returns list of (job_id, score).
 
         Jobs should have .id, .title, .company_name, .description_clean,

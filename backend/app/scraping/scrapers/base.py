@@ -54,9 +54,7 @@ class BaseScraper(ScraperPort):
             return "executive"
         return "mid"  # default
 
-    def _extract_salary(
-        self, text: str | None
-    ) -> tuple[float | None, float | None, str | None]:
+    def _extract_salary(self, text: str | None) -> tuple[float | None, float | None, str | None]:
         """Extract salary range from text using regex patterns."""
         if not text:
             return None, None, None

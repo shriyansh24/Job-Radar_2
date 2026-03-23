@@ -23,10 +23,7 @@ def _settings() -> Settings:
 def _fake_job(
     title: str = "Software Engineer",
     company: str = "Acme Inc",
-    description_raw: str = (
-        "<p>We need a <b>Python</b> developer"
-        " with 5 years experience.</p>"
-    ),
+    description_raw: str = ("<p>We need a <b>Python</b> developer with 5 years experience.</p>"),
     **overrides,
 ) -> SimpleNamespace:
     """Fake job ORM-like object for enrichment tests."""
@@ -147,7 +144,8 @@ class TestEnrichJob:
             with pytest.raises(EnrichmentError, match="empty response"):
                 await svc.enrich_job(job)
 
-        assert job.description_clean is not None
+        assert job.description_clean is None
+        assert job.description_markdown is None
         assert job.is_enriched is False
 
     @pytest.mark.asyncio
@@ -164,6 +162,39 @@ class TestEnrichJob:
 
         assert result.summary_ai == "A role"
         assert "Python" in result.skills_required
+
+    @pytest.mark.asyncio
+    async def test_enrich_batch_keeps_failed_jobs_unmodified(self):
+        llm = LLMClient(api_key="test-key")
+        db = AsyncMock()
+        svc = EnrichmentService(db, llm, _settings())
+
+        successful = _fake_job(id="job-success")
+        failed = _fake_job(id="job-failed")
+
+        class _ScalarResult:
+            def __init__(self, items):
+                self._items = items
+
+            def all(self):
+                return self._items
+
+        db.scalars = AsyncMock(return_value=_ScalarResult([successful, failed]))
+
+        with patch.object(
+            llm,
+            "chat",
+            new_callable=AsyncMock,
+            side_effect=[LLM_RESPONSE, ""],
+        ):
+            count = await svc.enrich_batch(limit=2)
+
+        assert count == 1
+        assert successful.is_enriched is True
+        assert failed.is_enriched is False
+        assert failed.description_clean is None
+        assert failed.description_markdown is None
+        db.commit.assert_awaited_once()
 
 
 class TestCleanHtml:

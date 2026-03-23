@@ -118,14 +118,10 @@ async def test_list_jobs_with_filters(client: AsyncClient, db_session: AsyncSess
     await db_session.commit()
 
     # Filter by source
-    resp = await client.get(
-        "/api/v1/jobs?source=linkedin", headers=_auth(token)
-    )
+    resp = await client.get("/api/v1/jobs?source=linkedin", headers=_auth(token))
     assert resp.json()["total"] == 2
 
-    resp = await client.get(
-        "/api/v1/jobs?source=indeed", headers=_auth(token)
-    )
+    resp = await client.get("/api/v1/jobs?source=indeed", headers=_auth(token))
     assert resp.json()["total"] == 1
 
 

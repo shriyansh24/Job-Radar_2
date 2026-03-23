@@ -6,10 +6,10 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # ---------------------------------------------------------------------------
 # Question generation
 # ---------------------------------------------------------------------------
+
 
 class GenerateQuestionsRequest(BaseModel):
     job_id: str
@@ -21,13 +21,12 @@ class GenerateQuestionsRequest(BaseModel):
 # Full interview prep bundle
 # ---------------------------------------------------------------------------
 
+
 class InterviewPrepRequest(BaseModel):
     """Input for the full interview-preparation endpoint."""
 
     job_id: str
-    resume_text: str = Field(
-        ..., min_length=50, description="Plain-text resume content"
-    )
+    resume_text: str = Field(..., min_length=50, description="Plain-text resume content")
     job_title: str = ""
     company_name: str = ""
     job_description: str = ""
@@ -67,6 +66,7 @@ class InterviewPrepResponse(BaseModel):
 # Answer evaluation
 # ---------------------------------------------------------------------------
 
+
 class EvaluateAnswerRequest(BaseModel):
     session_id: uuid.UUID
     question_index: int
@@ -83,6 +83,7 @@ class EvaluateAnswerResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Session
 # ---------------------------------------------------------------------------
+
 
 class InterviewSessionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

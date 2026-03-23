@@ -290,12 +290,13 @@ class ScrapingService:
 
         The existing ``run_scrape()`` method (Mode 2, keyword search) is unaffected.
         """
+        import asyncio
+        from urllib.parse import urlparse
+
         from app.scraping.control.tier_router import TierRouter
         from app.scraping.execution.escalation_engine import should_escalate
         from app.scraping.execution.page_crawler import PageCrawler
         from app.scraping.models import ScrapeAttempt
-        from urllib.parse import urlparse
-        import asyncio
 
         succeeded_target_ids: set = set()
 
@@ -403,9 +404,7 @@ class ScrapingService:
                             )
                             # Record pagination metadata on the attempt
                             attempt.pages_crawled = pagination_result.pages_crawled
-                            attempt.pagination_stopped_reason = (
-                                pagination_result.stopped_reason
-                            )
+                            attempt.pagination_stopped_reason = pagination_result.stopped_reason
                             paginated_jobs = pagination_result.jobs
                             logger.info(
                                 "pagination_complete",
@@ -425,7 +424,7 @@ class ScrapingService:
                     jobs_count = len(paginated_jobs)
                     attempt.jobs_extracted = jobs_count
                     attempt.status = "success"
-                    attempt.content_changed = (result.content_hash != target.content_hash)
+                    attempt.content_changed = result.content_hash != target.content_hash
                     self.db.add(attempt)
                     results["jobs_found"] += jobs_count
                     results["targets_succeeded"] += 1

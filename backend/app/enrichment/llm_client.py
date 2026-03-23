@@ -35,7 +35,9 @@ class LLMClient:
                 headers={
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json",
-                    "HTTP-Referer": _app_settings.cors_origins[0] if _app_settings.cors_origins else "http://localhost:5173",
+                    "HTTP-Referer": _app_settings.cors_origins[0]
+                    if _app_settings.cors_origins
+                    else "http://localhost:5173",
                     "X-Title": _app_settings.app_name,
                 },
                 timeout=90.0,

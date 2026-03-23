@@ -45,9 +45,7 @@ class EmbeddingService:
             return None
         return self.model.encode(text).tolist()
 
-    async def embed_jobs_batch(
-        self, user_id: uuid.UUID | None = None, limit: int = 100
-    ) -> int:
+    async def embed_jobs_batch(self, user_id: uuid.UUID | None = None, limit: int = 100) -> int:
         """Generate embeddings for jobs without them."""
         try:
             from sqlalchemy import select, text

@@ -18,19 +18,25 @@ from app.shared.pagination import PaginatedResponse
 logger = structlog.get_logger()
 
 
-SORTABLE_COLUMNS = frozenset({
-    "scraped_at", "match_score", "title", "company_name",
-    "posted_at", "created_at", "salary_min", "tfidf_score",
-})
+SORTABLE_COLUMNS = frozenset(
+    {
+        "scraped_at",
+        "match_score",
+        "title",
+        "company_name",
+        "posted_at",
+        "created_at",
+        "salary_min",
+        "tfidf_score",
+    }
+)
 
 
 class JobService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def list_jobs(
-        self, params: JobListParams, user_id: uuid.UUID
-    ) -> PaginatedResponse:
+    async def list_jobs(self, params: JobListParams, user_id: uuid.UUID) -> PaginatedResponse:
         query = select(Job).where(Job.user_id == user_id, Job.is_active.is_(True))
 
         if params.source:
@@ -58,9 +64,7 @@ class JobService:
         # Sorting (allowlist prevents arbitrary column access)
         sort_field = params.sort_by if params.sort_by in SORTABLE_COLUMNS else "scraped_at"
         sort_col = getattr(Job, sort_field, Job.scraped_at)
-        query = query.order_by(
-            sort_col.desc() if params.sort_order == "desc" else sort_col.asc()
-        )
+        query = query.order_by(sort_col.desc() if params.sort_order == "desc" else sort_col.asc())
 
         # Count
         count_q = select(func.count()).select_from(query.subquery())
@@ -79,17 +83,13 @@ class JobService:
         )
 
     async def get_job(self, job_id: str, user_id: uuid.UUID) -> Job:
-        result = await self.db.execute(
-            select(Job).where(Job.id == job_id, Job.user_id == user_id)
-        )
+        result = await self.db.execute(select(Job).where(Job.id == job_id, Job.user_id == user_id))
         job = result.scalar_one_or_none()
         if job is None:
             raise NotFoundError(f"Job {job_id} not found")
         return job
 
-    async def update_job(
-        self, job_id: str, data: JobUpdate, user_id: uuid.UUID
-    ) -> Job:
+    async def update_job(self, job_id: str, data: JobUpdate, user_id: uuid.UUID) -> Job:
         job = await self.get_job(job_id, user_id)
         update_data = data.model_dump(exclude_unset=True)
         for key, value in update_data.items():
@@ -105,9 +105,7 @@ class JobService:
         job.updated_at = datetime.now(UTC)
         await self.db.commit()
 
-    async def semantic_search(
-        self, query: str, limit: int, user_id: uuid.UUID
-    ) -> list[Job]:
+    async def semantic_search(self, query: str, limit: int, user_id: uuid.UUID) -> list[Job]:
         """Semantic search over jobs. Falls back to ILIKE on SQLite."""
         # Full vector search requires PostgreSQL + pgvector.
         # Fallback: keyword match
@@ -128,9 +126,7 @@ class JobService:
         )
         return list(result.all())
 
-    async def export_jobs(
-        self, params: JobExportRequest, user_id: uuid.UUID
-    ) -> bytes:
+    async def export_jobs(self, params: JobExportRequest, user_id: uuid.UUID) -> bytes:
         list_params = params.filters or JobListParams()
         list_params.page_size = 10000
         result = await self.list_jobs(list_params, user_id)
@@ -140,26 +136,36 @@ class JobService:
             writer = csv.DictWriter(
                 output,
                 fieldnames=[
-                    "id", "title", "company_name", "location", "source",
-                    "remote_type", "status", "match_score", "scraped_at",
+                    "id",
+                    "title",
+                    "company_name",
+                    "location",
+                    "source",
+                    "remote_type",
+                    "status",
+                    "match_score",
+                    "scraped_at",
                 ],
             )
             writer.writeheader()
             for job in result.items:
-                writer.writerow({
-                    "id": job.id,
-                    "title": job.title,
-                    "company_name": job.company_name,
-                    "location": job.location,
-                    "source": job.source,
-                    "remote_type": job.remote_type,
-                    "status": job.status,
-                    "match_score": str(job.match_score) if job.match_score else "",
-                    "scraped_at": str(job.scraped_at),
-                })
+                writer.writerow(
+                    {
+                        "id": job.id,
+                        "title": job.title,
+                        "company_name": job.company_name,
+                        "location": job.location,
+                        "source": job.source,
+                        "remote_type": job.remote_type,
+                        "status": job.status,
+                        "match_score": str(job.match_score) if job.match_score else "",
+                        "scraped_at": str(job.scraped_at),
+                    }
+                )
             return output.getvalue().encode()
 
         # Default JSON
         from app.jobs.schemas import JobResponse
+
         items = [JobResponse.model_validate(j).model_dump(mode="json") for j in result.items]
         return json.dumps(items, indent=2).encode()

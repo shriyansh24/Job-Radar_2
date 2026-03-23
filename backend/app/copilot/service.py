@@ -111,9 +111,7 @@ class CopilotService:
         )
 
         # Fetch the job
-        result = await self.db.execute(
-            select(Job).where(Job.id == job_id, Job.user_id == user_id)
-        )
+        result = await self.db.execute(select(Job).where(Job.id == job_id, Job.user_id == user_id))
         job = result.scalar_one_or_none()
 
         # Fetch the user's default resume (or most recent)
@@ -158,8 +156,7 @@ class CopilotService:
             except Exception as exc:
                 logger.error("cover_letter_llm_failed", error=str(exc))
                 content = (
-                    f"Cover letter generation encountered an error: {exc}. "
-                    "Please try again later."
+                    f"Cover letter generation encountered an error: {exc}. Please try again later."
                 )
         elif not settings.openrouter_api_key:
             content = "Cover letter generation requires an OpenRouter API key to be configured."

@@ -17,24 +17,18 @@ class CompanyService:
         self.db = db
 
     async def list_companies(self) -> list[Company]:
-        result = await self.db.scalars(
-            select(Company).order_by(Company.canonical_name)
-        )
+        result = await self.db.scalars(select(Company).order_by(Company.canonical_name))
         return list(result.all())
 
     async def get_company(self, company_id: str) -> Company:
-        result = await self.db.execute(
-            select(Company).where(Company.id == company_id)
-        )
+        result = await self.db.execute(select(Company).where(Company.id == company_id))
         company = result.scalar_one_or_none()
         if company is None:
             raise NotFoundError(f"Company {company_id} not found")
         return company
 
     async def resolve_company(self, name: str) -> Company:
-        result = await self.db.execute(
-            select(Company).where(Company.canonical_name.ilike(name))
-        )
+        result = await self.db.execute(select(Company).where(Company.canonical_name.ilike(name)))
         company = result.scalar_one_or_none()
         if company is not None:
             return company

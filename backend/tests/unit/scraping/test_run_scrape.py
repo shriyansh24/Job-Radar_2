@@ -59,9 +59,7 @@ def _service_with_scraper(scraper: ScraperPort) -> ScrapingService:
     svc.db = MagicMock()
     svc.settings = _settings()
     svc._scrapers = {scraper.source_name: scraper}
-    svc._rate_limiters = {
-        scraper.source_name: TokenBucketLimiter(rate=1.0, burst=5)
-    }
+    svc._rate_limiters = {scraper.source_name: TokenBucketLimiter(rate=1.0, burst=5)}
     svc._circuit_breakers = {scraper.source_name: CircuitBreaker()}
     svc._create_run_record = AsyncMock(return_value=None)
     svc._persist_jobs = AsyncMock(return_value=(0, 0))

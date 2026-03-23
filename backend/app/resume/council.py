@@ -97,13 +97,15 @@ async def council_evaluate(
             continue
         model_name = res.pop("_model", "unknown")
         score = float(res.get("score", 0))
-        evaluations.append({
-            "model": model_name,
-            "score": score,
-            "feedback": res.get("feedback", ""),
-            "strengths": res.get("strengths", []),
-            "weaknesses": res.get("weaknesses", []),
-        })
+        evaluations.append(
+            {
+                "model": model_name,
+                "score": score,
+                "feedback": res.get("feedback", ""),
+                "strengths": res.get("strengths", []),
+                "weaknesses": res.get("weaknesses", []),
+            }
+        )
         scores.append(score)
 
     overall = round(sum(scores) / len(scores), 1) if scores else None
@@ -115,9 +117,15 @@ async def council_evaluate(
         if spread <= 10:
             consensus = f"Strong consensus: models agree on a score of ~{avg}"
         elif spread <= 25:
-            consensus = f"Moderate consensus: scores range from {min(scores):.0f} to {max(scores):.0f} (avg {avg})"
+            consensus = (
+                f"Moderate consensus: scores range from {min(scores):.0f} to "
+                f"{max(scores):.0f} (avg {avg})"
+            )
         else:
-            consensus = f"Divergent opinions: scores range widely from {min(scores):.0f} to {max(scores):.0f}"
+            consensus = (
+                f"Divergent opinions: scores range widely from {min(scores):.0f} to "
+                f"{max(scores):.0f}"
+            )
     elif len(scores) == 1:
         consensus = "Single model evaluation (other models failed)"
     else:
