@@ -20,7 +20,13 @@ from app.resume.council import council_evaluate as _council_evaluate
 from app.resume.gap_analyzer import run_gap_analysis
 from app.resume.models import ResumeVersion
 from app.resume.prompts import STAGE1_PROMPT, STAGE2_PROMPT, STAGE3_PROMPT
-from app.resume.schemas import CouncilRequest, GapAnalysisRequest, ResumeTailorRequest
+from app.resume.schemas import (
+    VALID_TONES,
+    CouncilRequest,
+    CoverLetterGenerateRequest,
+    GapAnalysisRequest,
+    ResumeTailorRequest,
+)
 from app.shared.errors import NotFoundError
 
 logger = structlog.get_logger()
@@ -246,3 +252,73 @@ class ResumeService:
             job_description=job_description,
             llm_client=self._llm,
         )
+
+    # -- Cover letter generation (B6) --------------------------------------
+
+    async def generate_cover_letter(
+        self, request: CoverLetterGenerateRequest, user_id: uuid.UUID
+    ) -> dict[str, Any]:
+        from app.companies.models import Company
+        from app.nlp.cover_letter import generate_cover_letter as _generate_cl
+
+        tone = request.tone
+        if tone not in VALID_TONES:
+            raise ValueError(
+                f"Invalid tone {tone!r}. Must be one of: {sorted(VALID_TONES)}"
+            )
+
+        # Map B6 tones to existing cover_letter.py styles
+        tone_to_style = {
+            "formal": "professional",
+            "conversational": "conversational",
+            "enthusiastic": "storytelling",
+        }
+        style = tone_to_style[tone]
+
+        if request.resume_version_id:
+            version = await self._get_resume(request.resume_version_id, user_id)
+        else:
+            version = await self._get_default_resume(user_id)
+
+        job = await self._get_job(request.job_id, user_id)
+        resume_parsed = self._resume_as_parsed(version)
+
+        # Build company context from DB (B6 enhancement)
+        company_context = ""
+        company_context_used = False
+        if job.company_name:
+            company = await self.db.scalar(
+                select(Company).where(
+                    Company.canonical_name.ilike(job.company_name)
+                )
+            )
+            if company:
+                company_context_used = True
+                parts = [f"Company: {company.canonical_name}"]
+                if company.domain:
+                    parts.append(f"Domain: {company.domain}")
+                if company.ats_provider:
+                    parts.append(f"ATS: {company.ats_provider}")
+                company_context = "\n".join(parts)
+
+        job_data = self._job_as_dict(job)
+        job_data["company_name"] = job.company_name or "the company"
+        job_data["company_context"] = company_context
+
+        result = await _generate_cl(
+            resume_parsed=resume_parsed,
+            job_data=job_data,
+            style=style,
+            template=request.template,
+        )
+
+        return {
+            "content": result.content,
+            "key_points_addressed": result.key_points_addressed,
+            "skills_highlighted": result.skills_highlighted,
+            "company_research_notes": result.company_research_notes,
+            "word_count": result.word_count,
+            "reading_level": result.reading_level,
+            "tone_used": tone,
+            "company_context_used": company_context_used,
+        }

@@ -3,6 +3,20 @@
 ## Blocking Bugs
 - None verified in the current `2026-03-23` full validation pass.
 
+## Fixed Structural Gaps (2026-03-23)
+- All 10 P2 DB tables created via consolidation migration `005`
+- `email` and `outcomes` routers mounted in `main.py` (23 routers total)
+- `ir_schema.py`, `renderer.py` recovered; `professional.html` template created
+- `users.created_at`/`updated_at` fixed to `timestamp with time zone`
+- Ruff clean, 716 backend tests pass
+
+## Remaining Frontend Gaps
+- No API modules or pages for: email, networking, outcomes, copilot chat
+- No-op stubs: change password, delete account, clear data (no backend endpoints)
+- API keys collected in Settings/Onboarding but never persisted to backend
+- Auto-apply run/pause/applySingle defined but no UI triggers
+- Semantic search endpoint exists but not wired into Job Board
+
 ## Non-Blocking Residuals
 - Vitest still prints `--localstorage-file was provided without a valid path` warnings during frontend tests.
 - Repo-wide strict backend mypy is still deferred; the current CI gate is intentionally scoped to `app/auth/service.py`, `app/config.py`, `app/shared/middleware.py`, `app/scraping/deduplication.py`, and `app/scraping/port.py`.
@@ -21,7 +35,8 @@
 - Further parser tuning for difficult JS-heavy career pages
 - End-to-end Playwright coverage
 - Longer-term vendoring/repackaging decisions for scraper dependencies
+- Rebase feat/p2-polish-advanced onto current main
 
 ## Historical Planning Material
 - Future design notes live in `docs/research/`.
-- Historical scraper implementation plans live in `docs/superpowers/`.
+- Feature spec reference preserved in Claude memory (`reference_spec_features.md`).

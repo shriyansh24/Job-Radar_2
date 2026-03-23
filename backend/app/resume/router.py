@@ -7,9 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 from app.dependencies import get_current_user, get_db
+from app.resume.archetypes import (
+    ArchetypeCreate,
+    ArchetypeResponse,
+    ArchetypeService,
+    AutoSelectResponse,
+)
 from app.resume.schemas import (
     CouncilRequest,
     CouncilResponse,
+    CoverLetterGenerateRequest,
+    CoverLetterGenerateResponse,
     GapAnalysisRequest,
     GapAnalysisResponse,
     ResumeTailorRequest,
@@ -108,3 +116,81 @@ async def council_evaluate(
     svc = ResumeService(db)
     result = await svc.council_evaluate(data, user.id)
     return CouncilResponse(**result)
+
+
+# ---------------------------------------------------------------------------
+# Archetype endpoints (B5)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/archetypes", response_model=list[ArchetypeResponse])
+async def list_archetypes(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[ArchetypeResponse]:
+    svc = ArchetypeService(db)
+    items = await svc.list_archetypes(user.id)
+    return [ArchetypeResponse.model_validate(a) for a in items]
+
+
+@router.post("/archetypes", response_model=ArchetypeResponse, status_code=201)
+async def create_archetype(
+    data: ArchetypeCreate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ArchetypeResponse:
+    svc = ArchetypeService(db)
+    arch = await svc.create_archetype(user.id, data)
+    return ArchetypeResponse.model_validate(arch)
+
+
+@router.get("/archetypes/{archetype_id}", response_model=ArchetypeResponse)
+async def get_archetype(
+    archetype_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ArchetypeResponse:
+    svc = ArchetypeService(db)
+    arch = await svc.get_archetype(archetype_id, user.id)
+    return ArchetypeResponse.model_validate(arch)
+
+
+@router.delete("/archetypes/{archetype_id}", status_code=204, response_model=None)
+async def delete_archetype(
+    archetype_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    svc = ArchetypeService(db)
+    await svc.delete_archetype(user.id, archetype_id)
+
+
+@router.post("/archetypes/auto-select/{job_id}", response_model=AutoSelectResponse)
+async def auto_select_archetype(
+    job_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AutoSelectResponse:
+    svc = ArchetypeService(db)
+    arch, score, reason = await svc.select_best_archetype(user.id, job_id)
+    return AutoSelectResponse(
+        archetype=ArchetypeResponse.model_validate(arch),
+        score=score,
+        reason=reason,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cover letter generation endpoint (B6)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/cover-letter/generate", response_model=CoverLetterGenerateResponse)
+async def generate_cover_letter_endpoint(
+    data: CoverLetterGenerateRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> CoverLetterGenerateResponse:
+    svc = ResumeService(db)
+    result = await svc.generate_cover_letter(data, user.id)
+    return CoverLetterGenerateResponse(**result)
