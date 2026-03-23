@@ -15,7 +15,7 @@ revision: str = "503ca7a300d9"
 down_revision: Union[str, None] = "aaba1d3f957f"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
-_ALEMBIC_METADATA = (revision, down_revision, branch_labels, depends_on)
+_unused_alembic_metadata = (revision, down_revision, branch_labels, depends_on)
 
 
 def upgrade() -> None:

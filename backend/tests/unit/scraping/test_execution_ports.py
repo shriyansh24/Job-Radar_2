@@ -104,7 +104,8 @@ async def test_browser_port_default_methods_raise_and_close_is_noop() -> None:
         await port.render("https://example.com")
     with pytest.raises(NotImplementedError):
         await port.health_check()
-    assert await port.close() is None
+    close_result = await port.close()
+    assert close_result is None
 
 
 @pytest.mark.asyncio
@@ -117,7 +118,8 @@ async def test_fetcher_port_default_methods_raise_and_close_is_noop() -> None:
         await port.fetch("https://example.com")
     with pytest.raises(NotImplementedError):
         await port.health_check()
-    assert await port.close() is None
+    close_result = await port.close()
+    assert close_result is None
 
 
 @pytest.mark.asyncio
