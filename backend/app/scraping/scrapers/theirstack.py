@@ -40,8 +40,13 @@ class TheirStackScraper(BaseScraper):
             if item.get("date_posted"):
                 try:
                     posted_at = datetime.fromisoformat(item["date_posted"])
-                except (ValueError, TypeError):
-                    pass
+                except (ValueError, TypeError) as exc:
+                    logger.debug(
+                        "theirstack.invalid_date_posted",
+                        query=query,
+                        raw_value=item.get("date_posted"),
+                        error=str(exc),
+                    )
 
             jobs.append(
                 ScrapedJob(
@@ -63,5 +68,6 @@ class TheirStackScraper(BaseScraper):
             headers = {"Authorization": f"Bearer {self.settings.theirstack_api_key}"}
             resp = await self.client.get("https://api.theirstack.com/v1/health", headers=headers)
             return resp.status_code == 200
-        except Exception:
+        except Exception as exc:
+            logger.debug("theirstack.health_check_failed", error=str(exc))
             return False

@@ -94,7 +94,7 @@ async def test_active_sessions_counter() -> None:
     await entered.wait()
     assert pool.active_sessions == 1
     release.set()
-    await task
+    assert await task is None
     assert pool.active_sessions == 0
 
 

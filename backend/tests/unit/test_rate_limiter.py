@@ -6,20 +6,12 @@ import time
 import pytest
 
 import app.scraping.rate_limiter as rate_limiter_module
-from app.scraping.rate_limiter import (
-    DEFAULT_POLICIES,
-    CircuitBreaker,
-    RateLimiter,
-    RatePolicy,
-    TokenBucketLimiter,
-    get_limiter,
-)
 
 
 class TestTokenBucketLimiter:
     @pytest.mark.asyncio
     async def test_burst_allows_immediate(self):
-        limiter = TokenBucketLimiter(rate=1.0, burst=3)
+        limiter = rate_limiter_module.TokenBucketLimiter(rate=1.0, burst=3)
         start = time.monotonic()
         for _ in range(3):
             await limiter.acquire()
@@ -28,7 +20,7 @@ class TestTokenBucketLimiter:
 
     @pytest.mark.asyncio
     async def test_rate_limits_after_burst(self):
-        limiter = TokenBucketLimiter(rate=10.0, burst=1)
+        limiter = rate_limiter_module.TokenBucketLimiter(rate=10.0, burst=1)
         await limiter.acquire()  # Use the one burst token
         start = time.monotonic()
         await limiter.acquire()  # Should wait ~0.1s
@@ -37,7 +29,7 @@ class TestTokenBucketLimiter:
 
     @pytest.mark.asyncio
     async def test_tokens_replenish(self):
-        limiter = TokenBucketLimiter(rate=100.0, burst=2)
+        limiter = rate_limiter_module.TokenBucketLimiter(rate=100.0, burst=2)
         await limiter.acquire()
         await limiter.acquire()
         # Tokens exhausted, wait for replenishment
@@ -56,12 +48,12 @@ class TestCircuitBreaker:
         return current
 
     def test_initial_state_closed(self):
-        cb = CircuitBreaker(failure_threshold=3, recovery_timeout=10)
+        cb = rate_limiter_module.CircuitBreaker(failure_threshold=3, recovery_timeout=10)
         assert cb.state == "closed"
         assert cb.can_execute()
 
     def test_opens_after_threshold(self):
-        cb = CircuitBreaker(failure_threshold=3, recovery_timeout=10)
+        cb = rate_limiter_module.CircuitBreaker(failure_threshold=3, recovery_timeout=10)
         cb.record_failure()
         cb.record_failure()
         assert cb.can_execute()
@@ -70,7 +62,7 @@ class TestCircuitBreaker:
         assert not cb.can_execute()
 
     def test_success_resets_count(self):
-        cb = CircuitBreaker(failure_threshold=3, recovery_timeout=10)
+        cb = rate_limiter_module.CircuitBreaker(failure_threshold=3, recovery_timeout=10)
         cb.record_failure()
         cb.record_failure()
         cb.record_success()
@@ -82,7 +74,7 @@ class TestCircuitBreaker:
 
     def test_half_open_after_recovery(self, monkeypatch: pytest.MonkeyPatch):
         current = self._set_now(monkeypatch)
-        cb = CircuitBreaker(failure_threshold=2, recovery_timeout=0.05)
+        cb = rate_limiter_module.CircuitBreaker(failure_threshold=2, recovery_timeout=0.05)
         cb.record_failure()
         cb.record_failure()
         assert cb.state == "open"
@@ -95,7 +87,7 @@ class TestCircuitBreaker:
     def test_half_open_after_recovery_uses_high_resolution_clock(self, monkeypatch):
         values = iter([100.0, 100.03, 100.079, 100.081])
         monkeypatch.setattr(rate_limiter_module, "_now", lambda: next(values))
-        cb = CircuitBreaker(failure_threshold=2, recovery_timeout=0.05)
+        cb = rate_limiter_module.CircuitBreaker(failure_threshold=2, recovery_timeout=0.05)
 
         cb.record_failure()
         cb.record_failure()
@@ -106,7 +98,7 @@ class TestCircuitBreaker:
 
     def test_half_open_success_closes(self, monkeypatch: pytest.MonkeyPatch):
         current = self._set_now(monkeypatch)
-        cb = CircuitBreaker(failure_threshold=2, recovery_timeout=0.01)
+        cb = rate_limiter_module.CircuitBreaker(failure_threshold=2, recovery_timeout=0.01)
         cb.record_failure()
         cb.record_failure()
         current[0] += 0.011
@@ -117,7 +109,7 @@ class TestCircuitBreaker:
 
     def test_half_open_failure_reopens(self, monkeypatch: pytest.MonkeyPatch):
         current = self._set_now(monkeypatch)
-        cb = CircuitBreaker(failure_threshold=2, recovery_timeout=0.01)
+        cb = rate_limiter_module.CircuitBreaker(failure_threshold=2, recovery_timeout=0.01)
         cb.record_failure()
         cb.record_failure()
         current[0] += 0.011
@@ -127,16 +119,18 @@ class TestCircuitBreaker:
 
 
 def test_workday_has_dedicated_policy():
-    limiter = get_limiter("workday")
+    limiter = rate_limiter_module.get_limiter("workday")
 
-    assert "workday" in DEFAULT_POLICIES
-    assert limiter._policy is DEFAULT_POLICIES["workday"]
+    assert "workday" in rate_limiter_module.DEFAULT_POLICIES
+    assert limiter._policy is rate_limiter_module.DEFAULT_POLICIES["workday"]
     assert limiter._policy.rps == 5.0
 
 
 @pytest.mark.asyncio
 async def test_with_retry_raises_runtime_error_when_no_attempts_run():
-    limiter = RateLimiter(RatePolicy(rps=1.0, max_retries=-1))
+    limiter = rate_limiter_module.RateLimiter(
+        rate_limiter_module.RatePolicy(rps=1.0, max_retries=-1)
+    )
 
     async def never_called():
         raise AssertionError("callback should not run")

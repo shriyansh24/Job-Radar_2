@@ -21,10 +21,12 @@ from sqlalchemy import select, text
 
 # Import auth models first so SQLAlchemy registers the `users` table in metadata
 # before we try to flush ScrapeTarget rows (which have a FK to users.id).
-import app.auth.models  # noqa: F401
+from app.auth import models as auth_models
 from app.database import async_session_factory
 from app.scraping.control.classifier import assign_priority, classify_target
 from app.scraping.models import ScrapeTarget
+
+_ = auth_models.User
 
 if TYPE_CHECKING:
     from app.profile.models import UserProfile

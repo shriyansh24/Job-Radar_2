@@ -30,7 +30,7 @@ import Skeleton from "../components/ui/Skeleton";
 import Textarea from "../components/ui/Textarea";
 import Toggle from "../components/ui/Toggle";
 import { toast } from "../components/ui/toastService";
-import { cn } from "../lib/utils";
+import { cn, getSafeExternalUrl } from "../lib/utils";
 
 // ---------- helpers ----------
 
@@ -153,6 +153,7 @@ function TargetDetail({
     queryFn: () => scraperApi.getTarget(targetId).then((r) => r.data),
     enabled: !!targetId,
   });
+  const safeTargetUrl = getSafeExternalUrl(target?.url);
 
   const triggerMutation = useMutation({
     mutationFn: (id: string) => scraperApi.triggerTarget(id),
@@ -241,15 +242,19 @@ function TargetDetail({
             <p className="text-xs font-medium text-text-muted uppercase tracking-wide">
               URL
             </p>
-            <a
-              href={target.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-accent-primary hover:underline break-all flex items-start gap-1"
-            >
-              <LinkSimple size={14} className="mt-0.5 shrink-0" />
-              {target.url}
-            </a>
+            {safeTargetUrl ? (
+              <a
+                href={safeTargetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-accent-primary hover:underline break-all flex items-start gap-1"
+              >
+                <LinkSimple size={14} className="mt-0.5 shrink-0" />
+                {safeTargetUrl}
+              </a>
+            ) : (
+              <span className="text-sm text-text-secondary break-all">{target.url}</span>
+            )}
           </div>
 
           {/* Stats grid */}
@@ -390,6 +395,27 @@ interface ImportEntry {
   company_name?: string;
 }
 
+function normalizeImportEntries(entries: ImportEntry[]) {
+  const normalized: ImportEntry[] = [];
+
+  for (const entry of entries) {
+    const safeUrl = getSafeExternalUrl(entry.url);
+    if (!safeUrl) {
+      return {
+        entries: [] as ImportEntry[],
+        error: 'Each entry must have a valid "http://" or "https://" URL',
+      };
+    }
+
+    normalized.push({
+      ...entry,
+      url: safeUrl,
+    });
+  }
+
+  return { entries: normalized, error: null as string | null };
+}
+
 function ImportModal({
   open,
   onClose,
@@ -434,7 +460,13 @@ function ImportModal({
         setPreview(null);
         return;
       }
-      setPreview(entries);
+      const { entries: normalizedEntries, error } = normalizeImportEntries(entries);
+      if (error) {
+        setParseError(error);
+        setPreview(null);
+        return;
+      }
+      setPreview(normalizedEntries);
     } catch (err) {
       setParseError(`Invalid JSON: ${(err as Error).message}`);
       setPreview(null);
@@ -465,8 +497,14 @@ function ImportModal({
             ...(nameIdx !== -1 ? { company_name: cols[nameIdx] } : {}),
           };
         });
-        setJsonText(JSON.stringify(entries, null, 2));
-        setPreview(entries);
+        const { entries: normalizedEntries, error } = normalizeImportEntries(entries);
+        if (error) {
+          setParseError(error);
+          setPreview(null);
+          return;
+        }
+        setJsonText(JSON.stringify(normalizedEntries, null, 2));
+        setPreview(normalizedEntries);
       } else {
         setJsonText(text);
         setParseError(null);

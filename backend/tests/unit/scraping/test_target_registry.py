@@ -20,29 +20,10 @@ def _make_mock_workbook(rows: list[tuple]) -> MagicMock:
     return mock_wb
 
 
-def _make_mock_db(*, duplicates: set[str] | None = None) -> AsyncMock:
+def _make_mock_db() -> AsyncMock:
     """Create a mock AsyncSession.
-
-    Args:
-        duplicates: set of URLs that should be treated as already existing.
     """
-    dups = duplicates or set()
     mock_db = AsyncMock()
-
-    async def _scalar_side_effect(stmt):
-        # Extract the URL being checked from the where clause.
-        # The first positional clause has .right.value for the URL.
-        try:
-            clauses = stmt.whereclause
-            # Walk the binary expression tree to find url value
-            if hasattr(clauses, "clauses"):
-                for clause in clauses.clauses:
-                    if hasattr(clause, "right") and hasattr(clause.right, "value"):
-                        if clause.right.value in dups:
-                            return MagicMock()  # existing record
-        except Exception:
-            pass
-        return None
 
     mock_db.scalar = AsyncMock(return_value=None)
     # db.add() is synchronous in SQLAlchemy, so use a regular MagicMock
