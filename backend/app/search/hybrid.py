@@ -84,12 +84,12 @@ class HybridSearchService:
             ),
             semantic AS (
                 SELECT id, ROW_NUMBER() OVER (
-                    ORDER BY embedding <=> :q_emb::vector
+                    ORDER BY embedding_v2 <=> :q_emb::vector
                 ) as rank
                 FROM jobs
                 WHERE user_id = :user_id
                   AND is_active = true
-                  AND embedding IS NOT NULL
+                  AND embedding_v2 IS NOT NULL
                 LIMIT :fetch_limit
             ),
             rrf AS (

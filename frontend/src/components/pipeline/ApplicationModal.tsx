@@ -1,7 +1,7 @@
 import { ArrowRight } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { pipelineApi, type Application, type StatusHistory } from "../../api/pipeline";
 import InterviewPrepPanel from "../interview/InterviewPrepPanel";
 import Badge from "../ui/Badge";
@@ -29,6 +29,10 @@ export default function ApplicationModal({ open, onClose, application }: Applica
   });
 
   const showPrepTab = application?.status === "interviewing" || application?.status === "screening";
+
+  useEffect(() => {
+    setActiveTab("history");
+  }, [application?.id, showPrepTab]);
 
   return (
     <Modal open={open} onClose={onClose} title={application?.position_title ?? "Application"}>

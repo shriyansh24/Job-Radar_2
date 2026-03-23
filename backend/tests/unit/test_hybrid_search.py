@@ -218,3 +218,4 @@ class TestPostgresHybridSearch:
         assert params["sem_w"] == SEMANTIC_WEIGHT
         assert params["k"] == RRF_K
         assert params["fetch_limit"] == 15 * 3
+        assert "embedding_v2 <=>" in str(call_args[0][0])

@@ -148,6 +148,40 @@ async def test_update_outcome(db_session: AsyncSession) -> None:
 
 
 @pytest.mark.asyncio
+async def test_update_outcome_refreshes_company_insight(db_session: AsyncSession) -> None:
+    user = await _create_user(db_session)
+    application = await _create_application(db_session, user, company_name="RefreshCo")
+
+    svc = OutcomeService(db_session)
+    await svc.record_outcome(
+        application_id=application.id,
+        user_id=user.id,
+        data=OutcomeCreate(
+            stage_reached="rejected",
+            rejection_reason="timing",
+            days_to_response=4,
+        ),
+    )
+
+    await svc.update_outcome(
+        application_id=application.id,
+        user_id=user.id,
+        data=OutcomeUpdate(
+            offer_amount=140000,
+            rejection_reason=None,
+            stage_reached="offer",
+        ),
+    )
+
+    insight = await svc.get_company_insights("RefreshCo", user.id)
+    assert insight.total_applications == 1
+    assert insight.offer_rate == 1.0
+    assert insight.offers_received == 1
+    assert insight.avg_offer_amount == 140000.0
+    assert insight.rejection_rate == 0.0
+
+
+@pytest.mark.asyncio
 async def test_update_outcome_not_found(db_session: AsyncSession) -> None:
     user = await _create_user(db_session)
 

@@ -65,7 +65,7 @@ class EmbeddingService:
         prefixed = [f"{task_prefix}: {t}" for t in texts]
         return self._batch_embed_onnx(prefixed)
 
-    async def _embed_ollama(self, text: str) -> list[float]:
+    async def _embed_ollama(self, text: str) -> list[float] | None:
         import httpx
 
         async with httpx.AsyncClient(timeout=30) as client:
@@ -77,8 +77,8 @@ class EmbeddingService:
             data = resp.json()
             embeddings = data.get("embeddings", [])
             if embeddings:
-                return embeddings[0]  # type: ignore[no-any-return]
-            return []
+                return self._normalize_embedding(embeddings[0])
+            return None
 
     def _load_onnx_model(self) -> object:
         if self._onnx_model is None:
@@ -102,7 +102,7 @@ class EmbeddingService:
         try:
             model = self._load_onnx_model()
             result = model.encode(text)  # type: ignore[union-attr]
-            return result.tolist() if hasattr(result, "tolist") else list(result)
+            return self._normalize_embedding(result)
         except ImportError:
             return None
 
@@ -133,6 +133,7 @@ class EmbeddingService:
         query = (
             select(Job)
             .where(Job.is_enriched.is_(True))
+            .where(text("embedding_v2 IS NULL"))
             .limit(limit)
         )
         if user_id:
@@ -159,7 +160,7 @@ class EmbeddingService:
         try:
             for update in updates:
                 await self.db.execute(
-                    text("UPDATE jobs SET embedding = :emb WHERE id = :id"),
+                    text("UPDATE jobs SET embedding_v2 = :emb WHERE id = :id"),
                     update,
                 )
             await self.db.commit()
@@ -170,3 +171,15 @@ class EmbeddingService:
 
         logger.info("embeddings_generated", count=len(updates), total=len(jobs))
         return len(updates)
+
+    @staticmethod
+    def _normalize_embedding(raw: object) -> list[float] | None:
+        vector = raw.tolist() if hasattr(raw, "tolist") else list(raw)
+        if len(vector) != EMBEDDING_DIM:
+            logger.warning(
+                "embedding_invalid_dimension",
+                expected=EMBEDDING_DIM,
+                actual=len(vector),
+            )
+            return None
+        return [float(value) for value in vector]

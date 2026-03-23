@@ -30,7 +30,7 @@ async def run_embedding_backfill(ctx: dict | None = None) -> None:
             remaining = await db.scalar(
                 select(func.count())
                 .select_from(Job)
-                .where(Job.is_enriched.is_(True))
+                .where(Job.is_enriched.is_(True), text("embedding_v2 IS NULL"))
             )
 
             if not remaining:
@@ -43,7 +43,7 @@ async def run_embedding_backfill(ctx: dict | None = None) -> None:
             jobs = (
                 await db.scalars(
                     select(Job)
-                    .where(Job.is_enriched.is_(True))
+                    .where(Job.is_enriched.is_(True), text("embedding_v2 IS NULL"))
                     .order_by(Job.created_at.asc())
                     .limit(BACKFILL_BATCH_SIZE)
                 )
@@ -66,7 +66,7 @@ async def run_embedding_backfill(ctx: dict | None = None) -> None:
                         continue
 
                     await db.execute(
-                        text("UPDATE jobs SET embedding = :emb WHERE id = :id"),
+                        text("UPDATE jobs SET embedding_v2 = :emb WHERE id = :id"),
                         {"emb": str(embedding), "id": job.id},
                     )
                     embedded_count += 1

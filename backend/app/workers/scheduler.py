@@ -7,8 +7,8 @@ from apscheduler.triggers.interval import IntervalTrigger
 from app.workers.alert_worker import check_saved_search_alerts
 from app.workers.auto_apply_worker import run_auto_apply_batch
 from app.workers.digest_worker import run_daily_digest
+from app.workers.embedding_backfill_worker import run_embedding_backfill
 from app.workers.enrichment_worker import (
-    run_embedding_batch,
     run_enrichment_batch,
     run_tfidf_scoring,
 )
@@ -65,7 +65,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Embeddings: every hour
     scheduler.add_job(
-        run_embedding_batch,
+        run_embedding_backfill,
         IntervalTrigger(hours=1),
         id="embedding_batch",
         kwargs={"ctx": {}},

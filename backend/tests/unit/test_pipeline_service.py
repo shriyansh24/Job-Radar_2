@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from unittest.mock import MagicMock, patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -138,13 +139,14 @@ async def test_full_pipeline_flow(
     """Test complete flow: saved -> applied -> screening -> interviewing -> offer -> accepted."""
     svc = PipelineService(db_session)
     transitions = ["applied", "screening", "interviewing", "offer", "accepted"]
-    for status in transitions:
-        app = await svc.transition_status(
-            sample_app.id,
-            StatusTransition(new_status=status, change_source="user"),
-            user_id,
-        )
-        assert app.status == status
+    with patch.object(svc, "_schedule_interview_prep", MagicMock()):
+        for status in transitions:
+            app = await svc.transition_status(
+                sample_app.id,
+                StatusTransition(new_status=status, change_source="user"),
+                user_id,
+            )
+            assert app.status == status
 
 
 @pytest.mark.asyncio

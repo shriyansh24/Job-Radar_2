@@ -53,6 +53,7 @@ class JobResponse(JobBase):
     green_flags: list[str] = []
     match_score: Decimal | None = None
     tfidf_score: Decimal | None = None
+    freshness_score: float | None = None
     status: str
     is_starred: bool
     is_enriched: bool

@@ -1,7 +1,7 @@
 """Add tailoring_sessions table for B2 4-stage tailoring
 
 Revision ID: b2b3b4_tailor
-Revises: 503ca7a300d9
+Revises: 20260323_add_outcome_tables
 Create Date: 2026-03-23
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "b2b3b4_tailor"
-down_revision = "503ca7a300d9"
+down_revision = "20260323_add_outcome_tables"
 branch_labels = None
 depends_on = None
 

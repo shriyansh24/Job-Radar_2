@@ -72,15 +72,12 @@ class OutcomeService:
             feedback_notes=data.feedback_notes,
         )
         self.db.add(outcome)
+        await self.db.flush()
 
         # Update company insight
         company_name = application.company_name
         if company_name:
-            await self._update_company_insight(
-                user_id=user_id,
-                company_name=company_name,
-                outcome=outcome,
-            )
+            await self._update_company_insight(user_id=user_id, company_name=company_name)
 
         await self.db.commit()
         await self.db.refresh(outcome)
@@ -105,6 +102,22 @@ class OutcomeService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(outcome, field, value)
+
+        application = await self.db.scalar(
+            select(Application).where(
+                Application.id == application_id,
+                Application.user_id == user_id,
+            )
+        )
+        if application is None:
+            raise NotFoundError("Application not found")
+
+        await self.db.flush()
+        if application.company_name:
+            await self._update_company_insight(
+                user_id=user_id,
+                company_name=application.company_name,
+            )
 
         await self.db.commit()
         await self.db.refresh(outcome)
@@ -312,9 +325,37 @@ class OutcomeService:
         self,
         user_id: uuid.UUID,
         company_name: str,
-        outcome: ApplicationOutcome,
     ) -> None:
-        """Upsert company insight row with data from new outcome."""
+        """Recompute the cached company insight from all recorded outcomes."""
+        result = await self.db.execute(
+            select(ApplicationOutcome, Application.created_at)
+            .join(Application, Application.id == ApplicationOutcome.application_id)
+            .where(
+                Application.company_name == company_name,
+                ApplicationOutcome.user_id == user_id,
+            )
+        )
+        rows = list(result.all())
+        outcomes = [row[0] for row in rows]
+
+        total = len(outcomes)
+        if total == 0:
+            return
+
+        ghosted = sum(1 for outcome in outcomes if outcome.was_ghosted)
+        offers = [outcome for outcome in outcomes if outcome.offer_amount is not None]
+        rejected = sum(1 for outcome in outcomes if outcome.rejection_reason is not None)
+        responded = [outcome for outcome in outcomes if outcome.days_to_response is not None]
+        avg_response = (
+            sum(outcome.days_to_response for outcome in responded) / len(responded)
+            if responded
+            else None
+        )
+        avg_offer = (
+            sum(outcome.offer_amount for outcome in offers) / len(offers) if offers else None
+        )
+        last_applied_at = max((row[1] for row in rows if row[1] is not None), default=None)
+
         result = await self.db.execute(
             select(CompanyInsight).where(
                 CompanyInsight.user_id == user_id,
@@ -334,49 +375,17 @@ class OutcomeService:
             )
             self.db.add(insight)
 
-        insight.total_applications += 1
-        insight.last_applied_at = datetime.now(timezone.utc)
-
-        if outcome.was_ghosted:
-            insight.ghosted_count += 1
-
-        if outcome.days_to_response is not None:
-            insight.callback_count += 1
-            # Running average
-            if insight.avg_response_days is not None:
-                total_days = insight.avg_response_days * (insight.callback_count - 1)
-                insight.avg_response_days = (
-                    total_days + outcome.days_to_response
-                ) / insight.callback_count
-            else:
-                insight.avg_response_days = float(outcome.days_to_response)
-
-        if outcome.offer_amount is not None:
-            insight.offers_received += 1
-            if insight.avg_offer_amount is not None:
-                total_offer = insight.avg_offer_amount * (insight.offers_received - 1)
-                insight.avg_offer_amount = (
-                    total_offer + outcome.offer_amount
-                ) / insight.offers_received
-            else:
-                insight.avg_offer_amount = float(outcome.offer_amount)
-
-        # Recompute rates
-        total = insight.total_applications
-        if total > 0:
-            insight.ghost_rate = round(insight.ghosted_count / total, 2)
-            insight.offer_rate = round(insight.offers_received / total, 2)
-
-        # Rejection rate needs a count of rejected outcomes for this company
-        rejected_result = await self.db.execute(
-            select(func.count(ApplicationOutcome.id))
-            .join(Application, Application.id == ApplicationOutcome.application_id)
-            .where(
-                Application.company_name == company_name,
-                ApplicationOutcome.user_id == user_id,
-                ApplicationOutcome.rejection_reason.isnot(None),
-            )
+        insight.total_applications = total
+        insight.callback_count = len(responded)
+        insight.avg_response_days = (
+            round(avg_response, 1) if avg_response is not None else None
         )
-        rejected_count = rejected_result.scalar() or 0
-        if total > 0:
-            insight.rejection_rate = round(rejected_count / total, 2)
+        insight.ghosted_count = ghosted
+        insight.ghost_rate = round(ghosted / total, 2) if total > 0 else 0.0
+        insight.rejection_rate = round(rejected / total, 2) if total > 0 else 0.0
+        insight.offer_rate = round(len(offers) / total, 2) if total > 0 else 0.0
+        insight.offers_received = len(offers)
+        insight.avg_offer_amount = (
+            round(avg_offer, 2) if avg_offer is not None else None
+        )
+        insight.last_applied_at = last_applied_at or datetime.now(timezone.utc)

@@ -5,12 +5,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.enrichment.embedding import EmbeddingService
+from app.enrichment.embedding import EMBEDDING_DIM, EmbeddingService
 
 
 class _FakeModel:
     def encode(self, text: str):  # noqa: ARG002
-        return [0.1, 0.2, 0.3]
+        return [0.1] * EMBEDDING_DIM
 
 
 def _make_settings(**overrides):

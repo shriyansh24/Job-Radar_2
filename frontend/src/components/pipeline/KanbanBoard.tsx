@@ -10,7 +10,6 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-  KeyboardSensor,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -32,7 +31,6 @@ export default function KanbanBoard({ children, onDragTransition, apps }: Kanban
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
     }),
-    useSensor(KeyboardSensor),
   );
 
   function handleDragStart(event: DragStartEvent) {

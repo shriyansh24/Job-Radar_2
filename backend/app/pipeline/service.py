@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import uuid
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 
 import structlog
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.pipeline.models import Application, ApplicationStatusHistory
 from app.pipeline.schemas import (
@@ -25,8 +27,21 @@ logger = structlog.get_logger()
 
 
 class PipelineService:
-    def __init__(self, db: AsyncSession):
+    def __init__(
+        self,
+        db: AsyncSession,
+        task_factory: Callable[[Awaitable[None]], asyncio.Task[None]] | None = None,
+    ):
         self.db = db
+        bind = db.bind
+        if bind is None:
+            raise RuntimeError("PipelineService requires a bound database session")
+        self._session_factory = async_sessionmaker(
+            bind,
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+        self._task_factory = task_factory or asyncio.create_task
 
     async def list_applications(
         self, user_id: uuid.UUID, page: int = 1, page_size: int = 50
@@ -128,8 +143,15 @@ class PipelineService:
         await self.db.refresh(app)
 
         # Auto-trigger interview prep when entering "interviewing" stage
-        if new_status == "interviewing":
-            await self._trigger_interview_prep(app)
+        if new_status == "interviewing" and app.user_id is not None:
+            try:
+                self._schedule_interview_prep(app.id, app.user_id)
+            except Exception:
+                logger.warning(
+                    "pipeline.interview_prep_schedule_failed",
+                    application_id=str(app.id),
+                    exc_info=True,
+                )
 
         return app
 
@@ -147,25 +169,35 @@ class PipelineService:
                 bucket.append(ApplicationResponse.model_validate(app))
         return view
 
-    async def _trigger_interview_prep(self, app: Application) -> None:
+    def _schedule_interview_prep(
+        self, application_id: uuid.UUID, user_id: uuid.UUID
+    ) -> None:
+        self._task_factory(
+            self._run_interview_prep_in_background(application_id, user_id)
+        )
+
+    async def _run_interview_prep_in_background(
+        self, application_id: uuid.UUID, user_id: uuid.UUID
+    ) -> None:
         try:
             from app.interview.prep_engine import InterviewPrepEngine
 
-            engine = InterviewPrepEngine(self.db)
-            await engine.generate_prep(
-                application_id=app.id,
-                user_id=app.user_id,
-                stage="general",
-            )
-            logger.info(
-                "pipeline.interview_prep_auto_triggered",
-                application_id=str(app.id),
-            )
+            async with self._session_factory() as db:
+                engine = InterviewPrepEngine(db)
+                await engine.generate_prep(
+                    application_id=application_id,
+                    user_id=user_id,
+                    stage="general",
+                )
+                logger.info(
+                    "pipeline.interview_prep_auto_triggered",
+                    application_id=str(application_id),
+                )
         except Exception:
             # Best-effort: don't fail the status transition if prep fails
             logger.warning(
                 "pipeline.interview_prep_auto_trigger_failed",
-                application_id=str(app.id),
+                application_id=str(application_id),
                 exc_info=True,
             )
 

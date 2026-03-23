@@ -261,10 +261,10 @@ class TestInterviewPrepEngine:
 
 class TestAutoTrigger:
     @pytest.mark.asyncio
-    @patch("app.interview.prep_engine.InterviewPrepEngine.generate_prep", new_callable=AsyncMock)
+    @patch("app.pipeline.service.PipelineService._schedule_interview_prep")
     async def test_transition_to_interviewing_triggers_prep(
         self,
-        mock_generate: AsyncMock,
+        mock_schedule: AsyncMock,
         db_session: AsyncSession,
         user_id: uuid.UUID,
         sample_app: Application,
@@ -283,16 +283,13 @@ class TestAutoTrigger:
             user_id,
         )
 
-        mock_generate.assert_called_once()
-        call_kwargs = mock_generate.call_args
-        assert call_kwargs.kwargs["application_id"] == sample_app.id
-        assert call_kwargs.kwargs["stage"] == "general"
+        mock_schedule.assert_called_once_with(sample_app.id, user_id)
 
     @pytest.mark.asyncio
-    @patch("app.interview.prep_engine.InterviewPrepEngine.generate_prep", new_callable=AsyncMock)
+    @patch("app.pipeline.service.PipelineService._schedule_interview_prep")
     async def test_transition_to_applied_does_not_trigger(
         self,
-        mock_generate: AsyncMock,
+        mock_schedule: AsyncMock,
         db_session: AsyncSession,
         user_id: uuid.UUID,
         sample_app: Application,
@@ -303,18 +300,18 @@ class TestAutoTrigger:
             StatusTransition(new_status="applied", change_source="user"),
             user_id,
         )
-        mock_generate.assert_not_called()
+        mock_schedule.assert_not_called()
 
     @pytest.mark.asyncio
-    @patch("app.interview.prep_engine.InterviewPrepEngine.generate_prep", new_callable=AsyncMock)
+    @patch("app.pipeline.service.PipelineService._schedule_interview_prep")
     async def test_auto_trigger_failure_does_not_block_transition(
         self,
-        mock_generate: AsyncMock,
+        mock_schedule: AsyncMock,
         db_session: AsyncSession,
         user_id: uuid.UUID,
         sample_app: Application,
     ) -> None:
-        mock_generate.side_effect = RuntimeError("LLM unavailable")
+        mock_schedule.side_effect = RuntimeError("scheduler unavailable")
 
         svc = PipelineService(db_session)
         # saved -> applied -> interviewing

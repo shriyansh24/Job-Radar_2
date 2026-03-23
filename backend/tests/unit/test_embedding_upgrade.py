@@ -150,6 +150,44 @@ async def test_ollama_fallback_to_onnx():
 
 
 @pytest.mark.asyncio
+async def test_embed_returns_none_when_vector_dimension_is_invalid():
+    db = AsyncMock()
+    settings = _make_settings()
+    svc = EmbeddingService(db, settings)
+
+    class _WrongDimModel:
+        def encode(self, text):  # noqa: ARG002
+            return [0.1] * 3
+
+    svc._onnx_model = _WrongDimModel()
+
+    result = await svc.embed("test text")
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_embed_ollama_returns_none_when_no_embedding_is_produced():
+    db = AsyncMock()
+    settings = _make_settings(ollama_enabled=True)
+    svc = EmbeddingService(db, settings)
+
+    response = MagicMock()
+    response.json.return_value = {"embeddings": []}
+    response.raise_for_status.return_value = None
+
+    client = AsyncMock()
+    client.post.return_value = response
+    client.__aenter__.return_value = client
+    client.__aexit__.return_value = None
+
+    with patch("httpx.AsyncClient", return_value=client):
+        result = await svc._embed_ollama("search_document: test")
+
+    assert result is None
+
+
+@pytest.mark.asyncio
 async def test_embed_text_legacy_compat():
     """Legacy embed_text method still works."""
     db = AsyncMock()
@@ -178,6 +216,7 @@ async def test_embed_jobs_batch_commits_on_success():
 
     assert count == 2
     assert db.execute.await_count == 2
+    assert "embedding_v2" in str(db.execute.await_args_list[0].args[0])
     db.commit.assert_awaited_once()
     db.rollback.assert_not_awaited()
 

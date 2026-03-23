@@ -1,7 +1,7 @@
 """add application_outcomes and company_insights tables
 
 Revision ID: 20260323_add_outcome_tables
-Revises: 005, 20260322_a2_normalization, 20260322_add_resume_ir_columns
+Revises: 20260323_embedding_v2_search
 Create Date: 2026-03-23
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "20260323_add_outcome_tables"
-down_revision = ("005", "20260322_a2_normalization", "20260322_add_resume_ir_columns")
+down_revision = "20260323_embedding_v2_search"
 branch_labels = None
 depends_on = None
 

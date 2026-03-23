@@ -48,3 +48,23 @@ def test_feature_revisions_form_a_single_linear_chain():
     assert normalize.down_revision == add_ats.revision
     assert freshness.down_revision == normalize.revision
     assert resume_ir.down_revision == freshness.revision
+
+
+def test_p1_revisions_continue_the_single_head_chain():
+    resume_ir = _load_migration_module(
+        "migration_resume_ir", "20260322_add_resume_ir_columns.py"
+    )
+    embedding_v2 = _load_migration_module(
+        "migration_embedding_v2",
+        "20260323_add_embedding_v2_and_search_trigger.py",
+    )
+    outcomes = _load_migration_module(
+        "migration_outcomes", "20260323_add_outcome_tables.py"
+    )
+    tailoring = _load_migration_module(
+        "migration_tailoring", "b2b3b4_add_tailoring_sessions.py"
+    )
+
+    assert embedding_v2.down_revision == resume_ir.revision
+    assert outcomes.down_revision == embedding_v2.revision
+    assert tailoring.down_revision == outcomes.revision
