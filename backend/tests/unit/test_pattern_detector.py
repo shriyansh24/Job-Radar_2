@@ -6,6 +6,8 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from sqlalchemy import column
+from sqlalchemy.dialects import postgresql, sqlite
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analytics.pattern_detector import PatternDetector
@@ -86,6 +88,25 @@ async def test_empty_response_time(
     assert isinstance(result, list)
     assert len(result) >= 1
     assert result[0]["avg_days_to_response"] == 0.0
+
+
+def test_elapsed_days_expr_uses_extract_on_postgresql(
+    detector: PatternDetector, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(detector, "_dialect_name", lambda: "postgresql")
+    expr = detector._elapsed_days_expr(column("first_response_at"), column("applied_at"))
+    compiled = str(expr.compile(dialect=postgresql.dialect()))
+    assert "EXTRACT" in compiled
+    assert "julianday" not in compiled
+
+
+def test_elapsed_days_expr_uses_julianday_on_sqlite(
+    detector: PatternDetector, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(detector, "_dialect_name", lambda: "sqlite")
+    expr = detector._elapsed_days_expr(column("first_response_at"), column("applied_at"))
+    compiled = str(expr.compile(dialect=sqlite.dialect()))
+    assert "julianday" in compiled
 
 
 @pytest.mark.asyncio

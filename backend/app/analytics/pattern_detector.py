@@ -30,6 +30,20 @@ class PatternDetector:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
+    def _dialect_name(self) -> str:
+        bind = self.db.get_bind()
+        return bind.dialect.name if bind is not None else ""
+
+    def _elapsed_days_expr(self, end_ts, start_ts):
+        if self._dialect_name() == "postgresql":
+            return func.extract("epoch", end_ts - start_ts) / 86400.0
+        return func.julianday(end_ts) - func.julianday(start_ts)
+
+    def _day_of_week_expr(self, column):
+        if self._dialect_name() == "postgresql":
+            return cast(func.extract("dow", column), Integer)
+        return cast(func.strftime("%w", column), Integer)
+
     # ------------------------------------------------------------------
     # a) Callback rate by company size (approximated by job_count in jobs)
     # ------------------------------------------------------------------
@@ -151,10 +165,9 @@ class PatternDetector:
         stmt = (
             select(
                 func.avg(
-                    cast(
-                        func.julianday(first_response.c.first_response_at)
-                        - func.julianday(Application.applied_at),
-                        Integer,
+                    self._elapsed_days_expr(
+                        first_response.c.first_response_at,
+                        Application.applied_at,
                     )
                 ).label("avg_days"),
                 func.count().label("sample_size"),
@@ -204,9 +217,7 @@ class PatternDetector:
             else_=0,
         )
 
-        dow_expr = func.cast(
-            func.strftime("%w", Application.applied_at), Integer
-        ).label("dow")
+        dow_expr = self._day_of_week_expr(Application.applied_at).label("dow")
 
         stmt = (
             select(

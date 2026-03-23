@@ -43,14 +43,14 @@ def compute_ats_composite_key(
 ) -> str | None:
     """Compute a deterministic SHA-256 composite key for ATS-based dedup.
 
-    Returns None if any of the three inputs is missing/empty.
+    Returns None if the provider or ATS job ID is missing/empty.
+    Company domain is optional because some scrapers do not populate it.
     """
-    if not all([company_domain, ats_provider, ats_job_id]):
+    if not ats_provider or not ats_job_id:
         return None
-    # All three are guaranteed non-None/non-empty after the check above
-    domain = company_domain.lower().strip()  # type: ignore[union-attr]
-    provider = ats_provider.lower()  # type: ignore[union-attr]
-    job_id = ats_job_id.strip()  # type: ignore[union-attr]
+    domain = company_domain.lower().strip() if company_domain else ""
+    provider = ats_provider.lower()
+    job_id = ats_job_id.strip()
     raw = f"{domain}|{provider}|{job_id}"
     return hashlib.sha256(raw.encode()).hexdigest()
 

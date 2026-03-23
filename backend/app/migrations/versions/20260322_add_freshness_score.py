@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "20260322_add_freshness_score"
-down_revision = "20260321_db_audit_fixes"
+down_revision = "20260322_a2_normalization"
 branch_labels = None
 depends_on = None
 
