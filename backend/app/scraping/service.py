@@ -9,9 +9,11 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 import structlog
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Settings
+from app.enrichment.freshness import compute_freshness_score
 from app.scraping.deduplication import DeduplicationService
 from app.scraping.port import ScrapedJob, ScraperPort
 from app.scraping.rate_limiter import CircuitBreaker, TokenBucketLimiter
@@ -240,15 +242,34 @@ class ScrapingService:
             return 0, 0
 
         for scraped in jobs:
+            seen_at = datetime.now(UTC)
             job_id = self._compute_job_id(scraped)
-            existing = await self.db.get(Job, job_id)
+            attrs = self._scraped_to_dict(scraped, scraped_at=seen_at)
+            content_hash = self._compute_content_hash(scraped)
+            existing = await self._find_existing_job(
+                Job,
+                job_id=job_id,
+                ats_composite_key=attrs["ats_composite_key"],
+            )
             if existing:
+                self._update_existing_job(
+                    existing,
+                    attrs=attrs,
+                    content_hash=content_hash,
+                    seen_at=seen_at,
+                )
                 updated_count += 1
             else:
                 job = Job(
                     id=job_id,
                     user_id=user_id,
-                    **self._scraped_to_dict(scraped),
+                    first_seen_at=seen_at,
+                    last_seen_at=seen_at,
+                    freshness_score=compute_freshness_score(seen_at),
+                    content_hash=content_hash,
+                    seen_count=1,
+                    disappeared_at=None,
+                    **attrs,
                 )
                 self.db.add(job)
                 new_count += 1
@@ -261,6 +282,48 @@ class ScrapingService:
 
         return new_count, updated_count
 
+    async def _find_existing_job(self, job_model, job_id: str, ats_composite_key: str | None):
+        if ats_composite_key:
+            result = await self.db.execute(
+                select(job_model).where(job_model.ats_composite_key == ats_composite_key)
+            )
+            existing = result.scalar_one_or_none()
+            if existing is not None:
+                return existing
+        return await self.db.get(job_model, job_id)
+
+    @staticmethod
+    def _compute_content_hash(job: ScrapedJob) -> str:
+        content = (
+            f"{job.title.strip().lower()}|"
+            f"{job.company_name.strip().lower()}|"
+            f"{(job.location or '').strip().lower()}|"
+            f"{(job.description_raw or '').strip()[:1000]}"
+        )
+        return hashlib.sha256(content.encode()).hexdigest()[:64]
+
+    @staticmethod
+    def _update_existing_job(
+        existing,
+        *,
+        attrs: dict,
+        content_hash: str,
+        seen_at: datetime,
+    ) -> None:
+        previous_hash = existing.content_hash
+        for key, value in attrs.items():
+            setattr(existing, key, value)
+
+        existing.last_seen_at = seen_at
+        existing.first_seen_at = existing.first_seen_at or seen_at
+        existing.freshness_score = compute_freshness_score(existing.first_seen_at)
+        existing.seen_count = (existing.seen_count or 0) + 1
+        existing.disappeared_at = None
+
+        if previous_hash != content_hash:
+            existing.previous_hash = previous_hash
+            existing.content_hash = content_hash
+
     @staticmethod
     def _compute_job_id(job: ScrapedJob) -> str:
         """SHA-256 of (source + title + company + location) for stable ID."""
@@ -268,7 +331,7 @@ class ScrapingService:
         return hashlib.sha256(content.encode()).hexdigest()[:64]
 
     @staticmethod
-    def _scraped_to_dict(job: ScrapedJob) -> dict:
+    def _scraped_to_dict(job: ScrapedJob, *, scraped_at: datetime | None = None) -> dict:
         """Convert ScrapedJob to dict for Job ORM model."""
         ats_key = compute_ats_composite_key(
             job.company_domain, job.ats_provider, job.ats_job_id
@@ -290,7 +353,7 @@ class ScrapingService:
             "experience_level": job.experience_level,
             "job_type": job.job_type,
             "posted_at": job.posted_at,
-            "scraped_at": datetime.now(UTC),
+            "scraped_at": scraped_at or datetime.now(UTC),
             "ats_job_id": job.ats_job_id,
             "ats_requisition_id": job.ats_requisition_id,
             "ats_provider": job.ats_provider,

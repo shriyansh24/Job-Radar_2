@@ -66,6 +66,7 @@ async def test_job_crud_cycle(client: AsyncClient, db_session: AsyncSession):
         title="API Test Engineer",
         company_name="TestCo",
         status="new",
+        freshness_score=0.7,
     )
     db_session.add(job)
     await db_session.commit()
@@ -75,11 +76,13 @@ async def test_job_crud_cycle(client: AsyncClient, db_session: AsyncSession):
     assert resp.status_code == 200
     assert resp.json()["total"] == 1
     assert resp.json()["items"][0]["title"] == "API Test Engineer"
+    assert resp.json()["items"][0]["freshness_score"] == pytest.approx(0.7)
 
     # Get single job
     resp = await client.get("/api/v1/jobs/api-test-job-001", headers=_auth(token))
     assert resp.status_code == 200
     assert resp.json()["id"] == "api-test-job-001"
+    assert resp.json()["freshness_score"] == pytest.approx(0.7)
 
     # Update job (star it)
     resp = await client.patch(
