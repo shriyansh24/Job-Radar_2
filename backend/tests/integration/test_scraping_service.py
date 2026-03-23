@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from sqlalchemy import select
 
 from app.config import Settings
+from app.jobs.models import Job
 from app.scraping.port import ScrapedJob, ScraperPort
 from app.scraping.rate_limiter import CircuitBreaker, TokenBucketLimiter
-from app.scraping.service import ScrapingService
+from app.scraping.service import ScrapingService, compute_ats_composite_key
 
 
 class FakeScraper(ScraperPort):
@@ -54,6 +57,10 @@ def _job(
     source: str = "test",
     url: str | None = None,
     description: str | None = None,
+    location: str | None = None,
+    ats_provider: str | None = None,
+    ats_job_id: str | None = None,
+    company_domain: str | None = None,
 ) -> ScrapedJob:
     return ScrapedJob(
         title=title,
@@ -61,6 +68,10 @@ def _job(
         source=source,
         source_url=url,
         description_raw=description,
+        location=location,
+        ats_provider=ats_provider,
+        ats_job_id=ats_job_id,
+        company_domain=company_domain,
     )
 
 
@@ -269,3 +280,93 @@ class TestScrapedToDict:
         assert d["company_name"] == "TestCo"
         assert d["source"] == "test"
         assert "scraped_at" in d
+
+
+class TestScrapingPersistence:
+    @pytest.mark.asyncio
+    async def test_persist_jobs_updates_existing_row_by_ats_key(
+        self, db_session
+    ):
+        svc = ScrapingService(db_session, _settings())
+        first_seen_at = datetime.now(UTC) - timedelta(days=3)
+        existing = Job(
+            id=ScrapingService._compute_job_id(
+                _job(
+                    title="Platform Engineer",
+                    company="Acme",
+                    source="greenhouse",
+                    location="Remote",
+                )
+            ),
+            user_id=None,
+            source="greenhouse",
+            title="Platform Engineer",
+            company_name="Acme",
+            location="Remote",
+            ats_provider="greenhouse",
+            ats_job_id="job-123",
+            ats_composite_key=compute_ats_composite_key(
+                None, "greenhouse", "job-123"
+            ),
+            first_seen_at=first_seen_at,
+            last_seen_at=first_seen_at,
+            freshness_score=0.7,
+            content_hash="old-hash",
+            seen_count=1,
+        )
+        db_session.add(existing)
+        await db_session.commit()
+
+        new_count, updated_count = await svc._persist_jobs(
+            [
+                _job(
+                    title="Senior Platform Engineer",
+                    company="Acme",
+                    source="greenhouse",
+                    location="Hybrid",
+                    description="New description",
+                    ats_provider="greenhouse",
+                    ats_job_id="job-123",
+                )
+            ],
+            user_id=None,
+        )
+
+        jobs = list((await db_session.scalars(select(Job))).all())
+        assert (new_count, updated_count) == (0, 1)
+        assert len(jobs) == 1
+        assert jobs[0].id == existing.id
+        assert jobs[0].title == "Senior Platform Engineer"
+        assert jobs[0].location == "Hybrid"
+        assert jobs[0].seen_count == 2
+        assert jobs[0].first_seen_at == first_seen_at
+        assert jobs[0].last_seen_at is not None
+        assert jobs[0].last_seen_at > first_seen_at
+        assert jobs[0].previous_hash == "old-hash"
+        assert jobs[0].content_hash != "old-hash"
+        assert jobs[0].freshness_score == pytest.approx(0.5)
+
+    @pytest.mark.asyncio
+    async def test_persist_jobs_initializes_freshness_fields(self, db_session):
+        svc = ScrapingService(db_session, _settings())
+
+        new_count, updated_count = await svc._persist_jobs(
+            [
+                _job(
+                    title="Data Engineer",
+                    company="Beta",
+                    source="lever",
+                    description="Build pipelines",
+                )
+            ],
+            user_id=None,
+        )
+
+        job = (await db_session.scalars(select(Job))).one()
+        assert (new_count, updated_count) == (1, 0)
+        assert job.first_seen_at is not None
+        assert job.last_seen_at is not None
+        assert job.first_seen_at == job.last_seen_at
+        assert job.freshness_score == pytest.approx(1.0)
+        assert job.seen_count == 1
+        assert job.content_hash is not None
