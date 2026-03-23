@@ -97,7 +97,7 @@ class MatchPredictor:
         self._artifact = artifact
         # Model bytes are written by this application only (not user-supplied),
         # so pickle deserialization is safe here.
-        self._model = pickle.loads(artifact.model_bytes)  # noqa: S301
+        self._model = pickle.loads(artifact.model_bytes)  # noqa: S301  # nosec B301
         return self._model
 
     async def predict(

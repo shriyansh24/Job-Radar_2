@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 # Import all models so Base.metadata is populated
 from app.config import settings
 from app.database import Base
+
 MODEL_MODULES = (
     "app.analytics.models",
     "app.auth.models",
