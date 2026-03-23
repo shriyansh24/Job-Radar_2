@@ -2,16 +2,18 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
+from app.auto_apply.form_learning import FormLearningService
 from app.auto_apply.schemas import (
     ApplySingleRequest,
     AutoApplyProfileCreate,
     AutoApplyProfileResponse,
     AutoApplyProfileUpdate,
     AutoApplyStatsResponse,
+    FieldMappingRuleResponse,
     RuleCreate,
     RuleResponse,
     RuleUpdate,
@@ -145,3 +147,31 @@ async def pause_auto_apply(
 ) -> dict:
     svc = AutoApplyService(db)
     return await svc.pause(user.id)
+
+
+# -- Form learning (admin) endpoints -----------------------------------
+
+
+@router.get("/learned-mappings", response_model=list[FieldMappingRuleResponse])
+async def list_learned_mappings(
+    limit: int = 100,
+    offset: int = 0,
+    _user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[FieldMappingRuleResponse]:
+    svc = FormLearningService(db)
+    items = await svc.list_mappings(limit=limit, offset=offset)
+    return [FieldMappingRuleResponse.model_validate(m) for m in items]
+
+
+@router.delete("/learned-mappings/{rule_id}", status_code=204, response_model=None)
+async def delete_learned_mapping(
+    rule_id: uuid.UUID,
+    _user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    svc = FormLearningService(db)
+    deleted = await svc.delete_mapping(rule_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Mapping rule not found")
+    await db.commit()

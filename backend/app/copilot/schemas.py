@@ -12,6 +12,14 @@ class CopilotRequest(BaseModel):
     job_id: str | None = None
 
 
+class AskHistoryRequest(BaseModel):
+    question: str
+
+
+class AskHistoryResponse(BaseModel):
+    answer: str
+
+
 class CoverLetterCreate(BaseModel):
     job_id: str
     style: str = "professional"

@@ -16,6 +16,14 @@ pgdata/
 *.sqlite3
 .claude/worktrees/
 .claude/settings.local.json
+.claude/launch.json
+.claude/projects/
+.claude/agent-memory/
+.claude-flow/
+.swarm/
+.vite/
+backend/downloaded_files/
+codeql-alerts.json
 .cursor/
 current_ui_screenshots/
 job_radar_v2_folder_tree*.txt

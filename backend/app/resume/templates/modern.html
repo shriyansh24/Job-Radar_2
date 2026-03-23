@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+:root {
+  --accent: #2563eb;
+  --accent-light: #dbeafe;
+  --sidebar-bg: #f8fafc;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+}
+@page { size: letter; margin: 0; }
+* { box-sizing: border-box; }
+body {
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.45;
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+}
+.page {
+  display: flex;
+  min-height: 100vh;
+}
+.sidebar {
+  width: 32%;
+  background: var(--sidebar-bg);
+  padding: 0.5in 0.35in;
+  border-right: 2px solid var(--accent);
+}
+.main {
+  width: 68%;
+  padding: 0.5in 0.45in;
+}
+h1 {
+  font-size: 20pt;
+  margin: 0 0 4pt 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+.tagline {
+  font-size: 10pt;
+  color: var(--text-secondary);
+  margin-bottom: 14pt;
+}
+.sidebar h2 {
+  font-size: 10pt;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 3pt;
+  margin-top: 14pt;
+  margin-bottom: 6pt;
+}
+.main h2 {
+  font-size: 11pt;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 3pt;
+  margin-top: 14pt;
+  margin-bottom: 8pt;
+}
+.contact-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 9pt;
+}
+.contact-list li {
+  margin-bottom: 4pt;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+.contact-list .label {
+  font-weight: 600;
+  color: var(--text-primary);
+  display: block;
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4pt;
+  margin-bottom: 4pt;
+}
+.skill-tag {
+  background: var(--accent-light);
+  color: var(--accent);
+  padding: 2pt 7pt;
+  border-radius: 3pt;
+  font-size: 8.5pt;
+  font-weight: 500;
+}
+.skill-category {
+  margin-bottom: 6pt;
+}
+.skill-category-name {
+  font-weight: 600;
+  font-size: 9pt;
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 2pt;
+}
+.cert-item, .lang-item {
+  font-size: 9pt;
+  margin-bottom: 3pt;
+  padding-left: 8pt;
+  border-left: 2px solid var(--accent-light);
+}
+.role { margin-bottom: 10pt; page-break-inside: avoid; }
+.role-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 2pt;
+}
+.company { font-weight: 700; font-size: 10.5pt; }
+.title { color: var(--text-secondary); font-size: 9.5pt; }
+.dates {
+  color: var(--text-secondary);
+  font-size: 8.5pt;
+  white-space: nowrap;
+  background: var(--accent-light);
+  padding: 1pt 5pt;
+  border-radius: 2pt;
+}
+.location { color: var(--text-secondary); font-size: 8.5pt; }
+ul { margin: 3pt 0; padding-left: 14pt; }
+li { margin-bottom: 2pt; font-size: 9.5pt; }
+.project { margin-bottom: 8pt; page-break-inside: avoid; }
+.project-name { font-weight: 700; }
+.project-url { font-size: 8.5pt; color: var(--accent); }
+.project-desc { font-size: 9pt; color: var(--text-secondary); margin-top: 1pt; }
+section { page-break-inside: avoid; }
+.edu-item { margin-bottom: 6pt; }
+.edu-institution { font-weight: 600; }
+.edu-degree { font-size: 9pt; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="sidebar">
+    <h1>{{ resume.contact.name }}</h1>
+    {% if resume.summary %}
+    <div class="tagline">{{ resume.summary }}</div>
+    {% endif %}
+
+    <h2>Contact</h2>
+    <ul class="contact-list">
+      {% if resume.contact.email %}
+      <li><span class="label">Email</span>{{ resume.contact.email }}</li>
+      {% endif %}
+      {% if resume.contact.phone %}
+      <li><span class="label">Phone</span>{{ resume.contact.phone }}</li>
+      {% endif %}
+      {% if resume.contact.location %}
+      <li><span class="label">Location</span>{{ resume.contact.location }}</li>
+      {% endif %}
+      {% if resume.contact.linkedin %}
+      <li><span class="label">LinkedIn</span>{{ resume.contact.linkedin }}</li>
+      {% endif %}
+      {% if resume.contact.github %}
+      <li><span class="label">GitHub</span>{{ resume.contact.github }}</li>
+      {% endif %}
+      {% if resume.contact.website %}
+      <li><span class="label">Website</span>{{ resume.contact.website }}</li>
+      {% endif %}
+    </ul>
+
+    {% if resume.skills or resume.skill_categories %}
+    <h2>Skills</h2>
+    {% if resume.skill_categories %}
+    {% for category, cat_skills in resume.skill_categories.items() %}
+    <div class="skill-category">
+      <span class="skill-category-name">{{ category }}</span>
+      <div class="skill-tags">
+        {% for s in cat_skills %}<span class="skill-tag">{{ s }}</span>{% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% if resume.skills %}
+    <div class="skill-tags">
+      {% for s in resume.skills %}<span class="skill-tag">{{ s }}</span>{% endfor %}
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if resume.certifications %}
+    <h2>Certifications</h2>
+    {% for c in resume.certifications %}
+    <div class="cert-item">{{ c }}</div>
+    {% endfor %}
+    {% endif %}
+
+    {% if resume.languages %}
+    <h2>Languages</h2>
+    {% for l in resume.languages %}
+    <div class="lang-item">{{ l }}</div>
+    {% endfor %}
+    {% endif %}
+
+    {% if resume.publications %}
+    <h2>Publications</h2>
+    {% for p in resume.publications %}
+    <div class="cert-item">{{ p }}</div>
+    {% endfor %}
+    {% endif %}
+  </div>
+
+  <div class="main">
+    {% if resume.work %}
+    <section>
+      <h2>Experience</h2>
+      {% for role in resume.work %}
+      <div class="role">
+        <div class="role-header">
+          <div>
+            <span class="company">{{ role.company }}</span>
+            {% if role.location %}<span class="location"> &middot; {{ role.location }}</span>{% endif %}
+          </div>
+          <span class="dates">{{ role.start_date or '' }}{% if role.start_date or role.end_date %} &ndash; {{ role.end_date or 'Present' }}{% endif %}</span>
+        </div>
+        <div class="title">{{ role.title }}</div>
+        {% if role.bullets %}
+        <ul>{% for b in role.bullets %}<li>{{ b }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if resume.education %}
+    <section>
+      <h2>Education</h2>
+      {% for edu in resume.education %}
+      <div class="edu-item">
+        <span class="edu-institution">{{ edu.institution }}</span>
+        {% if edu.end_date %}<span class="dates">{{ edu.end_date }}</span>{% endif %}
+        <div class="edu-degree">
+          {{ edu.degree or '' }}{% if edu.field %} in {{ edu.field }}{% endif %}{% if edu.gpa %} &middot; GPA: {{ edu.gpa }}{% endif %}
+        </div>
+        {% if edu.highlights %}
+        <ul>{% for h in edu.highlights %}<li>{{ h }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if resume.projects %}
+    <section>
+      <h2>Projects</h2>
+      {% for proj in resume.projects %}
+      <div class="project">
+        <span class="project-name">{{ proj.name }}</span>
+        {% if proj.url %}<span class="project-url"> &mdash; {{ proj.url }}</span>{% endif %}
+        {% if proj.description %}<div class="project-desc">{{ proj.description }}</div>{% endif %}
+        {% if proj.bullets %}
+        <ul>{% for b in proj.bullets %}<li>{{ b }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+  </div>
+</div>
+</body>
+</html>

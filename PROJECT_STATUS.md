@@ -5,21 +5,31 @@
 
 ## Current Snapshot
 - See `docs/current-state/00-index.md` for the canonical live state.
-- This pass combined stale-audit revalidation, CodeQL-style cleanup, CI hardening, and test-suite expansion.
-- Local validation completed in this pass:
-  - backend `539 passed`, coverage `60.10%`
-  - frontend `23` test files, `35` tests, coverage `43.19%` statements
-  - backend `pip check`, `pip-audit`, `bandit`, `ruff`, and targeted `mypy` all passed
-  - frontend `npm audit`, lint, build, and coverage-gated tests all passed
-- Audit status is now `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
+- Active development branch: `feat/p2-polish-advanced` (all P0/P1/P2 feature code).
+- `main` has PRs #15 (security hardening) and #16 (CodeQL + deps) merged.
+- Backend: **716 tests pass**, ruff clean, 23 routers mounted, 37 DB tables.
+- Frontend: lint clean, build clean, 9 tests pass in 6 files.
+- Audit status remains `39 FIXED / 5 STALE / 0 OPEN / 0 PARTIAL`.
+- GitHub workflows are updated to current `actions/*@v6` releases.
 
-## Verified In This Pass
-- `.env` remains ignored by `.gitignore`, and this clone only tracks `.env.example`
-- Circuit-breaker recovery behavior is covered by the passing rate-limiter unit tests
-- `EventBus.publish()` still fans out through unbounded `asyncio.Queue()` subscribers, so the old full-queue claim does not match live code
-- SimHash determinism and the current dedup threshold behavior pass targeted unit tests
-- `ApifyScraper` remains wired into the live keyword-search scraping path via `ScrapingService.run_scrape()`
-- CI now enforces backend Bandit, targeted backend mypy, backend coverage `>=60%`, and frontend coverage `>=40%`
+## What Is Stable
+- Cookie-based auth, refresh, revocation, rate limiting, and security headers
+- Target-based scraping platform with ATS detection, tier routing, pagination crawling, and attempt telemetry
+- Job enrichment, salary analysis, cover-letter generation, interview prep, resume tailoring, and application pipeline flows
+- Frontend theme system with light mode and high-contrast dark mode
+- Vault PATCH flows, admin cleanup, SSE credentialed transport, and current frontend build compatibility
+
+## P0/P1/P2 Feature Status (feat/p2-polish-advanced)
+All 38 spec features have backend code. Backend wiring is now complete:
+- All 37 DB tables exist (10 P2 tables created via consolidation migration `005`)
+- 23 routers mounted (email and outcomes added this session)
+- Resume `ir_schema.py`, `renderer.py`, and `professional.html` template all present
+- `users.created_at`/`updated_at` fixed to `timestamp with time zone`
+
+Remaining frontend gaps:
+- No API modules or pages for: email, networking, outcomes, copilot chat
+- Settings stubs (change password, delete account, clear data) are no-ops
+- API keys collected but not persisted to backend
 
 ## Where To Read Next
 1. `docs/current-state/00-index.md`
@@ -33,8 +43,12 @@
 - Vitest still emits non-fatal `--localstorage-file` warnings.
 
 ## Deferred Work (Not Current Bugs)
-- Resume PDF generation and template polish
+- Create frontend API modules and pages for: email, networking, outcomes, copilot chat
+- Add backend endpoints for: change password, delete account, clear data
+- Wire API key persistence from Settings/Onboarding to backend
+- Wire semantic search into Job Board UI
+- Resume PDF generation end-to-end testing (WeasyPrint is optional dep)
 - Saved-search alerts UI and scheduler UX
 - Additional parser tuning for difficult JS-heavy career pages
 - End-to-end Playwright coverage
-- Longer-term scraper-library vendoring decisions
+- Rebase feat/p2-polish-advanced onto current main

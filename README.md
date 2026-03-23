@@ -25,7 +25,13 @@ AI-powered job hunting assistant with direct-job scraping, enrichment, pipeline 
 ### Infrastructure
 
 ```bash
-docker compose up -d postgres redis
+# Start the PostgreSQL container (pgvector on port 5433)
+docker start jobradar-postgres
+
+# Or first-time setup:
+docker run -d --name jobradar-postgres -p 5433:5432 \
+  -e POSTGRES_USER=jobradar -e POSTGRES_PASSWORD=jobradar220568 \
+  -e POSTGRES_DB=jobradar pgvector/pgvector:pg17
 ```
 
 ### Backend
@@ -74,40 +80,30 @@ npm run test -- --run --coverage --coverage.thresholds.statements=40
 npm run build
 ```
 
-## Common Make Targets
-
-```bash
-make dev
-make test
-make lint
-make migrate
-```
-
 ## Repo Layout
 
 ```text
 jobradar-v2/
 |-- backend/
-|   |-- app/
-|   |-- scripts/
-|   `-- tests/
+|   |-- app/            # FastAPI application (domain modules)
+|   |-- scripts/        # CLI utilities
+|   `-- tests/          # pytest suite (688 tests)
 |-- frontend/
-|   |-- src/
-|   `-- dist/
+|   |-- src/            # React 19 application
+|   `-- dist/           # Production build output
 |-- docs/
-|   |-- audit/
-|   |-- current-state/
-|   |-- research/
-|   `-- superpowers/
-|-- infra/
-|-- .github/workflows/
-|-- AGENTS.md
-|-- CLAUDE.md
-|-- PROJECT_STATUS.md
+|   |-- audit/          # Bug ledger (39 FIXED / 5 STALE)
+|   |-- current-state/  # Canonical live state docs
+|   `-- research/       # Future design research
+|-- .github/workflows/  # CI: lint, test, build, CodeQL
+|-- AGENTS.md           # Agent preferences and frontend expectations
+|-- CLAUDE.md           # Agent playbook and working commands
+|-- DECISIONS.md        # Architectural decisions
+|-- PROJECT_STATUS.md   # High-level project status
 `-- README.md
 ```
 
 ## Notes
 - Use `uv run` for backend commands and `npm` for frontend commands.
 - The current live product state is documented under `docs/current-state/`.
-- `docs/superpowers/` contains historical scraper-build planning, not the current execution queue.
+- `docs/research/` contains future-planning material, not current requirements.

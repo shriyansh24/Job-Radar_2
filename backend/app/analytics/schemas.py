@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel
 
@@ -48,3 +48,38 @@ class FunnelData(BaseModel):
 class FunnelStageData(BaseModel):
     stage: str
     count: int = 0
+
+
+# -- ML Predictor schemas --
+
+
+class FeatureContributionSchema(BaseModel):
+    feature: str
+    value: float
+    contribution: float
+
+
+class PredictionResponse(BaseModel):
+    probability: float
+    confidence: str
+    top_features: list[FeatureContributionSchema] = []
+    model_version: int = 0
+    n_training_samples: int = 0
+
+
+class TrainResponse(BaseModel):
+    status: str
+    n_samples: int = 0
+    cv_accuracy: float | None = None
+    positive_rate: float | None = None
+    model_version: int = 0
+
+
+class ModelStatusResponse(BaseModel):
+    is_trained: bool = False
+    model_version: int = 0
+    n_samples: int = 0
+    cv_accuracy: float | None = None
+    positive_rate: float | None = None
+    trained_at: datetime | None = None
+    feature_names: list[str] = []

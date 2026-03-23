@@ -138,3 +138,28 @@ class CouncilResponse(BaseModel):
     evaluations: list[CouncilEvaluation] = []
     overall_score: float | None = None
     consensus: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Cover Letter Generation (B6)
+# ---------------------------------------------------------------------------
+
+VALID_TONES = {"formal", "conversational", "enthusiastic"}
+
+
+class CoverLetterGenerateRequest(BaseModel):
+    job_id: str
+    resume_version_id: uuid.UUID | None = None
+    tone: str = "formal"
+    template: str | None = None
+
+
+class CoverLetterGenerateResponse(BaseModel):
+    content: str = ""
+    key_points_addressed: list[str] = []
+    skills_highlighted: list[str] = []
+    company_research_notes: list[str] = []
+    word_count: int = 0
+    reading_level: str = ""
+    tone_used: str = ""
+    company_context_used: bool = False
