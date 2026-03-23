@@ -28,7 +28,13 @@ describe("SalaryInsights page", () => {
         data_sources: ["levels.fyi"],
       },
     });
-    salaryMocks.evaluateOffer.mockResolvedValue({ data: null });
+    salaryMocks.evaluateOffer.mockResolvedValue({
+      data: {
+        overall_rating: "above_market",
+        percentile: 82,
+        negotiation_tips: ["Use market data", "Anchor on the median"],
+      },
+    });
   });
 
   it("renders the research flow and displays returned salary data", async () => {
@@ -36,20 +42,21 @@ describe("SalaryInsights page", () => {
 
     renderWithProviders(<SalaryInsights />);
 
-    expect(
-      await screen.findByRole("heading", { name: /Salary Insights/i })
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Salary Insights" })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Senior Frontend Engineer")).toBeInTheDocument();
 
-    await user.type(
-      screen.getByPlaceholderText("e.g. Senior Software Engineer"),
-      "Staff Engineer"
-    );
-    await user.click(screen.getByRole("button", { name: /^Research$/i }));
+    await user.type(screen.getByPlaceholderText("Senior Frontend Engineer"), "Staff Engineer");
+    await user.click(screen.getByRole("button", { name: /research salary/i }));
 
-    expect(await screen.findByText("Salary Range")).toBeInTheDocument();
-    expect(screen.getByText("Based on 1 sources (USD)")).toBeInTheDocument();
+    expect(await screen.findByText("Range view")).toBeInTheDocument();
+    expect(screen.getByText(/Based on 1 sources and currency USD/i)).toBeInTheDocument();
     expect(screen.getAllByText("$180k").length).toBeGreaterThan(0);
-    expect(screen.getByText("Recent Research")).toBeInTheDocument();
     expect(screen.getByText("Staff Engineer")).toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText("150000"), "195000");
+    await user.click(screen.getByRole("button", { name: /evaluate offer/i }));
+
+    expect(await screen.findByText("Above Market")).toBeInTheDocument();
+    expect(screen.getAllByText("82th").length).toBeGreaterThan(0);
   });
 });

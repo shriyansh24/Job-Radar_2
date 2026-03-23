@@ -1,124 +1,132 @@
-import { SpinnerGap } from "@phosphor-icons/react";
+import { ArrowRight, Sparkle, SpinnerGap } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import { PageHeader } from "../components/system/PageHeader";
+import { StateBlock } from "../components/system/StateBlock";
+import { Surface } from "../components/system/Surface";
 import { useAuthStore } from "../store/useAuthStore";
+
+const HIGHLIGHTS = [
+  "Light and dark modes are first-class, not afterthoughts.",
+  "Career data, saved searches, and outcomes stay in one operating surface.",
+  "Prepared for the new settings, prepare, and intelligence workspaces.",
+];
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const login = useAuthStore((s) => s.login);
+  const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     setError("");
     setLoading(true);
+
     try {
       await login(email, password);
       navigate("/", { replace: true });
-    } catch (err: unknown) {
-      const isNetworkError =
-        err instanceof Error && (err.message.includes("Network") || err.message.includes("ECONNREFUSED"));
-      setError(
-        isNetworkError
-          ? "Unable to connect to server. Please check your connection."
-          : "Invalid email or password"
-      );
+    } catch (reason: unknown) {
+      const message =
+        reason instanceof Error &&
+        (reason.message.includes("Network") || reason.message.includes("ECONNREFUSED"))
+          ? "Unable to reach the backend."
+          : "Invalid email or password.";
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-primary relative overflow-hidden">
-      {/* Subtle gradient orb */}
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.03] pointer-events-none"
-        style={{
-          background: "radial-gradient(circle, var(--color-accent-primary) 0%, transparent 70%)",
-        }}
-      />
+    <div className="min-h-[100dvh] bg-background px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto grid min-h-[calc(100dvh-3rem)] max-w-7xl items-center gap-6 lg:grid-cols-[1.1fr_minmax(360px,0.9fr)]">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="space-y-6"
+        >
+          <PageHeader
+            eyebrow="JobRadar Career OS"
+            title="Sign in"
+            description="A calm, dense workspace for discovery, execution, preparation, and intelligence. The theme system is built to stay legible in both light and jet-black dark mode."
+            meta={
+              <>
+                <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1">
+                  <Sparkle size={12} weight="fill" />
+                  Productive by default
+                </span>
+              </>
+            }
+          />
 
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-sm mx-4"
-      >
-        <div className="p-8 bg-bg-secondary rounded-[var(--radius-2xl)] border border-border shadow-[var(--shadow-xl)]">
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <h1 className="text-xl font-bold tracking-[-0.03em] text-text-primary">
-              JobRadar
-              <span className="ml-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-accent-primary/10 text-accent-primary font-medium align-middle">
-                v2
-              </span>
-            </h1>
-            <p className="mt-2 text-sm text-text-muted">
-              Sign in to your account
-            </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {HIGHLIGHTS.map((highlight) => (
+              <StateBlock key={highlight} tone="muted" title={highlight} />
+            ))}
           </div>
+        </motion.div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="p-3 rounded-[var(--radius-md)] bg-accent-danger/8 border border-accent-danger/20 text-accent-danger text-sm"
-              >
-                {error}
-              </motion.div>
-            )}
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.985 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1], delay: 0.03 }}
+        >
+          <Surface tone="default" padding="lg" radius="xl" className="shadow-[var(--shadow-lg)]">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  Account access
+                </div>
+                <h2 className="text-2xl font-semibold tracking-[-0.04em]">Welcome back</h2>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Enter the credentials for your workspace account. The rest of the app will keep your
+                  design system, searches, and outcome history synchronized.
+                </p>
+              </div>
 
-            <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1.5 tracking-wide">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 bg-bg-primary border border-border rounded-[var(--radius-lg)] text-sm text-text-primary placeholder:text-text-muted/60 focus:outline-none focus:border-border-focus focus:shadow-[var(--shadow-glow)] transition-[border-color,box-shadow] duration-[var(--transition-fast)]"
-                placeholder="you@example.com"
-              />
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                {error ? (
+                  <div className="rounded-[var(--radius-lg)] border border-[var(--color-accent-danger)]/25 bg-[var(--color-accent-danger)]/8 px-4 py-3 text-sm text-[var(--color-accent-danger)]">
+                    {error}
+                  </div>
+                ) : null}
+
+                <Input
+                  label="Email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="you@example.com"
+                />
+
+                <Input
+                  label="Password"
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="••••••••"
+                />
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  loading={loading}
+                  icon={loading ? <SpinnerGap size={16} weight="bold" /> : <ArrowRight size={16} weight="bold" />}
+                >
+                  Sign in
+                </Button>
+              </form>
             </div>
-
-            <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1.5 tracking-wide">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 bg-bg-primary border border-border rounded-[var(--radius-lg)] text-sm text-text-primary placeholder:text-text-muted/60 focus:outline-none focus:border-border-focus focus:shadow-[var(--shadow-glow)] transition-[border-color,box-shadow] duration-[var(--transition-fast)]"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <motion.button
-              type="submit"
-              disabled={loading}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-2.5 mt-2 bg-accent-primary text-white text-sm font-medium rounded-[var(--radius-lg)] hover:brightness-110 disabled:opacity-50 transition-[filter,transform] duration-[var(--transition-fast)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <SpinnerGap size={16} weight="bold" className="animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
-            </motion.button>
-          </form>
-        </div>
-      </motion.div>
+          </Surface>
+        </motion.div>
+      </div>
     </div>
   );
 }

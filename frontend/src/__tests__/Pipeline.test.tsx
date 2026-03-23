@@ -11,35 +11,6 @@ vi.mock("../api/pipeline", () => ({
   pipelineApi: pipelineMocks,
 }));
 
-vi.mock("../components/pipeline/AddApplicationModal", () => ({
-  default: () => null,
-}));
-
-vi.mock("../components/pipeline/ApplicationModal", () => ({
-  default: () => null,
-}));
-
-vi.mock("../components/pipeline/PipelineColumn", () => ({
-  default: ({
-    label,
-    apps,
-  }: {
-    label: string;
-    apps: Array<{
-      id: string;
-      position_title: string | null;
-      company_name: string | null;
-    }>;
-  }) => (
-    <section>
-      <h2>{label}</h2>
-      {apps.map((app) => (
-        <div key={app.id}>{`${app.position_title ?? "Untitled"} @ ${app.company_name ?? "Unknown"}`}</div>
-      ))}
-    </section>
-  ),
-}));
-
 import Pipeline from "../pages/Pipeline";
 
 describe("Pipeline page", () => {
@@ -52,6 +23,11 @@ describe("Pipeline page", () => {
             id: "app-1",
             position_title: "Backend Engineer",
             company_name: "Acme",
+            status: "saved",
+            updated_at: "2026-03-22T10:00:00Z",
+            source: "LinkedIn",
+            salary_offered: null,
+            notes: "",
           },
         ],
         applied: [
@@ -59,6 +35,11 @@ describe("Pipeline page", () => {
             id: "app-2",
             position_title: "Frontend Engineer",
             company_name: "Beta",
+            status: "applied",
+            updated_at: "2026-03-22T10:00:00Z",
+            source: "Wellfound",
+            salary_offered: 180000,
+            notes: "Initial recruiter conversation booked.",
           },
         ],
         screening: [],
@@ -72,16 +53,19 @@ describe("Pipeline page", () => {
     pipelineMocks.transition.mockResolvedValue({ data: null });
   });
 
-  it("renders the pipeline summary and application columns from query data", async () => {
+  it("renders the current pipeline board and selected application details", async () => {
     renderWithProviders(<Pipeline />);
 
-    expect(
-      await screen.findByRole("heading", { name: "Applications" })
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Add Application/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Pipeline" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /run auto-apply/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open copilot/i })).toBeInTheDocument();
     expect(await screen.findByText("Saved")).toBeInTheDocument();
-    expect(screen.getByText("Applied")).toBeInTheDocument();
-    expect(await screen.findByText("Backend Engineer @ Acme")).toBeInTheDocument();
-    expect(screen.getByText("Frontend Engineer @ Beta")).toBeInTheDocument();
+    expect(await screen.findByText("Applied")).toBeInTheDocument();
+    expect((await screen.findAllByText("Backend Engineer")).length).toBeGreaterThan(0);
+    expect(screen.getByText("Frontend Engineer")).toBeInTheDocument();
+    expect(screen.getByText("Selected application")).toBeInTheDocument();
+    expect(screen.getAllByText("Acme").length).toBeGreaterThan(0);
+    expect(screen.getByText("LinkedIn")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^advance$/i }).length).toBeGreaterThan(0);
   });
 });

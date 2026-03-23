@@ -13,6 +13,10 @@ const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 const JobBoard = React.lazy(() => import("./pages/JobBoard"));
 const Pipeline = React.lazy(() => import("./pages/Pipeline"));
 const AutoApply = React.lazy(() => import("./pages/AutoApply"));
+const Copilot = React.lazy(() => import("./pages/Copilot"));
+const Networking = React.lazy(() => import("./pages/Networking"));
+const Email = React.lazy(() => import("./pages/Email"));
+const Outcomes = React.lazy(() => import("./pages/Outcomes"));
 const ResumeBuilder = React.lazy(() => import("./pages/ResumeBuilder"));
 const InterviewPrep = React.lazy(() => import("./pages/InterviewPrep"));
 const SalaryInsights = React.lazy(() => import("./pages/SalaryInsights"));
@@ -58,6 +62,10 @@ export default function App() {
                 <Route path="/jobs" element={<JobBoard />} />
                 <Route path="/pipeline" element={<Pipeline />} />
                 <Route path="/auto-apply" element={<AutoApply />} />
+                <Route path="/copilot" element={<Copilot />} />
+                <Route path="/networking" element={<Networking />} />
+                <Route path="/email" element={<Email />} />
+                <Route path="/outcomes" element={<Outcomes />} />
                 <Route path="/resume" element={<ResumeBuilder />} />
                 <Route path="/interview" element={<InterviewPrep />} />
                 <Route path="/salary" element={<SalaryInsights />} />

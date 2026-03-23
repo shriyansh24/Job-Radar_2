@@ -22,6 +22,7 @@ import Select from "../components/ui/Select";
 import Skeleton from "../components/ui/Skeleton";
 import Tabs from "../components/ui/Tabs";
 import Textarea from "../components/ui/Textarea";
+import { PageHeader } from "../components/system/PageHeader";
 import { toast } from "../components/ui/toastService";
 
 const tabs = [
@@ -392,7 +393,11 @@ export default function InterviewPrep() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-text-primary">Interview Prep</h1>
+      <PageHeader
+        eyebrow="Prepare"
+        title="Interview Prep"
+        description="Generate questions from a target job, practice answers, and keep the full session history close by."
+      />
 
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 

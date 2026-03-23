@@ -14,6 +14,8 @@ vi.mock("../api/analytics", () => ({
           total_offers: 1,
           response_rate: 30,
           avg_days_to_response: 5,
+          jobs_scraped_today: 12,
+          enriched_jobs: 8,
         },
       }),
   },
@@ -47,18 +49,19 @@ function renderWithProviders(ui: React.ReactElement) {
 describe("Dashboard", () => {
   it("renders heading and stat cards after loading", async () => {
     renderWithProviders(<Dashboard />);
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(await screen.findByText("42")).toBeInTheDocument();
-    expect(screen.getByText("Total Jobs")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Command Center" })).toBeInTheDocument();
+    expect(screen.getByText("Total jobs")).toBeInTheDocument();
     expect(screen.getByText("Applications")).toBeInTheDocument();
     expect(screen.getByText("Interviews")).toBeInTheDocument();
     expect(screen.getByText("Offers")).toBeInTheDocument();
+    expect(await screen.findByText("42")).toBeInTheDocument();
+    expect(await screen.findByText("12 jobs scraped today")).toBeInTheDocument();
   });
 
   it("shows quick action buttons", async () => {
     renderWithProviders(<Dashboard />);
-    expect(await screen.findByText("Browse Jobs")).toBeInTheDocument();
-    expect(screen.getByText("Add Application")).toBeInTheDocument();
-    expect(screen.getByText("Upload Resume")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Browse jobs" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add application" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open copilot" })).toBeInTheDocument();
   });
 });

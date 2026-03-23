@@ -1,671 +1,475 @@
 import {
-  FileText,
+  ArrowLeft,
+  ArrowRight,
   CheckCircle,
   Plus,
-  X,
   Key,
   MagnifyingGlass,
   RocketLaunch,
-  UploadSimple,
-  Buildings,
+  Sparkle,
   UserCircle,
+  MapPin,
+  CurrencyDollar,
 } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
-import { useDropzone } from "react-dropzone";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { profileApi } from "../api/profile";
-import { resumeApi } from "../api/resume";
+import { settingsApi } from "../api/settings";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
-import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
+import Select from "../components/ui/Select";
+import { PageHeader } from "../components/system/PageHeader";
+import { SettingsSection } from "../components/system/SettingsSection";
+import { SplitWorkspace } from "../components/system/SplitWorkspace";
+import { StateBlock } from "../components/system/StateBlock";
+import { Surface } from "../components/system/Surface";
 import { toast } from "../components/ui/toastService";
 
-const STEPS = [
-  { label: "Welcome", icon: <RocketLaunch size={16} weight="bold" /> },
-  { label: "Profile", icon: <UserCircle size={16} weight="bold" /> },
-  { label: "Resume", icon: <FileText size={16} weight="bold" /> },
-  { label: "Search", icon: <MagnifyingGlass size={16} weight="bold" /> },
-  { label: "Watchlist", icon: <Buildings size={16} weight="bold" /> },
-  { label: "API Keys", icon: <Key size={16} weight="bold" /> },
-  { label: "Ready", icon: <CheckCircle size={16} weight="bold" /> },
+type StepId = 0 | 1 | 2 | 3;
+
+const STEP_LABELS = ["Welcome", "Profile", "Search", "Integrations"] as const;
+const JOB_TYPE_OPTIONS = [
+  { value: "full_time", label: "Full-time" },
+  { value: "part_time", label: "Part-time" },
+  { value: "contract", label: "Contract" },
+  { value: "freelance", label: "Freelance" },
+  { value: "internship", label: "Internship" },
+];
+const REMOTE_OPTIONS = [
+  { value: "remote", label: "Remote" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "onsite", label: "On-site" },
 ];
 
-interface FormData {
-  fullName: string;
-  location: string;
-  resumeFile: File | null;
-  resumeUploaded: boolean;
-  searchQueries: string[];
-  searchLocations: string[];
-  watchlistCompanies: string[];
-  openrouterKey: string;
-  serpapiKey: string;
+const INTEGRATIONS = [
+  {
+    provider: "openrouter" as const,
+    label: "OpenRouter",
+    description: "AI drafting, summarization, and interview prep.",
+  },
+  {
+    provider: "serpapi" as const,
+    label: "SerpAPI",
+    description: "Broader search coverage for discovery.",
+  },
+];
+
+const INTEGRATION_FIELDS = {
+  openrouter: "openrouterKey",
+  serpapi: "serpapiKey",
+} as const;
+
+function emptyState() {
+  return {
+    fullName: "",
+    location: "",
+    salaryMin: "",
+    salaryMax: "",
+    searchQueries: [] as string[],
+    searchLocations: [] as string[],
+    watchlistCompanies: [] as string[],
+    openrouterKey: "",
+    serpapiKey: "",
+    preferredJobTypes: [] as string[],
+    preferredRemoteTypes: [] as string[],
+  };
 }
 
-function ProgressBar({ currentStep }: { currentStep: number }) {
+export default function Onboarding() {
+  const navigate = useNavigate();
+  const [step, setStep] = useState<StepId>(0);
+  const [form, setForm] = useState(emptyState);
+
+  const summaryItems = useMemo(
+    () => [
+      {
+        key: "profile",
+        label: "Profile",
+        value: form.fullName || "Not set",
+        hint: "The name used across the workspace.",
+      },
+      {
+        key: "search",
+        label: "Search seeds",
+        value: form.searchQueries.length,
+        hint: "Queries that shape discovery.",
+      },
+      {
+        key: "companies",
+        label: "Watchlist",
+        value: form.watchlistCompanies.length,
+        hint: "Target companies to track.",
+      },
+      {
+        key: "integrations",
+        label: "Keys",
+        value: [form.openrouterKey, form.serpapiKey].filter(Boolean).length,
+        hint: "Connections ready to sync.",
+      },
+    ],
+    [form]
+  );
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      await profileApi.update({
+        full_name: form.fullName || null,
+        location: form.location || null,
+        salary_min: form.salaryMin ? Number(form.salaryMin) : null,
+        salary_max: form.salaryMax ? Number(form.salaryMax) : null,
+        search_queries: form.searchQueries,
+        search_locations: form.searchLocations,
+        watchlist_companies: form.watchlistCompanies,
+        preferred_job_types: form.preferredJobTypes,
+        preferred_remote_types: form.preferredRemoteTypes,
+      });
+
+      const tasks: Promise<unknown>[] = [];
+      if (form.openrouterKey.trim()) {
+        tasks.push(settingsApi.upsertIntegration("openrouter", form.openrouterKey.trim()));
+      }
+      if (form.serpapiKey.trim()) {
+        tasks.push(settingsApi.upsertIntegration("serpapi", form.serpapiKey.trim()));
+      }
+      await Promise.all(tasks);
+    },
+    onSuccess: () => {
+      toast("success", "Workspace seeded");
+      navigate("/jobs", { replace: true });
+    },
+    onError: () => toast("error", "Failed to finish onboarding"),
+  });
+
+  function addItem(key: "searchQueries" | "searchLocations" | "watchlistCompanies", value: string) {
+    setForm((current) => {
+      const items = current[key];
+      if (items.includes(value)) return current;
+      return { ...current, [key]: [...items, value] };
+    });
+  }
+
+  function removeItem(key: "searchQueries" | "searchLocations" | "watchlistCompanies", index: number) {
+    setForm((current) => ({
+      ...current,
+      [key]: current[key].filter((_, itemIndex) => itemIndex !== index),
+    }));
+  }
+
   return (
-    <div className="w-full mb-8">
-      <div className="flex items-center justify-between">
-        {STEPS.map((step, i) => (
-          <div key={step.label} className="flex flex-col items-center flex-1">
-            <div className="flex items-center w-full">
-              {i > 0 && (
-                <div
-                  className={`flex-1 h-0.5 ${
-                    i <= currentStep ? 'bg-accent-primary' : 'bg-border'
-                  }`}
-                />
-              )}
-              <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full border-2 shrink-0 transition-colors ${
-                  i < currentStep
-                    ? 'bg-accent-primary border-accent-primary text-white'
-                    : i === currentStep
-                      ? 'border-accent-primary text-accent-primary bg-accent-primary/10'
-                      : 'border-border text-text-muted bg-bg-tertiary'
-                }`}
-              >
-                {i < currentStep ? (
-                  <CheckCircle size={16} weight="bold" />
-                ) : (
-                  step.icon
-                )}
-              </div>
-              {i < STEPS.length - 1 && (
-                <div
-                  className={`flex-1 h-0.5 ${
-                    i < currentStep ? 'bg-accent-primary' : 'bg-border'
-                  }`}
-                />
-              )}
-            </div>
-            <span
-              className={`mt-2 text-xs font-medium ${
-                i <= currentStep ? 'text-text-primary' : 'text-text-muted'
-              }`}
-            >
-              {step.label}
-            </span>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="First-run setup"
+        title="Onboarding"
+        description="Set the profile, search seeds, and integrations that power the rest of the workspace. You can revisit all of this later from Settings."
+        meta={
+          <div className="flex flex-wrap gap-2">
+            {STEP_LABELS.map((label, index) => (
+              <Badge key={label} variant={index <= step ? "info" : "default"} size="sm">
+                {label}
+              </Badge>
+            ))}
           </div>
-        ))}
-      </div>
+        }
+        actions={
+          <Button
+            onClick={() => saveMutation.mutate()}
+            loading={saveMutation.isPending}
+            icon={<CheckCircle size={16} weight="bold" />}
+          >
+            Finish setup
+          </Button>
+        }
+      />
+
+      <SplitWorkspace
+        primary={
+          <Surface tone="default" padding="lg" radius="xl">
+            <div className="space-y-6">
+              {step === 0 ? (
+                <div className="space-y-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-12 items-center justify-center rounded-[var(--radius-xl)] border border-border/70 bg-background/80">
+                      <RocketLaunch size={24} weight="bold" className="text-[var(--color-accent-primary)]" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-semibold tracking-[-0.04em]">Welcome to Career OS</h2>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        This setup flow gives the system enough context to start discovering roles and
+                        generating useful prep material.
+                      </p>
+                    </div>
+                  </div>
+                  <SettingsSection
+                    title="What gets configured"
+                    description="Identity, search targets, and integrations that make the rest of the product useful."
+                  >
+                    <div className="grid gap-3 md:grid-cols-3">
+                      <StateBlock tone="muted" icon={<UserCircle size={18} weight="bold" />} title="Profile" />
+                      <StateBlock tone="muted" icon={<MagnifyingGlass size={18} weight="bold" />} title="Search seeds" />
+                      <StateBlock tone="muted" icon={<Key size={18} weight="bold" />} title="Integrations" />
+                    </div>
+                  </SettingsSection>
+                </div>
+              ) : null}
+
+              {step === 1 ? (
+                <SettingsSection
+                  title="Profile"
+                  description="Tell the workspace who you are and what kind of roles you want."
+                >
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Input
+                      label="Full name"
+                      value={form.fullName}
+                      onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
+                      placeholder="Jane Doe"
+                      icon={<UserCircle size={16} weight="bold" />}
+                    />
+                    <Input
+                      label="Location"
+                      value={form.location}
+                      onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
+                      placeholder="New York, NY"
+                      icon={<MapPin size={16} weight="bold" />}
+                    />
+                    <Select
+                      label="Preferred job types"
+                      value={form.preferredJobTypes[0] ?? ""}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          preferredJobTypes: event.target.value ? [event.target.value] : [],
+                        }))
+                      }
+                      options={JOB_TYPE_OPTIONS}
+                      placeholder="Select a primary job type"
+                    />
+                    <Select
+                      label="Preferred remote type"
+                      value={form.preferredRemoteTypes[0] ?? ""}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          preferredRemoteTypes: event.target.value ? [event.target.value] : [],
+                        }))
+                      }
+                      options={REMOTE_OPTIONS}
+                      placeholder="Select a primary remote type"
+                    />
+                    <Input
+                      label="Salary minimum"
+                      type="number"
+                      value={form.salaryMin}
+                      onChange={(event) => setForm((current) => ({ ...current, salaryMin: event.target.value }))}
+                      icon={<CurrencyDollar size={16} weight="bold" />}
+                    />
+                    <Input
+                      label="Salary maximum"
+                      type="number"
+                      value={form.salaryMax}
+                      onChange={(event) => setForm((current) => ({ ...current, salaryMax: event.target.value }))}
+                      icon={<CurrencyDollar size={16} weight="bold" />}
+                    />
+                  </div>
+                </SettingsSection>
+              ) : null}
+
+              {step === 2 ? (
+                <SettingsSection
+                  title="Search seeds"
+                  description="These phrases and companies power discovery, alerts, and saved searches."
+                >
+                  <div className="space-y-4">
+                    <TagRow
+                      label="Job titles"
+                      placeholder="Software Engineer"
+                      items={form.searchQueries}
+                      onAdd={(value) => addItem("searchQueries", value)}
+                      onRemove={(index) => removeItem("searchQueries", index)}
+                    />
+                    <TagRow
+                      label="Locations"
+                      placeholder="Remote"
+                      items={form.searchLocations}
+                      onAdd={(value) => addItem("searchLocations", value)}
+                      onRemove={(index) => removeItem("searchLocations", index)}
+                    />
+                    <TagRow
+                      label="Watchlist companies"
+                      placeholder="Stripe"
+                      items={form.watchlistCompanies}
+                      onAdd={(value) => addItem("watchlistCompanies", value)}
+                      onRemove={(index) => removeItem("watchlistCompanies", index)}
+                    />
+                  </div>
+                </SettingsSection>
+              ) : null}
+
+              {step === 3 ? (
+                <SettingsSection
+                  title="Integrations"
+                  description="Optional keys that unlock richer search and Copilot behavior."
+                >
+                  <div className="space-y-4">
+                    {INTEGRATIONS.map((integration) => (
+                      <div key={integration.provider} className="rounded-[var(--radius-xl)] border border-border/70 bg-background/80 p-4">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-semibold tracking-[-0.01em]">{integration.label}</div>
+                            <p className="mt-1 text-sm leading-6 text-muted-foreground">{integration.description}</p>
+                          </div>
+                        <Badge
+                          variant={form[INTEGRATION_FIELDS[integration.provider]] ? "success" : "default"}
+                          size="sm"
+                        >
+                          {form[INTEGRATION_FIELDS[integration.provider]] ? "Ready" : "Optional"}
+                        </Badge>
+                      </div>
+                      <Input
+                        label={`${integration.label} API key`}
+                        type="password"
+                        value={form[INTEGRATION_FIELDS[integration.provider]]}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            [INTEGRATION_FIELDS[integration.provider]]: event.target.value,
+                          }))
+                        }
+                          placeholder={`Enter ${integration.label} key`}
+                      />
+                    </div>
+                    ))}
+                  </div>
+                </SettingsSection>
+              ) : null}
+
+              <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setStep((current) => Math.max(0, current - 1) as StepId)}
+                  disabled={step === 0}
+                  icon={<ArrowLeft size={16} weight="bold" />}
+                >
+                  Back
+                </Button>
+                <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => navigate("/jobs", { replace: true })}
+                >
+                  Skip for now
+                </Button>
+                  {step < 3 ? (
+                    <Button
+                      type="button"
+                      onClick={() => setStep((current) => (current + 1) as StepId)}
+                      icon={<ArrowRight size={16} weight="bold" />}
+                    >
+                      Next
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={() => saveMutation.mutate()}
+                      loading={saveMutation.isPending}
+                      icon={<CheckCircle size={16} weight="bold" />}
+                    >
+                      Finish
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Surface>
+        }
+        secondary={
+          <div className="space-y-4">
+            {summaryItems.map((item) => (
+              <StateBlock
+                key={item.key}
+                tone="neutral"
+                title={item.label}
+                description={`${item.value} · ${item.hint}`}
+              />
+            ))}
+            <StateBlock
+              tone="warning"
+              icon={<Sparkle size={18} weight="bold" />}
+              title="Tip"
+              description="Complete onboarding with the fields you know now. Settings can refine everything later."
+            />
+          </div>
+        }
+      />
     </div>
   );
 }
 
-function TagInput({
+function TagRow({
   label,
   placeholder,
-  tags,
+  items,
   onAdd,
   onRemove,
 }: {
   label: string;
   placeholder: string;
-  tags: string[];
+  items: string[];
   onAdd: (value: string) => void;
   onRemove: (index: number) => void;
 }) {
-  const [inputValue, setInputValue] = useState('');
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && inputValue.trim()) {
-      e.preventDefault();
-      onAdd(inputValue.trim());
-      setInputValue('');
-    }
-  }
-
-  function handleAddClick() {
-    if (inputValue.trim()) {
-      onAdd(inputValue.trim());
-      setInputValue('');
-    }
-  }
+  const [value, setValue] = useState("");
 
   return (
-    <div>
-      <label className="block text-sm font-medium text-text-secondary mb-1.5">
-        {label}
-      </label>
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-muted-foreground">{label}</label>
       <div className="flex gap-2">
         <Input
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
           placeholder={placeholder}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              const trimmed = value.trim();
+              if (!trimmed) return;
+              onAdd(trimmed);
+              setValue("");
+            }
+          }}
         />
-        <Button
-          variant="secondary"
-          size="md"
-          icon={<Plus size={14} />}
-          onClick={handleAddClick}
-          disabled={!inputValue.trim()}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  icon={<Plus size={14} weight="bold" />}
+                  onClick={() => {
+            const trimmed = value.trim();
+            if (!trimmed) return;
+            onAdd(trimmed);
+            setValue("");
+          }}
         >
           Add
         </Button>
       </div>
-      {tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {tags.map((tag, i) => (
-            <Badge key={i} variant="info" size="md">
+      {items.length ? (
+        <div className="flex flex-wrap gap-2">
+              {items.map((item, index) => (
+            <Badge key={`${item}-${index}`} variant="info" size="md">
               <span className="flex items-center gap-1.5">
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => onRemove(i)}
-                  className="hover:text-accent-danger transition-colors"
-                >
-                  <X size={12} />
+                {item}
+                <button type="button" onClick={() => onRemove(index)} className="hover:text-[var(--color-accent-danger)]">
+                  <ArrowLeft size={10} weight="bold" />
                 </button>
               </span>
             </Badge>
           ))}
         </div>
-      )}
-    </div>
-  );
-}
-
-export default function Onboarding() {
-  const navigate = useNavigate();
-  const [step, setStep] = useState(0);
-  const [formData, setFormData] = useState<FormData>({
-    fullName: '',
-    location: '',
-    resumeFile: null,
-    resumeUploaded: false,
-    searchQueries: [],
-    searchLocations: [],
-    watchlistCompanies: [],
-    openrouterKey: '',
-    serpapiKey: '',
-  });
-
-  const profileMutation = useMutation({
-    mutationFn: () =>
-      profileApi.update({
-        full_name: formData.fullName || null,
-        location: formData.location || null,
-        search_queries: formData.searchQueries,
-        search_locations: formData.searchLocations,
-        watchlist_companies: formData.watchlistCompanies,
-      }),
-    onSuccess: () => {
-      toast('success', 'Profile saved! Welcome to JobRadar.');
-      navigate('/jobs');
-    },
-    onError: () => toast('error', 'Failed to save profile. Please try again.'),
-  });
-
-  const resumeMutation = useMutation({
-    mutationFn: (file: File) => resumeApi.upload(file),
-    onSuccess: () => {
-      setFormData((prev) => ({ ...prev, resumeUploaded: true }));
-      toast('success', 'Resume uploaded successfully');
-    },
-    onError: () => toast('error', 'Failed to upload resume'),
-  });
-
-  const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
-      const file = acceptedFiles[0];
-      if (file) {
-        setFormData((prev) => ({ ...prev, resumeFile: file }));
-        resumeMutation.mutate(file);
-      }
-    },
-    [resumeMutation]
-  );
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/pdf': ['.pdf'],
-      'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-    },
-    maxFiles: 1,
-    multiple: false,
-  });
-
-  function handleNext() {
-    if (step < STEPS.length - 1) {
-      setStep((s) => s + 1);
-    }
-  }
-
-  function handleBack() {
-    if (step > 0) {
-      setStep((s) => s - 1);
-    }
-  }
-
-  function handleFinish() {
-    profileMutation.mutate();
-  }
-
-  function addSearchQuery(value: string) {
-    if (!formData.searchQueries.includes(value)) {
-      setFormData((prev) => ({
-        ...prev,
-        searchQueries: [...prev.searchQueries, value],
-      }));
-    }
-  }
-
-  function removeSearchQuery(index: number) {
-    setFormData((prev) => ({
-      ...prev,
-      searchQueries: prev.searchQueries.filter((_, i) => i !== index),
-    }));
-  }
-
-  function addSearchLocation(value: string) {
-    if (!formData.searchLocations.includes(value)) {
-      setFormData((prev) => ({
-        ...prev,
-        searchLocations: [...prev.searchLocations, value],
-      }));
-    }
-  }
-
-  function removeSearchLocation(index: number) {
-    setFormData((prev) => ({
-      ...prev,
-      searchLocations: prev.searchLocations.filter((_, i) => i !== index),
-    }));
-  }
-
-  function addWatchlistCompany(value: string) {
-    if (!formData.watchlistCompanies.includes(value)) {
-      setFormData((prev) => ({
-        ...prev,
-        watchlistCompanies: [...prev.watchlistCompanies, value],
-      }));
-    }
-  }
-
-  function removeWatchlistCompany(index: number) {
-    setFormData((prev) => ({
-      ...prev,
-      watchlistCompanies: prev.watchlistCompanies.filter((_, i) => i !== index),
-    }));
-  }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-primary p-4">
-      <div className="w-full max-w-2xl">
-        <ProgressBar currentStep={step} />
-
-        <Card padding="lg">
-          {/* Step 0: Welcome */}
-          {step === 0 && (
-            <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent-primary/10 mb-6">
-                <RocketLaunch size={32} weight="bold" className="text-accent-primary" />
-              </div>
-              <h2 className="text-2xl font-bold text-text-primary mb-3">
-                Welcome to JobRadar
-              </h2>
-              <p className="text-text-secondary max-w-md mx-auto mb-8">
-                Your intelligent job search companion. Let's get you set up in just a few
-                steps so we can find the best opportunities for you.
-              </p>
-              <Button variant="primary" size="lg" onClick={handleNext}>
-                Get Started
-              </Button>
-            </div>
-          )}
-
-          {/* Step 1: Profile */}
-          {step === 1 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-text-primary mb-1">
-                  Your Profile
-                </h2>
-                <p className="text-sm text-text-muted">
-                  Tell us a bit about yourself so we can personalize your experience.
-                </p>
-              </div>
-              <Input
-                label="Full Name"
-                placeholder="Jane Doe"
-                value={formData.fullName}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, fullName: e.target.value }))
-                }
-              />
-              <Input
-                label="Location"
-                placeholder="San Francisco, CA"
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, location: e.target.value }))
-                }
-              />
-            </div>
-          )}
-
-          {/* Step 2: Resume */}
-          {step === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-text-primary mb-1">
-                  Upload Your Resume
-                </h2>
-                <p className="text-sm text-text-muted">
-                  We'll use your resume to match you with relevant jobs and tailor
-                  applications.
-                </p>
-              </div>
-              <div
-                {...getRootProps()}
-                className={`border-2 border-dashed rounded-[var(--radius-lg)] p-8 text-center cursor-pointer transition-colors ${
-                  isDragActive
-                    ? 'border-accent-primary bg-accent-primary/5'
-                    : formData.resumeUploaded
-                      ? 'border-accent-success bg-accent-success/5'
-                      : 'border-border hover:border-border-focus'
-                }`}
-              >
-                <input {...getInputProps()} />
-                <div className="flex flex-col items-center gap-3">
-                  {formData.resumeUploaded ? (
-                    <>
-                      <CheckCircle size={40} className="text-accent-success" />
-                      <p className="text-sm font-medium text-text-primary">
-                        {formData.resumeFile?.name}
-                      </p>
-                      <p className="text-xs text-text-muted">
-                        Resume uploaded successfully. Drop a new file to replace.
-                      </p>
-                    </>
-                  ) : resumeMutation.isPending ? (
-                    <>
-                      <UploadSimple
-                        size={40}
-                        weight="bold"
-                        className="text-accent-primary animate-pulse"
-                      />
-                      <p className="text-sm text-text-secondary">Uploading...</p>
-                    </>
-                  ) : (
-                    <>
-                      <UploadSimple size={40} weight="bold" className="text-text-muted" />
-                      {isDragActive ? (
-                        <p className="text-sm text-accent-primary font-medium">
-                          Drop your resume here
-                        </p>
-                      ) : (
-                        <>
-                          <p className="text-sm text-text-secondary">
-                            Drag and drop your resume, or click to browse
-                          </p>
-                          <p className="text-xs text-text-muted">
-                            PDF, DOC, or DOCX (max 10MB)
-                          </p>
-                        </>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Search Preferences */}
-          {step === 3 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-text-primary mb-1">
-                  Search Preferences
-                </h2>
-                <p className="text-sm text-text-muted">
-                  Add the job titles you're interested in and your preferred locations.
-                </p>
-              </div>
-              <TagInput
-                label="Job Titles"
-                placeholder="e.g. Software Engineer"
-                tags={formData.searchQueries}
-                onAdd={addSearchQuery}
-                onRemove={removeSearchQuery}
-              />
-              <TagInput
-                label="Preferred Locations"
-                placeholder="e.g. Remote, New York"
-                tags={formData.searchLocations}
-                onAdd={addSearchLocation}
-                onRemove={removeSearchLocation}
-              />
-            </div>
-          )}
-
-          {/* Step 4: Watchlist */}
-          {step === 4 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-text-primary mb-1">
-                  Watchlist Companies
-                </h2>
-                <p className="text-sm text-text-muted">
-                  Add companies you'd like to track. We'll alert you when they post new jobs.
-                </p>
-              </div>
-              <TagInput
-                label="Companies"
-                placeholder="e.g. Google, Stripe, Anthropic"
-                tags={formData.watchlistCompanies}
-                onAdd={addWatchlistCompany}
-                onRemove={removeWatchlistCompany}
-              />
-            </div>
-          )}
-
-          {/* Step 5: API Keys */}
-          {step === 5 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-text-primary mb-1">
-                  API Keys
-                </h2>
-                <p className="text-sm text-text-muted">
-                  Optional: Add API keys to enable AI features and expanded job search.
-                </p>
-              </div>
-              <Input
-                label="OpenRouter API Key"
-                placeholder="sk-or-..."
-                value={formData.openrouterKey}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, openrouterKey: e.target.value }))
-                }
-                type="password"
-              />
-              <p className="text-xs text-text-muted -mt-4">
-                Powers AI resume tailoring, interview prep, and cover letter generation.
-              </p>
-              <Input
-                label="SerpAPI Key"
-                placeholder="Enter your SerpAPI key..."
-                value={formData.serpapiKey}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, serpapiKey: e.target.value }))
-                }
-                type="password"
-              />
-              <p className="text-xs text-text-muted -mt-4">
-                Enables Google Jobs search for broader job discovery.
-              </p>
-            </div>
-          )}
-
-          {/* Step 6: Ready */}
-          {step === 6 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent-success/10 mb-4">
-                  <CheckCircle size={32} className="text-accent-success" />
-                </div>
-                <h2 className="text-xl font-bold text-text-primary mb-1">
-                  You're All Set!
-                </h2>
-                <p className="text-sm text-text-muted">
-                  Here's a summary of what you've configured:
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                {formData.fullName && (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-bg-tertiary rounded-[var(--radius-md)]">
-                    <UserCircle size={16} weight="bold" className="text-text-muted shrink-0" />
-                    <div>
-                      <p className="text-xs text-text-muted">Name</p>
-                      <p className="text-sm font-medium text-text-primary">
-                        {formData.fullName}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {formData.location && (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-bg-tertiary rounded-[var(--radius-md)]">
-                    <MagnifyingGlass
-                      size={16}
-                      weight="bold"
-                      className="text-text-muted shrink-0"
-                    />
-                    <div>
-                      <p className="text-xs text-text-muted">Location</p>
-                      <p className="text-sm font-medium text-text-primary">
-                        {formData.location}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 px-4 py-3 bg-bg-tertiary rounded-[var(--radius-md)]">
-                  <FileText size={16} className="text-text-muted shrink-0" />
-                  <div>
-                    <p className="text-xs text-text-muted">Resume</p>
-                    <p className="text-sm font-medium text-text-primary">
-                      {formData.resumeUploaded
-                        ? formData.resumeFile?.name ?? 'Uploaded'
-                        : 'Skipped'}
-                    </p>
-                  </div>
-                </div>
-
-                {formData.searchQueries.length > 0 && (
-                  <div className="flex items-start gap-3 px-4 py-3 bg-bg-tertiary rounded-[var(--radius-md)]">
-                    <MagnifyingGlass
-                      size={16}
-                      weight="bold"
-                      className="text-text-muted shrink-0 mt-0.5"
-                    />
-                    <div>
-                      <p className="text-xs text-text-muted">Job Titles</p>
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        {formData.searchQueries.map((q) => (
-                          <Badge key={q} variant="info" size="sm">
-                            {q}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {formData.searchLocations.length > 0 && (
-                  <div className="flex items-start gap-3 px-4 py-3 bg-bg-tertiary rounded-[var(--radius-md)]">
-                    <MagnifyingGlass
-                      size={16}
-                      weight="bold"
-                      className="text-text-muted shrink-0 mt-0.5"
-                    />
-                    <div>
-                      <p className="text-xs text-text-muted">Preferred Locations</p>
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        {formData.searchLocations.map((l) => (
-                          <Badge key={l} variant="info" size="sm">
-                            {l}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {formData.watchlistCompanies.length > 0 && (
-                  <div className="flex items-start gap-3 px-4 py-3 bg-bg-tertiary rounded-[var(--radius-md)]">
-                    <Buildings size={16} weight="bold" className="text-text-muted shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-text-muted">Watchlist Companies</p>
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        {formData.watchlistCompanies.map((c) => (
-                          <Badge key={c} variant="info" size="sm">
-                            {c}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 px-4 py-3 bg-bg-tertiary rounded-[var(--radius-md)]">
-                  <Key size={16} className="text-text-muted shrink-0" />
-                  <div>
-                    <p className="text-xs text-text-muted">API Keys</p>
-                    <p className="text-sm font-medium text-text-primary">
-                      {formData.openrouterKey || formData.serpapiKey
-                        ? [
-                            formData.openrouterKey && 'OpenRouter',
-                            formData.serpapiKey && 'SerpAPI',
-                          ]
-                            .filter(Boolean)
-                            .join(', ')
-                        : 'Skipped'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          {step > 0 && (
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
-              <Button variant="ghost" onClick={handleBack}>
-                Back
-              </Button>
-              <div className="flex items-center gap-3">
-                {((step === 2 && !formData.resumeUploaded) || step === 4 || step === 5) && (
-                  <Button variant="ghost" onClick={handleNext}>
-                    Skip
-                  </Button>
-                )}
-                {step < STEPS.length - 1 ? (
-                  <Button variant="primary" onClick={handleNext}>
-                    Next
-                  </Button>
-                ) : (
-                  <Button
-                    variant="primary"
-                    loading={profileMutation.isPending}
-                    onClick={handleFinish}
-                  >
-                    Start Searching
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-        </Card>
-      </div>
+      ) : null}
     </div>
   );
 }
