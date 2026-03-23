@@ -14,7 +14,7 @@ describe("App", () => {
   it("renders login page by default when not authenticated", async () => {
     render(<App />);
     await waitFor(() => {
-      expect(screen.getByText("Sign in to your account")).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
     });
   });
 });

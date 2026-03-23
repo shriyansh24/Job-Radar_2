@@ -38,3 +38,18 @@ export async function refreshApi(): Promise<TokenResponse> {
 export async function logoutApi(): Promise<void> {
   await apiClient.post("/auth/logout", {});
 }
+
+export async function changePasswordApi(
+  currentPassword: string,
+  newPassword: string
+): Promise<TokenResponse> {
+  const { data } = await apiClient.post<TokenResponse>("/auth/change-password", {
+    current_password: currentPassword,
+    new_password: newPassword,
+  });
+  return data;
+}
+
+export async function deleteAccountApi(): Promise<void> {
+  await apiClient.delete("/auth/account");
+}

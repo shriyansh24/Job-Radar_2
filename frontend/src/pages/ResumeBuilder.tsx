@@ -21,6 +21,7 @@ import Modal from "../components/ui/Modal";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import Select from "../components/ui/Select";
 import Tabs from "../components/ui/Tabs";
+import { PageHeader } from "../components/system/PageHeader";
 import { toast } from "../components/ui/toastService";
 
 const tabs = [
@@ -91,7 +92,11 @@ export default function ResumeBuilder() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-text-primary">Resume Builder</h1>
+      <PageHeader
+        eyebrow="Prepare"
+        title="Resume Builder"
+        description="Upload resumes, manage versions, tailor a draft to a job, and run the AI council without leaving the workspace."
+      />
 
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 

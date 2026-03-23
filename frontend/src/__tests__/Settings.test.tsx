@@ -5,54 +5,48 @@ import { renderWithProviders } from "./testUtils";
 const settingsMocks = vi.hoisted(() => ({
   getSettings: vi.fn(),
   listSearches: vi.fn(),
+  listIntegrations: vi.fn(),
   updateSettings: vi.fn(),
+  updateSearch: vi.fn(),
   createSearch: vi.fn(),
   deleteSearch: vi.fn(),
+  upsertIntegration: vi.fn(),
+  deleteIntegration: vi.fn(),
   exportData: vi.fn(),
-  importData: vi.fn(),
-  triggerScraper: vi.fn(),
-  logout: vi.fn(),
-  setTheme: vi.fn(),
+  clearData: vi.fn(),
+  changePassword: vi.fn(),
+  deleteAccount: vi.fn(),
 }));
 
 vi.mock("../api/settings", () => ({
   settingsApi: {
     getSettings: settingsMocks.getSettings,
     listSearches: settingsMocks.listSearches,
+    listIntegrations: settingsMocks.listIntegrations,
     updateSettings: settingsMocks.updateSettings,
+    updateSearch: settingsMocks.updateSearch,
     createSearch: settingsMocks.createSearch,
     deleteSearch: settingsMocks.deleteSearch,
+    upsertIntegration: settingsMocks.upsertIntegration,
+    deleteIntegration: settingsMocks.deleteIntegration,
   },
 }));
 
 vi.mock("../api/admin", () => ({
   adminApi: {
     exportData: settingsMocks.exportData,
-    importData: settingsMocks.importData,
+    clearData: settingsMocks.clearData,
   },
 }));
 
-vi.mock("../api/scraper", () => ({
-  scraperApi: {
-    triggerScraper: settingsMocks.triggerScraper,
-  },
-}));
-
-vi.mock("../components/scraper/ScraperControlPanel", () => ({
-  default: () => <div>Scraper control mock</div>,
+vi.mock("../api/auth", () => ({
+  changePasswordApi: settingsMocks.changePassword,
+  deleteAccountApi: settingsMocks.deleteAccount,
 }));
 
 vi.mock("../store/useAuthStore", () => ({
-  useAuthStore: (
-    selector: (state: { logout: () => Promise<void> }) => unknown
-  ) => selector({ logout: settingsMocks.logout }),
-}));
-
-vi.mock("../store/useUIStore", () => ({
-  useUIStore: () => ({
-    theme: "dark",
-    setTheme: settingsMocks.setTheme,
-  }),
+  useAuthStore: (selector: (state: { user: { email: string } | null }) => unknown) =>
+    selector({ user: { email: "owner@jobradar.dev" } }),
 }));
 
 import Settings from "../pages/Settings";
@@ -74,26 +68,55 @@ describe("Settings page", () => {
           name: "Remote React",
           filters: { q: "react", remote_type: "remote" },
           alert_enabled: true,
+          last_checked_at: "2026-03-22T10:00:00Z",
+        },
+      ],
+    });
+    settingsMocks.listIntegrations.mockResolvedValue({
+      data: [
+        {
+          provider: "openrouter",
+          connected: true,
+          status: "connected",
+          masked_value: "sk-or-v1-****",
+          updated_at: "2026-03-22T09:00:00Z",
+        },
+        {
+          provider: "serpapi",
+          connected: false,
+          status: "missing",
+          masked_value: null,
+          updated_at: null,
         },
       ],
     });
     settingsMocks.updateSettings.mockResolvedValue({ data: null });
+    settingsMocks.updateSearch.mockResolvedValue({ data: null });
     settingsMocks.createSearch.mockResolvedValue({ data: null });
     settingsMocks.deleteSearch.mockResolvedValue({ data: null });
-    settingsMocks.triggerScraper.mockResolvedValue({ data: null });
-    settingsMocks.logout.mockResolvedValue(undefined);
+    settingsMocks.upsertIntegration.mockResolvedValue({ data: null });
+    settingsMocks.deleteIntegration.mockResolvedValue({ data: null });
+    settingsMocks.exportData.mockResolvedValue({ data: new Blob(["{}"], { type: "application/json" }) });
+    settingsMocks.clearData.mockResolvedValue({ data: { rows_deleted: 0 } });
+    settingsMocks.changePassword.mockResolvedValue({ data: null });
+    settingsMocks.deleteAccount.mockResolvedValue({ data: null });
   });
 
-  it("renders settings sections, saved search data, and scraper controls", async () => {
+  it("renders the redesigned settings workspace with saved searches and integrations", async () => {
     renderWithProviders(<Settings />);
 
-    expect(await screen.findByText("App Settings")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
-    expect(screen.getByText("API Keys")).toBeInTheDocument();
-    expect(screen.getByText("Saved Searches")).toBeInTheDocument();
-    expect(screen.getByText("Remote React")).toBeInTheDocument();
-    expect(screen.getByText("q: react")).toBeInTheDocument();
-    expect(screen.getByText("Scraper control mock")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Run All Scrapers/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    expect(screen.getByText("Workspace defaults")).toBeInTheDocument();
+    expect(screen.getByText("Security and data")).toBeInTheDocument();
+    expect(screen.getAllByText("Saved searches").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /save workspace/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /new search/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^export$/i })).toBeInTheDocument();
+
+    expect(await screen.findByText("Remote React")).toBeInTheDocument();
+    expect(screen.getByText(/q: react/i)).toBeInTheDocument();
+    expect(screen.getByText("OpenRouter")).toBeInTheDocument();
+    expect(screen.getByText(/sk-or-v1/i)).toBeInTheDocument();
+    expect(screen.getAllByText("owner@jobradar.dev").length).toBeGreaterThan(0);
   });
 });

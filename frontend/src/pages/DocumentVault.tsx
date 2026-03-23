@@ -24,6 +24,7 @@ import Modal from "../components/ui/Modal";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import Tabs from "../components/ui/Tabs";
 import Textarea from "../components/ui/Textarea";
+import { PageHeader } from "../components/system/PageHeader";
 import { toast } from "../components/ui/toastService";
 
 const TABS = [
@@ -295,7 +296,11 @@ export default function DocumentVault() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-text-primary">Document Vault</h1>
+      <PageHeader
+        eyebrow="Prepare"
+        title="Document Vault"
+        description="Keep source documents, cover letters, and resume variants in one place for easy reuse."
+      />
 
       <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
 

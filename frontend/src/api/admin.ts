@@ -45,4 +45,6 @@ export const adminApi = {
     apiClient.post('/admin/export', {}, { responseType: 'blob' }),
   importData: (data: Record<string, unknown>) =>
     apiClient.post('/admin/import', data),
+  clearData: () =>
+    apiClient.delete<{ status: string; rows_deleted: number }>('/admin/data'),
 };

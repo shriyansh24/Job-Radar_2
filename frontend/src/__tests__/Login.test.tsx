@@ -11,11 +11,13 @@ describe("Login", () => {
       </BrowserRouter>
     );
     expect(
-      screen.getByRole("heading", { name: /jobradar/i })
+      screen.getByRole("heading", { name: "Sign in" })
     ).toBeInTheDocument();
+    expect(screen.getByText("JobRadar Career OS")).toBeInTheDocument();
+    expect(screen.getByText("Welcome back")).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("you@example.com")
     ).toBeInTheDocument();
-    expect(screen.getByText("Sign In")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
   });
 });
