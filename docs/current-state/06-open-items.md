@@ -8,14 +8,14 @@
 - `email` and `outcomes` routers mounted in `main.py` (23 routers total)
 - `ir_schema.py`, `renderer.py` recovered; `professional.html` template created
 - `users.created_at`/`updated_at` fixed to `timestamp with time zone`
-- Ruff clean, 716 backend tests pass
+- Career OS frontend overhaul shipped with `copilot`, `networking`, `email`, and `outcomes` routes
+- Settings, auth, and admin backend contract endpoints are present and covered by targeted integration tests
 
 ## Remaining Frontend Gaps
-- No API modules or pages for: email, networking, outcomes, copilot chat
-- No-op stubs: change password, delete account, clear data (no backend endpoints)
-- API keys collected in Settings/Onboarding but never persisted to backend
-- Auto-apply run/pause/applySingle defined but no UI triggers
-- Semantic search endpoint exists but not wired into Job Board
+- Semantic search is still not wired into Job Board as an interactive filter surface
+- Auto-apply run/pause/applySingle still needs direct UI triggers
+- Saved-search alerts UI remains a planned enhancement
+- Resume PDF generation and additional template flows remain deferred
 
 ## Non-Blocking Residuals
 - Vitest still prints `--localstorage-file was provided without a valid path` warnings during frontend tests.
@@ -35,7 +35,6 @@
 - Further parser tuning for difficult JS-heavy career pages
 - End-to-end Playwright coverage
 - Longer-term vendoring/repackaging decisions for scraper dependencies
-- Rebase feat/p2-polish-advanced onto current main
 
 ## Historical Planning Material
 - Future design notes live in `docs/research/`.

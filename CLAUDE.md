@@ -16,6 +16,7 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Auth: cookie-based access and refresh tokens
 - Scraping: ATS registry, target-based scheduler, browser pool, tier router, page crawler
 - CI: dependency checks, backend lint/tests, frontend audit/lint/tests/build
+- Current UI: Career OS workspace with shared primitives under `frontend/src/components/system`, a `frontend/system.md` design source of truth, and route groupings for `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, and `Operations`
 
 ## Canonical Working Commands
 
@@ -39,23 +40,19 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Dev server: `cd frontend && npm run dev`
 
 ## Branch Context
-- `main` has PRs #15 (security hardening) and #16 (CodeQL + deps) merged.
-- `feat/p2-polish-advanced` has all P0/P1/P2 feature code (38 spec features). This is the active development branch.
-- P0/P1/P2 features were built by Codex agents from a comprehensive spec; code quality is solid but integration wiring has gaps (see Known Structural Gaps below).
+- `main` is the active branch in this workspace.
+- No open GitHub issues or bug-labeled issues are currently listed for the repo.
 
-## Current State Summary (feat/p2-polish-advanced, 2026-03-23)
-- Backend: **716 tests pass**, `ruff` clean, 23 routers mounted, 37 DB tables.
-- Frontend: lint clean, build clean, 9 tests pass in 6 files.
-- Backend and frontend dependency health checks pass locally.
-- The audit ledger is closed at `39 FIXED / 5 STALE / 0 OPEN / 0 PARTIAL`.
-- No known blocking reproducible bugs on the core platform.
-- Alembic at revision `005` (consolidation migration for P2 tables).
+## Current State Summary (2026-03-23)
+- Frontend: lint clean, tests pass, build clean.
+- Backend: targeted settings/auth/admin integration tests pass.
+- GitHub auth works in this environment, and the repo currently shows no open issues.
+- The audit ledger remains closed at `39 FIXED / 5 STALE / 0 OPEN / 0 PARTIAL`.
+- Alembic is at the current consolidation revision used by the repo.
 
-## Remaining Frontend Gaps (feat/p2-polish-advanced)
-- Frontend has no API modules or pages for: email, networking, outcomes, copilot chat.
-- Settings stubs (change password, delete account, clear data) are frontend no-ops with no backend endpoint.
-- API keys collected in Settings/Onboarding but not persisted to backend.
-- Auto-apply run/pause/applySingle API functions defined but no UI triggers.
+## Remaining Frontend Gaps
+- No blocking frontend gaps are currently known from the verified local pass.
+- Any remaining work should be treated as follow-up polish, coverage hardening, or product expansion rather than a known blocker.
 
 ## Important Invariants
 - `jobs.id` is a SHA-256 string key, not a UUID.
@@ -64,6 +61,7 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Use `npm` for frontend commands.
 - The frontend theme system is driven by `useUIStore` and a `.dark` class on the root element.
 - The frontend icon set is `@phosphor-icons/react`, not `lucide-react`.
+- Keep `frontend/system.md` aligned with any new visual or layout rule.
 
 ## Infrastructure
 - Docker container: `jobradar-postgres` (pgvector/pgvector:pg17) on port 5433.
@@ -73,7 +71,7 @@ Use `docs/research/00-index.md` only for future-planning context.
 
 ## Agent Rules
 - Read the current-state and audit docs before changing behavior.
-- Prefer minimal, high-confidence fixes over refactors.
+- Prefer minimal, high-confidence fixes over refactors, but keep the Career OS design system consistent across all new surfaces.
 - Prove behavior changes with focused tests when possible.
 - Do not treat old plan files or `docs/research/` as current product requirements.
 - Do not commit `.claude/launch.json`; it is machine-local.

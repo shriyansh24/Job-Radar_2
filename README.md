@@ -12,7 +12,8 @@ AI-powered job hunting assistant with direct-job scraping, enrichment, pipeline 
 ## Stack
 - Backend: Python 3.12, FastAPI, SQLAlchemy async, PostgreSQL, Redis, Alembic, `uv`
 - Frontend: React 19, Vite 6, TypeScript, Tailwind CSS v4, Zustand, React Query
-- AI/LLM: OpenRouter-backed services for enrichment, interview prep, salary analysis, resume tailoring, and cover letters
+- AI/LLM: OpenRouter-backed services for enrichment, interview prep, salary analysis, resume tailoring, cover letters, and copilot flows
+- Product surfaces: discovery, execution, preparation, intelligence, networking, email signal logs, and outcomes analysis
 - Scraping: ATS adapters, target scheduler, browser pool, page crawler, deduplication, telemetry
 
 ## Quick Start
@@ -87,12 +88,12 @@ jobradar-v2/
 |-- backend/
 |   |-- app/            # FastAPI application (domain modules)
 |   |-- scripts/        # CLI utilities
-|   `-- tests/          # pytest suite (688 tests)
+|   `-- tests/          # pytest suite
 |-- frontend/
 |   |-- src/            # React 19 application
 |   `-- dist/           # Production build output
 |-- docs/
-|   |-- audit/          # Bug ledger (39 FIXED / 5 STALE)
+|   |-- audit/          # Bug ledger (39 FIXED / 1 VERIFIED_CLEAN / 4 STALE)
 |   |-- current-state/  # Canonical live state docs
 |   `-- research/       # Future design research
 |-- .github/workflows/  # CI: lint, test, build, CodeQL
@@ -107,3 +108,4 @@ jobradar-v2/
 - Use `uv run` for backend commands and `npm` for frontend commands.
 - The current live product state is documented under `docs/current-state/`.
 - `docs/research/` contains future-planning material, not current requirements.
+- The current UI ships with a shared design system, light and dark themes, and route coverage for `copilot`, `networking`, `email`, and `outcomes`.

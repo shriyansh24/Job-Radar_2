@@ -14,32 +14,32 @@
 
 ## Current Status At A Glance
 - No known blocking reproducible bugs remain after the latest fix pass.
-- Active development branch: `feat/p2-polish-advanced` (P0/P1/P2 features).
+- Active branch in this workspace: `main`.
 - `main` branch has PRs #15 and #16 merged (security hardening + CodeQL fixes).
-- Backend lint, tests, and dependency-health checks pass locally.
+- Backend targeted settings/auth/admin integration tests pass locally.
 - Frontend audit, lint, tests, and build pass locally.
 - GitHub Actions workflows are updated to current `actions/*@v6` releases.
-- The audit ledger is closed at `39 FIXED / 5 STALE / 0 OPEN / 0 PARTIAL`.
+- The audit ledger is closed at `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
 
 ## Latest Validation Snapshot
 
-### Backend (feat/p2-polish-advanced)
+### Backend
 - `cd backend && uv run python -m pip check`
 - `cd backend && uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
 - `cd backend && uv tool run pip-audit -r .ci-requirements.txt`
 - `cd backend && uv tool run bandit -r app/ -c pyproject.toml --severity-level medium`
 - `cd backend && uv run ruff check .`
-- `cd backend && uv run pytest`
-- Latest local result: `716 passed`
+- `cd backend && uv run pytest tests/integration/test_settings_api.py tests/integration/test_auth_api.py tests/integration/test_admin_api.py`
+- Latest local result: `24 passed`
 
-### Frontend (feat/p2-polish-advanced)
+### Frontend
 - `cd frontend && npm audit --audit-level high`
 - `cd frontend && npm run lint`
 - `cd frontend && npm run test -- --run`
 - `cd frontend && npm install --no-save @vitest/coverage-v8`
 - `cd frontend && npm run test -- --run --coverage --coverage.thresholds.statements=40`
 - `cd frontend && npm run build`
-- Latest local result: `9 passed` in `6` test files
+- Latest local result: `24` test files, `38` tests
 
 ## Documentation Map
 
@@ -60,3 +60,4 @@
 - `docs/superpowers/` has been removed (historical, fully completed).
 - `specs/` has been removed (superseded by `docs/design-brief.md` and memory).
 - Use `CLAUDE.md` and `AGENTS.md` for working conventions, not product-state discovery.
+- The current workspace on `main` includes the Career OS overhaul: shared design system, route metadata, `copilot`/`networking`/`email`/`outcomes`, and real settings/account contract wiring.

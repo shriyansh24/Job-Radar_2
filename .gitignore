@@ -7,6 +7,7 @@ dist/
 build/
 .coverage
 htmlcov/
+frontend/coverage/
 *.egg-info/
 pgdata/
 .ruff_cache/

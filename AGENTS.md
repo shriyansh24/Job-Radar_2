@@ -9,6 +9,9 @@
 - Repo working conventions and command surface live in `CLAUDE.md`.
 
 ## Learned Workspace Facts
-- The `jobradar-v2` frontend now uses Tailwind CSS v4 with design tokens defined via CSS variables in `src/index.css` instead of the `@theme` at-rule.
-- The frontend has been fully migrated from `lucide-react` to `@phosphor-icons/react` for all icons.
+- The `jobradar-v2` frontend uses Tailwind CSS v4 with design tokens defined via CSS variables in `frontend/src/index.css` instead of the `@theme` at-rule.
+- The frontend is on `@phosphor-icons/react` for all icons and uses Geist Sans / Geist Mono as the type system.
 - The theme system is wired through a Zustand `useUIStore` that toggles a `.dark` class on the HTML root and persists the choice in `localStorage`.
+- The current UI surface is a Career OS workspace with `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, and `Operations` route groupings, plus first-class `/copilot`, `/networking`, `/email`, and `/outcomes` pages.
+- `frontend/system.md` is the design-system source of truth for tokens, layout grammar, and component rules.
+- Verified local validation is currently green for frontend lint, frontend tests, frontend build, and the targeted backend settings/auth/admin integration tests.

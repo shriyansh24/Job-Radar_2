@@ -22,6 +22,8 @@
 - Vault PATCH flows are present for editable document metadata.
 - SSE uses credentialed transport instead of a token query parameter.
 - Recent TypeScript nullability regressions are fixed.
+- The Career OS overhaul is now shipped in the current workspace with shared shell primitives, light/dark theme parity, and route coverage for copilot, networking, email, and outcomes.
+- Settings now persists saved searches, integrations, password changes, account deletion, and data clear actions against real backend endpoints.
 - Current frontend lint, tests, coverage gate, and build all pass.
 
 ## Validation
@@ -31,7 +33,7 @@
 - `cd frontend && npm install --no-save @vitest/coverage-v8`
 - `cd frontend && npm run test -- --run --coverage --coverage.thresholds.statements=40`
 - `cd frontend && npm run build`
-- Latest local result: `23` test files, `35` tests, coverage `43.19%` statements
+- Latest local result: `24` test files, `38` tests
 
 ## Non-Blocking Residual
 - Vitest still prints `--localstorage-file was provided without a valid path` warnings.
@@ -40,3 +42,4 @@
 
 ## Current Assessment
 - No actionable frontend or dependency bugs remain in the current verified tree.
+- The shared system layer is the current frontend source of truth for layout, typography, spacing, and tokenized surfaces.

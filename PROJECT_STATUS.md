@@ -5,11 +5,11 @@
 
 ## Current Snapshot
 - See `docs/current-state/00-index.md` for the canonical live state.
-- Active development branch: `feat/p2-polish-advanced` (all P0/P1/P2 feature code).
+- Active branch in this workspace: `main`.
 - `main` has PRs #15 (security hardening) and #16 (CodeQL + deps) merged.
-- Backend: **716 tests pass**, ruff clean, 23 routers mounted, 37 DB tables.
-- Frontend: lint clean, build clean, 9 tests pass in 6 files.
-- Audit status remains `39 FIXED / 5 STALE / 0 OPEN / 0 PARTIAL`.
+- Backend: targeted settings/auth/admin integration tests pass, ruff clean, and the new settings/account contract is wired through the API.
+- Frontend: lint clean, build clean, and the full Vitest suite passes.
+- Audit status remains `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
 - GitHub workflows are updated to current `actions/*@v6` releases.
 
 ## What Is Stable
@@ -18,18 +18,15 @@
 - Job enrichment, salary analysis, cover-letter generation, interview prep, resume tailoring, and application pipeline flows
 - Frontend theme system with light mode and high-contrast dark mode
 - Vault PATCH flows, admin cleanup, SSE credentialed transport, and current frontend build compatibility
+- New frontend surfaces for copilot, networking, email signal logs, and outcomes
+- Settings-backed saved-search updates, secret persistence, password change, account delete, and data clear actions
 
-## P0/P1/P2 Feature Status (feat/p2-polish-advanced)
-All 38 spec features have backend code. Backend wiring is now complete:
-- All 37 DB tables exist (10 P2 tables created via consolidation migration `005`)
-- 23 routers mounted (email and outcomes added this session)
-- Resume `ir_schema.py`, `renderer.py`, and `professional.html` template all present
-- `users.created_at`/`updated_at` fixed to `timestamp with time zone`
-
-Remaining frontend gaps:
-- No API modules or pages for: email, networking, outcomes, copilot chat
-- Settings stubs (change password, delete account, clear data) are no-ops
-- API keys collected but not persisted to backend
+## Current Feature Status
+The current shipped UI and backend contract are aligned for the Career OS overhaul:
+- Shared design system and tokenized shell are in place
+- `email`, `networking`, `outcomes`, and `copilot` are first-class frontend routes
+- Settings now drives real backend flows for searches, integrations, password change, account delete, and data clear
+- API keys are persisted through the dedicated integration endpoints
 
 ## Where To Read Next
 1. `docs/current-state/00-index.md`
@@ -43,12 +40,8 @@ Remaining frontend gaps:
 - Vitest still emits non-fatal `--localstorage-file` warnings.
 
 ## Deferred Work (Not Current Bugs)
-- Create frontend API modules and pages for: email, networking, outcomes, copilot chat
-- Add backend endpoints for: change password, delete account, clear data
-- Wire API key persistence from Settings/Onboarding to backend
 - Wire semantic search into Job Board UI
 - Resume PDF generation end-to-end testing (WeasyPrint is optional dep)
 - Saved-search alerts UI and scheduler UX
 - Additional parser tuning for difficult JS-heavy career pages
 - End-to-end Playwright coverage
-- Rebase feat/p2-polish-advanced onto current main
