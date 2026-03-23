@@ -34,9 +34,11 @@
 - `cd backend && uv run python -m pip check`
 - `cd backend && uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
 - `cd backend && uv tool run pip-audit -r .ci-requirements.txt`
+- `cd backend && uv tool run bandit -r app/ -c pyproject.toml --severity-level medium`
 - `cd backend && uv run ruff check .`
-- `cd backend && uv run pytest`
-- Latest local result: `493 passed`
+- `cd backend && uv run mypy app/auth/service.py app/config.py app/shared/middleware.py app/scraping/deduplication.py app/scraping/port.py --ignore-missing-imports`
+- `cd backend && uv run pytest --cov=app --cov-fail-under=60 tests/`
+- Latest local result: `539 passed`, coverage `60.10%`
 
 ## Entry Points
 - App bootstrap: `backend/app/main.py`
@@ -49,3 +51,4 @@
 ## Current Assessment
 - Backend is locally green.
 - No known blocking backend or DB bugs remain after the latest verified pass.
+- Bandit, pip-audit, pip check, backend Ruff, and the targeted backend mypy gate are green in the current branch.
