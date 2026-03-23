@@ -36,6 +36,25 @@ class ScraperRunResult:
     errors: list[str] = field(default_factory=list)
 
 
+def compute_ats_composite_key(
+    company_domain: str | None,
+    ats_provider: str | None,
+    ats_job_id: str | None,
+) -> str | None:
+    """Compute a deterministic SHA-256 composite key for ATS-based dedup.
+
+    Returns None if any of the three inputs is missing/empty.
+    """
+    if not all([company_domain, ats_provider, ats_job_id]):
+        return None
+    # All three are guaranteed non-None/non-empty after the check above
+    domain = company_domain.lower().strip()  # type: ignore[union-attr]
+    provider = ats_provider.lower()  # type: ignore[union-attr]
+    job_id = ats_job_id.strip()  # type: ignore[union-attr]
+    raw = f"{domain}|{provider}|{job_id}"
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
 class ScrapingService:
     """Orchestrates scraping across all sources."""
 
@@ -251,6 +270,9 @@ class ScrapingService:
     @staticmethod
     def _scraped_to_dict(job: ScrapedJob) -> dict:
         """Convert ScrapedJob to dict for Job ORM model."""
+        ats_key = compute_ats_composite_key(
+            job.company_domain, job.ats_provider, job.ats_job_id
+        )
         return {
             "source": job.source,
             "source_url": job.source_url,
@@ -269,6 +291,10 @@ class ScrapingService:
             "job_type": job.job_type,
             "posted_at": job.posted_at,
             "scraped_at": datetime.now(UTC),
+            "ats_job_id": job.ats_job_id,
+            "ats_requisition_id": job.ats_requisition_id,
+            "ats_provider": job.ats_provider,
+            "ats_composite_key": ats_key,
         }
 
     async def run_target_batch(

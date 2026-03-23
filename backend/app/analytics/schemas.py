@@ -48,3 +48,27 @@ class FunnelData(BaseModel):
 class FunnelStageData(BaseModel):
     stage: str
     count: int = 0
+
+
+# --------------- Pattern Detector schemas (Feature D1) ---------------
+
+
+class PatternInsight(BaseModel):
+    """A single insight row returned by a pattern query."""
+
+    label: str
+    value: float = 0.0
+    detail: str = ""
+    sample_size: int = 0
+    warning: str | None = None
+
+
+class AllPatternsResponse(BaseModel):
+    """Aggregate response from ``GET /analytics/patterns``."""
+
+    callback_rate_by_company_size: list[dict] = []
+    conversion_funnel: list[FunnelStageData] = []
+    response_time_patterns: list[dict] = []
+    best_application_timing: list[dict] = []
+    company_ghosting_rate: list[dict] = []
+    skill_gap_detection: list[dict] = []

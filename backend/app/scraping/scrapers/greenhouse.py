@@ -48,6 +48,12 @@ class GreenhouseScraper(BaseScraper):
                 except (ValueError, TypeError):
                     pass
 
+            # ATS ID: prefer internal_job_id, fallback to id
+            raw_id = item.get("internal_job_id") or item.get("id")
+            ats_job_id = str(raw_id) if raw_id is not None else None
+            req_id = item.get("requisition_id")
+            ats_req_id = str(req_id) if req_id else None
+
             jobs.append(
                 ScrapedJob(
                     title=item.get("title", ""),
@@ -58,6 +64,9 @@ class GreenhouseScraper(BaseScraper):
                     remote_type=self._normalize_remote_type(loc),
                     description_raw=item.get("content", ""),
                     posted_at=posted_at,
+                    ats_job_id=ats_job_id,
+                    ats_requisition_id=ats_req_id,
+                    ats_provider="greenhouse",
                 )
             )
         return jobs[:limit]

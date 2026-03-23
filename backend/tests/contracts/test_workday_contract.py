@@ -236,3 +236,29 @@ class TestWorkdayParserContract:
                     f"Location mismatch for {job.title}: "
                     f"parsed={job.location}, expected={exp['location']}"
                 )
+
+    def test_all_jobs_have_ats_provider(self):
+        """All parsed jobs should have ats_provider set to workday."""
+        jobs = parse_fixture()
+        for job in jobs:
+            assert job.ats_provider == "workday", (
+                f"Job missing ats_provider: {job.title}"
+            )
+
+    def test_all_jobs_have_ats_job_id(self):
+        """All parsed jobs should have an ats_job_id extracted."""
+        jobs = parse_fixture()
+        for job in jobs:
+            assert job.ats_job_id, f"Job missing ats_job_id: {job.title}"
+
+    def test_ats_job_id_matches_expected(self):
+        """ATS job IDs should match the external_id from expected_jobs.json."""
+        jobs = parse_fixture()
+        expected = load_expected()
+
+        for job, exp in zip(jobs, expected):
+            if "external_id" in exp:
+                assert job.ats_job_id == exp["external_id"], (
+                    f"ATS ID mismatch for {job.title}: "
+                    f"parsed={job.ats_job_id}, expected={exp['external_id']}"
+                )

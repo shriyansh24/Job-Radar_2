@@ -37,6 +37,14 @@ class Settings(BaseSettings):
     openrouter_fallback_model: str = "openai/gpt-4o-mini"
     use_model_router: bool = True
 
+    # Ollama (local LLM)
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_enabled: bool = False
+    ollama_primary_model: str = "qwen3:8b-q5_k_m"
+    ollama_fast_model: str = "qwen3:4b-q4_k_m"
+    ollama_embed_model: str = "nomic-embed-text"
+    ollama_num_ctx: int = 8192
+
     # Scraper API keys
     serpapi_api_key: str = ""
     theirstack_api_key: str = ""

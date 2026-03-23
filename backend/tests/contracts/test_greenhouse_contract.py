@@ -64,6 +64,12 @@ def parse_fixture_to_scraped_jobs(data: dict, board_token: str = "gitlab") -> li
         # nests it under company.name.  Accept both formats.
         company = item.get("company", {}).get("name") or item.get("company_name") or board_token
 
+        # ATS ID: prefer internal_job_id, fallback to id
+        raw_id = item.get("internal_job_id") or item.get("id")
+        ats_job_id = str(raw_id) if raw_id is not None else None
+        req_id = item.get("requisition_id")
+        ats_req_id = str(req_id) if req_id else None
+
         jobs.append(
             ScrapedJob(
                 title=item.get("title", ""),
@@ -74,6 +80,9 @@ def parse_fixture_to_scraped_jobs(data: dict, board_token: str = "gitlab") -> li
                 remote_type=scraper._normalize_remote_type(loc),
                 description_raw=item.get("content", ""),
                 posted_at=posted_at,
+                ats_job_id=ats_job_id,
+                ats_requisition_id=ats_req_id,
+                ats_provider="greenhouse",
             )
         )
     return jobs
@@ -249,3 +258,35 @@ class TestGreenhouseParserContract:
                         f"URL mismatch for {title}: "
                         f"parsed={parsed_job.source_url}, expected={exp_url}"
                     )
+
+    def test_all_jobs_have_ats_provider(self):
+        """All parsed jobs should have ats_provider set to greenhouse."""
+        data = load_fixture()
+        jobs = parse_fixture_to_scraped_jobs(data)
+        for job in jobs:
+            assert job.ats_provider == "greenhouse", (
+                f"Job missing ats_provider: {job.title}"
+            )
+
+    def test_all_jobs_have_ats_job_id(self):
+        """All parsed jobs should have an ats_job_id extracted."""
+        data = load_fixture()
+        jobs = parse_fixture_to_scraped_jobs(data)
+        for job in jobs:
+            assert job.ats_job_id, f"Job missing ats_job_id: {job.title}"
+
+    def test_ats_job_id_matches_expected(self):
+        """ATS job IDs should match the external_id from expected_jobs.json."""
+        data = load_fixture()
+        jobs = parse_fixture_to_scraped_jobs(data)
+        expected = load_expected()
+
+        parsed_by_title = {j.title.strip(): j for j in jobs}
+        for exp in expected:
+            title = exp["title"]
+            if title in parsed_by_title and "external_id" in exp:
+                parsed_job = parsed_by_title[title]
+                assert parsed_job.ats_job_id == exp["external_id"], (
+                    f"ATS ID mismatch for {title}: "
+                    f"parsed={parsed_job.ats_job_id}, expected={exp['external_id']}"
+                )

@@ -43,6 +43,9 @@ class TheirStackScraper(BaseScraper):
                 except (ValueError, TypeError):
                     pass
 
+            # ATS ID: id from TheirStack result
+            ats_job_id = str(item["id"]) if item.get("id") else None
+
             jobs.append(
                 ScrapedJob(
                     title=item.get("job_title", ""),
@@ -52,6 +55,8 @@ class TheirStackScraper(BaseScraper):
                     location=item.get("location"),
                     description_raw=item.get("description"),
                     posted_at=posted_at,
+                    ats_job_id=ats_job_id,
+                    ats_provider="theirstack",
                 )
             )
         return jobs[:limit]

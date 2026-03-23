@@ -115,6 +115,15 @@ class WorkdayScraper(BaseScraper):
             # Determine remote type
             remote_type = self._normalize_remote_type(location)
 
+            # ATS ID: try REQ-\d+ from externalPath, fallback to trailing path segment
+            req_match = re.search(r"(REQ-\d+)", external_path)
+            if req_match:
+                ats_job_id = req_match.group(1)
+            else:
+                # Fallback: last path segment (e.g. /job/Title/12345 -> 12345)
+                path_parts = external_path.rstrip("/").split("/")
+                ats_job_id = path_parts[-1] if path_parts else None
+
             jobs.append(
                 ScrapedJob(
                     title=title,
@@ -125,6 +134,8 @@ class WorkdayScraper(BaseScraper):
                     remote_type=remote_type,
                     job_type=job_type,
                     posted_at=posted_at,
+                    ats_job_id=ats_job_id,
+                    ats_provider="workday",
                 )
             )
 

@@ -25,6 +25,9 @@ class ScrapedJob:
     posted_at: datetime | None = None
     company_domain: str | None = None
     company_logo_url: str | None = None
+    ats_job_id: str | None = None
+    ats_requisition_id: str | None = None
+    ats_provider: str | None = None
     extra_data: dict = field(default_factory=dict)
 
 

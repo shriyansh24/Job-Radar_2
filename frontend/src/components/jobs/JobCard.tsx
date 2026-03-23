@@ -9,6 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import type { Job } from "../../api/jobs";
 import { cn } from "../../lib/utils";
 import Badge from "../ui/Badge";
+import FreshnessBadge from "./FreshnessBadge";
 
 function MatchScoreBadge({ score }: { score: number | null }) {
   if (score === null) return null;
@@ -81,6 +82,7 @@ export default function JobCard({ job, isSelected, onClick, onToggleStar }: JobC
       </div>
       <div className="flex items-center gap-2 mt-2 flex-wrap">
         <MatchScoreBadge score={job.match_score} />
+        <FreshnessBadge score={job.freshness_score} />
         {job.remote_type && (
           <Badge variant="info" size="sm">
             <Monitor size={12} weight="bold" className="mr-0.5" />

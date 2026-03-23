@@ -10,6 +10,7 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -17,6 +18,7 @@ from sqlalchemy import (
     String,
     Text,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -34,6 +36,12 @@ class Job(Base):
         Index("idx_jobs_scraped_at", "scraped_at"),
         Index("idx_jobs_match_score", "match_score"),
         Index("idx_jobs_dedup", "dedup_hash"),
+        Index(
+            "uq_jobs_ats_composite_key",
+            "ats_composite_key",
+            unique=True,
+            postgresql_where=text("ats_composite_key IS NOT NULL"),
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -76,7 +84,16 @@ class Job(Base):
     # Scoring
     match_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 1))
     tfidf_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 1))
+    freshness_score: Mapped[float | None] = mapped_column(Float, default=0.5)
     # embedding: Vector(384) — added conditionally for PostgreSQL only
+    # ATS dedup
+    ats_job_id: Mapped[str | None] = mapped_column(String(200), index=True)
+    ats_requisition_id: Mapped[str | None] = mapped_column(String(100))
+    ats_provider: Mapped[str | None] = mapped_column(String(50), index=True)
+    ats_composite_key: Mapped[str | None] = mapped_column(String(64))
+    # Normalization (Feature A2)
+    normalized_company: Mapped[str | None] = mapped_column(String(200))
+    normalized_title: Mapped[str | None] = mapped_column(String(300))
     # Dedup
     dedup_hash: Mapped[str | None] = mapped_column(String(32))
     simhash: Mapped[int | None] = mapped_column(BigInteger)

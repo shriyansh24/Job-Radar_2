@@ -59,6 +59,9 @@ class AshbyScraper(BaseScraper):
             for item in team.get("jobs", []):
                 if not isinstance(item, dict):
                     continue
+                # ATS ID: id from GraphQL node
+                ats_job_id = str(item["id"]) if item.get("id") else None
+
                 jobs.append(
                     ScrapedJob(
                         title=item["title"],
@@ -72,6 +75,8 @@ class AshbyScraper(BaseScraper):
                             else self._normalize_remote_type(item.get("locationName"))
                         ),
                         job_type=item.get("employmentType"),
+                        ats_job_id=ats_job_id,
+                        ats_provider="ashby",
                     )
                 )
         return jobs[:limit]

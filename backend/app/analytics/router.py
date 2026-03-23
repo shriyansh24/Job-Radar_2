@@ -3,7 +3,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.analytics.pattern_detector import PatternDetector
 from app.analytics.schemas import (
+    AllPatternsResponse,
     DailyStats,
     FunnelStageData,
     OverviewStats,
@@ -61,3 +63,25 @@ async def get_funnel(
 ) -> list[FunnelStageData]:
     svc = AnalyticsService(db)
     return await svc.get_funnel(user.id)
+
+
+@router.get("/patterns", response_model=AllPatternsResponse)
+async def get_patterns(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AllPatternsResponse:
+    """Return all 6 pattern analyses aggregated into one response."""
+    detector = PatternDetector(db)
+    data = await detector.get_all_patterns(user.id)
+    return AllPatternsResponse(**data)
+
+
+@router.get("/patterns/funnel", response_model=list[FunnelStageData])
+async def get_pattern_funnel(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[FunnelStageData]:
+    """Return just the conversion funnel from the pattern detector."""
+    detector = PatternDetector(db)
+    raw = await detector.conversion_funnel(user.id)
+    return [FunnelStageData(stage=r["stage"], count=r["count"]) for r in raw]

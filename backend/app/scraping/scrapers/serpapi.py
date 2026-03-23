@@ -42,6 +42,9 @@ class SerpAPIScraper(BaseScraper):
             remote_raw = "remote" if extensions.get("work_from_home") else None
             sal_min, sal_max, sal_period = self._extract_salary(item.get("description", ""))
 
+            # ATS ID: job_id if available from SerpAPI result
+            ats_job_id = str(item["job_id"]) if item.get("job_id") else None
+
             jobs.append(
                 ScrapedJob(
                     title=item.get("title", ""),
@@ -55,6 +58,8 @@ class SerpAPIScraper(BaseScraper):
                     salary_max=sal_max,
                     salary_period=sal_period,
                     posted_at=None,
+                    ats_job_id=ats_job_id,
+                    ats_provider="serpapi",
                     extra_data={"extensions": extensions},
                 )
             )

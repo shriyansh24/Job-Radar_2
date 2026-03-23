@@ -34,6 +34,9 @@ class LeverScraper(BaseScraper):
             if not isinstance(item, dict):
                 continue
             cats = item.get("categories", {})
+            # ATS ID: posting UUID from the id field
+            ats_job_id = str(item["id"]) if item.get("id") else None
+
             jobs.append(
                 ScrapedJob(
                     title=item.get("text", ""),
@@ -45,6 +48,8 @@ class LeverScraper(BaseScraper):
                     description_raw=item.get("descriptionPlain", ""),
                     experience_level=self._normalize_experience(cats.get("commitment")),
                     job_type=cats.get("commitment"),
+                    ats_job_id=ats_job_id,
+                    ats_provider="lever",
                 )
             )
         return jobs[:limit]

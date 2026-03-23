@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from app.auth.models import User  # noqa: F401
 from app.auto_apply.models import AutoApplyProfile, AutoApplyRule, AutoApplyRun  # noqa: F401
 from app.canonical_jobs.models import CanonicalJob, RawJobSource  # noqa: F401
-from app.companies.models import Company  # noqa: F401
+from app.companies.models import Company, CompanyAlias  # noqa: F401
 from app.config import settings
 from app.copilot.models import CoverLetter  # noqa: F401
 from app.database import Base
