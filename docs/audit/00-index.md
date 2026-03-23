@@ -29,8 +29,8 @@
 - Local results from this pass:
   - no tracked `.env` file in this clone; only `.env.example`
   - `ApifyScraper` is still imported and registered in the live `ScrapingService.run_scrape()` path
-  - backend full suite passed: `539 passed`, coverage `60.10%`
-  - frontend full suite passed: `23` test files, `35` tests, coverage `43.19%` statements
+  - backend targeted settings/auth/admin integration slice passed: `24 passed`
+  - frontend full suite passed: `24` test files, `38` tests
   - `pip check`, `pip-audit`, `bandit`, backend `ruff`, targeted backend `mypy`, frontend `npm audit`, lint, and build all passed
 
 ## How to Use This Index
@@ -127,3 +127,4 @@
 | FIX-07 | backend | Failed enrichment no longer persists partial job cleanup/enrichment field mutations | FIXED |
 | FIX-08 | backend | Interview generation/prep now fail on empty model payloads, and job context loads `company_name` correctly | FIXED |
 | FIX-09 | infra | CI workflows are updated to `actions/*@v6` and now enforce lock-aware dependency-health checks (`pip check`, exported-requirements `pip-audit`, `npm audit`) | FIXED |
+| FIX-10 | frontend | Career OS shell, shared design system, and the `copilot` / `networking` / `email` / `outcomes` route set are now wired into the shipped UI | FIXED |
