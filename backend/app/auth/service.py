@@ -154,3 +154,15 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> User
     if not user.is_active:
         raise AuthError("User is inactive")
     return user
+
+
+async def change_password(db: AsyncSession, user: User, current_password: str, new_password: str) -> User:
+    if not verify_password(current_password, user.password_hash):
+        raise AuthError("Current password is incorrect")
+    if current_password == new_password:
+        raise ValidationError("New password must be different from current password")
+    user.password_hash = hash_password(new_password)
+    user.token_version = get_token_version(user) + 1
+    await db.commit()
+    await db.refresh(user)
+    return user

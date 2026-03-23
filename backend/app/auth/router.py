@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 from app.auth.schemas import (
+    ChangePasswordRequest,
     LoginRequest,
     RefreshRequest,
     TokenResponse,
@@ -13,6 +14,7 @@ from app.auth.schemas import (
 )
 from app.auth.service import (
     authenticate_user,
+    change_password,
     clear_auth_cookies,
     create_tokens,
     decode_refresh_token,
@@ -21,6 +23,7 @@ from app.auth.service import (
     register_user,
     set_auth_cookies,
 )
+from app.admin.service import AdminService
 from app.config import settings
 from app.dependencies import get_current_user, get_db
 
@@ -88,6 +91,32 @@ async def logout(
         await db.refresh(current_user)
     clear_auth_cookies(response)
     return {"status": "ok"}
+
+
+@router.post("/change-password", response_model=TokenResponse)
+async def change_password_route(
+    data: ChangePasswordRequest,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    user = await change_password(db, current_user, data.current_password, data.new_password)
+    tokens = create_tokens(str(user.id), token_version=get_token_version(user))
+    set_auth_cookies(response, tokens)
+    return tokens
+
+
+@router.delete("/account", status_code=204, response_model=None)
+async def delete_account(
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    admin_service = AdminService(db)
+    await admin_service.clear_data(current_user.id, commit=False)
+    await db.delete(current_user)
+    await db.commit()
+    clear_auth_cookies(response)
 
 
 @router.get("/me", response_model=UserResponse)
