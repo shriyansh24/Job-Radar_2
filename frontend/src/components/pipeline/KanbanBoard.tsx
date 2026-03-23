@@ -3,11 +3,6 @@
  *
  * Wraps PipelineColumn components with @dnd-kit DndContext for
  * drag-and-drop status transitions between columns.
- *
- * DEPENDENCY: Requires `@dnd-kit/core` and `@dnd-kit/sortable` to be installed:
- *   npm install @dnd-kit/core @dnd-kit/sortable
- *
- * Until installed, the Pipeline page continues to work with click-based transitions.
  */
 
 import {
@@ -15,6 +10,7 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  KeyboardSensor,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -35,7 +31,8 @@ export default function KanbanBoard({ children, onDragTransition, apps }: Kanban
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
-    })
+    }),
+    useSensor(KeyboardSensor),
   );
 
   function handleDragStart(event: DragStartEvent) {
@@ -53,6 +50,8 @@ export default function KanbanBoard({ children, onDragTransition, apps }: Kanban
     const newStatus = String(over.id);
     const appId = String(active.id);
 
+    // Only trigger if dropping on a column (not another card)
+    // Column ids match our stage keys
     onDragTransition(appId, newStatus);
   }
 
@@ -64,7 +63,7 @@ export default function KanbanBoard({ children, onDragTransition, apps }: Kanban
       onDragEnd={handleDragEnd}
     >
       {children}
-      <DragOverlay>
+      <DragOverlay dropAnimation={{ duration: 200, easing: "ease" }}>
         {activeApp && (
           <div className="w-64 p-3 rounded-[var(--radius-md)] border border-accent-primary bg-bg-secondary shadow-xl opacity-90">
             <p className="text-sm font-medium text-text-primary truncate">

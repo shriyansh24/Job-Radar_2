@@ -7,7 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 from app.dependencies import get_current_user, get_db
+from app.interview.prep_engine import InterviewPrepEngine, to_prep_response
 from app.interview.schemas import (
+    ContextualPrepRequest,
+    ContextualPrepResponse,
     EvaluateAnswerRequest,
     EvaluateAnswerResponse,
     GenerateQuestionsRequest,
@@ -73,3 +76,34 @@ async def evaluate_answer(
     svc = InterviewService(db)
     result = await svc.evaluate_answer(data, user.id)
     return EvaluateAnswerResponse(**result)
+
+
+# -- Contextual prep endpoints --------------------------------------------
+
+
+@router.post(
+    "/prep/{application_id}",
+    response_model=ContextualPrepResponse,
+    status_code=201,
+)
+async def generate_contextual_prep(
+    application_id: uuid.UUID,
+    data: ContextualPrepRequest | None = None,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ContextualPrepResponse:
+    stage = (data.stage if data else "general") or "general"
+    engine = InterviewPrepEngine(db)
+    package = await engine.generate_prep(application_id, user.id, stage=stage)
+    return to_prep_response(package)
+
+
+@router.get("/prep/{application_id}", response_model=ContextualPrepResponse)
+async def get_contextual_prep(
+    application_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ContextualPrepResponse:
+    engine = InterviewPrepEngine(db)
+    package = await engine.get_prep(application_id, user.id)
+    return to_prep_response(package)

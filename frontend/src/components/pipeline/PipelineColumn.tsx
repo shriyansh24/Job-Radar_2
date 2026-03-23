@@ -1,10 +1,12 @@
-import Badge from '../ui/Badge';
-import { SkeletonCard } from '../ui/Skeleton';
-import { cn } from '../../lib/utils';
-import type { Application } from '../../api/pipeline';
-import ApplicationCard from './ApplicationCard';
+import { useDroppable } from "@dnd-kit/core";
+import Badge from "../ui/Badge";
+import { SkeletonCard } from "../ui/Skeleton";
+import { cn } from "../../lib/utils";
+import type { Application } from "../../api/pipeline";
+import DraggableCard from "./DraggableCard";
 
 interface PipelineColumnProps {
+  columnId: string;
   label: string;
   color: string;
   apps: Application[];
@@ -14,6 +16,7 @@ interface PipelineColumnProps {
 }
 
 export default function PipelineColumn({
+  columnId,
   label,
   color,
   apps,
@@ -21,11 +24,15 @@ export default function PipelineColumn({
   onTransition,
   onViewHistory,
 }: PipelineColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: columnId });
+
   return (
     <div
+      ref={setNodeRef}
       className={cn(
         "w-[320px] flex flex-col bg-bg-secondary/60 supports-[backdrop-filter]:bg-bg-secondary/45 backdrop-blur rounded-[var(--radius-xl)] border border-border",
-        "shadow-[var(--shadow-sm)]"
+        "shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-200",
+        isOver && "border-accent-primary shadow-[0_0_0_2px_var(--color-accent-primary)]"
       )}
     >
       <div className={cn("border-t-2 rounded-t-[var(--radius-xl)]", color)} />
@@ -46,10 +53,15 @@ export default function PipelineColumn({
         {loading ? (
           Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} />)
         ) : apps.length === 0 ? (
-          <p className="text-xs text-text-muted text-center py-4">No applications</p>
+          <p className={cn(
+            "text-xs text-center py-4 transition-colors duration-200",
+            isOver ? "text-accent-primary" : "text-text-muted"
+          )}>
+            {isOver ? "Drop here" : "No applications"}
+          </p>
         ) : (
           apps.map((app) => (
-            <ApplicationCard
+            <DraggableCard
               key={app.id}
               app={app}
               onTransition={(newStatus) => onTransition(app.id, newStatus)}

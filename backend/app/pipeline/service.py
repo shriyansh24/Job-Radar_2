@@ -126,6 +126,11 @@ class PipelineService:
         self.db.add(history)
         await self.db.commit()
         await self.db.refresh(app)
+
+        # Auto-trigger interview prep when entering "interviewing" stage
+        if new_status == "interviewing":
+            await self._trigger_interview_prep(app)
+
         return app
 
     async def get_pipeline_view(self, user_id: uuid.UUID) -> PipelineView:
@@ -141,6 +146,28 @@ class PipelineService:
             if bucket is not None:
                 bucket.append(ApplicationResponse.model_validate(app))
         return view
+
+    async def _trigger_interview_prep(self, app: Application) -> None:
+        try:
+            from app.interview.prep_engine import InterviewPrepEngine
+
+            engine = InterviewPrepEngine(self.db)
+            await engine.generate_prep(
+                application_id=app.id,
+                user_id=app.user_id,
+                stage="general",
+            )
+            logger.info(
+                "pipeline.interview_prep_auto_triggered",
+                application_id=str(app.id),
+            )
+        except Exception:
+            # Best-effort: don't fail the status transition if prep fails
+            logger.warning(
+                "pipeline.interview_prep_auto_trigger_failed",
+                application_id=str(app.id),
+                exc_info=True,
+            )
 
     async def get_history(
         self, app_id: uuid.UUID, user_id: uuid.UUID

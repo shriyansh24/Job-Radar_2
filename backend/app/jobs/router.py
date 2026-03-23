@@ -4,8 +4,12 @@ from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
+from app.config import Settings
 from app.dependencies import get_current_user, get_db
+from app.enrichment.embedding import EmbeddingService
 from app.jobs.schemas import (
+    HybridSearchRequest,
+    HybridSearchResultItem,
     JobExportRequest,
     JobListParams,
     JobResponse,
@@ -13,6 +17,7 @@ from app.jobs.schemas import (
     SemanticSearchRequest,
 )
 from app.jobs.service import JobService
+from app.search.hybrid import HybridSearchService
 from app.shared.pagination import PaginatedResponse
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -95,6 +100,19 @@ async def semantic_search(
     svc = JobService(db)
     jobs = await svc.semantic_search(data.query, data.limit, user.id)
     return [JobResponse.model_validate(j) for j in jobs]
+
+
+@router.post("/search/hybrid", response_model=list[HybridSearchResultItem])
+async def hybrid_search(
+    data: HybridSearchRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[HybridSearchResultItem]:
+    settings = Settings()
+    embedder = EmbeddingService(db, settings)
+    svc = HybridSearchService(db, embedder)
+    results = await svc.search(data.query, user.id, data.limit, data.offset)
+    return [HybridSearchResultItem.model_validate(r) for r in results]
 
 
 @router.post("/export")

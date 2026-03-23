@@ -81,6 +81,25 @@ Return ONLY valid JSON:
 """
 
 # ---------------------------------------------------------------------------
+# Stage 4 — Apply approved tailoring proposals to the IR
+# ---------------------------------------------------------------------------
+
+STAGE4_APPLY_PROMPT = """Apply the following approved changes to the resume IR.
+Return the COMPLETE updated resume IR as valid JSON with the same structure.
+Do NOT add any fields or skills that are not in the approved changes.
+Do NOT remove any content unless an approved change explicitly says to remove it.
+
+ORIGINAL RESUME IR:
+{original_ir}
+
+APPROVED CHANGES:
+{approved_changes}
+
+Return ONLY the complete updated resume IR as valid JSON, preserving the exact \
+same schema (contact, summary, work, education, skills, etc.).
+"""
+
+# ---------------------------------------------------------------------------
 # Council evaluation prompt
 # ---------------------------------------------------------------------------
 

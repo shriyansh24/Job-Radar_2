@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -138,3 +139,81 @@ class CouncilResponse(BaseModel):
     evaluations: list[CouncilEvaluation] = []
     overall_score: float | None = None
     consensus: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# 4-Stage Tailoring (B2)
+# ---------------------------------------------------------------------------
+
+
+class TailorProposal(BaseModel):
+    id: int
+    type: Literal[
+        "rewrite_bullet", "add_bullet", "remove_bullet",
+        "add_skill", "reorder_section", "rewrite_summary",
+    ]
+    section: str
+    original: str | None = None
+    proposed: str
+    reason: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    source: Literal["jd_keyword", "resume_existing", "inferred"]
+
+
+class TailorStartRequest(BaseModel):
+    resume_version_id: uuid.UUID
+    job_id: str
+
+
+class TailorStartResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    session_id: uuid.UUID
+    status: str
+    proposals: list[dict] = []
+    stage1_result: dict | None = None
+    stage2_result: dict | None = None
+
+
+class TailorApprovalRequest(BaseModel):
+    approvals: list[bool]
+
+
+class TailorApprovalResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    session_id: uuid.UUID
+    status: str
+    tailored_version_id: uuid.UUID | None = None
+    tailored_ir: dict | None = None
+
+
+# ---------------------------------------------------------------------------
+# PDF Rendering (B3)
+# ---------------------------------------------------------------------------
+
+
+class TemplateInfo(BaseModel):
+    id: str
+    name: str
+    description: str
+
+
+# ---------------------------------------------------------------------------
+# ATS Validation (B4)
+# ---------------------------------------------------------------------------
+
+
+class ATSCheckResult(BaseModel):
+    field: str
+    passed: bool
+    message: str
+    details: dict | None = None
+
+
+class ATSValidationResult(BaseModel):
+    score: int = Field(ge=0, le=100)
+    passed: bool
+    checks: list[ATSCheckResult] = []
+    warnings: list[str] = []
+    extracted_text_length: int = 0

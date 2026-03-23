@@ -72,6 +72,7 @@ def create_app() -> FastAPI:
     from app.interview.router import router as interview_router
     from app.jobs.router import router as jobs_router
     from app.notifications.router import router as notifications_router
+    from app.outcomes.router import router as outcomes_router
     from app.pipeline.router import router as pipeline_router
     from app.profile.router import router as profile_router
     from app.resume.router import router as resume_router
@@ -103,6 +104,7 @@ def create_app() -> FastAPI:
     app.include_router(search_expansion_router, prefix=prefix)
     app.include_router(notifications_router, prefix=prefix)
     app.include_router(canonical_jobs_router, prefix=prefix)
+    app.include_router(outcomes_router, prefix=prefix)
 
     return app
 

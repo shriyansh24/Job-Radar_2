@@ -30,9 +30,10 @@ async def run_enrichment_batch(ctx: dict | None = None) -> None:
 
 async def run_embedding_batch(ctx: dict | None = None) -> None:
     """Background job: generate embeddings for enriched jobs."""
+    settings = Settings()
     async with async_session_factory() as db:
         try:
-            service = EmbeddingService(db)
+            service = EmbeddingService(db, settings)
             count = await service.embed_jobs_batch(user_id=None, limit=100)
             logger.info("embeddings_generated", count=count)
         except Exception as e:

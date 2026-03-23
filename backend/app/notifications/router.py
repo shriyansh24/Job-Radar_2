@@ -64,6 +64,30 @@ async def mark_all_read(
     await svc.mark_all_read(user.id)
 
 
+@router.get("/digest/latest", response_model=NotificationResponse | None)
+async def get_latest_digest(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> NotificationResponse | None:
+    from sqlalchemy import select
+
+    from app.notifications.models import Notification
+
+    query = (
+        select(Notification)
+        .where(
+            Notification.user_id == user.id,
+            Notification.notification_type == "daily_digest",
+        )
+        .order_by(Notification.created_at.desc())
+        .limit(1)
+    )
+    notif = await db.scalar(query)
+    if notif is None:
+        return None
+    return NotificationResponse.model_validate(notif)
+
+
 @router.delete("/{notification_id}", status_code=204, response_model=None)
 async def delete_notification(
     notification_id: uuid.UUID,

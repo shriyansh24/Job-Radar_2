@@ -103,3 +103,86 @@ SCORING GUIDE:
 - 3-4: Weak -- vague, off-topic, or missing key elements
 - 1-2: Poor -- does not address the question
 """
+
+# ---------------------------------------------------------------------------
+# Contextual interview prep (stage-aware)
+# ---------------------------------------------------------------------------
+
+CONTEXTUAL_PREP_PROMPT = """You are an expert interview coach.
+Generate a comprehensive, stage-specific interview preparation package.
+
+INTERVIEW STAGE: {stage}
+JOB TITLE: {job_title}
+COMPANY: {company_name}
+JOB DESCRIPTION:
+{job_description}
+
+REQUIRED SKILLS: {required_skills}
+
+CANDIDATE RESUME:
+{resume_text}
+
+Return ONLY valid JSON with these sections:
+{{
+  "company_research": {{
+    "overview": "Brief company description and mission",
+    "recent_news": ["Recent relevant news/developments"],
+    "culture_values": ["Key cultural values and what they mean for interviews"],
+    "interview_style": "Known interview style/process for this company"
+  }},
+  "role_analysis": {{
+    "key_requirements": ["Top requirements and how candidate matches"],
+    "skill_gaps": ["Areas where candidate may need to address gaps"],
+    "talking_points": ["Key selling points connecting resume to JD"],
+    "seniority_expectations": "What is expected at this level"
+  }},
+  "likely_questions": [
+    {{
+      "question": "...",
+      "category": "behavioral|technical|situational|culture_fit",
+      "why_likely": "Why this question is likely for this stage/company",
+      "suggested_approach": "Brief guidance on how to approach this"
+    }}
+  ],
+  "suggested_answers": [
+    {{
+      "question": "...",
+      "star_response": {{
+        "situation": "...",
+        "task": "...",
+        "action": "...",
+        "result": "..."
+      }},
+      "key_points": ["Point to emphasize"]
+    }}
+  ],
+  "questions_to_ask": [
+    {{
+      "question": "...",
+      "why_effective": "Why this is a strong question for this stage",
+      "what_to_listen_for": "What to pay attention to in the answer"
+    }}
+  ],
+  "red_flags": [
+    {{
+      "trap": "Common mistake or trap",
+      "why_dangerous": "Why this is problematic",
+      "better_approach": "What to do instead"
+    }}
+  ]
+}}
+
+STAGE-SPECIFIC RULES:
+- phone_screen: Focus on culture fit, high-level technical, motivation, salary expectations
+- technical: Focus on coding, system design, problem-solving, technical depth
+- behavioral: Focus on STAR stories, leadership, conflict resolution, teamwork
+- final: Focus on strategic thinking, team fit, questions about the role, negotiation prep
+- general: Balanced mix of all categories
+
+Generate:
+- 3-5 company research points
+- 5-8 likely questions appropriate for the {stage} stage
+- 3-4 suggested STAR-format answers mapped to resume experience
+- 4-6 smart questions to ask the interviewer
+- 3-4 red flags/traps to avoid
+"""

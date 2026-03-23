@@ -10,11 +10,17 @@ from app.enrichment.embedding import EmbeddingService
 
 class _FakeModel:
     def encode(self, text: str):  # noqa: ARG002
-        class _Vector:
-            def tolist(self) -> list[float]:
-                return [0.1, 0.2, 0.3]
+        return [0.1, 0.2, 0.3]
 
-        return _Vector()
+
+def _make_settings(**overrides):
+    defaults = {
+        "ollama_enabled": False,
+        "ollama_base_url": "http://localhost:11434",
+        "ollama_embed_model": "nomic-embed-text",
+    }
+    defaults.update(overrides)
+    return SimpleNamespace(**defaults)
 
 
 def _job(job_id: str) -> SimpleNamespace:
@@ -36,8 +42,8 @@ async def test_embed_jobs_batch_rolls_back_on_store_failure():
     db.scalars = AsyncMock(return_value=scalars_result)
     db.execute.side_effect = [None, RuntimeError("boom")]
 
-    service = EmbeddingService(db)
-    service._model = _FakeModel()
+    service = EmbeddingService(db, _make_settings())
+    service._onnx_model = _FakeModel()
 
     count = await service.embed_jobs_batch(limit=2)
 
@@ -53,8 +59,8 @@ async def test_embed_jobs_batch_commits_full_batch_when_all_updates_succeed():
     scalars_result.all.return_value = [_job("job-1"), _job("job-2")]
     db.scalars = AsyncMock(return_value=scalars_result)
 
-    service = EmbeddingService(db)
-    service._model = _FakeModel()
+    service = EmbeddingService(db, _make_settings())
+    service._onnx_model = _FakeModel()
 
     count = await service.embed_jobs_batch(limit=2)
 

@@ -53,7 +53,6 @@ class JobResponse(JobBase):
     green_flags: list[str] = []
     match_score: Decimal | None = None
     tfidf_score: Decimal | None = None
-    freshness_score: float | None = None
     status: str
     is_starred: bool
     is_enriched: bool
@@ -87,6 +86,21 @@ class JobUpdate(BaseModel):
 class SemanticSearchRequest(BaseModel):
     query: str
     limit: int = 20
+
+
+class HybridSearchRequest(BaseModel):
+    query: str
+    limit: int = 20
+    offset: int = 0
+
+
+class HybridSearchResultItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    job_id: str
+    rrf_score: float
+    bm25_rank: int | None = None
+    semantic_rank: int | None = None
 
 
 class JobExportRequest(BaseModel):

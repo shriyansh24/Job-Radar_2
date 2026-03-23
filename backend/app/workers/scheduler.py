@@ -6,6 +6,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from app.workers.alert_worker import check_saved_search_alerts
 from app.workers.auto_apply_worker import run_auto_apply_batch
+from app.workers.digest_worker import run_daily_digest
 from app.workers.enrichment_worker import (
     run_embedding_batch,
     run_enrichment_batch,
@@ -154,6 +155,14 @@ def create_scheduler() -> AsyncIOScheduler:
         IntervalTrigger(hours=2),
         id="target_batch_watchlist",
         kwargs={"source_kind": "watchlist", "batch_size": 25},
+        replace_existing=True,
+    )
+
+    # Daily digest: once per day
+    scheduler.add_job(
+        run_daily_digest,
+        IntervalTrigger(days=1),
+        id="daily_digest",
         replace_existing=True,
     )
 

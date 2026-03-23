@@ -26,3 +26,29 @@ class ResumeVersion(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class TailoringSession(Base):
+    __tablename__ = "tailoring_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    resume_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("resume_versions.id"), nullable=False
+    )
+    job_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    stage1_result: Mapped[dict | None] = mapped_column(JSONB)
+    stage2_result: Mapped[dict | None] = mapped_column(JSONB)
+    proposals: Mapped[list | None] = mapped_column(JSONB)
+    approvals: Mapped[list | None] = mapped_column(JSONB)
+    tailored_ir: Mapped[dict | None] = mapped_column(JSONB)
+    tailored_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("resume_versions.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), onupdate=func.now()
+    )
