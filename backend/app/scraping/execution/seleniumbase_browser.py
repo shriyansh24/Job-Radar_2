@@ -14,15 +14,11 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import time
+from importlib.util import find_spec
 
 from app.scraping.execution.browser_port import BrowserPort, BrowserResult
 
-try:
-    import seleniumbase  # noqa: F401
-
-    SELENIUMBASE_AVAILABLE = True
-except ImportError:
-    SELENIUMBASE_AVAILABLE = False
+SELENIUMBASE_AVAILABLE = find_spec("seleniumbase") is not None
 
 
 def _import_driver():
