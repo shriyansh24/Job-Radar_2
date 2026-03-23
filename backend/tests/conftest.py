@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 # Import ALL models so Base.metadata is fully populated
 import app.auth.models  # noqa: F401
+import app.auto_apply.form_learning  # noqa: F401
 import app.auto_apply.models  # noqa: F401
 import app.companies.models  # noqa: F401
 import app.copilot.models  # noqa: F401

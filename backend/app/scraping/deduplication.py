@@ -15,7 +15,18 @@ TRACKING_PARAMS = frozenset(
 
 
 class DeduplicationService:
-    """3-layer deduplication: exact hash -> URL match -> fuzzy simhash."""
+    """3-layer deduplication: exact hash -> URL match -> fuzzy simhash.
+
+    Supports an optional feedback_overrides dict mapping canonical
+    (job_a_id, job_b_id) pairs to a boolean (True=duplicate, False=different).
+    When present, feedback takes precedence over simhash in layer 3.
+    """
+
+    def __init__(
+        self,
+        feedback_overrides: dict[tuple[str, str], bool] | None = None,
+    ) -> None:
+        self._feedback_overrides = feedback_overrides or {}
 
     def deduplicate(self, jobs: list[ScrapedJob]) -> list[ScrapedJob]:
         seen_hashes: set[str] = set()

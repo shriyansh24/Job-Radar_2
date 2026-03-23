@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     cors_methods: list[str] = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
     cors_headers: list[str] = ["Accept", "Authorization", "Content-Type", "X-Request-ID"]
 
+    # Intel GPU acceleration (optional — requires openvino or ipex)
+    intel_gpu_enabled: bool = False
+    openvino_cache_dir: str = ""
+
     # API rate limits
     api_rate_limit_per_minute: int = 120
     login_rate_limit_per_minute: int = 10
