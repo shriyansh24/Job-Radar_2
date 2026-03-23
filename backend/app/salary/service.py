@@ -18,7 +18,15 @@ from app.config import settings
 from app.enrichment.llm_client import LLMClient
 from app.nlp.model_router import ModelRouter
 from app.salary.models import SalaryCache
-from app.salary.schemas import OfferEvalRequest, SalaryResearchRequest
+from app.salary.schemas import (
+    MarketRange,
+    NegotiationPoint,
+    OfferEvalRequest,
+    SalaryBrief,
+    SalaryBriefRequest,
+    SalaryResearchRequest,
+)
+from app.shared.errors import AppError, NotFoundError
 
 logger = structlog.get_logger()
 
@@ -68,6 +76,37 @@ Return ONLY valid JSON:
   "walkaway_point": <number - minimum acceptable salary>,
   "talking_points": ["point1", "point2", "point3"],
   "negotiation_script": "A polished 3-4 sentence script the candidate can use to negotiate"
+}}
+"""
+
+_BRIEF_PROMPT = """You are a salary negotiation coach. Generate a negotiation brief.
+
+JOB TITLE: {job_title}
+COMPANY: {company_name}
+LOCATION: {location}
+
+MARKET DATA:
+- 25th percentile: {p25}
+- Median: {p50}
+- 75th percentile: {p75}
+- 90th percentile: {p90}
+
+COMPANY AVERAGE OFFER: {company_avg}
+
+CANDIDATE CONTEXT:
+- Years of experience: {years_experience}
+- Key skills: {key_skills}
+- Competing offers: {competing_offers}
+
+Return ONLY valid JSON:
+{{
+  "leverage_points": [
+    {{"category": "skills|experience|market|competing_offers",
+      "point": "description", "strength": "high|medium|low"}}
+  ],
+  "talking_points": ["point1", "point2", "point3", "point4"],
+  "counter_offer_template": "A polished 3-4 sentence template the candidate can adapt",
+  "risk_assessment": "Brief risk/reward assessment of negotiating (2-3 sentences)"
 }}
 """
 
@@ -223,6 +262,126 @@ class SalaryService:
             await router._llm.close()
 
         return result
+
+    # ------------------------------------------------------------------
+    # Salary negotiation brief (F2)
+    # ------------------------------------------------------------------
+
+    async def generate_brief(
+        self,
+        job_id: str,
+        user_id: uuid.UUID,
+        request: SalaryBriefRequest | None = None,
+    ) -> SalaryBrief:
+        """Produce a full negotiation brief for a specific job."""
+        from app.companies.models import Company
+        from app.jobs.models import Job
+
+        request = request or SalaryBriefRequest()
+
+        # Load job
+        job = await self.db.scalar(select(Job).where(Job.id == job_id))
+        if job is None:
+            raise NotFoundError("Job not found")
+
+        job_title = job.title or "Unknown"
+        company_name = job.company_name or "Unknown"
+        location = job.location or "United States"
+
+        # Try to get company-specific offer data
+        company_avg: float | None = None
+        if job.company_domain:
+            company = await self.db.scalar(
+                select(Company).where(Company.domain == job.company_domain)
+            )
+            if company and company.confidence_score:
+                # Use confidence_score as a proxy; real impl would use CompanyInsight
+                company_avg = None
+
+        # Get or generate market data
+        cached_market = await self._get_valid_cache(job_title, location)
+        market_data: dict = {}
+        if cached_market and cached_market.market_data:
+            market_data = cached_market.market_data  # type: ignore[assignment]
+        else:
+            # Generate fresh market data via the research endpoint
+            research_req = SalaryResearchRequest(
+                job_title=job_title,
+                company_name=company_name,
+                location=location,
+            )
+            market_data = await self.research_salary(research_req, user_id)
+
+        market_range = MarketRange(
+            p25=market_data.get("p25"),
+            p50=market_data.get("p50"),
+            p75=market_data.get("p75"),
+            p90=market_data.get("p90"),
+            currency=market_data.get("currency", "USD"),
+            source_description="LLM-estimated market data",
+        )
+
+        def _fmt(val: object) -> str:
+            try:
+                return f"${float(val):,.0f}" if val else "N/A"
+            except (TypeError, ValueError):
+                return "N/A"
+
+        prompt = _BRIEF_PROMPT.format(
+            job_title=job_title,
+            company_name=company_name,
+            location=location,
+            p25=_fmt(market_range.p25),
+            p50=_fmt(market_range.p50),
+            p75=_fmt(market_range.p75),
+            p90=_fmt(market_range.p90),
+            company_avg=_fmt(company_avg) if company_avg else "N/A",
+            years_experience=request.years_experience or "Not specified",
+            key_skills=", ".join(request.key_skills) if request.key_skills else "Not specified",
+            competing_offers=", ".join(request.competing_offers)
+            if request.competing_offers
+            else "None mentioned",
+        )
+
+        messages = [
+            {"role": "system", "content": "Return ONLY valid JSON."},
+            {"role": "user", "content": prompt},
+        ]
+
+        router = _build_router()
+        try:
+            result = await router.complete_json(
+                task="salary",
+                messages=messages,
+                temperature=0.3,
+                max_tokens=1500,
+            )
+        except RuntimeError:
+            logger.exception("salary.brief_llm_failed")
+            raise AppError("Salary brief generation failed", status_code=502)
+        finally:
+            await router._llm.close()
+
+        if not result:
+            raise AppError("Salary brief generation failed", status_code=502)
+
+        leverage_points = [
+            NegotiationPoint(**lp) for lp in result.get("leverage_points", [])
+        ]
+
+        return SalaryBrief(
+            job_id=job_id,
+            job_title=job_title,
+            company_name=company_name,
+            location=location,
+            market_range=market_range,
+            company_avg_offer=company_avg,
+            leverage_points=leverage_points,
+            talking_points=result.get("talking_points", []),
+            counter_offer_template=result.get("counter_offer_template", ""),
+            risk_assessment=result.get("risk_assessment", ""),
+            cached=bool(cached_market),
+        )
 
     # ------------------------------------------------------------------
     # Internal helpers

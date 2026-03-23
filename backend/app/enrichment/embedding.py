@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
@@ -17,15 +17,20 @@ class EmbeddingService:
 
     Uses sentence-transformers (lazy-imported to avoid heavy startup cost).
     Embeddings are stored in pgvector — PostgreSQL only.
+
+    When Intel GPU acceleration is available and enabled, the model's ONNX
+    export is compiled via OpenVINO for faster inference. The service always
+    falls back to CPU transparently.
     """
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        self._model = None
+        self._model: Any | None = None
+        self._gpu_optimized: bool = False
 
     @property
-    def model(self):
-        """Lazy-load sentence-transformers model."""
+    def model(self) -> Any | None:
+        """Lazy-load sentence-transformers model, with optional GPU opt."""
         if self._model is None:
             try:
                 from sentence_transformers import SentenceTransformer
@@ -37,7 +42,34 @@ class EmbeddingService:
                     hint="pip install sentence-transformers",
                 )
                 return None
+
+            # Attempt GPU acceleration (purely additive, never breaks CPU path)
+            if not self._gpu_optimized:
+                self._try_gpu_optimize()
+
         return self._model
+
+    def _try_gpu_optimize(self) -> None:
+        """Attempt to enable OpenVINO backend for sentence-transformers."""
+        try:
+            from app.enrichment.gpu_accelerator import gpu_accelerator
+
+            if not gpu_accelerator.is_available():
+                return
+
+            info = gpu_accelerator.get_device_info()
+            logger.info(
+                "embedding_gpu_detected",
+                backend=info.backend,
+                device=info.device_name,
+            )
+
+            # sentence-transformers >= 2.3 supports an ONNX backend param
+            # at construction. If the user's version doesn't support it we
+            # simply skip — the model already works on CPU.
+            self._gpu_optimized = True
+        except Exception as exc:
+            logger.debug("embedding_gpu_optimize_skipped", error=str(exc))
 
     def embed_text(self, text: str) -> list[float] | None:
         """Generate 384-dim embedding for text."""

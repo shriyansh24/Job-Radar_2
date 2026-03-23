@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import asdict
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,3 +32,17 @@ async def batch_enrich(
 ) -> dict:
     """Trigger batch enrichment. Implementation in Phase 3B."""
     return {"status": "pending", "message": "Batch enrichment pending Phase 3B"}
+
+
+@router.get("/system/gpu-status")
+async def gpu_status(
+    user: User = Depends(get_current_user),
+) -> dict:
+    """Return Intel GPU availability and device information."""
+    from app.enrichment.gpu_accelerator import gpu_accelerator
+
+    info = gpu_accelerator.get_device_info()
+    return {
+        "gpu_available": gpu_accelerator.is_available(),
+        "device_info": asdict(info),
+    }

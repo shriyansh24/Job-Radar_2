@@ -63,12 +63,13 @@ Generate a cover letter for the given job.
 
 STYLE INSTRUCTIONS: {style_instructions}
 
-{template_section}RULES:
+{template_section}{company_context_section}RULES:
 - Address the specific job requirements
 - Highlight relevant skills and accomplishments from the resume
 - Keep it under 400 words
 - Never fabricate experience the candidate doesn't have
 - Personalise to the company and role
+- If company research data is provided, weave it naturally into the letter to show genuine interest
 
 Return ONLY valid JSON:
 {{
@@ -146,9 +147,20 @@ async def generate_cover_letter(
     if not resume_text:
         raise ValueError("Resume text is required for cover letter generation")
 
+    # Build company context section for B6 integration
+    company_context = (job_data.get("company_context") or "").strip()
+    company_context_section = ""
+    if company_context:
+        company_context_section = (
+            f"COMPANY RESEARCH:\n{company_context}\n"
+            "Use this research to personalise the letter and show genuine "
+            "knowledge of the company.\n\n"
+        )
+
     prompt = _COVER_LETTER_PROMPT.format(
         style_instructions=_STYLE_INSTRUCTIONS[style],
         template_section=template_section,
+        company_context_section=company_context_section,
         resume_text=resume_text[:4000],
         job_title=job_data.get("title", ""),
         company_name=job_data.get("company_name", "the company"),

@@ -110,3 +110,16 @@ class AutoApplyStatsResponse(BaseModel):
 
 class ApplySingleRequest(BaseModel):
     job_id: str
+
+
+class FieldMappingRuleResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    ats_provider: str
+    field_label: str
+    semantic_key: str
+    confidence: float
+    source: str
+    times_seen: int
+    last_seen: datetime
