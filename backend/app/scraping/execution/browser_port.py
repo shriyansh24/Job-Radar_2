@@ -17,7 +17,8 @@ class BrowserResult:
 class BrowserPort(ABC):
     @property
     @abstractmethod
-    def browser_name(self) -> str: ...
+    def browser_name(self) -> str:
+        raise NotImplementedError
 
     @abstractmethod
     async def render(
@@ -26,10 +27,12 @@ class BrowserPort(ABC):
         timeout_s: int = 60,
         fingerprint: dict | None = None,
         wait_for_selector: str | None = None,
-    ) -> BrowserResult: ...
+    ) -> BrowserResult:
+        raise NotImplementedError
 
     @abstractmethod
-    async def health_check(self) -> bool: ...
+    async def health_check(self) -> bool:
+        raise NotImplementedError
 
     async def close(self) -> None:
-        pass
+        return None

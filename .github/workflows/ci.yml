@@ -24,9 +24,13 @@ jobs:
         working-directory: backend
       - run: uv tool run pip-audit -r .ci-requirements.txt
         working-directory: backend
+      - run: uv tool run bandit -r app/ -c pyproject.toml --severity-level medium
+        working-directory: backend
       - run: uv run ruff check .
         working-directory: backend
-      - run: uv run pytest --cov=app tests/
+      - run: uv run mypy app/auth/service.py app/config.py app/shared/middleware.py app/scraping/deduplication.py app/scraping/port.py --ignore-missing-imports
+        working-directory: backend
+      - run: uv run pytest --cov=app --cov-fail-under=60 tests/
         working-directory: backend
         env:
           JR_DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
@@ -39,11 +43,13 @@ jobs:
         with: { node-version: '22' }
       - run: npm ci
         working-directory: frontend
+      - run: npm install --no-save @vitest/coverage-v8
+        working-directory: frontend
       - run: npm audit --audit-level high
         working-directory: frontend
       - run: npm run lint
         working-directory: frontend
-      - run: npm run test -- --run
+      - run: npm run test -- --run --coverage --coverage.thresholds.statements=40
         working-directory: frontend
       - run: npm run build
         working-directory: frontend

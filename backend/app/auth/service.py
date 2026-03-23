@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import cast
 
 import bcrypt
 import jwt
@@ -14,6 +15,8 @@ from app.auth.models import User
 from app.auth.schemas import TokenResponse, UserCreate
 from app.config import settings
 from app.shared.errors import AuthError, ValidationError
+
+type TokenPayload = dict[str, object]
 
 
 def hash_password(password: str) -> str:
@@ -65,13 +68,16 @@ def create_tokens(user_id: str, token_version: int = 0) -> TokenResponse:
     )
 
 
-def decode_token_payload(token: str, expected_type: str | None = None) -> dict:
+def decode_token_payload(token: str, expected_type: str | None = None) -> TokenPayload:
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = cast(
+            TokenPayload,
+            jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm]),
+        )
         token_type = payload.get("type")
         if expected_type is not None and token_type != expected_type:
             raise AuthError("Invalid token type")
-        if payload.get("sub") is None:
+        if not isinstance(payload.get("sub"), str):
             raise AuthError("Invalid token")
         return payload
     except InvalidTokenError:
@@ -80,8 +86,8 @@ def decode_token_payload(token: str, expected_type: str | None = None) -> dict:
 
 def decode_refresh_token(token: str) -> str:
     payload = decode_token_payload(token, expected_type="refresh")
-    user_id: str | None = payload.get("sub")
-    if user_id is None:
+    user_id = payload.get("sub")
+    if not isinstance(user_id, str):
         raise AuthError("Invalid refresh token")
     return user_id
 

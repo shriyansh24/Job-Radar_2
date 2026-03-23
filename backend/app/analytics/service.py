@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
-import structlog
-from sqlalchemy import Date, cast, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analytics.schemas import (
@@ -16,8 +15,6 @@ from app.analytics.schemas import (
 )
 from app.jobs.models import Job
 from app.pipeline.models import Application
-
-logger = structlog.get_logger()
 
 
 class AnalyticsService:
@@ -112,26 +109,26 @@ class AnalyticsService:
         # Jobs per day
         job_rows = await self.db.execute(
             select(
-                cast(Job.scraped_at, Date).label("day"),
+                func.date(Job.scraped_at).label("day"),
                 func.count().label("cnt"),
             )
             .where(Job.user_id == user_id, Job.scraped_at >= cutoff)
             .group_by("day")
             .order_by("day")
         )
-        jobs_by_day = {row.day: row.cnt for row in job_rows}
+        jobs_by_day = {self._coerce_day(row.day): row.cnt for row in job_rows}
 
         # Apps per day
         app_rows = await self.db.execute(
             select(
-                cast(Application.created_at, Date).label("day"),
+                func.date(Application.created_at).label("day"),
                 func.count().label("cnt"),
             )
             .where(Application.user_id == user_id, Application.created_at >= cutoff)
             .group_by("day")
             .order_by("day")
         )
-        apps_by_day = {row.day: row.cnt for row in app_rows}
+        apps_by_day = {self._coerce_day(row.day): row.cnt for row in app_rows}
 
         all_days = sorted(set(list(jobs_by_day.keys()) + list(apps_by_day.keys())))
         return [
@@ -202,3 +199,13 @@ class AnalyticsService:
             FunnelStageData(stage=stage.capitalize(), count=counts.get(stage, 0))
             for stage in stages
         ]
+
+    @staticmethod
+    def _coerce_day(value: object) -> date:
+        if isinstance(value, date):
+            return value
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, str):
+            return date.fromisoformat(value)
+        raise TypeError(f"Unsupported day value: {value!r}")

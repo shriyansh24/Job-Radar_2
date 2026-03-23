@@ -25,7 +25,7 @@ class ScrapedJob:
     posted_at: datetime | None = None
     company_domain: str | None = None
     company_logo_url: str | None = None
-    extra_data: dict = field(default_factory=dict)
+    extra_data: dict[str, object] = field(default_factory=dict)
 
 
 class ScraperPort(ABC):

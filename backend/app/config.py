@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_SECRET_KEY = "change-me-in-production"
@@ -21,7 +23,7 @@ class Settings(BaseSettings):
     access_cookie_name: str = "jr_access_token"
     refresh_cookie_name: str = "jr_refresh_token"
     cookie_secure: bool = False
-    cookie_samesite: str = "lax"
+    cookie_samesite: Literal["lax", "strict", "none"] = "lax"
 
     # Database
     database_url: str = "postgresql+asyncpg://jobradar:jobradar@localhost:5432/jobradar"

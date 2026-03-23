@@ -7,6 +7,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from urllib.parse import urlparse
 
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,6 +35,10 @@ class ScraperRunResult:
     jobs_new: int = 0
     jobs_updated: int = 0
     errors: list[str] = field(default_factory=list)
+
+
+def _safe_failure_message(source_name: str, reason: str) -> str:
+    return f"{source_name}: {reason}"
 
 
 class ScrapingService:
@@ -138,7 +143,8 @@ class ScrapingService:
                         )
             except Exception as e:
                 cb.record_failure()
-                result.errors.append(f"{source_name}: {e!s}")
+                # Fixed: CodeQL py/stack-trace-exposure
+                result.errors.append(_safe_failure_message(source_name, "scrape failed"))
                 logger.error("scraper_failed", source=source_name, error=str(e))
 
         # Dedup
@@ -180,7 +186,9 @@ class ScrapingService:
             self.db.add(run)
             await self.db.flush()
             return run.id  # type: ignore[return-value]
-        except Exception:
+        except Exception as exc:
+            logger.debug("scraper_run_record_unavailable", error=str(exc))
+            await self.db.rollback()
             return None
 
     async def _complete_run_record(
@@ -204,8 +212,9 @@ class ScrapingService:
                 run.completed_at = datetime.now(UTC)
                 run.duration_seconds = round(elapsed, 2)
             await self.db.commit()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("scraper_run_record_update_failed", error=str(exc))
+            await self.db.rollback()
 
     async def _persist_jobs(
         self, jobs: list[ScrapedJob], user_id: uuid.UUID | None
@@ -290,9 +299,6 @@ class ScrapingService:
 
         The existing ``run_scrape()`` method (Mode 2, keyword search) is unaffected.
         """
-        import asyncio
-        from urllib.parse import urlparse
-
         from app.scraping.control.tier_router import TierRouter
         from app.scraping.execution.escalation_engine import should_escalate
         from app.scraping.execution.page_crawler import PageCrawler
@@ -440,7 +446,8 @@ class ScrapingService:
                 except Exception as exc:
                     attempt.status = "failed"
                     attempt.error_class = type(exc).__name__
-                    attempt.error_message = str(exc)[:500]
+                    # Fixed: CodeQL py/stack-trace-exposure
+                    attempt.error_message = "Scrape attempt failed"
                     self.db.add(attempt)
                     continue
 
@@ -457,7 +464,8 @@ class ScrapingService:
         batch_errors = [r for r in task_results if isinstance(r, Exception)]
         if batch_errors:
             results["targets_failed"] += len(batch_errors)
-            results["errors"].extend(str(error) for error in batch_errors)
+            # Fixed: CodeQL py/stack-trace-exposure
+            results["errors"].extend("target task failed" for _ in batch_errors)
             logger.error(
                 "target_batch_aborted",
                 errors=[str(error) for error in batch_errors],

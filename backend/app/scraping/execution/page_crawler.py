@@ -37,8 +37,6 @@ class PaginationResult:
 # URL-pattern pagination helpers
 # ---------------------------------------------------------------------------
 
-_PAGE_PARAM_RE = re.compile(r"[?&](page|p|pg|pagenum|page_num)=(\d+)", re.IGNORECASE)
-_OFFSET_PARAM_RE = re.compile(r"[?&](offset|start|from)=(\d+)", re.IGNORECASE)
 _PATH_PAGE_RE = re.compile(r"/page/(\d+)(/|$)", re.IGNORECASE)
 
 
@@ -70,14 +68,6 @@ def _normalize_visit_url(url: str) -> str:
 # HTML-based next-URL detection (no third-party deps)
 # ---------------------------------------------------------------------------
 
-# Compiled patterns used by _detect_next_url
-_REL_NEXT_RE = re.compile(
-    r'<a\b[^>]*\brel=["\']next["\'][^>]*href=["\']([^"\']+)["\']'
-    r"|"
-    r'<a\b[^>]*\bhref=["\']([^"\']+)["\'][^>]*\brel=["\']next["\']',
-    re.IGNORECASE,
-)
-
 # Text-based patterns: exact text or text inside a link tag
 # Matches: Next, Next Page, Next ›, »,  →, ›, >>
 _NEXT_TEXT_PATTERNS = (
@@ -96,7 +86,6 @@ _ANCHOR_RE = re.compile(
 )
 _HREF_ATTR_RE = re.compile(r'\bhref=["\']([^"\']+)["\']', re.IGNORECASE)
 _ARIA_ATTR_RE = re.compile(r'\baria-label=["\']([^"\']+)["\']', re.IGNORECASE)
-_REL_ATTR_RE = re.compile(r'\brel=["\']([^"\']+)["\']', re.IGNORECASE)
 
 
 class PageCrawler:
@@ -268,33 +257,29 @@ class PageCrawler:
         Returns the absolute URL for the next page, or ``None`` if not found.
         """
         # Strategy 1 – rel="next"
-        result = self._strategy_rel_next(html, current_url)
-        if result:
-            return result
+        rel_next_url = self._strategy_rel_next(html, current_url)
+        if rel_next_url:
+            return rel_next_url
 
         # Parse anchors once and reuse for strategies 2 & 3
         anchors = _ANCHOR_RE.findall(html)  # list of (attrs_str, inner_text)
 
         # Strategy 2 – text-based next links
-        result = self._strategy_text_based(anchors, current_url)
-        if result:
-            return result
+        text_next_url = self._strategy_text_based(anchors, current_url)
+        if text_next_url:
+            return text_next_url
 
         # Strategy 3 – aria-label
-        result = self._strategy_aria_label(anchors, current_url)
-        if result:
-            return result
+        aria_next_url = self._strategy_aria_label(anchors, current_url)
+        if aria_next_url:
+            return aria_next_url
 
         # Strategy 4 – URL-pattern increment (no anchor required)
         # Only applied when the current URL does NOT already carry a page
         # parameter.  If the URL already says ?page=3 and there is no HTML
         # "Next" link, that is a genuine end-of-pagination signal, not a
         # reason to blindly try ?page=4.
-        result = self._strategy_url_pattern(current_url)
-        if result:
-            return result
-
-        return None
+        return self._strategy_url_pattern(current_url)
 
     def _strategy_rel_next(self, html: str, current_url: str) -> str | None:
         """Strategy 1: <a rel="next" href="…"> or <link rel="next" …>."""

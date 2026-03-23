@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import uuid
 
+import structlog
 from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,6 +32,7 @@ from app.shared.errors import NotFoundError
 from app.shared.events import event_bus
 
 router = APIRouter(prefix="/scraper", tags=["scraper"])
+logger = structlog.get_logger()
 
 
 @router.post("/run")
@@ -70,7 +72,9 @@ async def trigger_scrape(
                 }
             )
         except Exception as e:
-            results.append({"query": query, "error": str(e)})
+            logger.error("manual_scrape_failed", query=query, error=str(e))
+            # Fixed: CodeQL py/stack-trace-exposure
+            results.append({"query": query, "error": "Scrape run failed"})
 
     await service.close()
     return {"status": "ok", "results": results}

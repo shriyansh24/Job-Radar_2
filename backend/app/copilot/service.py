@@ -81,7 +81,8 @@ class CopilotService:
                 yield chunk
         except Exception as exc:
             logger.error("copilot_chat_failed", error=str(exc))
-            yield f"Sorry, I encountered an error: {exc}"
+            # Fixed: CodeQL py/stack-trace-exposure
+            yield "Sorry, I encountered an error. Please try again later."
         finally:
             await llm.close()
 
@@ -155,9 +156,8 @@ class CopilotService:
                 content = cl_result.content
             except Exception as exc:
                 logger.error("cover_letter_llm_failed", error=str(exc))
-                content = (
-                    f"Cover letter generation encountered an error: {exc}. Please try again later."
-                )
+                # Fixed: CodeQL py/stack-trace-exposure
+                content = "Cover letter generation encountered an error. Please try again later."
         elif not settings.openrouter_api_key:
             content = "Cover letter generation requires an OpenRouter API key to be configured."
         elif not resume_parsed.get("text"):

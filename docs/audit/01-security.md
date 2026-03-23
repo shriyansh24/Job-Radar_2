@@ -2,9 +2,9 @@
 
 ## SEC-01 - CRITICAL: Live API Keys in `.env`
 - **File:** `backend/.env`
-- **Detail:** The original "committed to repo" claim is stale. The local `.env` file is not tracked by Git, but local secret material still exists on disk and should be rotated if it was ever shared.
+- **Detail:** Verified clean. The repository does not track `.env` secrets in this clone; only `.env.example` is present in Git.
 - **Fix:** Keep secrets out of Git and build contexts, and use placeholders or secret managers for shared environments.
-- **Status:** STALE
+- **Status:** VERIFIED_CLEAN
 
 ## SEC-02 - CRITICAL: JWT Tokens in localStorage
 - **Files:** `frontend/src/api/client.ts`, `frontend/src/store/useAuthStore.ts`, `backend/app/auth/router.py`, `backend/app/dependencies.py`

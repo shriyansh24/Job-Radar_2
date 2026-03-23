@@ -1,33 +1,86 @@
-"""Seed script: Creates user account and populates profile for Shriyansh Singh.
+"""Seed script: creates or updates a demo user/profile and optionally imports a resume.
 
-Run from backend directory: python seed_data.py
+Usage (from the backend directory):
+    $env:JR_SEED_EMAIL = "seed.user@example.com"
+    $env:JR_SEED_PASSWORD = "change-me-now"
+    $env:JR_SEED_RESUME_PATH = "D:/path/to/resume.pdf"
+    python seed_data.py
 """
 
+from __future__ import annotations
+
 import asyncio
+import os
+from decimal import Decimal
 from pathlib import Path
 
+SEED_EMAIL_ENV = "JR_SEED_EMAIL"
+SEED_PASSWORD_ENV = "JR_SEED_PASSWORD"
+SEED_RESUME_PATH_ENV = "JR_SEED_RESUME_PATH"
 
-async def main():
-    # Setup Django-style imports
+DEFAULT_SEED_EMAIL = "seed.user@example.com"
+DEFAULT_DISPLAY_NAME = "JobRadar Seed User"
+DEFAULT_RESUME_FILENAME = "seed_resume.pdf"
+
+
+def _get_seed_email() -> str:
+    return os.environ.get(SEED_EMAIL_ENV, DEFAULT_SEED_EMAIL).strip()
+
+
+def _get_seed_password() -> str | None:
+    password = os.environ.get(SEED_PASSWORD_ENV, "").strip()
+    return password or None
+
+
+def _get_resume_path() -> Path | None:
+    configured_path = os.environ.get(SEED_RESUME_PATH_ENV, "").strip()
+    if not configured_path:
+        return None
+    return Path(configured_path).expanduser().resolve()
+
+
+def _load_resume_text(resume_path: Path) -> str:
+    try:
+        import fitz  # type: ignore[import-not-found]  # PyMuPDF
+    except ImportError:
+        return "(PDF uploaded; text extraction requires PyMuPDF)"
+
+    doc = fitz.open(str(resume_path))
+    try:
+        return "".join(page.get_text() for page in doc)
+    finally:
+        doc.close()
+
+
+async def main() -> None:
+    # Setup imports lazily so the script can be discovered without booting the app.
+    from sqlalchemy import select
+
     from app.auth.models import User
     from app.auth.service import hash_password
     from app.database import async_session_factory
     from app.profile.models import UserProfile
     from app.resume.models import ResumeVersion
 
-    async with async_session_factory() as db:
-        from sqlalchemy import select
+    seed_email = _get_seed_email()
+    seed_password = _get_seed_password()
+    resume_path = _get_resume_path()
 
-        # ── 1. Create User ──────────────────────────────────────────────
-        existing = await db.scalar(select(User).where(User.email == "shriyansh.singh24@gmail.com"))
+    async with async_session_factory() as db:
+        existing = await db.scalar(select(User).where(User.email == seed_email))
         if existing:
             user = existing
             print(f"User already exists: {user.id}")
         else:
+            if seed_password is None:
+                raise RuntimeError(
+                    f"Set {SEED_PASSWORD_ENV} before creating a new seed user.",
+                )
+
             user = User(
-                email="shriyansh.singh24@gmail.com",
-                password_hash=hash_password("Shrisid@2407"),
-                display_name="Shriyansh Singh",
+                email=seed_email,
+                password_hash=hash_password(seed_password),
+                display_name=DEFAULT_DISPLAY_NAME,
                 is_active=True,
             )
             db.add(user)
@@ -36,44 +89,35 @@ async def main():
 
         user_id = user.id
 
-        # ── 2. Create/Update Profile ────────────────────────────────────
         profile = await db.scalar(select(UserProfile).where(UserProfile.user_id == user_id))
-        if not profile:
+        if profile is None:
             profile = UserProfile(user_id=user_id)
             db.add(profile)
 
-        # Personal
-        profile.full_name = "Shriyansh Singh"
-        profile.email = "shriyansh.singh24@gmail.com"
-        profile.phone = "930-333-5141"
+        profile.full_name = DEFAULT_DISPLAY_NAME
+        profile.email = seed_email
+        profile.phone = "555-0100"
         profile.location = "Austin, TX, USA"
 
-        # Links
-        profile.linkedin_url = "https://www.linkedin.com/in/shriyansh-bir-singh/"
-        profile.github_url = "https://github.com/shriyansh24"
-        profile.portfolio_url = (
-            "https://personalwebsite-9n7xiqgwk-shriyansh24s-projects.vercel.app/"
-        )
+        profile.linkedin_url = "https://www.linkedin.com/in/example"
+        profile.github_url = "https://github.com/example"
+        profile.portfolio_url = "https://example.com/portfolio"
 
-        # Work Authorization
         profile.work_authorization = "OPT"
         profile.requires_sponsorship = True
 
-        # Career
         profile.current_title = "Machine Learning Engineer"
-        profile.current_company = "Apexon"
+        profile.current_company = "Example Labs"
         profile.highest_degree = "MS Data Science"
         profile.graduation_year = 2025
 
-        # Address
         profile.city = "Austin"
         profile.state = "TX"
         profile.country = "USA"
 
-        # Education
         profile.education = [
             {
-                "school": "Indiana University Bloomington",
+                "school": "Example University",
                 "degree": "MS",
                 "field": "Data Science",
                 "start": "2023-08",
@@ -81,10 +125,9 @@ async def main():
             }
         ]
 
-        # Work Experience
         profile.work_experience = [
             {
-                "company": "Apexon",
+                "company": "Example Labs",
                 "title": "Machine Learning Engineer",
                 "start": "2025-06",
                 "end": "Present",
@@ -92,17 +135,12 @@ async def main():
             }
         ]
 
-        # Salary
-        from decimal import Decimal
-
         profile.salary_min = Decimal("120000")
         profile.salary_max = Decimal("200000")
 
-        # Job Preferences
         profile.preferred_job_types = ["full-time"]
         profile.preferred_remote_types = ["remote", "hybrid", "onsite"]
 
-        # Search Queries
         profile.search_queries = [
             "Machine Learning Engineer",
             "ML Engineer",
@@ -114,7 +152,6 @@ async def main():
             "Data Engineer",
         ]
 
-        # Search Locations
         profile.search_locations = [
             "Remote",
             "Austin, TX",
@@ -124,7 +161,6 @@ async def main():
             "USA",
         ]
 
-        # Watchlist Companies
         profile.watchlist_companies = [
             "Hugging Face",
             "Perplexity",
@@ -136,11 +172,9 @@ async def main():
             "Lyft",
             "Airbnb",
             "Microsoft",
-            "BNSF",
             "Amazon",
         ]
 
-        # Answer Bank (common application questions)
         profile.answer_bank = {
             "Are you authorized to work in the US?": (
                 "Yes, I am authorized to work in the US on OPT."
@@ -155,8 +189,7 @@ async def main():
                 "project experience."
             ),
             "What is your highest level of education?": (
-                "Master of Science in Data Science from Indiana University "
-                "Bloomington."
+                "Master of Science in Data Science from Example University."
             ),
             "Are you over 18 years of age?": "Yes",
             "Do you have experience with Python?": (
@@ -170,40 +203,25 @@ async def main():
             ),
         }
 
-        # Theme
         profile.theme = "dark"
         profile.notifications_enabled = True
         profile.auto_apply_enabled = False
 
         print(f"Profile seeded for user {user_id}")
 
-        # ── 3. Upload Resume ────────────────────────────────────────────
-        resume_path = Path(r"C:\Users\shriy\Downloads\Shriyansh__Sing__Resume.pdf")
-        if resume_path.exists():
+        if resume_path is None:
+            print(f"No resume path configured; set {SEED_RESUME_PATH_ENV} to import a resume.")
+        elif resume_path.exists():
             existing_resume = await db.scalar(
                 select(ResumeVersion).where(ResumeVersion.user_id == user_id)
             )
-            if not existing_resume:
-                # Read and store resume text (basic extraction)
-                # Try to extract text from PDF
-                resume_text = ""
-                try:
-                    import fitz  # PyMuPDF
-
-                    doc = fitz.open(str(resume_path))
-                    for page in doc:
-                        resume_text += page.get_text()
-                    doc.close()
-                except ImportError:
-                    # Fallback: store raw bytes indicator
-                    resume_text = "(PDF uploaded — text extraction requires PyMuPDF)"
-
+            if existing_resume is None:
                 resume_version = ResumeVersion(
                     user_id=user_id,
                     label="Main Resume",
-                    filename="Shriyansh__Sing__Resume.pdf",
+                    filename=resume_path.name or DEFAULT_RESUME_FILENAME,
                     file_path=str(resume_path),
-                    parsed_text=resume_text,
+                    parsed_text=_load_resume_text(resume_path),
                     is_default=True,
                 )
                 db.add(resume_version)
@@ -213,11 +231,9 @@ async def main():
         else:
             print(f"Resume file not found at {resume_path}")
 
-        # ── 4. Commit everything ────────────────────────────────────────
         await db.commit()
-        print("\nSeed complete! You can now log in with:")
-        print("  Email: shriyansh.singh24@gmail.com")
-        print("  Password: Shrisid@2407")
+        print("\nSeed complete.")
+        print(f"  Email: {seed_email}")
 
 
 if __name__ == "__main__":

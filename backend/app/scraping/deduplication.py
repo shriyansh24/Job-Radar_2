@@ -56,7 +56,7 @@ class DeduplicationService:
     def _content_hash(self, job: ScrapedJob) -> str:
         """MD5 of normalized title + company."""
         content = f"{job.title.lower().strip()}|{job.company_name.lower().strip()}"
-        return hashlib.md5(content.encode()).hexdigest()
+        return hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()
 
     def _normalize_url(self, url: str) -> str:
         """Remove tracking params, fragment; lowercase host."""
@@ -76,7 +76,10 @@ class DeduplicationService:
         tokens = text.lower().split()
         v = [0] * 64
         for token in tokens:
-            h = int(hashlib.md5(token.encode()).hexdigest(), 16) & ((1 << 64) - 1)
+            h = int(
+                hashlib.md5(token.encode(), usedforsecurity=False).hexdigest(),
+                16,
+            ) & ((1 << 64) - 1)
             for i in range(64):
                 if h & (1 << i):
                     v[i] += 1
