@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "code-review-graph": {
-      "command": "/home/shriy/.local/bin/uvx",
+      "command": "uvx",
       "args": [
         "code-review-graph",
         "serve"

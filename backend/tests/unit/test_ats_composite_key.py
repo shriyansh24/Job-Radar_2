@@ -31,8 +31,15 @@ class TestComputeAtsCompositeKey:
         key2 = compute_ats_composite_key("example.com", "greenhouse", "12345")
         assert key1 == key2
 
-    def test_none_when_company_domain_missing(self):
-        assert compute_ats_composite_key(None, "greenhouse", "12345") is None
+    def test_hash_when_company_domain_missing(self):
+        raw = "|greenhouse|12345"
+        expected = hashlib.sha256(raw.encode()).hexdigest()
+        assert compute_ats_composite_key(None, "greenhouse", "12345") == expected
+
+    def test_hash_when_company_domain_empty(self):
+        raw = "|greenhouse|12345"
+        expected = hashlib.sha256(raw.encode()).hexdigest()
+        assert compute_ats_composite_key("", "greenhouse", "12345") == expected
 
     def test_none_when_ats_provider_missing(self):
         assert compute_ats_composite_key("example.com", None, "12345") is None
@@ -42,9 +49,6 @@ class TestComputeAtsCompositeKey:
 
     def test_none_when_all_missing(self):
         assert compute_ats_composite_key(None, None, None) is None
-
-    def test_none_when_empty_string_domain(self):
-        assert compute_ats_composite_key("", "greenhouse", "12345") is None
 
     def test_none_when_empty_string_provider(self):
         assert compute_ats_composite_key("example.com", "", "12345") is None
