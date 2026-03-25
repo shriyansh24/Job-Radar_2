@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-const storage = (() => {
+const createStorage = () => {
   let store = new Map<string, string>();
   return {
     getItem: (key: string) => store.get(key) ?? null,
@@ -14,17 +14,28 @@ const storage = (() => {
       store = new Map<string, string>();
     },
   };
-})();
+};
 
-if (
-  typeof window !== "undefined" &&
-  (!window.localStorage ||
-    typeof window.localStorage.getItem !== "function" ||
-    typeof window.localStorage.setItem !== "function" ||
-    typeof window.localStorage.removeItem !== "function")
-) {
+if (typeof window !== "undefined") {
+  const localStorageMock = createStorage();
+  const sessionStorageMock = createStorage();
+
+  // Override the runtime web storage shims in tests so setup never touches
+  // the host-provided getter that emits `--localstorage-file` warnings.
   Object.defineProperty(window, "localStorage", {
-    value: storage,
+    value: localStorageMock,
+    configurable: true,
+  });
+  Object.defineProperty(window, "sessionStorage", {
+    value: sessionStorageMock,
+    configurable: true,
+  });
+  Object.defineProperty(globalThis, "localStorage", {
+    value: localStorageMock,
+    configurable: true,
+  });
+  Object.defineProperty(globalThis, "sessionStorage", {
+    value: sessionStorageMock,
     configurable: true,
   });
 }

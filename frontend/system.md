@@ -3,7 +3,7 @@
 ## Visual Thesis
 - Build JobRadar as a reference-first neo-brutalist command center.
 - Preserve the current app's routes, auth, and backend behavior, but use the reference repo's typography, color system, shell posture, and interaction language as the live visual authority.
-- Light mode stays bright, neutral, and technical. Dark mode stays near-black, high-contrast, and crisp.
+- Light mode stays bright, neutral, and technical. Dark mode stays jet black, high-contrast, and crisp.
 - The live type system is `Inter` for interface copy and `JetBrains Mono` for labels, metrics, tabs, and system readouts.
 
 ## Theme Tokens
@@ -20,22 +20,28 @@ The frontend source of truth is `src/index.css`.
   --border: #09090b;
   --accent-primary: #2563eb;
   --accent-success: #16a34a;
+  --accent-warning: #a16207;
   --accent-danger: #dc2626;
 }
 
 .dark {
-  --bg-primary: #09090b;
-  --bg-secondary: #171717;
-  --bg-tertiary: #262626;
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #141414;
   --text-primary: #fafafa;
   --text-secondary: #d4d4d4;
   --text-muted: #737373;
   --border: #fafafa;
   --accent-primary: #3b82f6;
   --accent-success: #22c55e;
+  --accent-warning: #f59e0b;
   --accent-danger: #ef4444;
 }
 ```
+
+- Semantic colors are theme-specific, not fixed across light and dark.
+- `success`, `warning`, `danger`, and `info` all use separate light/dark token values and subtle surface fills.
+- Chart grids, axes, legends, tooltips, and series colors must consume chart tokens instead of hardcoded hex values.
 
 ## Typography
 - Page title: `30px`, semibold, tracking `-0.02em`, normal case.

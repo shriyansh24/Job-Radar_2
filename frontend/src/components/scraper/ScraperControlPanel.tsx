@@ -4,9 +4,9 @@ import { useState } from "react";
 import { scraperApi, type ScraperRun } from "../../api/scraper";
 
 const statusColors: Record<string, string> = {
-  completed: "bg-green-500/10 text-green-400",
-  running: "bg-blue-500/10 text-blue-400",
-  failed: "bg-red-500/10 text-red-400",
+  completed: "bg-[var(--color-accent-secondary-subtle)] text-[var(--color-accent-secondary)]",
+  running: "bg-[var(--color-accent-info-subtle)] text-[var(--color-accent-info)]",
+  failed: "bg-[var(--color-accent-danger-subtle)] text-[var(--color-accent-danger)]",
 };
 
 export default function ScraperControlPanel() {
@@ -58,9 +58,11 @@ export default function ScraperControlPanel() {
       </div>
 
       {isRunning && (
-        <div className="px-4 py-2 bg-blue-500/5 border-b border-border flex items-center gap-2 text-xs text-blue-400">
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+        <div className="border-b border-border bg-[var(--color-accent-info-subtle)] px-4 py-2 text-xs text-[var(--color-accent-info)]">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-[var(--color-accent-info)] animate-pulse" />
           Scraper is running...
+          </div>
         </div>
       )}
 

@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import Base
 from app.jobs.models import Job
 from app.pipeline.models import Application, ApplicationStatusHistory
-from app.scraping.models import ScrapeAttempt, ScrapeTarget, ScraperRun
+from app.scraping.models import ScrapeAttempt, ScraperRun, ScrapeTarget
 
 logger = structlog.get_logger()
 
@@ -133,7 +133,11 @@ class AdminService:
         rows_deleted += max(scrape_attempt_result.rowcount or 0, 0)
 
         for table in reversed(Base.metadata.sorted_tables):
-            if table.name == "users" or table.name not in existing_tables or "user_id" not in table.c:
+            if (
+                table.name == "users"
+                or table.name not in existing_tables
+                or "user_id" not in table.c
+            ):
                 continue
             result = await self.db.execute(delete(table).where(table.c.user_id == user_id))
             rows_deleted += max(result.rowcount or 0, 0)
