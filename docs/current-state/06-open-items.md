@@ -1,25 +1,27 @@
 # Open Items - JobRadar V2
 
 ## Blocking Bugs
-- None verified in the current `2026-03-23` full validation pass.
+- None verified in the current `2026-03-24` migration pass.
 
-## Fixed Structural Gaps (2026-03-23)
-- All 10 P2 DB tables created via consolidation migration `005`
-- `email` and `outcomes` routers mounted in `main.py` (23 routers total)
-- `ir_schema.py`, `renderer.py` recovered; `professional.html` template created
-- `users.created_at`/`updated_at` fixed to `timestamp with time zone`
-- Career OS frontend overhaul shipped with `copilot`, `networking`, `email`, and `outcomes` routes
-- Settings, auth, and admin backend contract endpoints are present and covered by targeted integration tests
+## Fixed Structural Gaps (2026-03-24)
+- Reference-first frontend migration shipped across all routed pages.
+- Shared shell, navigation, tokens, and page grammar now follow the reference-first command-center system.
+- `SearchExpansion`, `Resume Studio`, `Compensation`, `Settings`, `Admin`, and `Targets` now align to the live backend contracts used by the app.
+- Vault update integration coverage was added and passes in the targeted backend suite.
+- Local Postgres schema was upgraded to Alembic `head` so the settings/integration surfaces match the current app.
 
 ## Remaining Frontend Gaps
-- Semantic search is still not wired into Job Board as an interactive filter surface
-- Auto-apply run/pause/applySingle still needs direct UI triggers
-- Saved-search alerts UI remains a planned enhancement
-- Resume PDF generation and additional template flows remain deferred
+- Semantic search can still be made richer inside the Job Board beyond the current exact/semantic mode toggle.
+- Auto-apply still has room for broader operator tooling and coverage beyond the current route surface.
+- Saved-search alerts UI and scheduler UX remain a follow-up enhancement.
+- Resume PDF generation and additional template flows remain deferred.
 
 ## Non-Blocking Residuals
 - Vitest still prints `--localstorage-file was provided without a valid path` warnings during frontend tests.
-- Repo-wide strict backend mypy is still deferred; the current CI gate is intentionally scoped to `app/auth/service.py`, `app/config.py`, `app/shared/middleware.py`, `app/scraping/deduplication.py`, and `app/scraping/port.py`.
+- Vite still prints a chunk-size warning during production builds.
+- Login/auth bootstrap still emits transient `401` / `422` network noise before cookies exist.
+- Browser-level QA still surfaces password `autocomplete` hints on Settings inputs.
+- Recharts can still emit width warnings when charts mount in hidden or zero-sized containers during automated sweeps.
 
 ## Coverage TODOs
 - `backend/app/auto_apply/ats_detector.py`, `backend/app/auto_apply/ats_filler.py`, `backend/app/auto_apply/orchestrator.py`, `backend/app/auto_apply/portal_config.py`, `backend/app/auto_apply/question_engine.py`, `backend/app/auto_apply/service.py`, `backend/app/auto_apply/validator.py`, and `backend/app/auto_apply/workday_filler.py` remain below `50%` coverage.
@@ -33,9 +35,9 @@
 - Resume PDF generation and additional template flows
 - Saved-search alerts UI and related UX
 - Further parser tuning for difficult JS-heavy career pages
-- End-to-end Playwright coverage
-- Longer-term vendoring/repackaging decisions for scraper dependencies
+- Broader end-to-end Playwright coverage beyond the current smoke pass
+- Longer-term vendoring or repackaging decisions for scraper dependencies
 
 ## Historical Planning Material
 - Future design notes live in `docs/research/`.
-- Feature spec reference preserved in Claude memory (`reference_spec_features.md`).
+- Feature spec reference is preserved in Claude memory.

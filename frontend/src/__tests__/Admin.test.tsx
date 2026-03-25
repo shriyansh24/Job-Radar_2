@@ -11,11 +11,9 @@ vi.mock("../api/admin", () => ({
       Promise.resolve({
         data: {
           python_version: "3.13",
-          db_size: "1 GB",
-          uptime: "1 day",
-          total_jobs: 0,
-          total_users: 0,
-          scraper_runs: 0,
+          platform: "Windows",
+          job_count: 0,
+          application_count: 0,
         },
       }),
     sourceHealth: () => Promise.resolve({ data: [] }),

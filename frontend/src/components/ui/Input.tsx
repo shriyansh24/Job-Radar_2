@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useId } from "react";
 import { cn } from "../../lib/utils";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -9,10 +9,16 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, icon, className, ...props }, ref) => {
+    const generatedId = useId();
+    const inputId = props.id ?? generatedId;
+
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-text-secondary mb-1.5">
+          <label
+            htmlFor={inputId}
+            className="mb-2 block font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted"
+          >
             {label}
           </label>
         )}
@@ -24,11 +30,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
           <input
             ref={ref}
+            id={inputId}
             className={cn(
-              "w-full bg-bg-secondary border border-border rounded-[var(--radius-md)] px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none transition-[border-color,box-shadow,background-color] duration-[var(--transition-fast)] focus:border-border-focus focus:ring-2 focus:ring-border-focus/25",
+              "w-full border-2 border-border bg-[var(--color-bg-secondary)] px-3 py-3 text-sm text-text-primary placeholder:text-text-muted outline-none transition-[border-color,box-shadow,background-color] duration-[var(--transition-fast)] focus:border-border-focus focus:bg-[var(--color-bg-tertiary)] focus:shadow-[var(--shadow-blue)]",
               icon && "pl-10",
               error &&
-                "border-accent-danger focus:border-accent-danger focus:ring-accent-danger/20",
+                "border-accent-danger focus:border-accent-danger focus:shadow-none",
               className
             )}
             {...props}

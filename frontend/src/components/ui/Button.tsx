@@ -36,7 +36,7 @@ function Button({
     <motion.button
       className={cn(buttonVariants({ variant, size }), className)}
       disabled={disabled || loading}
-      whileTap={{ scale: 0.985 }}
+      whileTap={{ scale: 0.99 }}
       {...props}
     >
       {loading ? (

@@ -69,6 +69,17 @@ const INTEGRATION_NOTES: Record<IntegrationStatus["provider"], string> = {
   apify: "Scraper expansion and long-running automation jobs.",
 };
 
+const BRUTAL_PANEL =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const BRUTAL_PANEL_ALT =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-primary)] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const BRUTAL_BUTTON =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !text-[var(--color-text-primary)] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const BRUTAL_PRIMARY_BUTTON =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-accent-primary)] !text-white !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const BRUTAL_FIELD =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !text-[var(--color-text-primary)] placeholder:!text-[var(--color-text-muted)] !shadow-none focus:!border-[var(--color-accent-primary)] focus:!ring-0";
+
 function initialAppSettings(): AppSettings {
   return {
     theme: "system",
@@ -335,17 +346,57 @@ export default function Settings() {
   const deleteAccountReady = deleteConfirm.trim().toLowerCase() === "delete";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 py-4 sm:px-6 lg:px-8">
+      <div className={`${BRUTAL_PANEL_ALT} overflow-hidden`}>
+        <div className="grid gap-5 border-b-2 border-[var(--color-text-primary)] px-5 py-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.8fr)] lg:px-6 lg:py-6">
+          <div className="space-y-3">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-accent-primary)]">
+              Operations / Settings
+            </div>
+            <h1 className="text-4xl font-black uppercase tracking-tighter sm:text-5xl">
+              Settings console
+            </h1>
+            <p className="max-w-3xl text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
+              System controls, saved-search maintenance, secret management, and account safety live here.
+              The controls stay legible on desktop, tablet, and phone.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <div className={`${BRUTAL_PANEL} p-4`}>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                Signed in
+              </div>
+              <div className="mt-3 font-mono text-lg font-bold">{user?.email ?? "Unknown"}</div>
+            </div>
+            <div className={`${BRUTAL_PANEL} p-4`}>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                Connected
+              </div>
+              <div className="mt-3 font-mono text-lg font-bold text-[var(--color-accent-success)]">
+                {connectedCount} integrations
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <PageHeader
         eyebrow="Configuration"
         title="Settings"
         description="System controls, saved-search maintenance, secret management, and account safety live here. This surface uses the real backend endpoints so changes persist instead of simulating success."
+        className={BRUTAL_PANEL}
         actions={
           <>
-            <Button variant="secondary" onClick={handleExport} icon={<DownloadSimple size={16} weight="bold" />}>
+            <Button
+              variant="secondary"
+              className={BRUTAL_BUTTON}
+              onClick={handleExport}
+              icon={<DownloadSimple size={16} weight="bold" />}
+            >
               Export
             </Button>
             <Button
+              className={BRUTAL_PRIMARY_BUTTON}
               onClick={() => saveAppMutation.mutate(appForm)}
               loading={saveAppMutation.isPending}
               icon={<CheckCircle size={16} weight="bold" />}
@@ -356,7 +407,10 @@ export default function Settings() {
         }
       />
 
-      <MetricStrip items={metrics} />
+      <MetricStrip
+        items={metrics}
+        className="[&>div]:!rounded-none [&>div]:!border-2 [&>div]:!border-[var(--color-text-primary)] [&>div]:!bg-[var(--color-bg-secondary)] [&>div]:!shadow-[4px_4px_0px_0px_var(--color-text-primary)]"
+      />
 
       <SplitWorkspace
         primary={
@@ -364,6 +418,7 @@ export default function Settings() {
             <SettingsSection
               title="Workspace defaults"
               description="Theme, notifications, and auto-apply controls are stored with the app settings record."
+              className={BRUTAL_PANEL}
             >
               <div className="grid gap-4 md:grid-cols-3">
                 <Select
@@ -371,6 +426,7 @@ export default function Settings() {
                   value={appForm.theme}
                   onChange={(event) => setAppForm((current) => ({ ...current, theme: event.target.value }))}
                   options={THEME_OPTIONS}
+                  className={BRUTAL_FIELD}
                 />
                 <Select
                   label="Notifications"
@@ -385,6 +441,7 @@ export default function Settings() {
                     { value: "enabled", label: "Enabled" },
                     { value: "disabled", label: "Disabled" },
                   ]}
+                  className={BRUTAL_FIELD}
                 />
                 <Select
                   label="Auto apply"
@@ -399,6 +456,7 @@ export default function Settings() {
                     { value: "enabled", label: "Enabled" },
                     { value: "disabled", label: "Disabled" },
                   ]}
+                  className={BRUTAL_FIELD}
                 />
               </div>
             </SettingsSection>
@@ -406,6 +464,7 @@ export default function Settings() {
             <SettingsSection
               title="Integrations"
               description="Secrets are stored separately from the profile and only masked values come back on read."
+              className={BRUTAL_PANEL}
             >
               <div className="space-y-3">
                 {integrationsLoading ? (
@@ -418,14 +477,14 @@ export default function Settings() {
                   integrations?.map((integration) => {
                     const draft = integrationDrafts[integration.provider] ?? "";
                     return (
-                      <Surface key={integration.provider} tone="default" padding="md" radius="xl">
+                      <Surface key={integration.provider} tone="default" padding="md" radius="xl" className={BRUTAL_PANEL}>
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <h3 className="text-sm font-semibold tracking-[-0.01em]">
                                 {INTEGRATION_LABELS[integration.provider]}
                               </h3>
-                              <Badge variant={integration.connected ? "success" : "default"} size="sm">
+                              <Badge variant={integration.connected ? "success" : "default"} size="sm" className="rounded-none">
                                 {integration.status.replace("_", " ")}
                               </Badge>
                             </div>
@@ -450,10 +509,12 @@ export default function Settings() {
                                 }))
                               }
                               placeholder={`Enter ${INTEGRATION_LABELS[integration.provider]} key`}
+                              className={BRUTAL_FIELD}
                             />
                             <div className="flex flex-wrap justify-end gap-2">
                               <Button
                                 variant="secondary"
+                                className={BRUTAL_BUTTON}
                                 onClick={() => integrationDeleteMutation.mutate(integration.provider)}
                                 loading={
                                   integrationDeleteMutation.isPending &&
@@ -464,6 +525,7 @@ export default function Settings() {
                                 Disconnect
                               </Button>
                               <Button
+                                className={BRUTAL_PRIMARY_BUTTON}
                                 onClick={() => integrationUpsertMutation.mutate(integration.provider)}
                                 loading={
                                   integrationUpsertMutation.isPending &&
@@ -486,8 +548,9 @@ export default function Settings() {
             <SettingsSection
               title="Saved searches"
               description="Update filters in place, toggle alerts, or create a new workspace search."
+              className={BRUTAL_PANEL}
               actions={
-                <Button onClick={() => openSearchEditor()} icon={<PencilSimple size={16} weight="bold" />}>
+                <Button className={BRUTAL_PRIMARY_BUTTON} onClick={() => openSearchEditor()} icon={<PencilSimple size={16} weight="bold" />}>
                   New search
                 </Button>
               }
@@ -501,12 +564,12 @@ export default function Settings() {
               ) : searches && searches.length > 0 ? (
                 <div className="space-y-3">
                   {searches.map((search) => (
-                    <Surface key={search.id} tone="default" padding="md" radius="xl">
+                    <Surface key={search.id} tone="default" padding="md" radius="xl" className={BRUTAL_PANEL}>
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="text-sm font-semibold tracking-[-0.01em]">{search.name}</h3>
-                            <Badge variant={search.alert_enabled ? "success" : "default"} size="sm">
+                            <Badge variant={search.alert_enabled ? "success" : "default"} size="sm" className="rounded-none">
                               {search.alert_enabled ? "Alerts on" : "Alerts off"}
                             </Badge>
                           </div>
@@ -520,6 +583,7 @@ export default function Settings() {
                         <div className="flex flex-wrap gap-2">
                           <Button
                             variant="secondary"
+                            className={BRUTAL_BUTTON}
                             onClick={() =>
                               settingsApi
                                 .updateSearch(search.id, {
@@ -537,6 +601,7 @@ export default function Settings() {
                           </Button>
                           <Button
                             variant="secondary"
+                            className={BRUTAL_BUTTON}
                             onClick={() => openSearchEditor(search)}
                             icon={<PencilSimple size={16} weight="bold" />}
                           >
@@ -544,6 +609,7 @@ export default function Settings() {
                           </Button>
                           <Button
                             variant="danger"
+                            className="!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-accent-danger)] !text-white !shadow-[4px_4px_0px_0px_var(--color-text-primary)]"
                             onClick={() => deleteSearchMutation.mutate(search.id)}
                             loading={
                               deleteSearchMutation.isPending &&
@@ -576,9 +642,10 @@ export default function Settings() {
             <SettingsSection
               title="Security and data"
               description="Password changes, destructive cleanup, and data export all use the real backend."
+              className={BRUTAL_PANEL}
             >
               <div className="grid gap-6 lg:grid-cols-2">
-                <Surface tone="default" padding="md" radius="xl">
+                <Surface tone="default" padding="md" radius="xl" className={BRUTAL_PANEL}>
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <Lock size={16} weight="bold" className="text-muted-foreground" />
@@ -591,6 +658,7 @@ export default function Settings() {
                       onChange={(event) =>
                         setPasswordForm((current) => ({ ...current, currentPassword: event.target.value }))
                       }
+                      className={BRUTAL_FIELD}
                     />
                     <Input
                       label="New password"
@@ -599,6 +667,7 @@ export default function Settings() {
                       onChange={(event) =>
                         setPasswordForm((current) => ({ ...current, newPassword: event.target.value }))
                       }
+                      className={BRUTAL_FIELD}
                     />
                     <Input
                       label="Confirm password"
@@ -607,9 +676,11 @@ export default function Settings() {
                       onChange={(event) =>
                         setPasswordForm((current) => ({ ...current, confirmPassword: event.target.value }))
                       }
+                      className={BRUTAL_FIELD}
                     />
                     <Button
                       variant="secondary"
+                      className={BRUTAL_BUTTON}
                       onClick={() => {
                         if (passwordForm.newPassword !== passwordForm.confirmPassword) {
                           toast("error", "Passwords do not match");
@@ -625,7 +696,7 @@ export default function Settings() {
                   </div>
                 </Surface>
 
-                <Surface tone="default" padding="md" radius="xl">
+                <Surface tone="default" padding="md" radius="xl" className={BRUTAL_PANEL}>
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <Database size={16} weight="bold" className="text-muted-foreground" />
@@ -637,11 +708,17 @@ export default function Settings() {
                     </p>
 
                     <div className="flex flex-wrap gap-2">
-                      <Button variant="secondary" onClick={handleExport} icon={<DownloadSimple size={16} weight="bold" />}>
+                      <Button
+                        variant="secondary"
+                        className={BRUTAL_BUTTON}
+                        onClick={handleExport}
+                        icon={<DownloadSimple size={16} weight="bold" />}
+                      >
                         Export data
                       </Button>
                       <Button
                         variant="danger"
+                        className="!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-accent-danger)] !text-white !shadow-[4px_4px_0px_0px_var(--color-text-primary)]"
                         onClick={() => clearDataMutation.mutate()}
                         loading={clearDataMutation.isPending}
                         icon={<WarningCircle size={16} weight="bold" />}
@@ -656,6 +733,7 @@ export default function Settings() {
                       value={clearConfirm}
                       onChange={(event) => setClearConfirm(event.target.value)}
                       placeholder="clear"
+                      className={BRUTAL_FIELD}
                     />
 
                     <div className="border-t border-border/70 pt-4">
@@ -672,9 +750,10 @@ export default function Settings() {
                         value={deleteConfirm}
                         onChange={(event) => setDeleteConfirm(event.target.value)}
                         placeholder="delete"
+                        className={BRUTAL_FIELD}
                       />
                       <Button
-                        className="mt-3"
+                        className={`mt-3 ${BRUTAL_PRIMARY_BUTTON}`}
                         variant="danger"
                         onClick={() => deleteAccountMutation.mutate()}
                         loading={deleteAccountMutation.isPending}
@@ -697,18 +776,21 @@ export default function Settings() {
               icon={<CheckCircle size={18} weight="bold" />}
               title="Operational note"
               description="Saved searches and integration secrets are now backed by real endpoints. Editing them here affects the live workspace."
+              className={BRUTAL_PANEL}
             />
             <StateBlock
               tone="neutral"
               icon={<Code size={18} weight="bold" />}
               title="Current owner"
               description={user?.email ?? "No signed-in user detected"}
+              className={BRUTAL_PANEL}
             />
             <StateBlock
               tone="warning"
               icon={<WarningCircle size={18} weight="bold" />}
               title="Destructive actions"
               description="Clear data and delete account require explicit typed confirmation before they are enabled."
+              className={BRUTAL_PANEL}
             />
           </div>
         }
@@ -719,6 +801,7 @@ export default function Settings() {
         onClose={() => setSearchModalOpen(false)}
         title={searchEditor.id ? "Edit saved search" : "Create saved search"}
         size="lg"
+        className={BRUTAL_PANEL}
       >
         <div className="space-y-4">
           <Input
@@ -726,12 +809,13 @@ export default function Settings() {
             value={searchEditor.name}
             onChange={(event) => setSearchEditor((current) => ({ ...current, name: event.target.value }))}
             placeholder="Frontend roles in New York"
+            className={BRUTAL_FIELD}
           />
           <Textarea
             label="Filters JSON"
             value={searchEditor.filtersText}
             onChange={(event) => setSearchEditor((current) => ({ ...current, filtersText: event.target.value }))}
-            className="min-h-[220px] font-mono text-sm"
+            className={`${BRUTAL_FIELD} min-h-[220px] font-mono text-sm`}
           />
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <input
@@ -740,15 +824,16 @@ export default function Settings() {
               onChange={(event) =>
                 setSearchEditor((current) => ({ ...current, alertEnabled: event.target.checked }))
               }
-              className="size-4 rounded border-border bg-bg-secondary"
+              className="size-4 rounded-none border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] accent-[var(--color-accent-primary)]"
             />
             Alert when this search changes
           </label>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setSearchModalOpen(false)}>
+            <Button variant="secondary" className={BRUTAL_BUTTON} onClick={() => setSearchModalOpen(false)}>
               Cancel
             </Button>
             <Button
+              className={BRUTAL_PRIMARY_BUTTON}
               onClick={() => saveSearchMutation.mutate()}
               loading={saveSearchMutation.isPending}
               icon={<CheckCircle size={16} weight="bold" />}

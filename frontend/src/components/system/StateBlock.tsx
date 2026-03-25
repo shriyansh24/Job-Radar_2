@@ -5,16 +5,16 @@ import { cn } from "@/lib/utils"
 
 import { Surface } from "./Surface"
 
-const stateBlockVariants = cva("border-l-2", {
+const stateBlockVariants = cva("border-2", {
   variants: {
     tone: {
-      neutral: "border-l-border",
-      muted: "border-l-muted bg-muted/40",
+      neutral: "border-border bg-card",
+      muted: "border-border bg-[var(--color-bg-tertiary)]",
       success:
-        "border-l-[var(--color-accent-success)] bg-[var(--color-accent-success-subtle)]",
+        "border-border bg-[var(--color-accent-secondary-subtle)]",
       warning:
-        "border-l-[var(--color-accent-warning)] bg-[var(--color-accent-warning-subtle)]",
-      danger: "border-l-destructive bg-destructive/10",
+        "border-border bg-[var(--color-accent-warning-subtle)]",
+      danger: "border-border bg-[var(--color-accent-danger-subtle)]",
     },
   },
   defaultVariants: {
@@ -41,21 +41,21 @@ function StateBlock({
 }: StateBlockProps) {
   return (
     <Surface
-      tone="default"
+      tone="ghost"
       padding="md"
       radius="lg"
-      className={cn(stateBlockVariants({ tone }), className)}
+      className={cn("shadow-[var(--shadow-sm)]", stateBlockVariants({ tone }), className)}
       {...props}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 gap-3">
           {icon ? (
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-background/80 text-muted-foreground">
+            <div className="flex size-10 shrink-0 items-center justify-center border-2 border-border bg-background text-muted-foreground shadow-[var(--shadow-xs)]">
               {icon}
             </div>
           ) : null}
           <div className="min-w-0 space-y-1.5">
-            <h3 className="text-sm font-semibold tracking-[-0.01em]">{title}</h3>
+            <h3 className="text-sm font-black uppercase tracking-[-0.03em]">{title}</h3>
             {description ? (
               <p className="text-sm leading-6 text-muted-foreground">
                 {description}

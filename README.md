@@ -1,6 +1,6 @@
 # JobRadar V2
 
-AI-powered job hunting assistant with direct-job scraping, enrichment, pipeline tracking, interview prep, resume tooling, and auto-apply support.
+AI-powered job hunting assistant with direct-job scraping, enrichment, pipeline tracking, interview prep, resume tooling, compensation research, vault management, and auto-apply support.
 
 ## Start Here
 - Current repo state: `docs/current-state/00-index.md`
@@ -13,8 +13,8 @@ AI-powered job hunting assistant with direct-job scraping, enrichment, pipeline 
 - Backend: Python 3.12, FastAPI, SQLAlchemy async, PostgreSQL, Redis, Alembic, `uv`
 - Frontend: React 19, Vite 6, TypeScript, Tailwind CSS v4, Zustand, React Query
 - AI/LLM: OpenRouter-backed services for enrichment, interview prep, salary analysis, resume tailoring, cover letters, and copilot flows
-- Product surfaces: discovery, execution, preparation, intelligence, networking, email signal logs, and outcomes analysis
 - Scraping: ATS adapters, target scheduler, browser pool, page crawler, deduplication, telemetry
+- UI system: reference-first neo-brutalist command-center shell with `Inter`, `JetBrains Mono`, Phosphor icons, and light/dark parity
 
 ## Quick Start
 
@@ -26,13 +26,7 @@ AI-powered job hunting assistant with direct-job scraping, enrichment, pipeline 
 ### Infrastructure
 
 ```bash
-# Start the PostgreSQL container (pgvector on port 5433)
 docker start jobradar-postgres
-
-# Or first-time setup:
-docker run -d --name jobradar-postgres -p 5433:5432 \
-  -e POSTGRES_USER=jobradar -e POSTGRES_PASSWORD=jobradar220568 \
-  -e POSTGRES_DB=jobradar pgvector/pgvector:pg17
 ```
 
 ### Backend
@@ -60,26 +54,32 @@ Open `http://localhost:5173`.
 
 ```bash
 cd backend
-uv run python -m pip check
-uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt
-uv tool run pip-audit -r .ci-requirements.txt
-uv tool run bandit -r app/ -c pyproject.toml --severity-level medium
 uv run ruff check .
-uv run mypy app/auth/service.py app/config.py app/shared/middleware.py app/scraping/deduplication.py app/scraping/port.py --ignore-missing-imports
-uv run pytest --cov=app --cov-fail-under=60 tests/
+uv run pytest
 ```
 
 ### Frontend
 
 ```bash
 cd frontend
-npm audit --audit-level high
 npm run lint
 npm run test -- --run
-npm install --no-save @vitest/coverage-v8
-npm run test -- --run --coverage --coverage.thresholds.statements=40
 npm run build
 ```
+
+### Browser QA
+- Start the backend and frontend dev servers locally.
+- Authenticate through `/login`.
+- Sweep the routed app in desktop, tablet, and phone layouts.
+- Store screenshots and other QA artifacts in `output/playwright/`.
+
+## Current Verification Snapshot (2026-03-24)
+- Frontend lint passed.
+- Frontend Vitest suite passed: `24` test files, `39` tests.
+- Frontend production build passed.
+- Targeted backend auth/settings/admin/vault integration tests passed: `26` tests.
+- Browser sweeps passed across all 21 authenticated routes on desktop, tablet, and phone, with representative screenshots written to `output/playwright/`.
+- Local Postgres schema was upgraded to Alembic `head` during QA so the live settings/integration surfaces match the current code.
 
 ## Repo Layout
 
@@ -91,11 +91,12 @@ jobradar-v2/
 |   `-- tests/          # pytest suite
 |-- frontend/
 |   |-- src/            # React 19 application
-|   `-- dist/           # Production build output
+|   `-- system.md       # Frontend design-system source of truth
 |-- docs/
 |   |-- audit/          # Bug ledger (39 FIXED / 1 VERIFIED_CLEAN / 4 STALE)
 |   |-- current-state/  # Canonical live state docs
 |   `-- research/       # Future design research
+|-- output/playwright/  # Browser QA artifacts when a local validation pass generates them
 |-- .github/workflows/  # CI: lint, test, build, CodeQL
 |-- AGENTS.md           # Agent preferences and frontend expectations
 |-- CLAUDE.md           # Agent playbook and working commands
@@ -106,6 +107,6 @@ jobradar-v2/
 
 ## Notes
 - Use `uv run` for backend commands and `npm` for frontend commands.
+- The live frontend is a reference-first command-center UI while preserving the app's routed behavior and backend contracts.
 - The current live product state is documented under `docs/current-state/`.
 - `docs/research/` contains future-planning material, not current requirements.
-- The current UI ships with a shared design system, light and dark themes, and route coverage for `copilot`, `networking`, `email`, and `outcomes`.

@@ -1,0 +1,81 @@
+# Database Tree
+
+Root scope: database-relevant artifacts discovered across `backend`, root runtime files, and infra/runtime config.
+
+## DB-Relevant Tree
+
+```text
+D:/jobradar-v2
+|- backend/
+|  |- app/
+|  |  |- database.py                # Async engine/session factory and declarative Base
+|  |  |- dependencies.py            # Per-request AsyncSession provider
+|  |  |- config.py                  # JR_DATABASE_URL and runtime DB settings
+|  |  |- migrations/
+|  |  |  |- env.py                  # Alembic bootstrap and metadata import hub
+|  |  |  `- versions/               # Versioned schema history
+|  |  |- auth/models.py             # users
+|  |  |- profile/models.py          # user_profiles
+|  |  |- settings/models.py         # saved_searches, user_integration_secrets
+|  |  |- jobs/models.py             # jobs
+|  |  |- pipeline/models.py         # applications, application_status_history
+|  |  |- resume/models.py           # resume_versions
+|  |  |- resume/archetypes.py       # resume_archetypes
+|  |  |- copilot/models.py          # cover_letters
+|  |  |- interview/models.py        # interview_sessions
+|  |  |- salary/models.py           # salary_cache
+|  |  |- analytics/models.py        # ml_model_artifacts
+|  |  |- companies/models.py        # companies
+|  |  |- canonical_jobs/models.py   # canonical_jobs, raw_job_sources
+|  |  |- notifications/models.py    # notifications
+|  |  |- email/models.py            # email_logs
+|  |  |- networking/models.py       # contacts, referral_requests
+|  |  |- outcomes/models.py         # application_outcomes, company_insights
+|  |  |- scraping/models.py         # scraper_runs, scrape_targets, scrape_attempts
+|  |  |- scraping/dedup_feedback.py # dedup_feedback
+|  |  |- auto_apply/models.py       # auto_apply_profiles, auto_apply_rules, auto_apply_runs
+|  |  |- auto_apply/form_learning.py# field_mapping_rules, application_dedup
+|  |  |- followup/models.py         # followup_reminders
+|  |  |- source_health/models.py    # source_registry, source_check_log
+|  |  |- search_expansion/models.py # query_templates, expansion_rules, query_performance
+|  |  |- enrichment/models.py       # placeholder, no ORM entities
+|  |  `- vault/models.py            # placeholder, no ORM entities
+|  |- seed_data.py                  # Seed script for users/profile/resume
+|  `- tests/
+|     |- conftest.py                # Test DB override and schema setup
+|     |- unit/test_database.py
+|     |- unit/test_migrations.py
+|     |- unit/test_model_contracts.py
+|     |- unit/test_job_model.py
+|     |- unit/test_form_learning.py
+|     |- unit/test_dedup_feedback.py
+|     `- unit/scraping/             # Scrape model and scheduler persistence tests
+|- docker-compose.yml               # Postgres and Redis runtime topology
+|- docker-compose.dev.yml           # Dev overlay retaining DB service topology
+|- .env.example                     # JR_DATABASE_URL template
+|- README.md                        # Human setup guidance with DB instructions
+|- CLAUDE.md                        # Alternate DB boot guidance
+`- infra/
+   `- redis/tls/.gitkeep            # Redis placeholder; not DB itself but part of runtime data path
+```
+
+## DB Area Purpose Notes
+
+| Area | Paths | Purpose |
+|---|---|---|
+| Engine/bootstrap | `D:/jobradar-v2/backend/app/database.py`, `D:/jobradar-v2/backend/app/dependencies.py` | Create DB engine/session and inject request-scoped sessions |
+| Migration system | `D:/jobradar-v2/backend/app/migrations` | Schema evolution source of truth |
+| ORM/entity definitions | Domain `models.py` files plus `resume/archetypes.py`, `scraping/dedup_feedback.py`, `auto_apply/form_learning.py` | Persistent table mapping |
+| Query/data access | Domain `service.py` files and workers | Direct SQLAlchemy reads/writes; no repository package |
+| Seed/bootstrap data | `D:/jobradar-v2/backend/seed_data.py` | Create/update demo user profile and resume seed state |
+| Runtime references | `docker-compose.yml`, `.env.example`, `README.md`, `CLAUDE.md` | Runtime DB URL, container topology, local boot guidance |
+
+## Source-Of-Truth Notes
+
+- Database truth is distributed. To understand any table safely, all of the following matter:
+  - model file
+  - migration file(s)
+  - service-layer query/write logic
+  - runtime boot config
+- No dedicated `db/` directory exists.
+- Several features expose persistence through domain packages whose names do not obviously imply the underlying tables, especially `copilot`, `vault`, `resume/archetypes`, `auto_apply/form_learning`, and `scraping/dedup_feedback`.

@@ -74,6 +74,17 @@ const EMPTY_EXPERIENCE: ExperienceEntry = {
   description: null,
 };
 
+const BRUTAL_PANEL =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const BRUTAL_PANEL_ALT =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-primary)] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const BRUTAL_BUTTON =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !text-[var(--color-text-primary)] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const BRUTAL_PRIMARY_BUTTON =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-accent-primary)] !text-white !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const BRUTAL_FIELD =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !text-[var(--color-text-primary)] placeholder:!text-[var(--color-text-muted)] !shadow-none focus:!border-[var(--color-accent-primary)] focus:!ring-0";
+
 interface FormState {
   full_name: string;
   phone: string;
@@ -137,7 +148,9 @@ function ToggleGroup({
 
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-muted-foreground">{label}</label>
+      <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+        {label}
+      </label>
       <div className="flex flex-wrap gap-2">
         {options.map((option) => (
           <button
@@ -146,8 +159,8 @@ function ToggleGroup({
             onClick={() => toggle(option.value)}
             className={
               selected.includes(option.value)
-                ? "rounded-full border border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/10 px-3 py-1.5 text-sm font-medium text-[var(--color-accent-primary)]"
-                : "rounded-full border border-border bg-background px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-border/90 hover:text-foreground"
+                ? "border-2 border-[var(--color-text-primary)] bg-[var(--color-accent-primary-subtle)] px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-[var(--color-accent-primary)] shadow-[2px_2px_0px_0px_var(--color-accent-primary)]"
+                : "border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)] transition-transform hover:-translate-x-[1px] hover:-translate-y-[1px] hover:text-[var(--color-text-primary)]"
             }
           >
             {option.label}
@@ -182,7 +195,9 @@ function TagEditor({
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-muted-foreground">{label}</label>
+      <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+        {label}
+      </label>
       <div className="flex gap-2">
         <Input
           value={value}
@@ -194,15 +209,22 @@ function TagEditor({
             }
           }}
           placeholder={placeholder}
+          className={BRUTAL_FIELD}
         />
-        <Button type="button" variant="secondary" icon={<Plus size={14} weight="bold" />} onClick={addItem}>
+        <Button
+          type="button"
+          variant="secondary"
+          className={BRUTAL_BUTTON}
+          icon={<Plus size={14} weight="bold" />}
+          onClick={addItem}
+        >
           Add
         </Button>
       </div>
       {items.length ? (
         <div className="flex flex-wrap gap-2">
           {items.map((item, index) => (
-            <Badge key={`${item}-${index}`} variant="info" size="md">
+            <Badge key={`${item}-${index}`} variant="info" size="md" className="rounded-none">
               <span className="flex items-center gap-1.5">
                 {item}
                 <button type="button" onClick={() => onRemove(index)} className="hover:text-[var(--color-accent-danger)]">
@@ -227,13 +249,17 @@ function EntryCard({
   onRemove: () => void;
 }) {
   return (
-    <Surface tone="subtle" padding="md" radius="lg">
+    <Surface tone="subtle" padding="md" radius="lg" className={BRUTAL_PANEL_ALT}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium text-foreground">{title}</div>
+          <div className="text-sm font-bold uppercase tracking-[0.08em] text-foreground">{title}</div>
           <div className="mt-3">{children}</div>
         </div>
-        <button type="button" onClick={onRemove} className="text-muted-foreground hover:text-[var(--color-accent-danger)]">
+        <button
+          type="button"
+          onClick={onRemove}
+          className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] px-2 py-1 text-[var(--color-text-muted)] hover:text-[var(--color-accent-danger)]"
+        >
           <X size={16} weight="bold" />
         </button>
       </div>
@@ -328,15 +354,50 @@ export default function Profile() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 py-4 sm:px-6 lg:px-8">
+      <div className={`${BRUTAL_PANEL_ALT} overflow-hidden`}>
+        <div className="grid gap-5 border-b-2 border-[var(--color-text-primary)] px-5 py-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.8fr)] lg:px-6 lg:py-6">
+          <div className="space-y-3">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-accent-primary)]">
+              Prepare / Profile
+            </div>
+            <h1 className="text-4xl font-black uppercase tracking-tighter sm:text-5xl">
+              Profile ledger
+            </h1>
+            <p className="max-w-3xl text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
+              Keep the source-of-truth profile here. This surface stores the identity, preference, and
+              background data used across the workspace.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <div className={`${BRUTAL_PANEL} p-4`}>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                Signed in
+              </div>
+              <div className="mt-3 font-mono text-lg font-bold">{user?.email ?? "Unknown"}</div>
+            </div>
+            <div className={`${BRUTAL_PANEL} p-4`}>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                Source of truth
+              </div>
+              <div className="mt-3 font-mono text-lg font-bold text-[var(--color-accent-primary)]">
+                Profile ledger
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <PageHeader
         eyebrow="Prepare"
         title="Profile"
         description="Keep the source-of-truth profile here. This surface stores the identity, preference, and background data used across the rest of the workspace."
+        className={BRUTAL_PANEL}
         actions={
           <>
             <Button
               variant="secondary"
+              className={BRUTAL_BUTTON}
               onClick={() => answerMutation.mutate()}
               loading={answerMutation.isPending}
               icon={<Sparkle size={16} weight="bold" />}
@@ -344,6 +405,7 @@ export default function Profile() {
               Generate answers
             </Button>
             <Button
+              className={BRUTAL_PRIMARY_BUTTON}
               onClick={saveProfile}
               loading={saveMutation.isPending}
               icon={<FloppyDisk size={16} weight="bold" />}
@@ -354,7 +416,10 @@ export default function Profile() {
         }
       />
 
-      <MetricStrip items={metrics} />
+      <MetricStrip
+        items={metrics}
+        className="[&>div]:!rounded-none [&>div]:!border-2 [&>div]:!border-[var(--color-text-primary)] [&>div]:!bg-[var(--color-bg-secondary)] [&>div]:!shadow-[4px_4px_0px_0px_var(--color-text-primary)]"
+      />
 
       <SplitWorkspace
         primary={
@@ -362,6 +427,7 @@ export default function Profile() {
             <SettingsSection
               title="Identity and links"
               description="The basics that every other surface references."
+              className={BRUTAL_PANEL}
             >
               {isLoading ? (
                 <div className="grid gap-4 md:grid-cols-2">
@@ -371,67 +437,76 @@ export default function Profile() {
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Input
-                    label="Full name"
-                    value={form.full_name}
-                    onChange={(event) => updateField("full_name", event.target.value)}
-                    placeholder="Jane Doe"
-                    icon={<UserCircle size={16} weight="bold" />}
-                  />
-                  <Input
-                    label="Email"
-                    value={user?.email ?? ""}
-                    disabled
-                    icon={<Envelope size={16} weight="bold" />}
-                  />
-                  <Input
-                    label="Phone"
-                    value={form.phone}
-                    onChange={(event) => updateField("phone", event.target.value)}
-                    placeholder="+1 555 000 0000"
-                    icon={<Phone size={16} weight="bold" />}
-                  />
-                  <Input
-                    label="Location"
-                    value={form.location}
-                    onChange={(event) => updateField("location", event.target.value)}
-                    placeholder="New York, NY"
-                    icon={<MapPin size={16} weight="bold" />}
-                  />
-                  <Input
-                    label="LinkedIn"
-                    value={form.linkedin_url}
-                    onChange={(event) => updateField("linkedin_url", event.target.value)}
-                    placeholder="https://linkedin.com/in/..."
-                    icon={<LinkSimple size={16} weight="bold" />}
-                  />
-                  <Input
-                    label="GitHub"
-                    value={form.github_url}
-                    onChange={(event) => updateField("github_url", event.target.value)}
-                    placeholder="https://github.com/..."
-                    icon={<GithubLogo size={16} weight="bold" />}
-                  />
-                  <Input
-                    label="Portfolio"
-                    value={form.portfolio_url}
-                    onChange={(event) => updateField("portfolio_url", event.target.value)}
-                    placeholder="https://..."
-                    icon={<Globe size={16} weight="bold" />}
-                  />
-                  <Select
-                    label="Work authorization"
-                    value={form.work_authorization}
-                    onChange={(event) => updateField("work_authorization", event.target.value)}
-                    options={WORK_AUTH_OPTIONS}
-                  />
-                </div>
-              )}
+                    <Input
+                      label="Full name"
+                      value={form.full_name}
+                      onChange={(event) => updateField("full_name", event.target.value)}
+                      placeholder="Jane Doe"
+                      icon={<UserCircle size={16} weight="bold" />}
+                      className={BRUTAL_FIELD}
+                    />
+                    <Input
+                      label="Email"
+                      value={user?.email ?? ""}
+                      disabled
+                      icon={<Envelope size={16} weight="bold" />}
+                      className={BRUTAL_FIELD}
+                    />
+                    <Input
+                      label="Phone"
+                      value={form.phone}
+                      onChange={(event) => updateField("phone", event.target.value)}
+                      placeholder="+1 555 000 0000"
+                      icon={<Phone size={16} weight="bold" />}
+                      className={BRUTAL_FIELD}
+                    />
+                    <Input
+                      label="Location"
+                      value={form.location}
+                      onChange={(event) => updateField("location", event.target.value)}
+                      placeholder="New York, NY"
+                      icon={<MapPin size={16} weight="bold" />}
+                      className={BRUTAL_FIELD}
+                    />
+                    <Input
+                      label="LinkedIn"
+                      value={form.linkedin_url}
+                      onChange={(event) => updateField("linkedin_url", event.target.value)}
+                      placeholder="https://linkedin.com/in/..."
+                      icon={<LinkSimple size={16} weight="bold" />}
+                      className={BRUTAL_FIELD}
+                    />
+                    <Input
+                      label="GitHub"
+                      value={form.github_url}
+                      onChange={(event) => updateField("github_url", event.target.value)}
+                      placeholder="https://github.com/..."
+                      icon={<GithubLogo size={16} weight="bold" />}
+                      className={BRUTAL_FIELD}
+                    />
+                    <Input
+                      label="Portfolio"
+                      value={form.portfolio_url}
+                      onChange={(event) => updateField("portfolio_url", event.target.value)}
+                      placeholder="https://..."
+                      icon={<Globe size={16} weight="bold" />}
+                      className={BRUTAL_FIELD}
+                    />
+                    <Select
+                      label="Work authorization"
+                      value={form.work_authorization}
+                      onChange={(event) => updateField("work_authorization", event.target.value)}
+                      options={WORK_AUTH_OPTIONS}
+                      className={BRUTAL_FIELD}
+                    />
+                  </div>
+                )}
             </SettingsSection>
 
             <SettingsSection
               title="Preferences"
               description="Job type, remote preference, and compensation bounds used throughout discovery."
+              className={BRUTAL_PANEL}
             >
               <div className="space-y-5">
                 <ToggleGroup
@@ -453,6 +528,7 @@ export default function Profile() {
                     value={form.salary_min}
                     onChange={(event) => updateField("salary_min", event.target.value)}
                     icon={<CurrencyDollar size={16} weight="bold" />}
+                    className={BRUTAL_FIELD}
                   />
                   <Input
                     label="Salary maximum"
@@ -460,6 +536,7 @@ export default function Profile() {
                     value={form.salary_max}
                     onChange={(event) => updateField("salary_max", event.target.value)}
                     icon={<CurrencyDollar size={16} weight="bold" />}
+                    className={BRUTAL_FIELD}
                   />
                 </div>
               </div>
@@ -468,6 +545,7 @@ export default function Profile() {
             <SettingsSection
               title="Search seeds"
               description="The initial phrases and target companies that inform discovery."
+              className={BRUTAL_PANEL}
             >
               <div className="space-y-5">
                 <TagEditor
@@ -505,6 +583,7 @@ export default function Profile() {
             <SettingsSection
               title="Education"
               description="A compact history of academic context used for matching and interview prep."
+              className={BRUTAL_PANEL}
             >
               <div className="space-y-3">
                 {form.education.map((entry, index) => (
@@ -527,6 +606,7 @@ export default function Profile() {
                           updateField("education", next);
                         }}
                         placeholder="School"
+                        className={BRUTAL_FIELD}
                       />
                       <Input
                         value={entry.degree}
@@ -536,6 +616,7 @@ export default function Profile() {
                           updateField("education", next);
                         }}
                         placeholder="Degree"
+                        className={BRUTAL_FIELD}
                       />
                       <Input
                         value={entry.field}
@@ -545,6 +626,7 @@ export default function Profile() {
                           updateField("education", next);
                         }}
                         placeholder="Field"
+                        className={BRUTAL_FIELD}
                       />
                     </div>
                     <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -556,6 +638,7 @@ export default function Profile() {
                           updateField("education", next);
                         }}
                         placeholder="Start date"
+                        className={BRUTAL_FIELD}
                       />
                       <Input
                         value={entry.end_date ?? ""}
@@ -565,6 +648,7 @@ export default function Profile() {
                           updateField("education", next);
                         }}
                         placeholder="End date"
+                        className={BRUTAL_FIELD}
                       />
                     </div>
                   </EntryCard>
@@ -572,6 +656,7 @@ export default function Profile() {
                 <Button
                   type="button"
                   variant="secondary"
+                  className={BRUTAL_BUTTON}
                   onClick={() => updateField("education", [...form.education, { ...EMPTY_EDUCATION }])}
                   icon={<Plus size={14} weight="bold" />}
                 >
@@ -583,6 +668,7 @@ export default function Profile() {
             <SettingsSection
               title="Experience"
               description="Role history shown in prepare and intelligence surfaces."
+              className={BRUTAL_PANEL}
             >
               <div className="space-y-3">
                 {form.experience.map((entry, index) => (
@@ -605,6 +691,7 @@ export default function Profile() {
                           updateField("experience", next);
                         }}
                         placeholder="Company"
+                        className={BRUTAL_FIELD}
                       />
                       <Input
                         value={entry.title}
@@ -614,6 +701,7 @@ export default function Profile() {
                           updateField("experience", next);
                         }}
                         placeholder="Title"
+                        className={BRUTAL_FIELD}
                       />
                     </div>
                     <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -625,6 +713,7 @@ export default function Profile() {
                           updateField("experience", next);
                         }}
                         placeholder="Start date"
+                        className={BRUTAL_FIELD}
                       />
                       <Input
                         value={entry.end_date ?? ""}
@@ -634,10 +723,11 @@ export default function Profile() {
                           updateField("experience", next);
                         }}
                         placeholder="End date or Present"
+                        className={BRUTAL_FIELD}
                       />
                     </div>
                     <Textarea
-                      className="mt-3 min-h-[110px]"
+                      className={`${BRUTAL_FIELD} mt-3 min-h-[110px]`}
                       value={entry.description ?? ""}
                       onChange={(event) => {
                         const next = [...form.experience];
@@ -651,6 +741,7 @@ export default function Profile() {
                 <Button
                   type="button"
                   variant="secondary"
+                  className={BRUTAL_BUTTON}
                   onClick={() => updateField("experience", [...form.experience, { ...EMPTY_EXPERIENCE }])}
                   icon={<Plus size={14} weight="bold" />}
                 >
@@ -662,10 +753,12 @@ export default function Profile() {
             <SettingsSection
               title="Answer bank"
               description="Reusable interview answers generated from the current profile."
+              className={BRUTAL_PANEL}
               actions={
                 <Button
                   type="button"
                   variant="secondary"
+                  className={BRUTAL_BUTTON}
                   onClick={() => answerMutation.mutate()}
                   loading={answerMutation.isPending}
                   icon={<Sparkle size={16} weight="bold" />}
@@ -687,7 +780,7 @@ export default function Profile() {
                             delete next[question];
                             updateField("answer_bank", next);
                           }}
-                          className="text-muted-foreground hover:text-[var(--color-accent-danger)]"
+                          className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] px-2 py-1 text-[var(--color-text-muted)] hover:text-[var(--color-accent-danger)]"
                         >
                           <X size={14} weight="bold" />
                         </button>
@@ -697,10 +790,10 @@ export default function Profile() {
                         onChange={(event) =>
                           updateField("answer_bank", {
                             ...form.answer_bank,
-                            [question]: event.target.value,
-                          })
-                        }
-                        className="min-h-[100px]"
+                          [question]: event.target.value,
+                        })
+                      }
+                        className={`${BRUTAL_FIELD} min-h-[100px]`}
                       />
                     </div>
                   ))
@@ -723,18 +816,21 @@ export default function Profile() {
               icon={<MagnifyingGlass size={18} weight="bold" />}
               title="Profile usage"
               description="Discovery, onboarding, interview prep, and Copilot all read from this record."
+              className={BRUTAL_PANEL}
             />
             <StateBlock
               tone="success"
               icon={<Buildings size={18} weight="bold" />}
               title="Workspace summary"
               description={`${form.watchlist_companies.length} watchlist companies and ${form.search_queries.length} search seeds currently configured.`}
+              className={BRUTAL_PANEL}
             />
             <StateBlock
               tone="warning"
               icon={<GraduationCap size={18} weight="bold" />}
               title="Readiness check"
               description="Add at least one role and one search seed to make the other surfaces immediately useful."
+              className={BRUTAL_PANEL}
             />
           </div>
         }

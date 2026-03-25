@@ -13,7 +13,6 @@ import { useDeferredValue, useEffect, useState } from "react";
 import { emailApi, type EmailWebhookPayload, type EmailWebhookResponse } from "../api/email";
 import Badge from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
@@ -39,21 +38,45 @@ const emptyReplay: EmailWebhookPayload = {
   text: "",
 };
 
+const PANEL =
+  "border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const PANEL_ALT =
+  "border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-primary)] shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const FIELD =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !text-[var(--color-text-primary)] placeholder:!text-[var(--color-text-muted)] !shadow-none focus:!border-[var(--color-accent-primary)] focus:!ring-0";
+const PRIMARY_BUTTON =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-accent-primary)] !text-white !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+
 function MetricCard({
   label,
   value,
   hint,
+  accent,
 }: {
   label: string;
   value: string;
   hint: string;
+  accent?: string;
 }) {
   return (
-    <Card className="p-5">
-      <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted">{label}</div>
-      <div className="mt-2 text-2xl font-semibold tracking-tight text-text-primary">{value}</div>
-      <p className="mt-2 text-sm text-text-secondary">{hint}</p>
-    </Card>
+    <div className={`${PANEL_ALT} p-4`}>
+      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+        {label}
+      </div>
+      <div className={`mt-3 font-mono text-3xl font-bold ${accent ?? ""}`}>{value}</div>
+      <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{hint}</p>
+    </div>
+  );
+}
+
+function HeroPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className={`${PANEL_ALT} px-3 py-2`}>
+      <div className="text-[9px] font-bold uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
+        {label}
+      </div>
+      <div className="mt-1 font-mono text-sm font-bold">{value}</div>
+    </div>
   );
 }
 
@@ -126,97 +149,130 @@ export default function Email() {
     });
   };
 
+  const heroMetrics = [
+    {
+      label: "Processed",
+      value: String(logs?.length ?? 0),
+      hint: "Emails parsed into structured signals.",
+      accent: "text-[var(--color-accent-primary)]",
+    },
+    {
+      label: "Actionable",
+      value: String(actionableLogs.length),
+      hint: "Logs with a detected outcome or workflow step.",
+      accent: "text-[var(--color-accent-success)]",
+    },
+    {
+      label: "Avg confidence",
+      value: avgConfidence,
+      hint: "Model confidence across the recent signal window.",
+      accent: "text-[var(--color-accent-warning)]",
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <Card className="overflow-hidden p-0">
-        <div className="grid gap-5 border-b border-border bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent-primary)_10%,transparent),transparent_60%)] px-6 py-6 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
-          <div>
-            <div className="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">Execute</div>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary">Email Signals</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
-              A signal desk for inbound recruiter and hiring-team communication. The structure leans on
-              timeline logging rather than inbox chrome, so you can monitor outcomes instead of triaging mail.
+    <div className="space-y-6 px-4 py-4 sm:px-6 lg:px-8">
+      <div className={`${PANEL} overflow-hidden`}>
+        <div className="grid gap-5 border-b-2 border-[var(--color-text-primary)] px-5 py-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)] lg:px-6 lg:py-6">
+          <div className="space-y-3">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-accent-primary)]">
+              Execute / Signals
+            </div>
+            <h1 className="text-4xl font-black uppercase tracking-tighter sm:text-5xl">
+              Email Signals
+            </h1>
+            <p className="max-w-3xl text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
+              A signal desk for recruiter and hiring-team communication. The page treats the inbox as an
+              operational feed, not a mail client.
             </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <HeroPill label="Status" value="Optimal" />
+              <HeroPill label="Window" value="Recent 100" />
+              <HeroPill label="Desk" value="Signal feed" />
+            </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            <MetricCard
-              label="Processed"
-              value={String(logs?.length ?? 0)}
-              hint="Emails parsed into structured signals."
-            />
-            <MetricCard
-              label="Actionable"
-              value={String(actionableLogs.length)}
-              hint="Logs with a detected outcome or workflow step."
-            />
-            <MetricCard
-              label="Avg Confidence"
-              value={avgConfidence}
-              hint="Model confidence across the recent signal window."
-            />
+            {heroMetrics.map((metric) => (
+              <MetricCard
+                key={metric.label}
+                label={metric.label}
+                value={metric.value}
+                hint={metric.hint}
+                accent={metric.accent}
+              />
+            ))}
           </div>
         </div>
-      </Card>
+      </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(340px,0.92fr)_minmax(0,1.28fr)]">
-        <Card className="p-0">
-          <div className="border-b border-border px-5 py-4">
-            <div className="text-sm font-semibold text-text-primary">Signal log</div>
+      <div className="grid gap-6 xl:grid-cols-[minmax(340px,0.95fr)_minmax(0,1.05fr)]">
+        <div className={`${PANEL} overflow-hidden`}>
+          <div className="border-b-2 border-[var(--color-text-primary)] px-5 py-4">
+            <div className="text-sm font-bold uppercase tracking-[0.2em]">Signal log</div>
             <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px]">
               <Input
                 value={searchValue}
                 onChange={(event) => setSearchValue(event.target.value)}
                 placeholder="Search sender, subject, company, or job title"
                 icon={<MagnifyingGlass size={16} weight="bold" />}
+                className={FIELD}
               />
               <Select
                 value={actionFilter}
                 onChange={(event) => setActionFilter(event.target.value)}
                 options={FILTER_OPTIONS}
+                className={FIELD}
               />
             </div>
           </div>
-          <div className="max-h-[760px] overflow-auto px-3 py-3">
+
+          <div className="max-h-[72vh] overflow-auto p-3">
             {isLoading ? (
-              <div className="space-y-3 px-2 py-2">
+              <div className="space-y-3">
                 {Array.from({ length: 7 }).map((_, index) => (
                   <Skeleton key={index} variant="rect" className="h-24 w-full" />
                 ))}
               </div>
             ) : filteredLogs.length ? (
-              filteredLogs.map((log) => (
-                <button
-                  key={log.id}
-                  type="button"
-                  onClick={() => setSelectedLogId(log.id)}
-                  className={cn(
-                    "mb-2 w-full rounded-[var(--radius-xl)] border px-4 py-4 text-left transition-colors",
-                    selectedLogId === log.id
-                      ? "border-accent-primary/35 bg-accent-primary/8"
-                      : "border-transparent bg-bg-secondary hover:border-border hover:bg-bg-tertiary"
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-text-primary">{log.subject}</div>
-                      <div className="mt-1 truncate text-sm text-text-secondary">{log.sender}</div>
+              <div className="space-y-3">
+                {filteredLogs.map((log) => (
+                  <button
+                    key={log.id}
+                    type="button"
+                    onClick={() => setSelectedLogId(log.id)}
+                    className={cn(
+                      "w-full border-2 px-4 py-4 text-left transition-transform duration-150",
+                      selectedLogId === log.id
+                        ? "border-[var(--color-text-primary)] bg-[var(--color-accent-primary-subtle)] shadow-[4px_4px_0px_0px_var(--color-accent-primary)]"
+                        : "border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] shadow-[4px_4px_0px_0px_var(--color-text-primary)] hover:-translate-x-[2px] hover:-translate-y-[2px]"
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-bold uppercase tracking-[0.08em]">
+                          {log.subject}
+                        </div>
+                        <div className="mt-1 truncate text-sm text-[var(--color-text-secondary)]">
+                          {log.sender}
+                        </div>
+                      </div>
+                      <Badge variant={log.parsed_action ? "info" : "default"} className="rounded-none">
+                        {log.parsed_action ?? "unknown"}
+                      </Badge>
                     </div>
-                    <Badge variant={log.parsed_action ? "info" : "default"}>
-                      {log.parsed_action ?? "unknown"}
-                    </Badge>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-text-muted">
-                    {log.company_extracted ? (
-                      <span className="flex items-center gap-1">
-                        <Buildings size={12} weight="bold" />
-                        {log.company_extracted}
-                      </span>
-                    ) : null}
-                    <span>{formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</span>
-                    {log.confidence !== null ? <span>{Math.round(log.confidence * 100)}% confidence</span> : null}
-                  </div>
-                </button>
-              ))
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--color-text-muted)]">
+                      {log.company_extracted ? (
+                        <span className="flex items-center gap-1">
+                          <Buildings size={12} weight="bold" />
+                          {log.company_extracted}
+                        </span>
+                      ) : null}
+                      <span>{formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</span>
+                      {log.confidence !== null ? <span>{Math.round(log.confidence * 100)}% confidence</span> : null}
+                    </div>
+                  </button>
+                ))}
+              </div>
             ) : (
               <EmptyState
                 icon={<EnvelopeSimple size={32} weight="bold" />}
@@ -225,53 +281,58 @@ export default function Email() {
               />
             )}
           </div>
-        </Card>
+        </div>
 
         <div className="space-y-6">
-          <Card className="p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
-              <Funnel size={16} weight="bold" className="text-accent-primary" />
+          <div className={`${PANEL} p-5 sm:p-6`}>
+            <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em]">
+              <Funnel size={16} weight="bold" className="text-[var(--color-accent-primary)]" />
               Selected log detail
             </div>
             {selectedLog ? (
               <div className="mt-4 space-y-4">
-                <div className="rounded-[var(--radius-xl)] border border-border bg-bg-secondary px-4 py-4">
-                  <div className="text-lg font-semibold tracking-tight text-text-primary">{selectedLog.subject}</div>
-                  <div className="mt-2 text-sm text-text-secondary">{selectedLog.sender}</div>
+                <div className={`${PANEL_ALT} px-4 py-4`}>
+                  <div className="text-lg font-black uppercase tracking-tighter">{selectedLog.subject}</div>
+                  <div className="mt-2 text-sm text-[var(--color-text-secondary)]">{selectedLog.sender}</div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-[var(--radius-xl)] border border-border bg-bg-secondary px-4 py-4">
-                    <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted">Detected action</div>
-                    <div className="mt-2 text-base font-medium text-text-primary">
-                      {selectedLog.parsed_action ?? "No structured action"}
+                  <div className={`${PANEL_ALT} px-4 py-4`}>
+                    <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+                      Detected action
                     </div>
-                    <div className="mt-2 text-sm text-text-secondary">
+                    <div className="mt-2 text-base font-bold">{selectedLog.parsed_action ?? "No structured action"}</div>
+                    <div className="mt-2 text-sm text-[var(--color-text-secondary)]">
                       Confidence {selectedLog.confidence !== null ? `${Math.round(selectedLog.confidence * 100)}%` : "not available"}
                     </div>
                   </div>
-                  <div className="rounded-[var(--radius-xl)] border border-border bg-bg-secondary px-4 py-4">
-                    <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted">Matched application</div>
-                    <div className="mt-2 break-all text-sm text-text-primary">
-                      {selectedLog.matched_application_id ?? "No application match"}
+                  <div className={`${PANEL_ALT} px-4 py-4`}>
+                    <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+                      Matched application
                     </div>
+                    <div className="mt-2 break-all text-sm">{selectedLog.matched_application_id ?? "No application match"}</div>
                   </div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-[var(--radius-xl)] border border-border bg-bg-secondary px-4 py-4">
-                    <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted">Company</div>
-                    <div className="mt-2 text-sm text-text-primary">{selectedLog.company_extracted ?? "Unknown"}</div>
+                  <div className={`${PANEL_ALT} px-4 py-4`}>
+                    <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+                      Company
+                    </div>
+                    <div className="mt-2 text-sm">{selectedLog.company_extracted ?? "Unknown"}</div>
                   </div>
-                  <div className="rounded-[var(--radius-xl)] border border-border bg-bg-secondary px-4 py-4">
-                    <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted">Job title</div>
-                    <div className="mt-2 text-sm text-text-primary">{selectedLog.job_title_extracted ?? "Unknown"}</div>
+                  <div className={`${PANEL_ALT} px-4 py-4`}>
+                    <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+                      Job title
+                    </div>
+                    <div className="mt-2 text-sm">{selectedLog.job_title_extracted ?? "Unknown"}</div>
                   </div>
                 </div>
 
-                <div className="rounded-[var(--radius-xl)] border border-border bg-bg-secondary px-4 py-4 text-sm leading-6 text-text-secondary">
+                <div className={`${PANEL_ALT} px-4 py-4 text-sm leading-6 text-[var(--color-text-secondary)]`}>
                   Processed {formatDistanceToNow(new Date(selectedLog.processed_at), { addSuffix: true })}.
-                  Use this panel to verify classification before the signal gets folded into outcomes or follow-up workflows.
+                  Use this panel to verify classification before the signal gets folded into outcomes or
+                  follow-up workflows.
                 </div>
               </div>
             ) : (
@@ -281,14 +342,14 @@ export default function Email() {
                 description="Select a signal from the left to inspect company extraction, action parsing, and match confidence."
               />
             )}
-          </Card>
+          </div>
 
-          <Card className="p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
-              <Sparkle size={16} weight="bold" className="text-accent-warning" />
+          <div className={`${PANEL} p-5 sm:p-6`}>
+            <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em]">
+              <Sparkle size={16} weight="bold" className="text-[var(--color-accent-warning)]" />
               Replay a signal
             </div>
-            <p className="mt-1 text-sm text-text-secondary">
+            <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">
               Manually send a webhook-shaped payload to test classification or backfill a missing signal.
             </p>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -297,47 +358,51 @@ export default function Email() {
                 value={replayForm.sender ?? ""}
                 onChange={(event) => setReplayForm((current) => ({ ...current, sender: event.target.value }))}
                 placeholder="recruiter@company.com"
+                className={FIELD}
               />
               <Input
                 label="From"
                 value={replayForm.from_ ?? ""}
                 onChange={(event) => setReplayForm((current) => ({ ...current, from_: event.target.value }))}
                 placeholder="Optional override"
+                className={FIELD}
               />
             </div>
             <Input
-              className="mt-4"
+              className={`${FIELD} mt-4`}
               label="Subject"
               value={replayForm.subject ?? ""}
               onChange={(event) => setReplayForm((current) => ({ ...current, subject: event.target.value }))}
               placeholder="Interview invitation for Senior Frontend Engineer"
             />
             <Textarea
-              className="mt-4 min-h-[160px]"
+              className={`${FIELD} mt-4 min-h-[160px]`}
               label="Body"
               value={replayForm.text ?? ""}
               onChange={(event) => setReplayForm((current) => ({ ...current, text: event.target.value }))}
               placeholder="Paste the inbound email body here."
             />
             <div className="mt-4 flex justify-end">
-              <Button variant="default" onClick={submitReplay} disabled={replayMutation.isPending}>
+              <Button variant="default" className={PRIMARY_BUTTON} onClick={submitReplay} disabled={replayMutation.isPending}>
                 <ArrowClockwise size={16} weight="bold" />
                 Process signal
               </Button>
             </div>
 
             {replayResult ? (
-              <div className="mt-4 rounded-[var(--radius-xl)] border border-border bg-bg-secondary px-4 py-4">
+              <div className={`${PANEL_ALT} mt-4 px-4 py-4`}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-sm font-medium text-text-primary">{replayResult.status}</div>
-                    <p className="mt-1 text-sm text-text-secondary">{replayResult.message ?? "Signal processed."}</p>
+                    <div className="text-sm font-bold uppercase tracking-[0.08em]">{replayResult.status}</div>
+                    <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                      {replayResult.message ?? "Signal processed."}
+                    </p>
                   </div>
-                  <Badge variant={replayResult.status === "updated" ? "success" : "info"}>
+                  <Badge variant={replayResult.status === "updated" ? "success" : "info"} className="rounded-none">
                     {replayResult.action ?? "no action"}
                   </Badge>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-3 text-xs text-text-muted">
+                <div className="mt-3 flex flex-wrap gap-3 text-xs text-[var(--color-text-muted)]">
                   {replayResult.company ? <span>Company: {replayResult.company}</span> : null}
                   {replayResult.application_id ? <span>Application: {replayResult.application_id}</span> : null}
                   {replayResult.confidence !== null ? (
@@ -346,19 +411,19 @@ export default function Email() {
                 </div>
               </div>
             ) : null}
-          </Card>
+          </div>
 
-          <Card className="p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
-              <CheckCircle size={16} weight="bold" className="text-accent-success" />
+          <div className={`${PANEL_ALT} p-5 sm:p-6`}>
+            <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em]">
+              <CheckCircle size={16} weight="bold" className="text-[var(--color-accent-success)]" />
               Operating notes
             </div>
-            <div className="mt-3 space-y-2 text-sm leading-6 text-text-secondary">
+            <div className="mt-3 space-y-2 text-sm leading-6 text-[var(--color-text-secondary)]">
               <p>Use this page as the audit trail for inbound hiring communication, not as a general inbox.</p>
               <p>Unknown actions are still useful if the company and title extractions are correct.</p>
               <p>Replay is intentionally visible so missing automation does not block manual cleanup.</p>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     </div>

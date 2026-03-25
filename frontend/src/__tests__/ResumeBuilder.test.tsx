@@ -47,7 +47,47 @@ describe("ResumeBuilder page", () => {
       ],
     });
     resumeMocks.upload.mockResolvedValue({ data: null });
-    resumeMocks.tailor.mockResolvedValue({ data: null });
+    resumeMocks.tailor.mockResolvedValue({
+      data: {
+        summary: "Tailored for Staff Frontend Engineer",
+        reordered_experience: [
+          {
+            company: "Acme",
+            bullets: ["Led frontend platform work"],
+          },
+        ],
+        enhanced_bullets: [
+          {
+            original: "Built UI",
+            enhanced: "Built and scaled a shared UI platform for high-traffic product surfaces",
+          },
+        ],
+        skills_section: ["React", "TypeScript"],
+        ats_score_before: 64,
+        ats_score_after: 81,
+        stage1_output: {
+          hard_requirements: ["React"],
+          soft_requirements: [],
+          key_technologies: ["TypeScript"],
+          ats_keywords: ["react", "typescript"],
+          culture_signals: [],
+          seniority_indicators: [],
+          deal_breakers: [],
+        },
+        stage2_output: {
+          matched_requirements: ["React"],
+          partial_matches: [],
+          missing_requirements: ["Design systems"],
+          transferable_skills: [],
+          keyword_coverage: {
+            present: ["react"],
+            missing: ["design systems"],
+          },
+          strength_areas: ["UI architecture"],
+          risk_areas: ["No design systems keyword"],
+        },
+      },
+    });
     resumeMocks.council.mockResolvedValue({ data: null });
     jobsMocks.list.mockResolvedValue({
       data: {
@@ -76,5 +116,23 @@ describe("ResumeBuilder page", () => {
 
     expect(await screen.findByText("resume-2026.pdf")).toBeInTheDocument();
     expect(screen.getByText("Default")).toBeInTheDocument();
+  });
+
+  it("renders the structured tailoring result from the backend contract", async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<ResumeBuilder />);
+
+    await user.click(await screen.findByRole("button", { name: /Tailor/i }));
+    const selects = screen.getAllByRole("combobox");
+    await user.selectOptions(selects[0], "resume-1");
+    await user.selectOptions(selects[1], "job-1");
+    await user.click(screen.getByRole("button", { name: /Tailor Resume/i }));
+
+    expect(await screen.findByText("Tailored resume")).toBeInTheDocument();
+    expect(screen.getByText("Tailored for Staff Frontend Engineer")).toBeInTheDocument();
+    expect(screen.getByText("81")).toBeInTheDocument();
+    expect(screen.getByText("React")).toBeInTheDocument();
+    expect(screen.getByText(/Built and scaled a shared UI platform/i)).toBeInTheDocument();
   });
 });

@@ -1,0 +1,74 @@
+# Backend Tree
+
+Root: `D:/jobradar-v2/backend`
+Exclusions applied: virtualenvs, caches, local DB files, runtime logs, downloaded artifacts, generated build output.
+
+## Clean Tree
+
+```text
+D:/jobradar-v2/backend
+|- app/
+|  |- main.py                       # FastAPI app factory and router registration
+|  |- config.py                     # Pydantic settings and runtime validation
+|  |- database.py                   # Async engine/session factory and declarative base
+|  |- dependencies.py               # DB dependency and current-user resolution
+|  |- shared/                       # Middleware, logging, pagination, events, errors
+|  |- migrations/                   # Alembic env and versioned schema history
+|  |- auth/                         # Users, JWT/cookies, account lifecycle
+|  |- jobs/                         # Job listing/search/export and job model
+|  |- pipeline/                     # Applications, transitions, history, state machine
+|  |- profile/                      # User profile and onboarding data
+|  |- settings/                     # Saved searches, integrations, app settings
+|  |- analytics/                    # Metrics, prediction, RAG/model artifacts
+|  |- resume/                       # Resume versions, tailoring, council, archetypes
+|  |- copilot/                      # Chat, history Q&A, cover letters
+|  |- interview/                    # Interview sessions and evaluation
+|  |- salary/                       # Salary research and offer evaluation
+|  |- companies/                    # Company registry and resolution
+|  |- canonical_jobs/               # Canonical jobs and raw source links
+|  |- source_health/                # Source registry and check logs
+|  |- search_expansion/             # Query expansion models and API stub
+|  |- notifications/                # User notifications
+|  |- email/                        # Email webhook parsing and logs
+|  |- networking/                   # Contacts, referrals, outreach
+|  |- outcomes/                     # Application outcomes and company insight rollups
+|  |- enrichment/                   # Job enrichment, embeddings, TF-IDF, GPU status
+|  |- scraping/                     # Manual/scheduled scraping, targets, attempts, SSE
+|  |- auto_apply/                   # Auto-apply profiles, rules, browser automation
+|  |- vault/                        # Resume and cover-letter vault facade
+|  |- followup/                     # Follow-up reminder model
+|  |- nlp/                          # Shared model routing and prompt helpers
+|  `- workers/                      # APScheduler jobs and batch workers
+|- tests/
+|  |- conftest.py                   # Test app/client/DB overrides
+|  |- unit/                         # Unit coverage, including scraping subpackages
+|  |- integration/                  # API/service integration coverage
+|  |- contracts/                    # ATS contract tests
+|  |- security/                     # Security-focused tests
+|  `- fixtures/                     # Scraper/provider fixtures
+|- scripts/                         # Import and probing utilities
+|- Dockerfile                       # Backend container image
+|- pyproject.toml                   # Python dependencies and tooling
+|- uv.lock                          # Locked dependency graph
+|- alembic.ini                      # Alembic config
+|- seed_data.py                     # Seed/bootstrap script
+|- .dockerignore                    # Backend build exclusions
+`- start-dev.cjs                    # Dev runner wrapper
+```
+
+## App Module Grouping
+
+| Group | Paths | Purpose |
+|---|---|---|
+| Runtime core | `D:/jobradar-v2/backend/app/main.py`, `config.py`, `database.py`, `dependencies.py`, `shared` | Boot, middleware, auth/session resolution, DB access, logging |
+| Business domains | `D:/jobradar-v2/backend/app/auth` through `D:/jobradar-v2/backend/app/vault` | API routes, service logic, models, schemas |
+| Background execution | `D:/jobradar-v2/backend/app/workers` | Periodic jobs, orchestration, maintenance |
+| Migration history | `D:/jobradar-v2/backend/app/migrations` | Schema change source of truth |
+| Shared AI/NLP support | `D:/jobradar-v2/backend/app/nlp`, plus LLM-related files in resume/interview/copilot/enrichment | Model selection, prompting, generation helpers |
+| Test surface | `D:/jobradar-v2/backend/tests` | Unit/integration/contract/security verification |
+
+## Source-Of-Truth Notes
+
+- The backend is a modular monolith, not a service mesh or microservice split.
+- Domain services are the effective source of truth for business logic because there is no repository abstraction layer.
+- Alembic migrations and SQLAlchemy models jointly define persistence. Neither alone is fully sufficient for refactor safety.

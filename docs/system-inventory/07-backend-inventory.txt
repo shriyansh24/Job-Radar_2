@@ -1,0 +1,99 @@
+# Backend Inventory
+
+Root: `D:/jobradar-v2/backend`
+
+## Backend Architecture Summary
+
+- Framework: FastAPI
+- Entry point: `D:/jobradar-v2/backend/app/main.py`
+- Data access: async SQLAlchemy direct from services and workers
+- Migration system: Alembic in `D:/jobradar-v2/backend/app/migrations`
+- Auth model: JWT access/refresh tokens with cookie support and bearer-token compatibility
+- Worker model: APScheduler started in-process from API lifespan
+- Repository layer: none
+
+## Runtime Core
+
+| File Path | Purpose | Public Interface | Dependencies | What Calls It | Side Effects | Data Reads/Writes | Operational Sensitivity |
+|---|---|---|---|---|---|---|---|
+| `D:/jobradar-v2/backend/app/main.py` | FastAPI app factory and lifespan | `create_app()`, module-level `app` | `config`, `database`, `shared/middleware`, every domain router, `workers/scheduler.py` | ASGI server, tests | Starts/stops scheduler, disposes DB engine | Reads settings; indirectly triggers all app state | High |
+| `D:/jobradar-v2/backend/app/config.py` | Runtime configuration | `Settings`, `settings`, `validate_runtime_settings()` | `pydantic-settings`, env vars | Nearly every backend module | Runtime validation failure can abort boot | Reads env var surface (`JR_*`) | High |
+| `D:/jobradar-v2/backend/app/database.py` | Engine/session bootstrap | `engine`, `async_session_factory`, `Base` | SQLAlchemy async engine | `dependencies.py`, model files, migrations, workers | Creates connection pools | Reads/writes all DB tables through session factory | High |
+| `D:/jobradar-v2/backend/app/dependencies.py` | Request-scoped DI | `get_db()`, `get_current_user()` | `database`, `auth/service`, `auth/models`, settings | Most routers | Resolves auth from bearer or cookie token | Reads `users` for auth/session validation | High |
+| `D:/jobradar-v2/backend/app/shared/middleware.py` | Request middleware stack | `ApiRateLimitMiddleware`, `SecurityHeadersMiddleware`, `TimingMiddleware`, `RequestIDMiddleware` | FastAPI/Starlette middleware APIs, settings | Installed from `main.py` | Adds headers, request IDs, timing, in-memory rate limits | In-memory state only for rate limiting | High |
+| `D:/jobradar-v2/backend/app/shared/errors.py` | Shared HTTP exceptions | Domain exception classes | FastAPI exception mechanics | Services and routers across domains | Raises HTTP errors | None | Medium |
+| `D:/jobradar-v2/backend/app/shared/pagination.py` | Shared pagination contract | `PaginatedResponse` and helpers | Pydantic generics | Jobs/pipeline routers and services | None | None | Medium |
+| `D:/jobradar-v2/backend/app/shared/logging.py` | Structlog setup | `setup_logging()` | structlog/logging config | `main.py` | Configures logging globally | None | Medium |
+| `D:/jobradar-v2/backend/app/shared/events.py` | In-memory event support | Event publish/subscribe helpers | in-process data structures | Scraping/SSE paths, tests | Single-instance event fan-out | In-memory only | Medium |
+
+## Domain Modules
+
+| File Path(s) | Purpose | Public Interface | Dependencies | What Calls It | Side Effects | Data Reads/Writes | Operational Sensitivity |
+|---|---|---|---|---|---|---|---|
+| `D:/jobradar-v2/backend/app/auth/router.py`, `service.py`, `models.py`, `schemas.py` | Registration, login, refresh, logout, password change, account deletion, current-user lookup | `/auth/*` routes, auth service helpers, `User` model, auth schemas | JWT helpers, password hashing, `dependencies.py`, settings | Frontend auth client and auth store | Issues cookies/tokens, revokes token versions, deletes account data | `users` | High |
+| `D:/jobradar-v2/backend/app/jobs/router.py`, `service.py`, `models.py`, `schemas.py` | Job list/detail/update/delete, semantic search, export | `/jobs` routes, `JobService`, `Job` model, job schemas | SQLAlchemy queries, pagination, shared errors | Frontend jobs API, dashboard, job board, resume/interview/networking context | Commits updates/deletes, exports CSV/JSON | `jobs` | High |
+| `D:/jobradar-v2/backend/app/pipeline/router.py`, `service.py`, `models.py`, `schemas.py`, `state_machine.py` | Application CRUD, board view, status transitions, history | `/applications` routes, `PipelineService`, state transition helpers | Jobs/applications models, shared errors, pagination | Frontend pipeline/outcomes flows, email service | Writes transition history and status timestamps | `applications`, `application_status_history` | High |
+| `D:/jobradar-v2/backend/app/profile/router.py`, `service.py`, `models.py`, `schemas.py` | User profile fetch/update and answer generation stub | `/profile` routes and `ProfileService` | Auth, SQLAlchemy, profile schemas | Onboarding and profile frontend pages | Creates/updates profile lazily | `user_profiles` | Medium |
+| `D:/jobradar-v2/backend/app/settings/router.py`, `service.py`, `models.py`, `schemas.py` | Saved searches, integrations, app settings | `/settings/*` routes, `SettingsService` | Profile/auth data, SQLAlchemy | Settings/onboarding frontend, workers | Stores masked integration secrets, updates user settings | `saved_searches`, `user_integration_secrets`, `user_profiles` | High |
+| `D:/jobradar-v2/backend/app/analytics/router.py`, `service.py`, `models.py`, `schemas.py`, `predictor.py`, `rag.py` | Metrics, funnel reporting, prediction/training/model status | `/analytics/*` routes, analytics service, ML helpers | Jobs/applications models, ML artifacts, search/vector logic | Dashboard, analytics page, admin-like analysis flows | Model training/inference side effects | `jobs`, `applications`, `ml_model_artifacts` | High |
+| `D:/jobradar-v2/backend/app/resume/router.py`, `service.py`, `models.py`, `schemas.py`, `renderer.py`, `gap_analyzer.py`, `council.py`, `prompts.py`, `archetypes.py` | Resume upload/versioning, tailoring, council review, gap analysis, archetypes, cover-letter generation | `/resume/*` routes, `ResumeService`, archetype service/models, response schemas | LLM helpers, HTML templates, jobs/companies/profile context | ResumeBuilder, DocumentVault, preparation workflows | File parsing, DB writes, LLM/provider calls, rendering | `resume_versions`, `resume_archetypes`, `cover_letters` | High |
+| `D:/jobradar-v2/backend/app/copilot/router.py`, `service.py`, `models.py`, `schemas.py`, `prompts.py` | Copilot chat, ask-history, cover-letter support | `/copilot/*` routes, `CopilotService` | LLM prompting, job/profile context | Copilot page, cover-letter flows | LLM/provider calls, may persist cover letters | `cover_letters` and inferred contextual reads | High |
+| `D:/jobradar-v2/backend/app/interview/router.py`, `service.py`, `models.py`, `schemas.py`, `evaluator.py`, `prompts.py` | Interview session generation, prep bundles, answer evaluation | `/interview/*` routes, interview service | Resume/job context, evaluation prompts | Interview prep frontend | LLM/provider calls, commits session results | `interview_sessions` | High |
+| `D:/jobradar-v2/backend/app/salary/router.py`, `service.py`, `models.py`, `schemas.py` | Salary research, offer evaluation, salary brief generation | `/salary/*` routes, salary service | External/provider/LLM logic, job context | Salary frontend | Caches results, generates negotiation guidance | `salary_cache` | High |
+| `D:/jobradar-v2/backend/app/enrichment/router.py`, `service.py`, `models.py`, `schemas.py`, `embedding.py`, `tfidf.py`, `llm_client.py`, `gpu_accelerator.py` | Job enrichment and scoring | `/enrichment/*` routes, enrichment service, embedding/TF-IDF helpers | Jobs, GPU/model libs, external providers | Workers, admin-oriented flows, integration tests | Updates job enrichment fields, GPU checks, provider calls | `jobs`; `models.py` itself is placeholder | High |
+| `D:/jobradar-v2/backend/app/companies/router.py`, `service.py`, `models.py`, `schemas.py` | Company listing, lookup, resolution | `/companies/*` routes, company service | SQLAlchemy, company normalization logic | Phase-7A frontend, resume/analytics support | Resolves or creates company records | `companies` | Medium |
+| `D:/jobradar-v2/backend/app/canonical_jobs/router.py`, `service.py`, `models.py`, `schemas.py` | Canonical jobs, stale jobs, close/reactivate workflows | `/canonical-jobs/*` routes | Jobs/source health/scraping outputs | Canonical jobs frontend, workers | Updates canonical job lifecycle | `canonical_jobs`, `raw_job_sources` | High |
+| `D:/jobradar-v2/backend/app/source_health/router.py`, `service.py`, `models.py`, `schemas.py` | Source registry and check-log reporting | `/source-health/*` routes | Source health workers and SQLAlchemy | Sources/Admin/Phase-7A frontend | Reporting only at API layer; worker-updated state | `source_registry`, `source_check_log` | Medium |
+| `D:/jobradar-v2/backend/app/search_expansion/router.py`, `service.py`, `models.py`, `schemas.py` | Search expansion endpoint and persistence definitions | `/search-expansion/expand` route, placeholder service | Query expansion tables, minimal service logic | Intended Phase-7A frontend consumer | Currently stub-like behavior | `query_templates`, `expansion_rules`, `query_performance` | High |
+| `D:/jobradar-v2/backend/app/notifications/router.py`, `service.py`, `models.py`, `schemas.py` | Notification list/unread/read/delete | `/notifications/*` routes | Auth, SQLAlchemy | Notification bell and services like email/follow-up | Marks rows read/delete | `notifications` | Medium |
+| `D:/jobradar-v2/backend/app/email/router.py`, `service.py`, `models.py`, `schemas.py`, `parser.py` | Email webhook ingestion and email log review | `/email/webhook`, `/email/logs` routes | Parser, notifications service, pipeline service | Email frontend and inbound-email path | Writes logs, may transition applications, may create notifications | `email_logs`, `applications`, `notifications` | High |
+| `D:/jobradar-v2/backend/app/networking/router.py`, `service.py`, `models.py`, `schemas.py` | Contacts CRUD, referrals, outreach, company-connection lookup | `/networking/*` routes | Jobs/companies context, SQLAlchemy | Networking frontend | Writes contact and referral records, may generate outreach copy | `contacts`, `referral_requests`, contextual job reads | High |
+| `D:/jobradar-v2/backend/app/outcomes/router.py`, `service.py`, `models.py`, `schemas.py` | Outcome CRUD, user stats, company insight rollups | `/outcomes/*` routes | Applications and analytics-like aggregation | Outcomes frontend | Writes one outcome per application, aggregates company stats | `application_outcomes`, `company_insights`, `applications` | High |
+| `D:/jobradar-v2/backend/app/admin/router.py`, `service.py` | Health, diagnostics, reindex, export/import, user data clearing | `/admin/*` routes, `AdminService` | DB session, multiple domain tables/services | Admin frontend, docker health checks, auth account deletion | Reindex/export/import/delete side effects | Broad reads/writes across many tables | High |
+| `D:/jobradar-v2/backend/app/scraping/router.py`, `service.py`, `models.py`, `schemas.py`, `control/*`, `execution/*`, `scrapers/*`, `dedup_feedback.py`, `deduplication.py`, `rate_limiter.py`, `ops.py` | Manual and scheduled scraping, SSE, career pages, scrape targets, attempts, dedup review, target batching | `/scraper/*` routes, `ScrapingService`, control/execution adapters, scraper implementations | Browser automation, HTTP clients, jobs, source health, workers, in-memory events | Targets page, scraper UI, scheduler, workers | Runs scrapers, writes run/attempt/job data, opens SSE events, external network/browser side effects | `jobs`, `scraper_runs`, `scrape_targets`, `scrape_attempts`, `dedup_feedback` | Very High |
+| `D:/jobradar-v2/backend/app/auto_apply/router.py`, `service.py`, `models.py`, `schemas.py`, `orchestrator.py`, `engine.py`, `ats_detector.py`, `field_mapper.py`, `form_learning.py`, `question_engine.py`, `workday_adapter.py`, `workday_filler.py`, `ats_filler.py`, `validator.py`, `portal_config.py` | Auto-apply orchestration, ATS-specific automation, learned mappings | `/auto-apply/*` routes, orchestration and filler classes | Browser automation, jobs/profile data, field learning tables, workers | AutoApply frontend and worker | External form submission, learned-mapping writes, run creation | `auto_apply_profiles`, `auto_apply_rules`, `auto_apply_runs`, `field_mapping_rules`, `application_dedup` | Very High |
+| `D:/jobradar-v2/backend/app/vault/router.py`, `service.py`, `models.py`, `schemas.py` | Resume and cover-letter vault facade | `/vault/*` routes, `VaultService` | Resume and copilot models | DocumentVault frontend | Lists and deletes rows; router also exposes update paths | `resume_versions`, `cover_letters`; `models.py` is placeholder | High |
+| `D:/jobradar-v2/backend/app/nlp/core.py`, `model_router.py`, `cover_letter.py`, `cover_letter_templates.py` | Shared NLP/model-selection helpers | Model routing and prompt support functions | Used by resume/interview/copilot/salary | Internal callers only | External LLM/provider calls depending on caller | Indirect reads via calling services | Medium |
+| `D:/jobradar-v2/backend/app/followup/models.py` | Follow-up reminder entity | ORM model only | Pipeline/outcomes/workers by implication | Workers and DB layer | None by itself | `followup_reminders` | Medium |
+
+## Background Jobs And Workers
+
+| File Path | Purpose | Public Interface | Dependencies | What Calls It | Side Effects | Data Reads/Writes | Operational Sensitivity |
+|---|---|---|---|---|---|---|---|
+| `D:/jobradar-v2/backend/app/workers/scheduler.py` | Registers APScheduler jobs | `create_scheduler()` | Worker modules, APScheduler | `main.py` lifespan | Starts periodic jobs in-process | Indirectly all worker-touched tables | Very High |
+| `D:/jobradar-v2/backend/app/workers/scraping_worker.py` | Scheduled scrape, career-page scrape, target-batch execution | Worker functions invoked by scheduler | Scraping service, browser pool, target registry | Scheduler | Network/browser side effects | `user_profiles`, `jobs`, `scraper_runs`, `scrape_targets`, `scrape_attempts` | Very High |
+| `D:/jobradar-v2/backend/app/workers/enrichment_worker.py` | Batch enrichment, embedding, TF-IDF jobs | Worker functions | Enrichment service | Scheduler | External model/provider calls | `jobs` | High |
+| `D:/jobradar-v2/backend/app/workers/auto_apply_worker.py` | Auto-apply batch job | Worker functions | Auto-apply orchestrator/services | Scheduler | External browser/form submission | `auto_apply_*`, jobs/applications context | Very High |
+| `D:/jobradar-v2/backend/app/workers/alert_worker.py` | Saved-search alerts | Worker functions | Settings/search data, notifications | Scheduler | Creates notifications | `saved_searches`, `jobs`, `notifications` | High |
+| `D:/jobradar-v2/backend/app/workers/maintenance_worker.py` | Cleanup and stale-job retirement | Worker functions | Jobs service/model logic | Scheduler | Disables/deactivates stale data | `jobs` | High |
+| `D:/jobradar-v2/backend/app/workers/phase7a_worker.py` | Source health, staleness sweep, follow-up reminders | Worker functions | Source health, canonical jobs, notifications | Scheduler | Aggregation and notification side effects | `canonical_jobs`, `source_registry`, `followup_reminders`, `notifications` | High |
+
+## Data Access Pattern
+
+| Area | Status |
+|---|---|
+| Repository layer | Not present |
+| Unit of work | Not centralized |
+| Transaction boundary | Usually inside each service or worker function via `db.commit()` and `db.refresh()` |
+| Query abstraction | Domain service methods and worker functions |
+| Test DB strategy | SQLite metadata bootstrap in `tests/conftest.py`, not full Postgres migration replay by default |
+
+## Tests And Operational Support
+
+| File Path / Directory | Purpose | Notes |
+|---|---|---|
+| `D:/jobradar-v2/backend/tests/conftest.py` | Test app, client, DB overrides | Builds schema from metadata with SQLite |
+| `D:/jobradar-v2/backend/tests/unit` | Unit coverage | Strongest around scraping, jobs, pipeline, settings, auth |
+| `D:/jobradar-v2/backend/tests/integration` | Integration/API coverage | Best current executable contract baseline |
+| `D:/jobradar-v2/backend/tests/contracts` | ATS provider contract tests | Protects scraper compatibility |
+| `D:/jobradar-v2/backend/tests/security/test_api_security.py` | Security checks | Covers auth/middleware assumptions |
+| `D:/jobradar-v2/backend/seed_data.py` | Seed bootstrap | Creates user/profile/resume baseline |
+| `D:/jobradar-v2/backend/scripts/import_h1b_targets.py`, `probe_unknown_targets.py` | Operational scripts | Scraping-target support tooling |
+
+## Backend Risk Notes
+
+1. `main.py` and `workers/scheduler.py` make the API server the scheduler host.
+2. `scraping` and `auto_apply` are the highest-risk domains because they combine long side-effect chains, browser tooling, and external anti-bot behavior.
+3. Auth changes ripple across `dependencies.py`, `auth/service.py`, and the frontend refresh interceptor in `frontend/src/api/client.ts`.
+4. Postgres-specific behavior is not fully represented in SQLite-backed tests.
+5. `vault/router.py` exposes update handlers that `vault/service.py` does not currently implement.

@@ -8,38 +8,44 @@
 - Zustand
 - TanStack Query
 - Phosphor icons
-- Geist Sans and Geist Mono
+- Inter and JetBrains Mono
 
 ## UI/State Facts
 - Theme state is persisted through `useUIStore`.
-- Light mode and high-contrast dark mode are first-class themes.
+- Light mode and jet-black dark mode are first-class themes.
 - The root theme toggle applies a `.dark` class to the HTML element.
 - Design tokens live in `frontend/src/index.css`.
 - `@phosphor-icons/react` is the active icon set.
+- `frontend/system.md` is the design-system source of truth.
 
 ## Current Functional State
-- Admin page no longer exposes a misleading "Rebuild Embeddings" action.
-- Vault PATCH flows are present for editable document metadata.
-- SSE uses credentialed transport instead of a token query parameter.
-- Recent TypeScript nullability regressions are fixed.
-- The Career OS overhaul is now shipped in the current workspace with shared shell primitives, light/dark theme parity, and route coverage for copilot, networking, email, and outcomes.
-- Settings now persists saved searches, integrations, password changes, account deletion, and data clear actions against real backend endpoints.
-- Current frontend lint, tests, coverage gate, and build all pass.
+- The reference-first command-center shell is route-complete across the frontend.
+- Shared shell primitives now provide the fixed header, desktop rail, mobile drawer, and mobile bottom nav.
+- `SearchExpansion` now uses the live backend expansion endpoint instead of a fake template inventory.
+- `Resume Studio` consumes the backend `ResumeTailorResponse` contract directly.
+- `Compensation` uses the backend salary percentile and offer-evaluation contract directly.
+- `Settings` persists workspace settings, saved searches, integrations, password changes, account deletion, and data clear actions against real backend endpoints.
+- `DocumentVault` edit flows are wired through the live PATCH endpoints.
+- `Admin` and source-health surfaces now read the current backend status and diagnostics shape instead of stale frontend assumptions.
 
 ## Validation
-- `cd frontend && npm audit --audit-level high`
 - `cd frontend && npm run lint`
 - `cd frontend && npm run test -- --run`
-- `cd frontend && npm install --no-save @vitest/coverage-v8`
-- `cd frontend && npm run test -- --run --coverage --coverage.thresholds.statements=40`
 - `cd frontend && npm run build`
-- Latest local result: `24` test files, `38` tests
+- Browser sweeps passed across all 21 authenticated routes on:
+  - desktop
+  - tablet light mode (`820x1180`)
+  - phone dark mode (`390x844`)
+- Representative screenshots for the current pass live in `output/playwright/`
+- Latest local result: `24` test files, `39` tests
 
 ## Non-Blocking Residual
 - Vitest still prints `--localstorage-file was provided without a valid path` warnings.
-- Those warnings are noisy but non-fatal and do not currently fail tests.
-- Coverage intentionally excludes thin API wrappers, scraper/pipeline internals, and zero-value bootstrap files so the `40%` gate tracks the tested UI/runtime surface.
+- Vite still prints a chunk-size warning during build.
+- Login/auth bootstrap still produces transient `401` / `422` network noise before auth cookies exist.
+- Browser-level QA still surfaces password `autocomplete` hints on Settings inputs.
+- Recharts can still log width warnings when charts mount in hidden or zero-sized containers during automated sweeps.
 
 ## Current Assessment
-- No actionable frontend or dependency bugs remain in the current verified tree.
-- The shared system layer is the current frontend source of truth for layout, typography, spacing, and tokenized surfaces.
+- No blocking frontend bugs are currently known from the verified local pass.
+- The shared system layer is the frontend source of truth for layout, typography, spacing, shell posture, and tokenized surfaces.
