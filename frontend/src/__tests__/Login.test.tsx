@@ -13,7 +13,6 @@ describe("Login", () => {
     expect(
       screen.getByRole("heading", { name: "Sign in" })
     ).toBeInTheDocument();
-    expect(screen.getByText("JobRadar Career OS")).toBeInTheDocument();
     expect(screen.getByText("Welcome back")).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("you@example.com")

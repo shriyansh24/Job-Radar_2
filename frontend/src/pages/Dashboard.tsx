@@ -21,13 +21,13 @@ import Button from "../components/ui/Button";
 import { cn } from "../lib/utils";
 
 const HERO_PANEL =
-  "border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+  "border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)]";
 const INSET_PANEL =
-  "border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+  "border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)]";
 const CHIP =
   "inline-flex items-center gap-1 border-2 border-[var(--color-text-primary)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]";
 const BUTTON_BASE =
-  "!rounded-none !border-2 !border-[var(--color-text-primary)] !uppercase !tracking-[0.18em] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !uppercase !tracking-[0.18em]";
 
 const PIPELINE_STAGES = [
   { key: "saved", label: "Saved", color: "bg-text-muted" },
@@ -53,13 +53,11 @@ const DEFAULT_OVERVIEW: AnalyticsOverview = {
 function HeroMetric({
   label,
   value,
-  hint,
   icon,
   tone = "default",
 }: {
   label: string;
   value: string;
-  hint: string;
   icon: ReactNode;
   tone?: "default" | "success" | "warning" | "info";
 }) {
@@ -80,7 +78,6 @@ function HeroMetric({
           <div className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-text-primary">
             {value}
           </div>
-          <p className="mt-2 text-sm leading-6 text-text-secondary">{hint}</p>
         </div>
         <div className="flex size-10 shrink-0 items-center justify-center border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)]">
           {icon}
@@ -102,7 +99,7 @@ function FeedRow({
   icon: ReactNode;
 }) {
   return (
-    <div className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] p-4 shadow-[4px_4px_0px_0px_var(--color-text-primary)] transition-transform duration-150 hover:-translate-x-1 hover:-translate-y-1">
+    <div className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] p-4 transition-colors hover:bg-black/5 dark:hover:bg-white/5">
       <div className="flex items-start gap-4">
         <div className="flex size-12 shrink-0 items-center justify-center border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)]">
           {icon}
@@ -126,13 +123,11 @@ function FeedRow({
 function MetricTile({
   label,
   value,
-  hint,
   icon,
   accent,
 }: {
   label: string;
   value: string;
-  hint: string;
   icon: ReactNode;
   accent: string;
 }) {
@@ -146,7 +141,6 @@ function MetricTile({
           <div className="mt-3 text-4xl font-semibold tracking-[-0.06em] text-text-primary">
             {value}
           </div>
-          <p className="mt-2 text-sm leading-6 text-text-secondary">{hint}</p>
         </div>
         <div className="flex size-11 shrink-0 items-center justify-center border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)]">
           {icon}
@@ -213,18 +207,13 @@ export default function Dashboard() {
             <h1 className="mt-4 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl lg:text-6xl">
               Command Center
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-text-secondary sm:text-base">
-              A hard-edged operations surface for what arrived, what moved, and what still
-              needs attention. The content is dense on desktop, but the layout collapses cleanly
-              for tablet and phone.
-            </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Button
                 variant="primary"
                 onClick={() => navigate("/jobs")}
                 icon={<ArrowRight size={16} weight="bold" />}
-                className={cn(BUTTON_BASE, "bg-accent-primary text-white")}
+                className={cn(BUTTON_BASE, "bg-accent-primary text-white dark:!bg-blue-700 dark:hover:!bg-blue-800 transition-colors")}
               >
                 Browse jobs
               </Button>
@@ -232,7 +221,7 @@ export default function Dashboard() {
                 variant="secondary"
                 onClick={() => navigate("/pipeline")}
                 icon={<Plus size={16} weight="bold" />}
-                className={cn(BUTTON_BASE, "bg-bg-secondary text-text-primary")}
+                className={cn(BUTTON_BASE, "bg-bg-secondary text-text-primary transition-colors hover:bg-black/5 dark:hover:bg-white/5")}
               >
                 Add application
               </Button>
@@ -240,7 +229,7 @@ export default function Dashboard() {
                 variant="secondary"
                 onClick={() => navigate("/copilot")}
                 icon={<Sparkle size={16} weight="bold" />}
-                className={cn(BUTTON_BASE, "bg-bg-secondary text-text-primary")}
+                className={cn(BUTTON_BASE, "bg-bg-secondary text-text-primary transition-colors hover:bg-black/5 dark:hover:bg-white/5")}
               >
                 Open copilot
               </Button>
@@ -252,14 +241,12 @@ export default function Dashboard() {
               <HeroMetric
                 label="Global success rate"
                 value={`${Math.round(stats.response_rate * 100)}%`}
-                hint="Share of applications that got a response."
                 icon={<TrendUp size={18} weight="bold" />}
                 tone="success"
               />
               <HeroMetric
                 label="Avg response time"
                 value={`${stats.avg_days_to_response.toFixed(1)}d`}
-                hint="Median time until the market answers."
                 icon={<Clock size={18} weight="bold" />}
                 tone="info"
               />
@@ -268,38 +255,34 @@ export default function Dashboard() {
         </div>
       </motion.section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricTile
           label="Total jobs"
           value={loadingOverview ? "..." : stats.total_jobs.toLocaleString()}
-          hint="The current pool of roles in the workspace."
           icon={<Briefcase size={18} weight="bold" />}
           accent="bg-accent-primary/8"
         />
         <MetricTile
           label="Applications"
           value={loadingOverview ? "..." : stats.total_applications.toLocaleString()}
-          hint="Applications currently in motion."
           icon={<PaperPlaneTilt size={18} weight="bold" />}
           accent="bg-accent-primary/8"
         />
         <MetricTile
           label="Interviews"
           value={loadingOverview ? "..." : stats.total_interviews.toLocaleString()}
-          hint="Conversations already landed."
           icon={<UsersThree size={18} weight="bold" />}
           accent="bg-accent-warning/8"
         />
         <MetricTile
           label="Offers"
           value={loadingOverview ? "..." : stats.total_offers.toLocaleString()}
-          hint="The part of the funnel that matters."
           icon={<TrendUp size={18} weight="bold" />}
           accent="bg-accent-success/8"
         />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)]">
         <div className="space-y-4">
           <div className={cn(INSET_PANEL, "p-5 sm:p-6")}>
             <div className="flex flex-wrap items-end justify-between gap-4">
@@ -475,24 +458,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className={cn(INSET_PANEL, "p-5 sm:p-6")}>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                  System note
-                </div>
-                <h2 className="mt-1 text-lg font-semibold uppercase tracking-[-0.04em]">
-                  Current state
-                </h2>
-              </div>
-              <span className={CHIP}>{stats.jobs_scraped_today.toLocaleString()} today</span>
-            </div>
-            <p className="mt-4 text-sm leading-6 text-text-secondary">
-              The workspace is tuned for fast navigation across discovery, execution, and
-              intelligence. Mobile and tablet layouts stack the same content rather than
-              hiding it behind a different product model.
-            </p>
-          </div>
         </div>
       </section>
     </div>
