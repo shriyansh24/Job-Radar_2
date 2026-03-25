@@ -6,18 +6,18 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[var(--shadow-sm)]",
+          "bg-primary text-primary-foreground",
         primary:
-          "bg-primary text-primary-foreground shadow-[var(--shadow-sm)]",
+          "bg-primary text-primary-foreground",
         secondary:
-          "bg-background text-foreground shadow-[var(--shadow-sm)]",
+          "bg-background text-foreground",
         outline:
-          "bg-background text-foreground shadow-[var(--shadow-sm)]",
+          "bg-background text-foreground",
         danger:
-          "bg-[var(--color-accent-danger)] text-white shadow-[var(--shadow-sm)]",
+          "bg-[var(--color-accent-danger)] text-white",
         destructive:
-          "bg-[var(--color-accent-danger)] text-white shadow-[var(--shadow-sm)]",
-        success: "bg-[var(--color-accent-success)] text-white shadow-[var(--shadow-sm)]",
+          "bg-[var(--color-accent-danger)] text-white",
+        success: "bg-[var(--color-accent-success)] text-white",
         ghost:
           "border-transparent bg-transparent text-text-secondary shadow-none hover:border-border hover:bg-[var(--color-bg-secondary)] hover:text-foreground",
         link:
