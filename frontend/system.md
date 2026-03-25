@@ -1,80 +1,91 @@
-# JobRadar Career OS System
+# JobRadar Visual System
 
 ## Visual Thesis
-- Build JobRadar as a disciplined career operations console, not a generic dashboard.
-- Light mode should feel calm, paper-like, and operational.
-- Dark mode should be near-black, high-contrast, and dense without becoming noisy.
-- Use one assertive action accent and keep the rest of the system neutral and semantic.
+- Build JobRadar as a reference-first neo-brutalist command center.
+- Preserve the current app's routes, auth, and backend behavior, but use the reference repo's typography, color system, shell posture, and interaction language as the live visual authority.
+- Light mode stays bright, neutral, and technical. Dark mode stays near-black, high-contrast, and crisp.
+- The live type system is `Inter` for interface copy and `JetBrains Mono` for labels, metrics, tabs, and system readouts.
+
+## Theme Tokens
+The frontend source of truth is `src/index.css`.
+
+```css
+:root {
+  --bg-primary: #fafafa;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #ebebeb;
+  --text-primary: #171717;
+  --text-secondary: #525252;
+  --text-muted: #a3a3a3;
+  --border: #09090b;
+  --accent-primary: #2563eb;
+  --accent-success: #16a34a;
+  --accent-danger: #dc2626;
+}
+
+.dark {
+  --bg-primary: #09090b;
+  --bg-secondary: #171717;
+  --bg-tertiary: #262626;
+  --text-primary: #fafafa;
+  --text-secondary: #d4d4d4;
+  --text-muted: #737373;
+  --border: #fafafa;
+  --accent-primary: #3b82f6;
+  --accent-success: #22c55e;
+  --accent-danger: #ef4444;
+}
+```
 
 ## Typography
-- Primary family: Geist Sans.
-- Monospace family: Geist Mono.
-- Use compact, high-clarity type for operational surfaces.
-- Reserve oversized type for onboarding, empty states, and top-level page framing.
+- Page title: `30px`, semibold, tracking `-0.02em`, normal case.
+- Section title: `20px`, bold, uppercase.
+- Eyebrow label: `11px`, medium, uppercase, tracking `0.18em`.
+- Body copy: `14px`, regular, dense but readable.
+- Metrics and operational values: `JetBrains Mono`.
+- Numeric counters stay loud. Long string values in shared metric slabs fall back to smaller wrapped text so emails and status strings do not break layout.
 
-## Color Rules
-- Neutral surfaces first. Color should signal action, status, or hierarchy rather than decorate space.
-- Primary accent: electric blue for key actions, selected states, and focus.
-- Semantic colors:
-  - Success: green
-  - Warning: amber
-  - Danger: rose/red
-  - Info: violet only when meaningfully distinct from the primary accent
-- Dense work surfaces should avoid decorative gradients behind content.
+## Structural Rules
+- Default radius is `0px`.
+- Primary surfaces use `2px` borders and hard offset shadows.
+- Elevation comes from border + offset shadow, not blur.
+- Active and pressed states flatten or reduce the hard shadow instead of animating with soft motion.
+- Labels, tabs, metadata, and system status read in uppercase mono.
 
-## Theme Rules
-- Light mode:
-  - bright neutral canvas
-  - white and soft-zinc surfaces
-  - dark ink text
-- Dark mode:
-  - true-black or near-black canvas
-  - stepped charcoal surfaces
-  - bright text and crisp borders
-- Both themes must keep equivalent information hierarchy and interaction affordances.
-
-## Spacing and Shape
-- Base rhythm: 8px.
-- Compact operational components can use 4px sub-steps internally.
-- Default radius is medium-large and consistent across inputs, cards, and overlays.
-- Card treatments are opt-in. Do not nest cards repeatedly.
-
-## Elevation
-- Use borders first, shadows second.
-- Elevated surfaces should feel deliberate:
-  - list/detail panes use border separation
-  - floating controls use shadow plus backdrop blur
-  - dark mode shadows stay tight to avoid muddy stacks
-
-## Motion
-- Motion should clarify focus, entry, or state change.
-- Preferred durations:
-  - 120ms for hover/press
-  - 180-220ms for layout/state transitions
-  - 300-450ms for page or section entry
-- Prefer opacity, translate, and scale changes over large transforms.
-
-## Layout Grammar
-- Command Center: hero metrics, operational feed, and priority actions in a bento-like grid.
-- Split Workspace: primary list/table, secondary detail, optional tertiary rail.
-- Kanban Workspace: dense columns with persistent summaries and lightweight overlays.
-- Guided Setup: progressive, high-trust steps with strong completion signals.
-- Settings/Operations: sectioned control center with explicit hierarchy and safe destructive zones.
+## Shell Grammar
+- Fixed header height: `64px`.
+- Desktop left rail: `240px` expanded, `80px` collapsed.
+- Mobile shell: drawer from the left plus fixed bottom navigation.
+- Header pattern:
+  - loud wordmark
+  - centered command search
+  - system status block
+  - theme toggle
+  - operator identity
+  - logout
+- Main layout families:
+  - command dashboard
+  - split list/detail workspaces
+  - dense operator consoles
+  - AI workspaces
+  - auth/setup forms
 
 ## Component Rules
-- Shared shell and page scaffolding live in `src/components/system`.
-- Existing `src/components/ui` remains stable during migration.
-- New screens should compose from system primitives before adding page-local wrappers.
-- Prefer semantic HTML and utility composition over custom CSS files.
+- Buttons: uppercase mono or bold sans, hard shadow, strong border, press feedback.
+- Inputs/selects/textareas: `2px` border, neutral inset surface, blue hard-shadow focus state.
+- Surfaces: square corners, strong stroke, hard shadow, optional lift on hover.
+- Badges: sharp mono labels with restrained semantic fills.
+- Tabs: dense bordered strips instead of soft pills.
+- Modals: structural panels, no glass treatment.
+- Empty/loading/error states: structural slabs, not airy placeholder cards.
 
-## Shadcn Adoption
-- `components.json` and Tailwind compatibility are in place for incremental shadcn adoption.
-- Do not replace legacy UI primitives wholesale during foundation work.
-- New shadcn-generated pieces should map back to existing design tokens and theme behavior.
+## Responsive Rules
+- Phone and tablet layouts keep the same information model as desktop.
+- Tablet layouts preserve split-workspace intent where space allows, then stack predictably.
+- Mobile routes rely on the drawer and bottom nav instead of hidden alternate flows.
+- Do not hide critical state or controls behind mobile-only product logic.
 
-## Future Feature Checklist
-- Verify the feature works in both light and dark mode.
-- Confirm loading, empty, error, and success states exist.
-- Use semantic color only for meaning, not decoration.
-- Keep keyboard focus visible and consistent.
-- Prefer shared system primitives before inventing new layout wrappers.
+## Implementation Notes
+- Shared shell and layout primitives live in `src/components/layout` and `src/components/system`.
+- Shared UI primitives live in `src/components/ui`.
+- Reference visual authority came from `D:/jobradar-v2-ui-ref`; current app routes and data contracts remain authoritative in this repo.

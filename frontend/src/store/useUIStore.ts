@@ -4,8 +4,11 @@ const THEME_STORAGE_KEY = "jobradar.theme";
 
 interface UIState {
   sidebarCollapsed: boolean;
+  mobileNavOpen: boolean;
   theme: "dark" | "light";
   toggleSidebar: () => void;
+  setMobileNavOpen: (open: boolean) => void;
+  toggleMobileNav: () => void;
   setTheme: (theme: "dark" | "light") => void;
   toggleTheme: () => void;
 }
@@ -41,9 +44,13 @@ export const useUIStore = create<UIState>((set, get) => {
 
   return {
     sidebarCollapsed: false,
+    mobileNavOpen: false,
     theme: initialTheme,
     toggleSidebar: () =>
       set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+    setMobileNavOpen: (mobileNavOpen) => set({ mobileNavOpen }),
+    toggleMobileNav: () =>
+      set((state) => ({ mobileNavOpen: !state.mobileNavOpen })),
     setTheme: (theme) => {
       applyTheme(theme);
       getStorage()?.setItem(THEME_STORAGE_KEY, theme);

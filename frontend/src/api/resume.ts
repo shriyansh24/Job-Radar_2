@@ -10,10 +10,50 @@ export interface ResumeVersion {
   created_at: string;
 }
 
-export interface TailorResult {
-  tailored_text: string;
-  suggestions: string[];
-  sections_modified: string[];
+export interface ResumeTailorStage1 {
+  hard_requirements: string[];
+  soft_requirements: string[];
+  key_technologies: string[];
+  ats_keywords: string[];
+  culture_signals: string[];
+  seniority_indicators: string[];
+  deal_breakers: string[];
+}
+
+export interface ResumeTailorPartialMatch {
+  requirement: string;
+  evidence: string;
+  gap: string;
+}
+
+export interface ResumeTailorStage2 {
+  matched_requirements: string[];
+  partial_matches: ResumeTailorPartialMatch[];
+  missing_requirements: string[];
+  transferable_skills: string[];
+  keyword_coverage: {
+    present: string[];
+    missing: string[];
+  };
+  strength_areas: string[];
+  risk_areas: string[];
+}
+
+export interface ResumeTailorResponse {
+  summary: string;
+  reordered_experience: Array<{
+    company: string;
+    bullets: string[];
+  }>;
+  enhanced_bullets: Array<{
+    original: string;
+    enhanced: string;
+  }>;
+  skills_section: string[];
+  ats_score_before: number;
+  ats_score_after: number;
+  stage1_output: ResumeTailorStage1 | null;
+  stage2_output: ResumeTailorStage2 | null;
 }
 
 export interface CouncilEvaluation {
@@ -35,7 +75,7 @@ export const resumeApi = {
     });
   },
   tailor: (resumeVersionId: string, jobId: string) =>
-    apiClient.post<TailorResult>('/resume/tailor', { resume_version_id: resumeVersionId, job_id: jobId }),
+    apiClient.post<ResumeTailorResponse>('/resume/tailor', { resume_version_id: resumeVersionId, job_id: jobId }),
   council: (resumeVersionId: string, jobId?: string) =>
     apiClient.post<CouncilEvaluation>('/resume/council', { resume_version_id: resumeVersionId, job_id: jobId }),
 };

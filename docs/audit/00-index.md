@@ -1,6 +1,6 @@
 # Codebase Audit Index - JobRadar V2
 
-> **Date:** 2026-03-23 | **Original Audit Issues:** 44
+> **Date:** 2026-03-24 | **Original Audit Issues:** 44
 >
 > **Current Outcome:** 39 `FIXED` | 1 `VERIFIED_CLEAN` | 4 `STALE` | 0 `OPEN` | 0 `PARTIAL`
 
@@ -8,30 +8,20 @@
 
 ## Latest Validation Snapshot
 
-- Full validation and stale-item recheck on `2026-03-23`:
-  - `git ls-files '.env' 'backend/.env' '.env.*' 'backend/.env.*'`
-  - `Get-ChildItem -Force .env*`
-  - `Get-ChildItem -Force backend\\.env*`
-  - `git grep -n "ApifyScraper|run_scrape|EventBus|DeduplicationService" backend/app backend/tests`
-  - `cd backend && uv run python -m pip check`
-  - `cd backend && uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
-  - `cd backend && uv tool run pip-audit -r .ci-requirements.txt`
-  - `cd backend && uv tool run bandit -r app/ -c pyproject.toml --severity-level medium`
-  - `cd backend && uv run ruff check .`
-  - `cd backend && uv run mypy app/auth/service.py app/config.py app/shared/middleware.py app/scraping/deduplication.py app/scraping/port.py --ignore-missing-imports`
-  - `cd backend && uv run pytest --cov=app --cov-fail-under=60 tests/`
-  - `cd frontend && npm audit --audit-level high`
+- Full validation and stale-item recheck on `2026-03-24`:
+  - `cd backend && uv run pytest tests/integration/test_auth_api.py tests/integration/test_settings_api.py tests/integration/test_admin_api.py tests/integration/test_vault_api.py`
+  - `cd backend && uv run alembic current`
+  - `cd backend && uv run alembic upgrade head`
   - `cd frontend && npm run lint`
   - `cd frontend && npm run test -- --run`
-  - `cd frontend && npm install --no-save @vitest/coverage-v8`
-  - `cd frontend && npm run test -- --run --coverage --coverage.thresholds.statements=40`
   - `cd frontend && npm run build`
+  - authenticated browser sweeps across desktop, tablet, and phone
 - Local results from this pass:
-  - no tracked `.env` file in this clone; only `.env.example`
-  - `ApifyScraper` is still imported and registered in the live `ScrapingService.run_scrape()` path
-  - backend targeted settings/auth/admin integration slice passed: `24 passed`
-  - frontend full suite passed: `24` test files, `38` tests
-  - `pip check`, `pip-audit`, `bandit`, backend `ruff`, targeted backend `mypy`, frontend `npm audit`, lint, and build all passed
+  - backend targeted auth/settings/admin/vault integration slice passed: `26 passed`
+  - frontend full suite passed: `24` test files, `39` tests
+  - browser sweeps passed across all 21 authenticated routes on tablet light and phone dark
+  - representative browser screenshots were written to `output/playwright/`
+  - local Postgres schema was upgraded from `005` to `head` during QA so the current settings/integration schema exists
 
 ## How to Use This Index
 
@@ -127,4 +117,4 @@
 | FIX-07 | backend | Failed enrichment no longer persists partial job cleanup/enrichment field mutations | FIXED |
 | FIX-08 | backend | Interview generation/prep now fail on empty model payloads, and job context loads `company_name` correctly | FIXED |
 | FIX-09 | infra | CI workflows are updated to `actions/*@v6` and now enforce lock-aware dependency-health checks (`pip check`, exported-requirements `pip-audit`, `npm audit`) | FIXED |
-| FIX-10 | frontend | Career OS shell, shared design system, and the `copilot` / `networking` / `email` / `outcomes` route set are now wired into the shipped UI | FIXED |
+| FIX-10 | frontend | Reference-first command-center shell, shared design system, and the routed workspace surfaces are now wired into the shipped UI | FIXED |

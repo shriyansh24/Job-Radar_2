@@ -33,15 +33,15 @@ export default function Table<T extends Record<string, unknown>>({
   className,
 }: TableProps<T>) {
   return (
-    <div className={cn("overflow-x-auto", className)}>
+    <div className={cn("overflow-x-auto border-2 border-border bg-card shadow-[var(--shadow-sm)]", className)}>
       <table className="w-full">
         <thead>
-          <tr className="border-b border-border">
+          <tr className="border-b-2 border-border bg-[var(--color-bg-tertiary)]">
             {columns.map((col) => (
               <th
                 key={col.key}
                 className={cn(
-                  "px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider",
+                  "px-4 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted",
                   col.sortable && "cursor-pointer hover:text-text-secondary",
                   col.className
                 )}
@@ -70,8 +70,8 @@ export default function Table<T extends Record<string, unknown>>({
             <tr
               key={i}
               className={cn(
-                "border-b border-border/50 transition-colors",
-                onRowClick && "cursor-pointer hover:bg-bg-tertiary"
+                "border-b-2 border-border/20 transition-colors last:border-b-0",
+                onRowClick && "cursor-pointer hover:bg-[var(--color-bg-hover)]"
               )}
               onClick={() => onRowClick?.(row)}
             >

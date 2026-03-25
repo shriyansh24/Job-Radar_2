@@ -316,6 +316,10 @@ const workspaceSections = workspaceSectionOrder.map((group) => ({
   items: workspaceRoutes.filter((route) => route.group === group),
 }));
 
+const mobilePrimaryRoutes = ["/", "/jobs", "/pipeline", "/analytics", "/networking"]
+  .map((path) => workspaceRoutes.find((route) => route.path === path))
+  .filter((route): route is WorkspaceRouteDefinition => Boolean(route));
+
 function getWorkspaceRoute(pathname: string): WorkspaceRouteDefinition | null {
   const normalized = pathname === "/" ? "/" : pathname.replace(/\/+$/, "");
   return workspaceRoutes.find((route) => route.path === normalized) ?? null;
@@ -329,6 +333,7 @@ export type { WorkspaceGroup, WorkspaceRouteDefinition };
 export {
   getWorkspaceRoute,
   prefetchWorkspaceRoute,
+  mobilePrimaryRoutes,
   workspaceRoutes,
   workspaceSections,
   workspaceSectionOrder,

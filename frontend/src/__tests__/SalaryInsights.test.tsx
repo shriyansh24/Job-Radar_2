@@ -19,20 +19,25 @@ describe("SalaryInsights page", () => {
     vi.clearAllMocks();
     salaryMocks.research.mockResolvedValue({
       data: {
-        min_salary: 120000,
-        percentile_25: 150000,
-        median_salary: 180000,
-        percentile_75: 205000,
-        max_salary: 230000,
+        job_title: "Staff Engineer",
+        location: null,
+        p25: 150000,
+        p50: 180000,
+        p75: 205000,
+        p90: 230000,
         currency: "USD",
-        data_sources: ["levels.fyi"],
+        yoe_brackets: [{ years: "5-7", range: "$170k-$210k" }],
+        competing_companies: ["Acme"],
+        cached: false,
       },
     });
     salaryMocks.evaluateOffer.mockResolvedValue({
       data: {
-        overall_rating: "above_market",
-        percentile: 82,
-        negotiation_tips: ["Use market data", "Anchor on the median"],
+        assessment: "Above market for this role and location.",
+        counter_offer: 205000,
+        walkaway_point: 185000,
+        talking_points: ["Use market data", "Anchor on the median"],
+        negotiation_script: "I am excited about the role and would like to discuss compensation.",
       },
     });
   });
@@ -49,14 +54,15 @@ describe("SalaryInsights page", () => {
     await user.click(screen.getByRole("button", { name: /research salary/i }));
 
     expect(await screen.findByText("Range view")).toBeInTheDocument();
-    expect(screen.getByText(/Based on 1 sources and currency USD/i)).toBeInTheDocument();
+    expect(screen.getByText(/Backend market percentiles returned in USD/i)).toBeInTheDocument();
     expect(screen.getAllByText("$180k").length).toBeGreaterThan(0);
-    expect(screen.getByText("Staff Engineer")).toBeInTheDocument();
+    expect(screen.getAllByText("General market snapshot").length).toBeGreaterThan(0);
 
     await user.type(screen.getByPlaceholderText("150000"), "195000");
     await user.click(screen.getByRole("button", { name: /evaluate offer/i }));
 
-    expect(await screen.findByText("Above Market")).toBeInTheDocument();
-    expect(screen.getAllByText("82th").length).toBeGreaterThan(0);
+    expect(await screen.findByText("Negotiation guidance")).toBeInTheDocument();
+    expect(screen.getAllByText("$205k").length).toBeGreaterThan(0);
+    expect(screen.getByText(/would like to discuss compensation/i)).toBeInTheDocument();
   });
 });

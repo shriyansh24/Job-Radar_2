@@ -1,58 +1,62 @@
+import { Plus, TerminalWindow } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
-import { NavLink, useLocation } from "react-router-dom";
-import { getWorkspaceRoute, prefetchWorkspaceRoute, workspaceSections } from "../../lib/navigation";
+import { NavLink, useNavigate } from "react-router-dom";
+
+import {
+  prefetchWorkspaceRoute,
+  workspaceSections,
+} from "../../lib/navigation";
 import { cn } from "../../lib/utils";
 import { useUIStore } from "../../store/useUIStore";
 
+const sectionTitles: Record<string, string> = {
+  Home: "Core Command",
+  Discover: "Discovery",
+  Execute: "Execution",
+  Prepare: "AI Tools",
+  Intelligence: "Intelligence",
+  Operations: "System Data",
+};
+
 export default function Sidebar() {
-  const collapsed = useUIStore((s) => s.sidebarCollapsed);
+  const collapsed = useUIStore((state) => state.sidebarCollapsed);
   const queryClient = useQueryClient();
-  const location = useLocation();
-  const currentRoute = getWorkspaceRoute(location.pathname);
+  const navigate = useNavigate();
 
   return (
     <aside
       className={cn(
-        "min-h-[100dvh] border-r border-border flex flex-col transition-[width] duration-[var(--transition-normal)]",
-        collapsed ? "w-[4.25rem]" : "w-60",
-        "bg-[var(--sidebar-bg)]"
+        "fixed left-0 top-[var(--header-height)] z-40 hidden h-[calc(100dvh-var(--header-height))] border-r-2 border-border bg-[var(--sidebar-bg)] xl:flex xl:flex-col",
+        collapsed ? "w-[var(--sidebar-width-collapsed)]" : "w-[var(--sidebar-width)]"
       )}
     >
-      <div className="border-b border-border px-4 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-bg-secondary text-sm font-semibold text-accent-primary shadow-[var(--shadow-xs)]">
-            JR
+      <div className="border-b-2 border-border px-4 py-5">
+        <div className="flex items-start gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center border-2 border-border bg-foreground text-background shadow-[var(--shadow-sm)]">
+            <TerminalWindow size={18} weight="bold" />
           </div>
           {!collapsed ? (
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm font-semibold tracking-[-0.02em] text-text-primary">
-                  JobRadar
-                </h1>
-                <span className="rounded-full border border-border bg-bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-text-muted">
-                  Career OS
-                </span>
-              </div>
-              <p className="mt-1 truncate text-xs text-text-muted">
-                {currentRoute?.label ?? "Command Center"}
+              <p className="command-label">Command</p>
+              <h2 className="mt-2 text-xl font-black uppercase tracking-[-0.08em] text-foreground">
+                JobRadar V2
+              </h2>
+              <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                v2.0.4
               </p>
             </div>
           ) : (
-            <span className="sr-only">JobRadar Career OS</span>
+            <span className="sr-only">JobRadar command center navigation</span>
           )}
         </div>
       </div>
-      <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-5">
-        {workspaceSections.map((section, i) => (
-          <div key={i}>
-            {section.label && !collapsed && (
-              <div className="label px-3 mb-1.5">{section.label}</div>
-            )}
-            {collapsed && i > 0 && (
-              <div className="mx-3 mb-2 h-px bg-border" />
-            )}
-            <div className="space-y-0.5">
+
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+        {workspaceSections.map((section) => (
+          <div key={section.label} className="space-y-2">
+            {!collapsed ? <div className="label px-2">{sectionTitles[section.label] ?? section.label}</div> : null}
+            <div className="space-y-1">
               {section.items.map(({ path, icon: Icon, label }) => (
                 <NavLink
                   key={path}
@@ -60,30 +64,58 @@ export default function Sidebar() {
                   onMouseEnter={() => prefetchWorkspaceRoute(path, queryClient)}
                   className={({ isActive }) =>
                     cn(
-                      "group relative flex items-center gap-3 px-3 py-2 rounded-[var(--radius-md)] text-[13px] transition-[background-color,color] duration-[var(--transition-fast)]",
+                      "group hard-press flex items-center gap-3 border-2 px-3 py-3 transition-[transform,box-shadow,background-color,color,border-color]",
+                      collapsed ? "justify-center" : "justify-start",
                       isActive
-                        ? "bg-accent-primary/8 text-accent-primary font-medium sidebar-active-indicator"
-                        : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
+                        ? "border-border bg-[var(--sidebar-item-active-bg)] text-[var(--sidebar-item-active-text)] shadow-[var(--shadow-sm)]"
+                        : "border-transparent bg-transparent text-text-secondary hover:border-border hover:bg-[var(--sidebar-item-hover)] hover:text-foreground"
                     )
                   }
                 >
                   <motion.span
                     aria-hidden="true"
                     className="inline-flex shrink-0"
-                    whileHover={{ x: 2 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    whileHover={{ x: collapsed ? 0 : 2 }}
+                    transition={{ type: "spring", stiffness: 320, damping: 22 }}
                   >
                     <Icon size={18} weight="bold" />
                   </motion.span>
-                  {!collapsed && (
-                    <span className="truncate">{label}</span>
-                  )}
+                  {!collapsed ? (
+                    <span className="truncate font-mono text-[11px] font-bold uppercase tracking-[0.18em]">
+                      {label}
+                    </span>
+                  ) : null}
                 </NavLink>
               ))}
             </div>
           </div>
         ))}
       </nav>
+
+      <div className="space-y-4 border-t-2 border-border px-4 py-4">
+        <button
+          type="button"
+          onClick={() => navigate("/jobs")}
+          className={cn(
+            "hard-press inline-flex w-full items-center justify-center gap-2 border-2 border-border bg-[var(--color-accent-success)] px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-[var(--shadow-sm)]",
+            collapsed && "px-0"
+          )}
+        >
+          <Plus size={16} weight="bold" />
+          {!collapsed ? <span>Add New Job</span> : null}
+        </button>
+
+        {!collapsed ? (
+          <div className="space-y-1">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
+              System status
+            </p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-success">
+              Optimal
+            </p>
+          </div>
+        ) : null}
+      </div>
     </aside>
   );
 }

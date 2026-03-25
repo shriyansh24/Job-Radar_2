@@ -1,0 +1,134 @@
+# Data Models And Migrations
+
+Root scope: `D:/jobradar-v2/backend/app/*/models.py`, mixed model-bearing modules, and Alembic migrations in `D:/jobradar-v2/backend/app/migrations/versions`.
+
+## Persistent Entity Catalog
+
+| Entity / Table | Model Source | Migration Origin | Primary Relationships | Notes |
+|---|---|---|---|---|
+| `users` | `backend/app/auth/models.py` | `001_create_users_table.py`, later altered in audit/P2 migrations | Parent for almost every user-scoped table | Root identity record |
+| `user_profiles` | `backend/app/profile/models.py` | `002_create_all_tables.py`, altered in `003_merge_v1_features.py` | Unique `user_id -> users.id` | Stores search preferences, resume text, settings, answer bank |
+| `saved_searches` | `backend/app/settings/models.py` | `002_create_all_tables.py`, altered in `003_merge_v1_features.py` | `user_id -> users.id` | Used by alerts worker |
+| `user_integration_secrets` | `backend/app/settings/models.py` | `20260323_add_user_integration_secrets.py` | `user_id -> users.id`; unique by provider | Stores provider API keys/secrets |
+| `jobs` | `backend/app/jobs/models.py` | `002_create_all_tables.py`, altered by later lifecycle migrations | `user_id -> users.id`, `source_target_id -> scrape_targets.id`, parent of applications | SHA-256 string PK, not UUID |
+| `applications` | `backend/app/pipeline/models.py` | `002_create_all_tables.py` | `job_id -> jobs.id`, `resume_version_id -> resume_versions.id`, `cover_letter_id -> cover_letters.id` | Main execution workflow entity |
+| `application_status_history` | `backend/app/pipeline/models.py` | `002_create_all_tables.py` | Child of `applications` | Status transition audit log |
+| `application_outcomes` | `backend/app/outcomes/models.py` | `005_create_p2_tables.py` | Unique `application_id -> applications.id` | One outcome per application |
+| `company_insights` | `backend/app/outcomes/models.py` | `005_create_p2_tables.py` | User + company-name aggregate | Soft-linked by company name |
+| `resume_versions` | `backend/app/resume/models.py` | `002_create_all_tables.py` | `user_id -> users.id`; referenced by applications | Also exposed through vault |
+| `resume_archetypes` | `backend/app/resume/archetypes.py` | `20260323_add_resume_archetypes.py` and `005_create_p2_tables.py` | `user_id -> users.id` | Migration history overlap needs care |
+| `cover_letters` | `backend/app/copilot/models.py` | `002_create_all_tables.py` | `user_id -> users.id`, `job_id -> jobs.id` | Also exposed through vault |
+| `interview_sessions` | `backend/app/interview/models.py` | `002_create_all_tables.py` | `user_id -> users.id`, `job_id -> jobs.id` | Prep/evaluation persistence |
+| `salary_cache` | `backend/app/salary/models.py` | `002_create_all_tables.py` | User-scoped | Caches salary research |
+| `ml_model_artifacts` | `backend/app/analytics/models.py` | `005_create_p2_tables.py` | `user_id -> users.id` | ML artifact storage |
+| `companies` | `backend/app/companies/models.py` | `002_create_all_tables.py`, altered in `003_merge_v1_features.py` | Soft-linked from jobs/outcomes/networking | No hard FK from jobs |
+| `canonical_jobs` | `backend/app/canonical_jobs/models.py` | `003_merge_v1_features.py` | Parent of `raw_job_sources` | Canonicalization layer above raw jobs |
+| `raw_job_sources` | `backend/app/canonical_jobs/models.py` | `003_merge_v1_features.py` | `canonical_job_id -> canonical_jobs.id`, optional `job_id -> jobs.id` | Bridges canonical and raw jobs |
+| `notifications` | `backend/app/notifications/models.py` | `003_merge_v1_features.py` | `user_id -> users.id` | Read/unread/delete UI surface |
+| `followup_reminders` | `backend/app/followup/models.py` | `003_merge_v1_features.py` | `application_id -> applications.id` | Scheduler-driven reminders |
+| `query_templates`, `expansion_rules`, `query_performance` | `backend/app/search_expansion/models.py` | `003_merge_v1_features.py` | User-scoped search-expansion state | Model layer exists, UI/API incomplete |
+| `scraper_runs` | `backend/app/scraping/models.py` | `002_create_all_tables.py`, altered later | Parent of scrape attempts | Run-level scraper summary |
+| `scrape_targets` | `backend/app/scraping/models.py` | `aaba1d3f957f_create_scrape_targets_and_scrape_.py` | Parent of `scrape_attempts`; referenced by `jobs.source_target_id` | Scheduler/targeting state |
+| `scrape_attempts` | `backend/app/scraping/models.py` | `aaba1d3f957f_create_scrape_targets_and_scrape_.py`, indexed later | `run_id -> scraper_runs.id`, `target_id -> scrape_targets.id` | Attempt-level execution log |
+| `dedup_feedback` | `backend/app/scraping/dedup_feedback.py` | `20260323_create_dedup_feedback.py` and `005_create_p2_tables.py` | Links two jobs plus a user | Branch-overlap migration risk |
+| `auto_apply_profiles` | `backend/app/auto_apply/models.py` | `002_create_all_tables.py` | User-owned profile | Browser automation profile |
+| `auto_apply_rules` | `backend/app/auto_apply/models.py` | `002_create_all_tables.py` | Linked to auto-apply profile | Rule engine for automation |
+| `auto_apply_runs` | `backend/app/auto_apply/models.py` | `002_create_all_tables.py` | Optional links to jobs/rules | Execution history |
+| `field_mapping_rules` | `backend/app/auto_apply/form_learning.py` | `20260323_form_learning_tables.py` and `005_create_p2_tables.py` | Learned ATS/provider mapping table | Branch-overlap migration risk |
+| `application_dedup` | `backend/app/auto_apply/form_learning.py` | `20260323_form_learning_tables.py` and `005_create_p2_tables.py` | User + job dedup state | Branch-overlap migration risk |
+| `email_logs` | `backend/app/email/models.py` | `004_create_email_logs.py` and `005_create_p2_tables.py` | `user_id -> users.id`, optional `matched_application_id -> applications.id` | Branch-overlap migration risk |
+| `contacts` | `backend/app/networking/models.py` | `20260323_add_contacts_and_referral_requests.py` and `005_create_p2_tables.py` | `user_id -> users.id` | Branch-overlap migration risk |
+| `referral_requests` | `backend/app/networking/models.py` | `20260323_add_contacts_and_referral_requests.py` and `005_create_p2_tables.py` | `contact_id -> contacts.id`, `job_id -> jobs.id` | Branch-overlap migration risk |
+| `source_registry`, `source_check_log` | `backend/app/source_health/models.py` | `002_create_all_tables.py`, altered in `003_merge_v1_features.py` | Registry parent to check-log children | Source health reporting layer |
+
+## Important Record Lifecycles
+
+### User and profile lifecycle
+
+1. `users` is created via auth registration.
+2. `user_profiles` is created lazily or during onboarding/profile update flows.
+3. `saved_searches`, `user_integration_secrets`, `resume_versions`, `auto_apply_profiles`, `notifications`, and other user-owned records accumulate around the same `user_id`.
+4. Account deletion uses admin-style data clearing and then deletes the user.
+
+### Job ingestion lifecycle
+
+1. A scrape run is started and logged in `scraper_runs`.
+2. Targeted or source-specific fetch attempts are tracked in `scrape_attempts`, optionally against `scrape_targets`.
+3. Parsed job records are normalized into `jobs`.
+4. Jobs may later be grouped into `canonical_jobs` and bridged through `raw_job_sources`.
+5. Source quality and health are summarized in `source_registry` / `source_check_log`.
+
+### Application execution lifecycle
+
+1. A job becomes an `application` manually or from job detail/create flows.
+2. Each status change creates `application_status_history`.
+3. Optional follow-up reminder rows are attached to the application.
+4. Outcome capture creates or updates one `application_outcomes` row.
+5. Company-level statistics roll into `company_insights`.
+
+### Preparation artifact lifecycle
+
+1. Resume upload creates `resume_versions`.
+2. Tailoring and council flows read resume versions plus job context; tailored text is returned, while persisted cover-letter-like artifacts live in `cover_letters`.
+3. Interview sessions persist generated questions, answers, and scores in `interview_sessions`.
+4. Salary research caches results in `salary_cache`.
+
+### Automation lifecycle
+
+1. `auto_apply_profiles` and `auto_apply_rules` define eligibility and submission behavior.
+2. Execution writes `auto_apply_runs`.
+3. ATS interactions can learn `field_mapping_rules`.
+4. Dedup state is tracked in `application_dedup`.
+
+## Cross-Module Relationships
+
+| Relationship | Hard FK | Owning Modules | Notes |
+|---|---|---|---|
+| `users -> user_profiles` | Yes | auth, profile | One profile per user |
+| `users -> saved_searches` | Yes | auth, settings | Saved searches feed alerts |
+| `users -> user_integration_secrets` | Yes | auth, settings | Secret storage is user-scoped |
+| `users -> jobs` | Yes | auth, jobs | Jobs are user-owned in current model |
+| `jobs -> applications` | Yes | jobs, pipeline | Central bridge from discovery to execution |
+| `applications -> application_status_history` | Yes | pipeline | Transition audit log |
+| `applications -> application_outcomes` | Yes, unique | pipeline, outcomes | One outcome per application |
+| `applications -> followup_reminders` | Yes | pipeline, followup/workers | Reminder scheduling |
+| `resume_versions -> applications` | Yes | resume, pipeline | Resume used for application |
+| `cover_letters -> applications` | Yes | copilot, pipeline | Optional attached cover letter |
+| `jobs -> raw_job_sources` | Optional | jobs, canonical_jobs | Canonicalization bridge |
+| `canonical_jobs -> raw_job_sources` | Yes | canonical_jobs | Many raw sources per canonical job |
+| `scrape_targets -> jobs` | Yes from jobs to target | scraping, jobs | Jobs can record source target provenance |
+| `scraper_runs -> scrape_attempts` | Yes | scraping | Run summary to attempt detail |
+| `scrape_targets -> scrape_attempts` | Yes | scraping | Target-level attempt history |
+| `jobs -> dedup_feedback` | Yes twice | jobs, scraping | Pairwise job review |
+| `contacts -> referral_requests` | Yes | networking | Referral flow parent-child |
+| `jobs -> referral_requests` | Yes | networking, jobs | Job-linked referral request |
+| `applications -> email_logs` | Optional | email, pipeline | Email parser can match to application |
+
+## Soft / Inferred Relationships
+
+| Relationship | Basis | Why It Matters |
+|---|---|---|
+| `jobs.company_name` / `jobs.company_domain` -> `companies` | String/domain matching, not FK | Company normalization drift can break networking/outcomes/analytics assumptions |
+| `company_insights.company_name` -> `companies` | String match | No enforced referential integrity |
+| Networking company searches -> `companies` / `jobs` | Inferred business logic, not schema | Referral quality depends on normalization consistency |
+| Search expansion tables -> frontend admin surface | Intended feature link, not complete implementation | UI/API currently drift from stored model state |
+
+## Missing Or Ambiguous Model Definitions
+
+| Area | What Is Missing / Ambiguous | Impact |
+|---|---|---|
+| `backend/app/enrichment/models.py` | Empty placeholder module | Route/service name suggests persistence, but model ownership is elsewhere |
+| `backend/app/vault/models.py` | Empty placeholder module | Vault routes operate on `resume_versions` and `cover_letters`, not vault-owned tables |
+| Postgres vector/search columns | Not fully explicit in ORM models | Refactors based only on model code can miss production schema behavior |
+| `005_create_p2_tables.py` overlap | Duplicates prior branch intent for multiple tables | Fresh migration replay may require human confirmation |
+| Search expansion implementation | Model tables exist, list/read UI contract does not | Schema presence overstates feature completeness |
+
+## Migration Interpretation Notes
+
+- The migration history shows a project that evolved through feature branches and later consolidation.
+- The most trustworthy way to reason about the current schema is:
+  1. inspect the model file
+  2. inspect the creating migration
+  3. inspect later altering migrations
+  4. inspect the service that reads/writes the table
+- For fresh database bootstrap confidence, a clean Postgres replay test is still needed.

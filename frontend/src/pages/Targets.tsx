@@ -13,16 +13,19 @@ import {
 } from "@phosphor-icons/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { useRef, useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import {
   scraperApi,
   type ScrapeAttempt,
   type ScrapeTarget,
   type TargetListParams,
 } from "../api/scraper";
+import { MetricStrip } from "../components/system/MetricStrip";
+import { PageHeader } from "../components/system/PageHeader";
+import { StateBlock } from "../components/system/StateBlock";
+import { Surface } from "../components/system/Surface";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
-import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Modal from "../components/ui/Modal";
 import Select from "../components/ui/Select";
@@ -75,13 +78,14 @@ function attemptStatusIcon(status: string) {
 
 function TargetRowSkeleton() {
   return (
-    <div className="px-4 py-3 border-b border-border/50 flex items-center gap-3">
-      <div className="flex-1 space-y-2">
-        <Skeleton variant="text" className="w-1/3 h-4" />
-        <Skeleton variant="text" className="w-2/3 h-3" />
+    <div className="grid gap-3 border-b-2 border-border px-5 py-4 md:grid-cols-[minmax(0,1.5fr)_140px_140px_150px]">
+      <div className="space-y-2">
+        <Skeleton variant="text" className="h-4 w-1/3" />
+        <Skeleton variant="text" className="h-3 w-2/3" />
       </div>
-      <Skeleton variant="rect" className="w-16 h-5" />
-      <Skeleton variant="rect" className="w-16 h-5" />
+      <Skeleton variant="text" className="h-4 w-16" />
+      <Skeleton variant="text" className="h-4 w-16" />
+      <Skeleton variant="text" className="h-4 w-12" />
     </div>
   );
 }
@@ -97,17 +101,17 @@ function AttemptTimeline({ attempts }: { attempts: ScrapeAttempt[] }) {
       {attempts.slice(0, 5).map((a) => (
         <div
           key={a.id}
-          className="flex items-start gap-2 p-2 rounded-[var(--radius-md)] bg-bg-tertiary"
+          className="flex items-start gap-3 border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3"
         >
           <div className="mt-0.5">{attemptStatusIcon(a.status)}</div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-medium text-text-primary">
+              <span className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-text-primary">
                 Tier {a.actual_tier_used}
               </span>
               <span
                 className={cn(
-                  "text-xs font-medium",
+                  "font-mono text-[11px] font-bold uppercase tracking-[0.16em]",
                   a.status === "success"
                     ? "text-accent-success"
                     : "text-accent-danger"
@@ -189,23 +193,23 @@ function TargetDetail({
   return (
     <div className="flex flex-col h-full">
       {/* Detail header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0 bg-bg-secondary/60">
+      <div className="flex items-center justify-between border-b-2 border-border bg-[var(--color-bg-tertiary)] px-5 py-4 shrink-0">
         <div>
-          <div className="text-xs font-medium text-text-muted tracking-tight">
+          <div className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
             Target Detail
           </div>
-          <div className="mt-0.5 text-sm font-semibold text-text-primary truncate max-w-xs">
+          <div className="mt-2 max-w-xs truncate text-xl font-black uppercase tracking-[-0.05em] text-text-primary">
             {isLoading ? (
               <Skeleton variant="text" className="w-32 h-4" />
             ) : (
-              target?.company_name ?? target?.url ?? "—"
+              target?.company_name ?? target?.url ?? "-"
             )}
           </div>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="p-1.5 rounded-[var(--radius-md)] text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+          className="hard-press border-2 border-border bg-card p-2 text-text-muted shadow-[var(--shadow-xs)] hover:text-text-primary"
           aria-label="Close detail panel"
         >
           <CaretRight size={16} weight="bold" />
@@ -263,7 +267,7 @@ function TargetDetail({
               { label: "Source Kind", value: target.source_kind },
               {
                 label: "ATS Board Token",
-                value: target.ats_board_token ?? "—",
+                value: target.ats_board_token ?? "-",
               },
               {
                 label: "Schedule Interval",
@@ -271,7 +275,7 @@ function TargetDetail({
               },
               {
                 label: "Tiers",
-                value: `${target.start_tier} → ${target.max_tier}`,
+                value: `${target.start_tier} to ${target.max_tier}`,
               },
               {
                 label: "Last Success",
@@ -293,16 +297,18 @@ function TargetDetail({
                 label: "Last HTTP Status",
                 value: target.last_http_status != null
                   ? String(target.last_http_status)
-                  : "—",
+                  : "-",
               },
               {
                 label: "Next Scheduled",
                 value: relativeTime(target.next_scheduled_at),
               },
             ].map(({ label, value }) => (
-              <div key={label} className="bg-bg-tertiary rounded-[var(--radius-md)] p-2.5">
-                <p className="text-xs text-text-muted">{label}</p>
-                <p className="text-sm font-medium text-text-primary mt-0.5 truncate">
+              <div key={label} className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3">
+                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                  {label}
+                </p>
+                <p className="mt-3 truncate text-sm text-text-primary">
                   {value}
                 </p>
               </div>
@@ -311,17 +317,17 @@ function TargetDetail({
 
           {/* Quarantine reason */}
           {target.quarantined && target.quarantine_reason && (
-            <div className="flex items-start gap-2 p-3 rounded-[var(--radius-md)] bg-accent-danger/10 border border-accent-danger/30">
+            <div className="flex items-start gap-3 border-2 border-[var(--color-accent-danger)] bg-[var(--color-accent-danger-subtle)] px-4 py-4">
               <Warning
                 size={16}
                 weight="fill"
                 className="text-accent-danger shrink-0 mt-0.5"
               />
               <div>
-                <p className="text-xs font-semibold text-accent-danger">
+                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-accent-danger">
                   Quarantine Reason
                 </p>
-                <p className="text-xs text-text-secondary mt-0.5">
+                <p className="mt-2 text-sm text-text-secondary">
                   {target.quarantine_reason}
                 </p>
               </div>
@@ -473,7 +479,7 @@ function ImportModal({
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
@@ -585,32 +591,32 @@ function ImportModal({
                 {preview.length} target{preview.length !== 1 ? "s" : ""} ready to import
               </p>
             </div>
-            <div className="rounded-[var(--radius-md)] border border-border overflow-hidden">
+            <div className="overflow-hidden border-2 border-border">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="bg-bg-tertiary text-text-muted">
+                  <tr className="bg-[var(--color-bg-tertiary)] text-text-muted">
                     <th className="px-3 py-2 text-left font-medium">URL</th>
                     <th className="px-3 py-2 text-left font-medium">Company</th>
                   </tr>
                 </thead>
                 <tbody>
                   {preview.slice(0, 5).map((e, i) => (
-                    <tr key={i} className="border-t border-border/50">
+                    <tr key={i} className="border-t-2 border-border">
                       <td className="px-3 py-2 text-text-secondary truncate max-w-[200px]">
                         {e.url}
                       </td>
                       <td className="px-3 py-2 text-text-secondary">
-                        {e.company_name ?? "—"}
+                        {e.company_name ?? "-"}
                       </td>
                     </tr>
                   ))}
                   {preview.length > 5 && (
-                    <tr className="border-t border-border/50">
+                    <tr className="border-t-2 border-border">
                       <td
                         colSpan={2}
                         className="px-3 py-2 text-center text-text-muted"
                       >
-                        …and {preview.length - 5} more
+                        ...and {preview.length - 5} more
                       </td>
                     </tr>
                   )}
@@ -652,57 +658,69 @@ function TargetRow({
   onToggleEnabled: (enabled: boolean) => void;
 }) {
   const rowBg = target.quarantined
-    ? "bg-accent-danger/5 hover:bg-accent-danger/10 border-l-2 border-l-accent-danger"
+    ? "bg-accent-danger/5 hover:bg-accent-danger/10 border-l-4 border-l-accent-danger"
     : isSelected
     ? "bg-bg-tertiary"
     : "hover:bg-bg-tertiary/60";
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       className={cn(
-        "px-4 py-3 border-b border-border/50 cursor-pointer transition-colors",
+        "grid cursor-pointer gap-3 border-b-2 border-border px-5 py-4 transition-colors md:grid-cols-[minmax(0,1.5fr)_140px_140px_150px] md:items-start",
         rowBg
       )}
       onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-text-primary truncate">
-            {target.company_name ?? "—"}
-          </p>
-          <p className="text-xs text-text-muted truncate mt-0.5">{target.url}</p>
-          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-            <Badge variant={priorityVariant(target.priority_class)} size="sm">
-              {target.priority_class}
+      <div className="min-w-0">
+        <p className="truncate text-lg font-black uppercase tracking-[-0.05em] text-text-primary">
+          {target.company_name ?? "-"}
+        </p>
+        <p className="mt-2 truncate text-sm text-text-muted">{target.url}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Badge variant={priorityVariant(target.priority_class)} size="sm">
+            {target.priority_class}
+          </Badge>
+          <Badge variant={atsVariant(target.ats_vendor)} size="sm">
+            {target.ats_vendor ?? "unknown"}
+          </Badge>
+          {target.quarantined && (
+            <Badge variant="danger" size="sm">
+              quarantined
             </Badge>
-            <Badge variant={atsVariant(target.ats_vendor)} size="sm">
-              {target.ats_vendor ?? "unknown"}
-            </Badge>
-            {target.quarantined && (
-              <Badge variant="danger" size="sm">
-                quarantined
-              </Badge>
-            )}
-            {target.consecutive_failures > 0 && (
-              <span className="text-xs text-accent-danger font-mono">
-                {target.consecutive_failures}x fail
-              </span>
-            )}
-          </div>
+          )}
+          {target.consecutive_failures > 0 && (
+            <span className="font-mono text-xs text-accent-danger">
+              {target.consecutive_failures}x fail
+            </span>
+          )}
         </div>
-        <div className="flex flex-col items-end gap-2 shrink-0">
-          <span className="text-xs text-text-muted whitespace-nowrap">
-            {relativeTime(target.last_success_at)}
-          </span>
-          {/* Stop click from propagating to row */}
-          <div
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Toggle
-              checked={target.enabled}
-              onChange={onToggleEnabled}
-            />
-          </div>
+      </div>
+      <div>
+        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted md:hidden">
+          Source Kind
+        </p>
+        <p className="text-sm text-text-secondary">Source: {target.source_kind}</p>
+      </div>
+      <div>
+        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted md:hidden">
+          Last Success
+        </p>
+        <p className="text-sm text-text-secondary">{relativeTime(target.last_success_at)}</p>
+      </div>
+      <div className="flex items-center justify-between gap-3 md:justify-end">
+        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted md:hidden">
+          Enabled
+        </p>
+        <div onClick={(e) => e.stopPropagation()}>
+          <Toggle checked={target.enabled} onChange={onToggleEnabled} />
         </div>
       </div>
     </div>
@@ -751,7 +769,7 @@ export default function Targets() {
     onSuccess: (res) => {
       toast(
         "success",
-        `Batch triggered — ${res.data.jobs_found} jobs found`
+        `Batch triggered - ${res.data.jobs_found} jobs found`
       );
       queryClient.invalidateQueries({ queryKey: ["targets"] });
     },
@@ -772,123 +790,154 @@ export default function Targets() {
   const list = targets?.items ?? [];
   const totalCount = targets?.total ?? 0;
   const hasMore = list.length === pageSize;
+  const enabledCount = list.filter((target) => target.enabled).length;
+  const quarantinedCount = list.filter((target) => target.quarantined).length;
+  const vendors = new Set(list.map((target) => target.ats_vendor || "unknown"));
 
   return (
-    <div className="flex flex-col min-h-0 gap-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="text-xs font-medium text-text-muted tracking-tight">
-            Scraper
-          </div>
-          <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-text-primary">
-            Scrape Targets
-            {!isLoading && (
-              <span className="ml-2 text-base font-mono text-text-muted">
-                ({totalCount})
-              </span>
-            )}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setShowImport(true)}
-            icon={<UploadSimple size={14} weight="bold" />}
-          >
-            Import Targets
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            loading={batchMutation.isPending}
-            onClick={() => batchMutation.mutate()}
-            icon={<Lightning size={14} weight="bold" />}
-          >
-            Trigger Batch
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Operations"
+        title="Scrape Targets"
+        description="A responsive operator view for target ingestion, quarantine state, and batch scraper control. The list stays dense on desktop and collapses into a stacked detail flow on phone and tablet."
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowImport(true)}
+              icon={<UploadSimple size={14} weight="bold" />}
+            >
+              Import Targets
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              loading={batchMutation.isPending}
+              onClick={() => batchMutation.mutate()}
+              icon={<Lightning size={14} weight="bold" />}
+            >
+              Trigger Batch
+            </Button>
+          </>
+        }
+        meta={
+          !isLoading ? (
+            <div className="font-mono font-bold uppercase tracking-[0.18em]">
+              {totalCount} total targets
+            </div>
+          ) : null
+        }
+      />
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        <Select
-          className="w-40"
-          value={filters.priority_class}
-          onChange={(e) => {
-            setFilters((f) => ({ ...f, priority_class: e.target.value }));
-            setPage(0);
-          }}
-          options={[
-            { value: "watchlist", label: "Watchlist" },
-            { value: "hot", label: "Hot" },
-            { value: "warm", label: "Warm" },
-            { value: "cool", label: "Cool" },
-          ]}
-          placeholder="All priorities"
-        />
-        <Select
-          className="w-40"
-          value={filters.ats_vendor}
-          onChange={(e) => {
-            setFilters((f) => ({ ...f, ats_vendor: e.target.value }));
-            setPage(0);
-          }}
-          options={[
-            { value: "greenhouse", label: "Greenhouse" },
-            { value: "lever", label: "Lever" },
-            { value: "ashby", label: "Ashby" },
-            { value: "workday", label: "Workday" },
-            { value: "unknown", label: "Unknown" },
-          ]}
-          placeholder="All vendors"
-        />
-        <Select
-          className="w-36"
-          value={filters.status}
-          onChange={(e) => {
-            setFilters((f) => ({ ...f, status: e.target.value }));
-            setPage(0);
-          }}
-          options={[
-            { value: "enabled", label: "Enabled" },
-            { value: "disabled", label: "Disabled" },
-            { value: "quarantined", label: "Quarantined" },
-          ]}
-          placeholder="All statuses"
-        />
-      </div>
+      <MetricStrip
+        items={[
+          {
+            key: "visible",
+            label: "Visible targets",
+            value: list.length.toLocaleString(),
+            hint: "Rows in the current filtered page window.",
+            icon: <Crosshair size={18} weight="bold" />,
+          },
+          {
+            key: "enabled",
+            label: "Enabled",
+            value: enabledCount.toLocaleString(),
+            hint: "Targets still eligible to run on the current page.",
+            icon: <CheckCircle size={18} weight="bold" />,
+            tone: "success",
+          },
+          {
+            key: "quarantined",
+            label: "Quarantined",
+            value: quarantinedCount.toLocaleString(),
+            hint: "Targets blocked pending review or release.",
+            icon: <Warning size={18} weight="bold" />,
+            tone: quarantinedCount ? "warning" : "default",
+          },
+          {
+            key: "vendors",
+            label: "ATS vendors",
+            value: vendors.size.toLocaleString(),
+            hint: "Unique ATS vendors represented in the current result set.",
+            icon: <ArrowClockwise size={18} weight="bold" />,
+          },
+        ]}
+      />
 
-      {/* Main split layout */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Target list */}
-        <Card
-          padding="none"
-          className={cn(
-            "overflow-hidden",
-            selectedId ? "lg:col-span-5" : "lg:col-span-12"
-          )}
-        >
-          <div className="border-b border-border px-5 py-3 bg-bg-secondary/60 supports-[backdrop-filter]:bg-bg-secondary/40 backdrop-blur shrink-0">
-            <div className="flex items-baseline justify-between">
-              <div className="text-sm font-semibold text-text-primary">Targets</div>
-              <div className="text-xs text-text-muted">
-                <span className="font-mono text-text-secondary">{list.length}</span>{" "}
-                of {totalCount} shown
+      <Surface tone="default" padding="lg" radius="xl">
+        <div className="grid gap-4 md:grid-cols-3">
+          <Select
+            value={filters.priority_class}
+            onChange={(e) => {
+              setFilters((f) => ({ ...f, priority_class: e.target.value }));
+              setPage(0);
+            }}
+            options={[
+              { value: "watchlist", label: "Watchlist" },
+              { value: "hot", label: "Hot" },
+              { value: "warm", label: "Warm" },
+              { value: "cool", label: "Cool" },
+            ]}
+            placeholder="All priorities"
+            label="Priority"
+          />
+          <Select
+            value={filters.ats_vendor}
+            onChange={(e) => {
+              setFilters((f) => ({ ...f, ats_vendor: e.target.value }));
+              setPage(0);
+            }}
+            options={[
+              { value: "greenhouse", label: "Greenhouse" },
+              { value: "lever", label: "Lever" },
+              { value: "ashby", label: "Ashby" },
+              { value: "workday", label: "Workday" },
+              { value: "unknown", label: "Unknown" },
+            ]}
+            placeholder="All vendors"
+            label="ATS vendor"
+          />
+          <Select
+            value={filters.status}
+            onChange={(e) => {
+              setFilters((f) => ({ ...f, status: e.target.value }));
+              setPage(0);
+            }}
+            options={[
+              { value: "enabled", label: "Enabled" },
+              { value: "disabled", label: "Disabled" },
+              { value: "quarantined", label: "Quarantined" },
+            ]}
+            placeholder="All statuses"
+            label="Status"
+          />
+        </div>
+      </Surface>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]">
+        <Surface tone="default" padding="none" radius="xl" className="overflow-hidden">
+          <div className="border-b-2 border-border px-5 py-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <div>
+                <div className="text-sm font-black uppercase tracking-[-0.03em] text-text-primary">Targets</div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  <span className="font-mono text-text-secondary">{list.length}</span> of {totalCount} shown
+                </div>
+              </div>
+              <div className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                Page {page + 1}
               </div>
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-auto">
+          <div className="min-h-[420px]">
             {isError ? (
               <div className="p-8 text-center text-sm text-accent-danger">
                 Failed to load targets. Please try again.
               </div>
             ) : isLoading ? (
-              Array.from({ length: 10 }).map((_, i) => (
-                <TargetRowSkeleton key={i} />
-              ))
+              Array.from({ length: 10 }).map((_, i) => <TargetRowSkeleton key={i} />)
             ) : list.length === 0 ? (
               <div className="p-6">
                 <EmptyState
@@ -899,32 +948,33 @@ export default function Targets() {
                 />
               </div>
             ) : (
-              list.map((t) => (
+              list.map((target) => (
                 <TargetRow
-                  key={t.id}
-                  target={t}
-                  isSelected={t.id === selectedId}
-                  onClick={() => setSelectedId(t.id === selectedId ? null : t.id)}
+                  key={target.id}
+                  target={target}
+                  isSelected={target.id === selectedId}
+                  onClick={() => setSelectedId(target.id === selectedId ? null : target.id)}
                   onToggleEnabled={(enabled) =>
-                    toggleEnabledMutation.mutate({ id: t.id, enabled })
+                    toggleEnabledMutation.mutate({ id: target.id, enabled })
                   }
                 />
               ))
             )}
           </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-5 py-2.5 border-t border-border shrink-0">
+          <div className="flex items-center justify-between border-t-2 border-border px-5 py-3">
             <span className="text-xs text-text-muted">
-              Page{" "}
-              <span className="font-mono text-text-secondary">{page + 1}</span>
+              Page <span className="font-mono text-text-secondary">{page + 1}</span>
             </span>
             <div className="flex gap-1">
               <Button
                 variant="ghost"
                 size="sm"
                 disabled={page === 0}
-                onClick={() => { setPage((p) => p - 1); window.scrollTo(0, 0); }}
+                onClick={() => {
+                  setPage((p) => p - 1);
+                  window.scrollTo(0, 0);
+                }}
                 icon={<CaretLeft size={14} weight="bold" />}
               >
                 Prev
@@ -933,24 +983,32 @@ export default function Targets() {
                 variant="ghost"
                 size="sm"
                 disabled={!hasMore}
-                onClick={() => { setPage((p) => p + 1); window.scrollTo(0, 0); }}
+                onClick={() => {
+                  setPage((p) => p + 1);
+                  window.scrollTo(0, 0);
+                }}
                 icon={<CaretRight size={14} weight="bold" />}
               >
                 Next
               </Button>
             </div>
           </div>
-        </Card>
+        </Surface>
 
-        {/* Detail panel */}
-        {selectedId && (
-          <Card padding="none" className="lg:col-span-7 overflow-hidden">
-            <TargetDetail
-              targetId={selectedId}
-              onClose={() => setSelectedId(null)}
-            />
-          </Card>
-        )}
+        <Surface tone="default" padding="none" radius="xl" className="overflow-hidden">
+          {selectedId ? (
+            <TargetDetail targetId={selectedId} onClose={() => setSelectedId(null)} />
+          ) : (
+            <div className="p-5">
+              <StateBlock
+                tone="muted"
+                icon={<Crosshair size={18} weight="bold" />}
+                title="No target selected"
+                description="Choose a target row to inspect quarantine state, scheduler details, and recent attempts."
+              />
+            </div>
+          )}
+        </Surface>
       </div>
 
       <ImportModal open={showImport} onClose={() => setShowImport(false)} />

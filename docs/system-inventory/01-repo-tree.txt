@@ -1,0 +1,73 @@
+# Repository Tree
+
+Root: `D:/jobradar-v2`
+Exclusions applied: `node_modules`, `dist`, `coverage`, `.vite`, `.git`, `.venv`, `venv`, `__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.terraform`, `logs`, runtime artifact folders.
+
+## Clean Tree
+
+```text
+D:/jobradar-v2
+|- backend/                         # Source-of-truth backend application and DB layer
+|  |- app/                          # FastAPI app, domain packages, models, migrations, workers
+|  |- scripts/                      # Operational/import helper scripts
+|  |- tests/                        # Unit, integration, contract, security, scraping fixtures
+|  |- Dockerfile                    # Backend runtime image
+|  |- pyproject.toml                # Python dependency and tool config
+|  |- uv.lock                       # Locked Python dependency graph
+|  |- alembic.ini                   # Alembic CLI config
+|  |- seed_data.py                  # Local seed/bootstrap script
+|  `- start-dev.cjs                 # Dev launcher wrapper
+|- frontend/                        # Source-of-truth frontend application
+|  |- src/                          # React app source
+|  |- Dockerfile                    # Frontend build/dev/Nginx image
+|  |- package.json                  # Frontend dependency and script surface
+|  |- vite.config.ts                # Vite dev/build config
+|  |- vitest.config.ts              # Frontend test config
+|  |- system.md                     # Frontend design-system source of truth
+|  `- start-dev.cjs                 # Dev launcher wrapper
+|- infra/                           # Minimal infra support assets
+|  `- redis/
+|     `- tls/.gitkeep               # Placeholder for Redis TLS material
+|- docs/                            # Human documentation, audits, current-state records
+|  |- audit/                        # Historical audit findings
+|  |- current-state/                # Current operational state map
+|  |- research/                     # Topic-specific design/research notes
+|  `- design-brief.md               # Product/design direction
+|- .github/                         # CI and maintenance automation
+|  |- workflows/                    # GitHub Actions workflows
+|  `- dependabot.yml                # Dependency update automation
+|- docker-compose.yml               # Base local/runtime topology
+|- docker-compose.dev.yml           # Dev overlay for bind mounts and reload
+|- Makefile                         # Common local commands
+|- .env.example                     # Env template
+|- README.md                        # Setup and repo-level usage guidance
+|- CLAUDE.md                        # Repo conventions and command surface
+|- AGENTS.md                        # User/workspace instructions
+|- DECISIONS.md                     # Architecture decisions
+|- PROJECT_STATUS.md                # Status summary
+|- SECURITY.md                      # Security documentation
+`- THIRD_PARTY_CODE.md              # Third-party code declaration
+```
+
+## Directory Classification
+
+| Path | Classification | Purpose |
+|---|---|---|
+| `D:/jobradar-v2/backend` | Source of truth | Backend code, persistence, migrations, tests, image build |
+| `D:/jobradar-v2/frontend` | Source of truth | Frontend code, tests, build/runtime config |
+| `D:/jobradar-v2/infra` | Support/runtime | Auxiliary runtime assets only; not a full infra-as-code stack |
+| `D:/jobradar-v2/docs/current-state` | Support/current-state | Best operational snapshot of the repo as inspected by prior audits |
+| `D:/jobradar-v2/docs/audit` | Support/audit | Historical risk and audit context |
+| `D:/jobradar-v2/.github/workflows` | Operational source | CI/security workflow source of truth |
+| `D:/jobradar-v2/docker-compose*.yml` | Operational source | Container runtime topology |
+| `D:/jobradar-v2/.env.example` | Operational source | Intended env contract template |
+| `D:/jobradar-v2/README.md` | Support/admin | Setup guide, but not fully authoritative versus compose/config |
+
+## Notes On Source Of Truth Vs Support
+
+- The backend has no separate `db/` or `repositories/` directory. Persistent data contracts are spread across:
+  - `backend/app/*/models.py`
+  - `backend/app/migrations`
+  - service-layer queries inside `backend/app/*/service.py`
+- The frontend design system is source-controlled in code, but `frontend/system.md` is the design-language reference that explains the intended token/layout grammar.
+- `docs/current-state` is useful context, but implementation truth still lives in `frontend/src`, `backend/app`, migrations, and runtime config files.

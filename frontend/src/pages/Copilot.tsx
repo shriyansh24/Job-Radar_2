@@ -1,5 +1,4 @@
 import {
-  ArrowsOutCardinal,
   Brain,
   Briefcase,
   ClockCounterClockwise,
@@ -16,13 +15,18 @@ import remarkGfm from "remark-gfm";
 import { copilotApi, type CoverLetterResult } from "../api/copilot";
 import { jobsApi } from "../api/jobs";
 import Badge from "../components/ui/Badge";
-import { Button } from "../components/ui/Button";
-import Card from "../components/ui/Card";
+import Button from "../components/ui/Button";
 import EmptyState from "../components/ui/EmptyState";
 import Select from "../components/ui/Select";
 import Skeleton from "../components/ui/Skeleton";
 import Tabs from "../components/ui/Tabs";
 import Textarea from "../components/ui/Textarea";
+import { MetricStrip } from "../components/system/MetricStrip";
+import { PageHeader } from "../components/system/PageHeader";
+import { SectionHeader } from "../components/system/SectionHeader";
+import { SplitWorkspace } from "../components/system/SplitWorkspace";
+import { StateBlock } from "../components/system/StateBlock";
+import { Surface } from "../components/system/Surface";
 import { toast } from "../components/ui/toastService";
 import { cn } from "../lib/utils";
 
@@ -60,34 +64,11 @@ const LETTER_STYLES = [
   { value: "career-change", label: "Career Change" },
 ];
 
-function MetricCard({
-  label,
-  value,
-  hint,
-  icon,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  icon: React.ReactNode;
-}) {
+function MarkdownBlock({ content }: { content: string }) {
   return (
-    <Card className="p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted">
-            {label}
-          </div>
-          <div className="mt-2 text-2xl font-semibold tracking-tight text-text-primary">
-            {value}
-          </div>
-          <p className="mt-2 text-sm text-text-secondary">{hint}</p>
-        </div>
-        <div className="rounded-[var(--radius-lg)] border border-border bg-bg-tertiary p-2 text-text-muted">
-          {icon}
-        </div>
-      </div>
-    </Card>
+    <div className="prose prose-sm max-w-none text-text-primary prose-p:leading-6 prose-headings:text-text-primary prose-strong:text-text-primary prose-li:text-text-secondary prose-p:text-text-secondary dark:prose-invert">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+    </div>
   );
 }
 
@@ -119,7 +100,7 @@ export default function Copilot() {
   const jobOptions =
     recentJobs?.items.map((job) => ({
       value: job.id,
-      label: `${job.title} • ${job.company_name ?? "Unknown company"}`,
+      label: `${job.title} - ${job.company_name ?? "Unknown company"}`,
     })) ?? [];
 
   const selectedJob = recentJobs?.items.find((job) => job.id === selectedJobId) ?? null;
@@ -215,348 +196,351 @@ export default function Copilot() {
     askHistoryMutation.mutate(trimmed);
   };
 
+  const metrics = [
+    {
+      key: "context",
+      label: "Recent Context",
+      value: loadingJobs ? "..." : recentJobs?.items.length ?? 0,
+      hint: "Fresh roles available to ground prompts.",
+      icon: <Briefcase size={18} weight="bold" />,
+    },
+    {
+      key: "transcript",
+      label: "Transcript",
+      value: transcript.length,
+      hint: "Messages stored in the current drafting session.",
+      icon: <Sparkle size={18} weight="bold" />,
+      tone: "warning" as const,
+    },
+    {
+      key: "mode",
+      label: "Mode",
+      value: COPILOT_TABS.find((tab) => tab.id === activeTab)?.label ?? "Assistant",
+      hint: "Current copilot lane.",
+      icon: <Brain size={18} weight="bold" />,
+    },
+    {
+      key: "draft",
+      label: "Letter",
+      value: coverLetter?.style ?? "None",
+      hint: "Latest cover-letter draft style.",
+      icon: <FileText size={18} weight="bold" />,
+      tone: "success" as const,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden p-0">
-        <div className="border-b border-border bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent-primary)_10%,transparent),transparent_55%)] px-6 py-6">
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-            <div>
-              <div className="text-xs font-medium tracking-[0.18em] text-text-muted uppercase">
-                Prepare
-              </div>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary">
-                Copilot
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
-                A focused workbench for strategy, historical recall, and job-specific writing. The
-                layout follows a ChatGPT-style drafting lane with quieter operational context on the
-                side.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Badge variant="info" size="md">
-                  Context-aware chat
-                </Badge>
-                <Badge variant="default" size="md">
-                  Ask your history
-                </Badge>
-                <Badge variant="success" size="md">
-                  Cover letter drafts
-                </Badge>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-              <MetricCard
-                label="Recent Context"
-                value={loadingJobs ? "..." : String(recentJobs?.items.length ?? 0)}
-                hint="Fresh roles available to ground prompts."
-                icon={<Briefcase size={18} weight="bold" />}
-              />
-            </div>
+      <PageHeader
+        eyebrow="Prepare"
+        title="Copilot"
+        description="A role-aware drafting surface for job strategy, history analysis, and cover-letter generation."
+        meta={
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="info" size="sm">
+              Context-aware chat
+            </Badge>
+            <Badge variant="warning" size="sm">
+              Ask history
+            </Badge>
+            <Badge variant="success" size="sm">
+              Cover letters
+            </Badge>
           </div>
-        </div>
+        }
+      />
 
-        <div className="px-6 py-4">
-          <Tabs
-            tabs={COPILOT_TABS.map((tab) => ({ ...tab }))}
-            activeTab={activeTab}
-            onChange={(nextTab) => startTransition(() => setActiveTab(nextTab as CopilotTab))}
-          />
-        </div>
-      </Card>
+      <MetricStrip items={metrics} />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.9fr)]">
-        <Card className="min-h-[620px] p-0">
-          <div className="flex h-full flex-col">
-            <div className="border-b border-border px-6 py-4">
-              <div className="flex flex-wrap items-end gap-4">
-                <div className="min-w-[220px] flex-1">
-                  <Select
-                    label="Job context"
-                    value={selectedJobId}
-                    onChange={(event) => setSelectedJobId(event.target.value)}
-                    options={jobOptions}
-                    placeholder={loadingJobs ? "Loading jobs..." : "Choose a job"}
+      <Surface tone="default" padding="md" radius="xl">
+        <SectionHeader
+          title="Copilot workspace"
+          description="Switch between strategy chat, historical recall, and structured letter generation."
+        />
+        <Tabs
+          className="mt-5"
+          tabs={COPILOT_TABS.map((tab) => ({ ...tab }))}
+          activeTab={activeTab}
+          onChange={(nextTab) => startTransition(() => setActiveTab(nextTab as CopilotTab))}
+        />
+      </Surface>
+
+      {activeTab === "assistant" ? (
+        <SplitWorkspace
+          primary={
+            <Surface tone="default" padding="lg" radius="xl">
+              <SectionHeader
+                title="Assistant"
+                description="Ground prompts against a role, then iterate through a lightweight transcript instead of a one-shot generation."
+              />
+              <div className="mt-6">
+                <Select
+                  label="Job context"
+                  value={selectedJobId}
+                  onChange={(event) => setSelectedJobId(event.target.value)}
+                  options={jobOptions}
+                  placeholder={loadingJobs ? "Loading jobs..." : "Choose a job"}
+                />
+              </div>
+
+              <div className="mt-6 space-y-4">
+                {transcript.length === 0 ? (
+                  <EmptyState
+                    icon={<Sparkle size={34} weight="bold" />}
+                    title="Start with a strategic prompt"
+                    description="Use the current job as context, or ask for a broader plan across your search."
                   />
-                </div>
-                {selectedJob ? (
-                  <div className="pb-1 text-sm text-text-secondary">
-                    <span className="font-medium text-text-primary">{selectedJob.company_name ?? "Unknown company"}</span>
-                    {" • "}
-                    {selectedJob.location ?? "Flexible location"}
+                ) : (
+                  transcript.map((entry, index) => (
+                    <motion.div
+                      key={entry.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: index * 0.03 }}
+                      className={cn(
+                        "border-2 px-4 py-4 shadow-[var(--shadow-xs)]",
+                        entry.role === "assistant"
+                          ? "border-border bg-[var(--color-bg-tertiary)]"
+                          : "ml-auto border-border bg-accent-primary/10"
+                      )}
+                    >
+                      <div className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                        {entry.label}
+                      </div>
+                      <MarkdownBlock content={entry.content} />
+                    </motion.div>
+                  ))
+                )}
+                {chatMutation.isPending ? (
+                  <div className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-4 shadow-[var(--shadow-xs)]">
+                    <Skeleton variant="text" className="h-4 w-28" />
+                    <Skeleton variant="text" className="mt-3 h-4 w-full" />
+                    <Skeleton variant="text" className="mt-2 h-4 w-5/6" />
                   </div>
                 ) : null}
               </div>
-            </div>
 
-            {activeTab === "assistant" ? (
-              <>
-                <div className="flex-1 space-y-4 overflow-auto px-6 py-5">
-                  {transcript.length === 0 ? (
-                    <EmptyState
-                      icon={<Sparkle size={34} weight="bold" />}
-                      title="Start with a strategic prompt"
-                      description="Use the current job as context, or ask for a broader plan across your search."
-                    />
-                  ) : (
-                    transcript.map((entry, index) => (
-                      <motion.div
-                        key={entry.id}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2, delay: index * 0.03 }}
-                        className={cn(
-                          "max-w-3xl rounded-[var(--radius-xl)] border px-4 py-4",
-                          entry.role === "assistant"
-                            ? "border-border bg-bg-secondary"
-                            : "ml-auto border-accent-primary/25 bg-accent-primary/8"
-                        )}
-                      >
-                        <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                          {entry.label}
-                        </div>
-                        <div className="prose prose-sm max-w-none text-text-primary prose-p:leading-6 prose-headings:text-text-primary prose-strong:text-text-primary prose-li:text-text-secondary prose-p:text-text-secondary dark:prose-invert">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.content}</ReactMarkdown>
-                        </div>
-                      </motion.div>
-                    ))
-                  )}
-                  {chatMutation.isPending ? (
-                    <div className="max-w-3xl rounded-[var(--radius-xl)] border border-border bg-bg-secondary px-4 py-4">
-                      <Skeleton variant="text" className="h-4 w-28" />
-                      <Skeleton variant="text" className="mt-3 h-4 w-full" />
-                      <Skeleton variant="text" className="mt-2 h-4 w-5/6" />
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="border-t border-border px-6 py-5">
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    {CHAT_PROMPTS.map((prompt) => (
-                      <button
-                        key={prompt}
-                        type="button"
-                        onClick={() => sendChat(prompt)}
-                        className="rounded-full border border-border bg-bg-tertiary px-3 py-1.5 text-xs text-text-secondary transition-colors hover:border-border-hover hover:text-text-primary"
-                      >
-                        {prompt}
-                      </button>
-                    ))}
-                  </div>
-                  <Textarea
-                    value={chatInput}
-                    onChange={(event) => setChatInput(event.target.value)}
-                    placeholder="Ask for a search strategy, interview prep plan, or application triage."
-                    className="min-h-[120px] bg-bg-secondary"
-                  />
-                  <div className="mt-3 flex justify-end">
-                    <Button
-                      variant="default"
-                      onClick={() => sendChat(chatInput)}
-                      disabled={!chatInput.trim() || chatMutation.isPending}
+              <div className="mt-6 space-y-4 border-t-2 border-border pt-6">
+                <div className="flex flex-wrap gap-2">
+                  {CHAT_PROMPTS.map((prompt) => (
+                    <button
+                      key={prompt}
+                      type="button"
+                      onClick={() => sendChat(prompt)}
+                      className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary transition-colors hover:bg-card hover:text-foreground"
                     >
-                      <Sparkle size={16} weight="bold" />
-                      Send to Copilot
-                    </Button>
-                  </div>
+                      {prompt}
+                    </button>
+                  ))}
                 </div>
-              </>
-            ) : null}
-
-            {activeTab === "history" ? (
-              <div className="grid flex-1 gap-6 px-6 py-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                <div className="space-y-4">
-                  <Card className="p-5">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
-                      <ClockCounterClockwise size={16} weight="bold" className="text-accent-primary" />
-                      Ask your historical record
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-text-secondary">
-                      Query applications, outcomes, and activity history for patterns that are hard to
-                      spot in raw tables.
-                    </p>
-                    <Textarea
-                      className="mt-4 min-h-[180px] bg-bg-secondary"
-                      value={historyQuestion}
-                      onChange={(event) => setHistoryQuestion(event.target.value)}
-                      placeholder="Example: What changed in the roles that led to callbacks?"
-                    />
-                    <div className="mt-4 flex justify-end">
-                      <Button
-                        variant="default"
-                        onClick={() => runHistoryQuestion(historyQuestion)}
-                        disabled={!historyQuestion.trim() || askHistoryMutation.isPending}
-                      >
-                        <Brain size={16} weight="bold" />
-                        Analyze history
-                      </Button>
-                    </div>
-                  </Card>
-
-                  <Card className="p-5">
-                    <div className="text-sm font-semibold text-text-primary">Prompt starters</div>
-                    <div className="mt-4 space-y-2">
-                      {HISTORY_PROMPTS.map((prompt) => (
-                        <button
-                          key={prompt}
-                          type="button"
-                          onClick={() => runHistoryQuestion(prompt)}
-                          className="w-full rounded-[var(--radius-lg)] border border-border bg-bg-secondary px-4 py-3 text-left text-sm text-text-secondary transition-colors hover:border-border-hover hover:text-text-primary"
-                        >
-                          {prompt}
-                        </button>
-                      ))}
-                    </div>
-                  </Card>
+                <Textarea
+                  value={chatInput}
+                  onChange={(event) => setChatInput(event.target.value)}
+                  placeholder="Ask for a search strategy, interview prep plan, or application triage."
+                  className="min-h-[120px]"
+                />
+                <div className="flex justify-end">
+                  <Button
+                    variant="primary"
+                    onClick={() => sendChat(chatInput)}
+                    disabled={!chatInput.trim() || chatMutation.isPending}
+                    icon={<Sparkle size={16} weight="bold" />}
+                  >
+                    Send to Copilot
+                  </Button>
                 </div>
-
-                <Card className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
-                    <Lightbulb size={16} weight="bold" className="text-accent-warning" />
-                    What the system found
-                  </div>
-                  {askHistoryMutation.isPending ? (
-                    <div className="mt-4 space-y-3">
-                      <Skeleton variant="text" className="h-4 w-1/3" />
-                      <Skeleton variant="text" className="h-4 w-full" />
-                      <Skeleton variant="text" className="h-4 w-5/6" />
-                      <Skeleton variant="text" className="h-4 w-4/5" />
-                    </div>
-                  ) : historyAnswer ? (
-                    <div className="prose prose-sm mt-4 max-w-none text-text-primary prose-p:leading-6 prose-headings:text-text-primary prose-strong:text-text-primary prose-li:text-text-secondary prose-p:text-text-secondary dark:prose-invert">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{historyAnswer}</ReactMarkdown>
-                    </div>
-                  ) : (
-                    <EmptyState
-                      icon={<ArrowsOutCardinal size={32} weight="bold" />}
-                      title="No history answer yet"
-                      description="Run a question and the answer will land here as a reusable insight."
-                    />
-                  )}
-                </Card>
               </div>
-            ) : null}
-
-            {activeTab === "letters" ? (
-              <div className="grid flex-1 gap-6 px-6 py-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-                <Card className="p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
-                    <MagicWand size={16} weight="bold" className="text-accent-primary" />
-                    Draft settings
-                  </div>
-                  <div className="mt-4 space-y-4">
-                    <Select
-                      label="Letter style"
-                      value={coverLetterStyle}
-                      onChange={(event) => setCoverLetterStyle(event.target.value)}
-                      options={LETTER_STYLES}
-                    />
-                    <Textarea
-                      label="Template guidance"
-                      className="min-h-[240px] bg-bg-secondary"
-                      value={coverLetterTemplate}
-                      onChange={(event) => setCoverLetterTemplate(event.target.value)}
-                      placeholder="Optional: specify voice, achievements to emphasize, or constraints to avoid."
-                    />
-                    <Button
-                      variant="default"
-                      onClick={() => coverLetterMutation.mutate()}
-                      disabled={!selectedJobId || coverLetterMutation.isPending}
-                    >
-                      <FileText size={16} weight="bold" />
-                      Generate draft
-                    </Button>
-                  </div>
-                </Card>
-
-                <Card className="p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-text-primary">Draft preview</div>
-                      <p className="mt-1 text-sm text-text-secondary">
-                        Built against the selected role and ready to refine before export.
-                      </p>
-                    </div>
-                    {coverLetter ? (
-                      <Badge variant="success" size="md">
-                        {coverLetter.style ?? "custom"}
+            </Surface>
+          }
+          secondary={
+            <div className="space-y-4">
+              <StateBlock
+                tone="neutral"
+                icon={<Briefcase size={18} weight="bold" />}
+                title="Active job context"
+                description={
+                  selectedJob
+                    ? `${selectedJob.title} at ${selectedJob.company_name ?? "Unknown company"}`
+                    : "Choose a job above to ground the drafting context."
+                }
+              />
+              {selectedJob ? (
+                <Surface tone="default" padding="md" radius="xl">
+                  <SectionHeader title="Job snapshot" />
+                  <div className="mt-4 space-y-3 text-sm leading-6 text-text-secondary">
+                    <p>{selectedJob.location ?? "Flexible location"}</p>
+                    {selectedJob.match_score !== null ? (
+                      <Badge variant={selectedJob.match_score >= 0.7 ? "success" : "warning"}>
+                        Match {Math.round(selectedJob.match_score * 100)}%
                       </Badge>
                     ) : null}
+                    <p>{selectedJob.summary_ai ?? "No AI summary yet. The assistant will rely on core job metadata."}</p>
                   </div>
-                  {coverLetterMutation.isPending ? (
-                    <div className="mt-4 space-y-3">
-                      <Skeleton variant="text" className="h-4 w-1/4" />
-                      <Skeleton variant="text" className="h-4 w-full" />
-                      <Skeleton variant="text" className="h-4 w-full" />
-                      <Skeleton variant="text" className="h-4 w-5/6" />
-                    </div>
-                  ) : coverLetter ? (
-                    <div className="mt-4 whitespace-pre-wrap rounded-[var(--radius-xl)] border border-border bg-bg-secondary px-4 py-4 text-sm leading-6 text-text-secondary">
-                      {coverLetter.content}
-                    </div>
-                  ) : (
-                    <EmptyState
-                      icon={<FileText size={32} weight="bold" />}
-                      title="No cover letter yet"
-                      description="Generate a job-specific draft and use the template field to push tone or structure."
-                    />
-                  )}
-                </Card>
-              </div>
-            ) : null}
-          </div>
-        </Card>
-
-        <div className="space-y-6">
-          <Card className="p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
-              <Briefcase size={16} weight="bold" className="text-accent-primary" />
-              Active job context
+                </Surface>
+              ) : null}
             </div>
-            {selectedJob ? (
-              <div className="mt-4 space-y-3 text-sm">
-                <div>
-                  <div className="font-medium text-text-primary">{selectedJob.title}</div>
-                  <div className="text-text-secondary">
-                    {selectedJob.company_name ?? "Unknown company"} • {selectedJob.location ?? "Flexible"}
+          }
+        />
+      ) : null}
+
+      {activeTab === "history" ? (
+        <SplitWorkspace
+          primary={
+            <Surface tone="default" padding="lg" radius="xl">
+              <SectionHeader
+                title="Ask your history"
+                description="Query applications, outcomes, and activity history for patterns that are hard to spot in raw tables."
+              />
+              <Textarea
+                className="mt-6 min-h-[180px]"
+                value={historyQuestion}
+                onChange={(event) => setHistoryQuestion(event.target.value)}
+                placeholder="Example: What changed in the roles that led to callbacks?"
+              />
+              <div className="mt-4 flex justify-end">
+                <Button
+                  variant="primary"
+                  onClick={() => runHistoryQuestion(historyQuestion)}
+                  disabled={!historyQuestion.trim() || askHistoryMutation.isPending}
+                  icon={<Brain size={16} weight="bold" />}
+                >
+                  Analyze history
+                </Button>
+              </div>
+
+              <div className="mt-6 border-t-2 border-border pt-6">
+                {askHistoryMutation.isPending ? (
+                  <div className="space-y-3">
+                    <Skeleton variant="text" className="h-4 w-1/3" />
+                    <Skeleton variant="text" className="h-4 w-full" />
+                    <Skeleton variant="text" className="h-4 w-5/6" />
+                    <Skeleton variant="text" className="h-4 w-4/5" />
                   </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {selectedJob.match_score !== null ? (
-                    <Badge variant={selectedJob.match_score >= 0.7 ? "success" : "warning"}>
-                      Match {Math.round(selectedJob.match_score * 100)}%
-                    </Badge>
-                  ) : null}
-                  {selectedJob.remote_type ? <Badge variant="default">{selectedJob.remote_type}</Badge> : null}
-                  {selectedJob.job_type ? <Badge variant="info">{selectedJob.job_type}</Badge> : null}
-                </div>
-                {selectedJob.summary_ai ? (
-                  <p className="leading-6 text-text-secondary">{selectedJob.summary_ai}</p>
+                ) : historyAnswer ? (
+                  <MarkdownBlock content={historyAnswer} />
                 ) : (
-                  <p className="leading-6 text-text-muted">
-                    No AI summary yet. The copilot will rely on title and company metadata.
-                  </p>
+                  <EmptyState
+                    icon={<Lightbulb size={32} weight="bold" />}
+                    title="No history answer yet"
+                    description="Run a question and the answer will land here as a reusable insight."
+                  />
                 )}
               </div>
-            ) : (
-              <EmptyState
-                icon={<Briefcase size={28} weight="bold" />}
-                title="No job selected"
-                description="Choose a role above to ground chat, history analysis, and drafting."
+            </Surface>
+          }
+          secondary={
+            <div className="space-y-4">
+              <Surface tone="default" padding="md" radius="xl">
+                <SectionHeader title="Prompt starters" />
+                <div className="mt-4 space-y-2">
+                  {HISTORY_PROMPTS.map((prompt) => (
+                    <button
+                      key={prompt}
+                      type="button"
+                      onClick={() => runHistoryQuestion(prompt)}
+                      className="w-full border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3 text-left text-sm leading-6 text-text-secondary transition-colors hover:bg-card hover:text-foreground"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              </Surface>
+              <StateBlock
+                tone="warning"
+                icon={<ClockCounterClockwise size={18} weight="bold" />}
+                title="Use case"
+                description="This lane is for pattern detection, not drafting tone. Ask when you need evidence from your own outcomes."
               />
-            )}
-          </Card>
-
-          <Card className="p-5">
-            <div className="text-sm font-semibold text-text-primary">How to use this surface</div>
-            <div className="mt-4 space-y-3 text-sm leading-6 text-text-secondary">
-              <p>Use Assistant for quick strategy and editing loops tied to a role.</p>
-              <p>Use Ask History when you need recall over your own application patterns.</p>
-              <p>Use Cover Letters when you want a structured output instead of conversational guidance.</p>
             </div>
-          </Card>
-        </div>
-      </div>
+          }
+        />
+      ) : null}
+
+      {activeTab === "letters" ? (
+        <SplitWorkspace
+          primary={
+            <Surface tone="default" padding="lg" radius="xl">
+              <SectionHeader
+                title="Cover letter drafts"
+                description="Generate a structured draft against the selected role, then refine it before exporting or saving."
+              />
+              <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                <Select
+                  label="Job context"
+                  value={selectedJobId}
+                  onChange={(event) => setSelectedJobId(event.target.value)}
+                  options={jobOptions}
+                  placeholder={loadingJobs ? "Loading jobs..." : "Choose a job"}
+                />
+                <Select
+                  label="Letter style"
+                  value={coverLetterStyle}
+                  onChange={(event) => setCoverLetterStyle(event.target.value)}
+                  options={LETTER_STYLES}
+                />
+              </div>
+              <Textarea
+                label="Template guidance"
+                className="mt-4 min-h-[220px]"
+                value={coverLetterTemplate}
+                onChange={(event) => setCoverLetterTemplate(event.target.value)}
+                placeholder="Optional: specify voice, achievements to emphasize, or constraints to avoid."
+              />
+              <div className="mt-4 flex justify-end">
+                <Button
+                  variant="primary"
+                  onClick={() => coverLetterMutation.mutate()}
+                  disabled={!selectedJobId || coverLetterMutation.isPending}
+                  icon={<MagicWand size={16} weight="bold" />}
+                >
+                  Generate draft
+                </Button>
+              </div>
+
+              <div className="mt-6 border-t-2 border-border pt-6">
+                {coverLetterMutation.isPending ? (
+                  <div className="space-y-3">
+                    <Skeleton variant="text" className="h-4 w-1/4" />
+                    <Skeleton variant="text" className="h-4 w-full" />
+                    <Skeleton variant="text" className="h-4 w-full" />
+                    <Skeleton variant="text" className="h-4 w-5/6" />
+                  </div>
+                ) : coverLetter ? (
+                  <div className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-4 text-sm leading-6 text-text-secondary shadow-[var(--shadow-xs)]">
+                    {coverLetter.content}
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={<FileText size={32} weight="bold" />}
+                    title="No cover letter yet"
+                    description="Generate a job-specific draft and use the template field to push tone or structure."
+                  />
+                )}
+              </div>
+            </Surface>
+          }
+          secondary={
+            <div className="space-y-4">
+              <StateBlock
+                tone="success"
+                icon={<MagicWand size={18} weight="bold" />}
+                title="Draft status"
+                description={coverLetter ? `${coverLetter.style ?? "custom"} draft ready for review.` : "No draft has been generated yet."}
+              />
+              <StateBlock
+                tone="neutral"
+                icon={<Briefcase size={18} weight="bold" />}
+                title="Selected job"
+                description={
+                  selectedJob
+                    ? `${selectedJob.title} at ${selectedJob.company_name ?? "Unknown company"}`
+                    : "Choose a job before generating a letter."
+                }
+              />
+            </div>
+          }
+        />
+      ) : null}
     </div>
   );
 }

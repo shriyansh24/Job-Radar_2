@@ -3,7 +3,7 @@
 ## Local Tooling
 - Backend uses `uv`.
 - Frontend uses `npm`.
-- Infrastructure uses `docker compose`.
+- Infrastructure uses Docker / `docker compose`.
 
 ## Core Local Commands
 
@@ -19,38 +19,44 @@
 ### Infrastructure
 - `docker compose up -d postgres redis`
 
+## Validation Commands
+
+### Backend
+- `cd backend && uv run pytest tests/integration/test_auth_api.py tests/integration/test_settings_api.py tests/integration/test_admin_api.py tests/integration/test_vault_api.py`
+
+### Frontend
+- `cd frontend && npm run lint`
+- `cd frontend && npm run test -- --run`
+- `cd frontend && npm run build`
+
+### Browser QA
+- Start backend and frontend locally.
+- Log in through the real UI.
+- Sweep the routed app on desktop, tablet, and phone.
+- Write screenshots to `output/playwright/`.
+
 ## GitHub Actions
-- `ci.yml` now uses:
+- `ci.yml` uses:
   - `actions/checkout@v6`
   - `actions/setup-python@v6`
   - `actions/setup-node@v6`
-- Backend CI now runs:
+- Backend CI runs:
   - `uv sync --frozen`
   - `uv run python -m pip check`
   - `uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
   - `uv tool run pip-audit -r .ci-requirements.txt`
   - `uv tool run bandit -r app/ -c pyproject.toml --severity-level medium`
   - `uv run ruff check .`
-  - `uv run mypy app/auth/service.py app/config.py app/shared/middleware.py app/scraping/deduplication.py app/scraping/port.py --ignore-missing-imports`
+  - targeted `mypy`
   - `uv run pytest --cov=app --cov-fail-under=60 tests/`
-- Frontend CI now runs:
+- Frontend CI runs:
   - `npm ci`
   - `npm install --no-save @vitest/coverage-v8`
   - `npm audit --audit-level high`
   - `npm run lint`
   - `npm run test -- --run --coverage --coverage.thresholds.statements=40`
   - `npm run build`
-- Additional workflows:
-  - CodeQL
-  - Dependency Review
-  - Dependabot
-
-## Security / Packaging Notes
-- Redis is configured with auth in compose.
-- Docker contexts use `.dockerignore` files.
-- Backend test tooling is defined in `backend/pyproject.toml` under the `dev` dependency group.
-- Incompatible scraper extras are declared as conflicts in `backend/pyproject.toml`.
 
 ## Current Assessment
 - Local validation and GitHub workflow configuration are aligned with the current repo state.
-- GitHub issue tracking is currently clean in this workspace: no open issues and no open bug-labeled issues were returned by `gh issue list`.
+- Local browser QA now depends on a migrated schema; make sure the backend DB is at Alembic `head` before validating settings, integrations, and other current-schema surfaces.

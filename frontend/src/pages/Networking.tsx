@@ -23,7 +23,6 @@ import {
 } from "../api/networking";
 import Badge from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
@@ -50,21 +49,148 @@ const emptyContact: ContactCreate = {
   notes: "",
 };
 
+const PANEL =
+  "border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const PANEL_ALT =
+  "border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-primary)] shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const FIELD =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !text-[var(--color-text-primary)] placeholder:!text-[var(--color-text-muted)] !shadow-none focus:!border-[var(--color-accent-primary)] focus:!ring-0";
+const SECONDARY_BUTTON =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !text-[var(--color-text-primary)] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+const PRIMARY_BUTTON =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-accent-primary)] !text-white !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
+
 function MetricCard({
   label,
   value,
   description,
+  accent,
 }: {
   label: string;
   value: string;
   description: string;
+  accent?: string;
 }) {
   return (
-    <Card className="p-5">
-      <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted">{label}</div>
-      <div className="mt-2 text-2xl font-semibold tracking-tight text-text-primary">{value}</div>
-      <p className="mt-2 text-sm text-text-secondary">{description}</p>
-    </Card>
+    <div className={`${PANEL_ALT} p-4`}>
+      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+        {label}
+      </div>
+      <div className={`mt-3 font-mono text-3xl font-bold ${accent ?? ""}`}>{value}</div>
+      <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{description}</p>
+    </div>
+  );
+}
+
+function SectionTitle({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="space-y-2">
+      <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-accent-primary)]">
+        Execute / Networking
+      </div>
+      <h1 className="text-4xl font-black uppercase tracking-tighter sm:text-5xl">{title}</h1>
+      <p className="max-w-3xl text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function ContactRow({
+  contact,
+  selected,
+  onClick,
+}: {
+  contact: Contact;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "w-full border-2 px-4 py-4 text-left transition-transform duration-150",
+        selected
+          ? "border-[var(--color-text-primary)] bg-[var(--color-accent-primary-subtle)] shadow-[4px_4px_0px_0px_var(--color-accent-primary)]"
+          : "border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] shadow-[4px_4px_0px_0px_var(--color-text-primary)] hover:-translate-x-[2px] hover:-translate-y-[2px]"
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-bold uppercase tracking-[0.08em] text-[var(--color-text-primary)]">
+            {contact.name}
+          </div>
+          <div className="mt-1 truncate text-sm text-[var(--color-text-secondary)]">
+            {[contact.role, contact.company].filter(Boolean).join(" • ") || "No role or company yet"}
+          </div>
+        </div>
+        <Badge variant={contact.relationship_strength >= 4 ? "success" : "info"} className="rounded-none">
+          {contact.relationship_strength}/5
+        </Badge>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--color-text-muted)]">
+        {contact.email ? <span>{contact.email}</span> : null}
+        {contact.last_contacted ? (
+          <span>Last touch {formatDistanceToNow(new Date(contact.last_contacted), { addSuffix: true })}</span>
+        ) : null}
+      </div>
+    </button>
+  );
+}
+
+function SuggestionCard({
+  suggestion,
+  selectedJobId,
+  onDraft,
+  onCreate,
+}: {
+  suggestion: ReferralSuggestion;
+  selectedJobId: string;
+  onDraft: (contactId: string) => void;
+  onCreate: (contactId: string, message?: string | null) => void;
+}) {
+  return (
+    <div className={`${PANEL_ALT} p-4`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-bold uppercase tracking-[0.08em]">{suggestion.contact.name}</div>
+          <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+            {[suggestion.contact.role, suggestion.contact.company].filter(Boolean).join(" • ")}
+          </div>
+        </div>
+        <Badge variant="success" className="rounded-none">
+          Suggested
+        </Badge>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-[var(--color-text-secondary)]">{suggestion.relevance_reason}</p>
+      {suggestion.suggested_message ? (
+        <div className="mt-3 border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-primary)] px-3 py-3 text-sm leading-6">
+          {suggestion.suggested_message}
+        </div>
+      ) : null}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button
+          variant="secondary"
+          className={SECONDARY_BUTTON}
+          onClick={() => onDraft(suggestion.contact.id)}
+        >
+          <ChatsCircle size={16} weight="bold" />
+          Draft outreach
+        </Button>
+        <Button
+          variant="default"
+          className={PRIMARY_BUTTON}
+          onClick={() => onCreate(suggestion.contact.id, suggestion.suggested_message ?? null)}
+        >
+          <PaperPlaneTilt size={16} weight="bold" />
+          Create request
+        </Button>
+      </div>
+      <div className="mt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+        Target job {selectedJobId.slice(0, 12)}
+      </div>
+    </div>
   );
 }
 
@@ -250,53 +376,66 @@ export default function Networking() {
 
   const selectedJob = recentJobs?.items.find((job) => job.id === selectedJobId) ?? null;
 
+  const heroMetrics = [
+    {
+      label: "Contacts",
+      value: String(contacts?.length ?? 0),
+      accent: "text-[var(--color-accent-primary)]",
+      description: "People you can actually route through.",
+    },
+    {
+      label: "Avg strength",
+      value: strengthAverage,
+      accent: "text-[var(--color-accent-success)]",
+      description: "Relationship confidence across the network.",
+    },
+    {
+      label: "Referral queue",
+      value: String(referralRequests?.length ?? 0),
+      accent: "text-[var(--color-accent-warning)]",
+      description: "Drafted asks waiting for follow-through.",
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <Card className="overflow-hidden p-0">
-        <div className="grid gap-5 border-b border-border bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent-primary)_10%,transparent),transparent_62%)] px-6 py-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">
-          <div>
-            <div className="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">Execute</div>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary">Networking</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
-              A lightweight referral CRM shaped by Wix-style contact management and a Clay-like
-              outreach assistant. Capture warm paths, draft asks, and keep requests visible.
-            </p>
-          </div>
+    <div className="space-y-6 px-4 py-4 sm:px-6 lg:px-8">
+      <div className={`${PANEL} overflow-hidden`}>
+        <div className="grid gap-5 border-b-2 border-[var(--color-text-primary)] px-5 py-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.85fr)] lg:px-6 lg:py-6">
+          <SectionTitle
+            title="Networking"
+            description="A referral CRM with harsh borders, fast scanning, and a direct path from contact to outreach draft."
+          />
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            <MetricCard
-              label="Contacts"
-              value={String(contacts?.length ?? 0)}
-              description="People you can actually route through."
-            />
-            <MetricCard
-              label="Avg Strength"
-              value={strengthAverage}
-              description="Relationship confidence across the network."
-            />
-            <MetricCard
-              label="Referral Queue"
-              value={String(referralRequests?.length ?? 0)}
-              description="Drafted asks waiting for follow-through."
-            />
+            {heroMetrics.map((metric) => (
+              <MetricCard
+                key={metric.label}
+                label={metric.label}
+                value={metric.value}
+                description={metric.description}
+                accent={metric.accent}
+              />
+            ))}
           </div>
         </div>
-      </Card>
+      </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.3fr)]">
-        <Card className="p-0">
-          <div className="border-b border-border px-5 py-4">
-            <div className="flex items-center justify-between gap-3">
+      <div className="grid gap-6 xl:grid-cols-[minmax(320px,0.95fr)_minmax(0,1.05fr)]">
+        <div className={`${PANEL} overflow-hidden`}>
+          <div className="border-b-2 border-[var(--color-text-primary)] px-5 py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-text-primary">Contacts</div>
-                <p className="mt-1 text-sm text-text-secondary">Search and triage the people worth activating.</p>
+                <div className="text-sm font-bold uppercase tracking-[0.2em]">Contacts</div>
+                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                  Search and triage the people worth activating.
+                </p>
               </div>
-              <Button variant="secondary" onClick={resetForm}>
+              <Button variant="secondary" className={SECONDARY_BUTTON} onClick={resetForm}>
                 <Plus size={16} weight="bold" />
                 New
               </Button>
             </div>
             <Input
-              className="mt-4"
+              className={`${FIELD} mt-4`}
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
               placeholder="Search by name, company, role, or email"
@@ -304,48 +443,27 @@ export default function Networking() {
             />
           </div>
 
-          <div className="max-h-[720px] overflow-auto px-3 py-3">
+          <div className="max-h-[72vh] overflow-auto p-3">
             {loadingContacts ? (
-              <div className="space-y-3 px-2 py-2">
+              <div className="space-y-3">
                 {Array.from({ length: 6 }).map((_, index) => (
                   <Skeleton key={index} variant="rect" className="h-20 w-full" />
                 ))}
               </div>
             ) : filteredContacts.length ? (
-              filteredContacts.map((contact) => (
-                <button
-                  key={contact.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedContactId(contact.id);
-                    setGeneratedMessage("");
-                  }}
-                  className={cn(
-                    "mb-2 w-full rounded-[var(--radius-xl)] border px-4 py-4 text-left transition-colors",
-                    selectedContactId === contact.id
-                      ? "border-accent-primary/35 bg-accent-primary/8"
-                      : "border-transparent bg-bg-secondary hover:border-border hover:bg-bg-tertiary"
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-text-primary">{contact.name}</div>
-                      <div className="mt-1 truncate text-sm text-text-secondary">
-                        {[contact.role, contact.company].filter(Boolean).join(" • ") || "No role or company yet"}
-                      </div>
-                    </div>
-                    <Badge variant={contact.relationship_strength >= 4 ? "success" : "info"}>
-                      {contact.relationship_strength}/5
-                    </Badge>
-                  </div>
-                  <div className="mt-3 flex items-center gap-3 text-xs text-text-muted">
-                    {contact.email ? <span>{contact.email}</span> : null}
-                    {contact.last_contacted ? (
-                      <span>Last touch {formatDistanceToNow(new Date(contact.last_contacted), { addSuffix: true })}</span>
-                    ) : null}
-                  </div>
-                </button>
-              ))
+              <div className="space-y-3">
+                {filteredContacts.map((contact) => (
+                  <ContactRow
+                    key={contact.id}
+                    contact={contact}
+                    selected={selectedContactId === contact.id}
+                    onClick={() => {
+                      setSelectedContactId(contact.id);
+                      setGeneratedMessage("");
+                    }}
+                  />
+                ))}
+              </div>
             ) : (
               <EmptyState
                 icon={<UsersThree size={32} weight="bold" />}
@@ -354,22 +472,23 @@ export default function Networking() {
               />
             )}
           </div>
-        </Card>
+        </div>
 
         <div className="space-y-6">
-          <Card className="p-5">
-            <div className="flex items-center justify-between gap-3">
+          <div className={`${PANEL} p-5 sm:p-6`}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-text-primary">
+                <div className="text-sm font-bold uppercase tracking-[0.2em]">
                   {selectedContact ? "Contact detail" : "New contact"}
                 </div>
-                <p className="mt-1 text-sm text-text-secondary">
+                <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">
                   Keep the record operational: who they are, why they matter, and how to reach them.
                 </p>
               </div>
               {selectedContactId ? (
                 <Button
-                  variant="destructive"
+                  variant="secondary"
+                  className={SECONDARY_BUTTON}
                   onClick={() => deleteContactMutation.mutate()}
                   disabled={deleteContactMutation.isPending}
                 >
@@ -386,6 +505,7 @@ export default function Networking() {
                 onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
                 placeholder="e.g. Maya Patel"
                 icon={<UserCircle size={16} weight="bold" />}
+                className={FIELD}
               />
               <Select
                 label="Relationship strength"
@@ -394,6 +514,7 @@ export default function Networking() {
                   setForm((current) => ({ ...current, relationship_strength: Number(event.target.value) }))
                 }
                 options={RELATIONSHIP_OPTIONS}
+                className={FIELD}
               />
               <Input
                 label="Company"
@@ -401,6 +522,7 @@ export default function Networking() {
                 onChange={(event) => setForm((current) => ({ ...current, company: event.target.value }))}
                 placeholder="e.g. Stripe"
                 icon={<Buildings size={16} weight="bold" />}
+                className={FIELD}
               />
               <Input
                 label="Role"
@@ -408,6 +530,7 @@ export default function Networking() {
                 onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}
                 placeholder="e.g. Engineering Manager"
                 icon={<Handshake size={16} weight="bold" />}
+                className={FIELD}
               />
               <Input
                 label="Email"
@@ -415,6 +538,7 @@ export default function Networking() {
                 value={form.email ?? ""}
                 onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
                 placeholder="maya@company.com"
+                className={FIELD}
               />
               <Input
                 label="LinkedIn"
@@ -422,23 +546,25 @@ export default function Networking() {
                 onChange={(event) => setForm((current) => ({ ...current, linkedin_url: event.target.value }))}
                 placeholder="https://linkedin.com/in/..."
                 icon={<LinkSimple size={16} weight="bold" />}
+                className={FIELD}
               />
             </div>
 
             <Textarea
               label="Notes"
-              className="mt-4 min-h-[140px]"
+              className={`${FIELD} mt-4 min-h-[140px]`}
               value={form.notes ?? ""}
               onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
               placeholder="Shared history, timing, team context, or why this person is likely to help."
             />
 
             <div className="mt-4 flex flex-wrap justify-end gap-3">
-              <Button variant="secondary" onClick={resetForm}>
+              <Button variant="secondary" className={SECONDARY_BUTTON} onClick={resetForm}>
                 Reset
               </Button>
               <Button
                 variant="default"
+                className={PRIMARY_BUTTON}
                 onClick={saveContact}
                 disabled={createContactMutation.isPending || updateContactMutation.isPending}
               >
@@ -446,23 +572,25 @@ export default function Networking() {
                 {selectedContactId ? "Save changes" : "Create contact"}
               </Button>
             </div>
-          </Card>
+          </div>
 
           <div className="grid gap-6 xl:grid-cols-2">
-            <Card className="p-5">
-              <div className="text-sm font-semibold text-text-primary">Company connection scan</div>
-              <p className="mt-1 text-sm text-text-secondary">
+            <div className={`${PANEL} p-5 sm:p-6`}>
+              <div className="text-sm font-bold uppercase tracking-[0.2em]">Company connection scan</div>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
                 Find the warmest existing relationships before you ask for a referral.
               </p>
-              <div className="mt-4 flex gap-3">
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <Input
                   value={companyLookup}
                   onChange={(event) => setCompanyLookup(event.target.value)}
                   placeholder="Search a company"
                   icon={<Buildings size={16} weight="bold" />}
+                  className={FIELD}
                 />
                 <Button
                   variant="secondary"
+                  className={SECONDARY_BUTTON}
                   onClick={() => connectionSearchMutation.mutate(companyLookup)}
                   disabled={!companyLookup.trim() || connectionSearchMutation.isPending}
                 >
@@ -471,21 +599,18 @@ export default function Networking() {
                 </Button>
               </div>
 
-              <div className="mt-4 space-y-2">
+              <div className="mt-4 space-y-3">
                 {companyConnections.length ? (
                   companyConnections.map((contact) => (
-                    <div
-                      key={contact.id}
-                      className="rounded-[var(--radius-lg)] border border-border bg-bg-secondary px-4 py-3"
-                    >
+                    <div key={contact.id} className={`${PANEL_ALT} px-4 py-3`}>
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <div className="text-sm font-medium text-text-primary">{contact.name}</div>
-                          <div className="text-sm text-text-secondary">
+                          <div className="text-sm font-bold uppercase tracking-[0.08em]">{contact.name}</div>
+                          <div className="text-sm text-[var(--color-text-secondary)]">
                             {[contact.role, contact.company].filter(Boolean).join(" • ")}
                           </div>
                         </div>
-                        <Badge variant={contact.relationship_strength >= 4 ? "success" : "info"}>
+                        <Badge variant={contact.relationship_strength >= 4 ? "success" : "info"} className="rounded-none">
                           {contact.relationship_strength}/5
                         </Badge>
                       </div>
@@ -499,11 +624,11 @@ export default function Networking() {
                   />
                 )}
               </div>
-            </Card>
+            </div>
 
-            <Card className="p-5">
-              <div className="text-sm font-semibold text-text-primary">Referral desk</div>
-              <p className="mt-1 text-sm text-text-secondary">
+            <div className={`${PANEL} p-5 sm:p-6`}>
+              <div className="text-sm font-bold uppercase tracking-[0.2em]">Referral desk</div>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
                 Pull suggestions for a job, draft outreach, and create a referral request in one pass.
               </p>
               <div className="mt-4 space-y-4">
@@ -513,9 +638,11 @@ export default function Networking() {
                   onChange={(event) => setSelectedJobId(event.target.value)}
                   options={jobOptions}
                   placeholder="Choose a job"
+                  className={FIELD}
                 />
                 <Button
                   variant="secondary"
+                  className={SECONDARY_BUTTON}
                   onClick={() => suggestionsMutation.mutate(selectedJobId)}
                   disabled={!selectedJobId || suggestionsMutation.isPending}
                 >
@@ -527,53 +654,24 @@ export default function Networking() {
               <div className="mt-4 space-y-3">
                 {suggestions.length ? (
                   suggestions.map((suggestion) => (
-                    <div
+                    <SuggestionCard
                       key={suggestion.contact.id}
-                      className="rounded-[var(--radius-lg)] border border-border bg-bg-secondary px-4 py-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-medium text-text-primary">{suggestion.contact.name}</div>
-                          <div className="text-sm text-text-secondary">
-                            {[suggestion.contact.role, suggestion.contact.company].filter(Boolean).join(" • ")}
-                          </div>
-                        </div>
-                        <Badge variant="success">Suggested</Badge>
-                      </div>
-                      <p className="mt-3 text-sm leading-6 text-text-secondary">{suggestion.relevance_reason}</p>
-                      {suggestion.suggested_message ? (
-                        <div className="mt-3 rounded-[var(--radius-lg)] border border-border bg-bg-primary px-3 py-3 text-sm leading-6 text-text-secondary">
-                          {suggestion.suggested_message}
-                        </div>
-                      ) : null}
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <Button
-                          variant="secondary"
-                          onClick={() =>
-                            outreachMutation.mutate({
-                              contactId: suggestion.contact.id,
-                              jobId: selectedJobId,
-                            })
-                          }
-                        >
-                          <ChatsCircle size={16} weight="bold" />
-                          Draft outreach
-                        </Button>
-                        <Button
-                          variant="default"
-                          onClick={() =>
-                            createReferralRequestMutation.mutate({
-                              contactId: suggestion.contact.id,
-                              jobId: selectedJobId,
-                              message: generatedMessage || suggestion.suggested_message,
-                            })
-                          }
-                        >
-                          <PaperPlaneTilt size={16} weight="bold" />
-                          Create request
-                        </Button>
-                      </div>
-                    </div>
+                      suggestion={suggestion}
+                      selectedJobId={selectedJobId}
+                      onDraft={(contactId) =>
+                        outreachMutation.mutate({
+                          contactId,
+                          jobId: selectedJobId,
+                        })
+                      }
+                      onCreate={(contactId, message) =>
+                        createReferralRequestMutation.mutate({
+                          contactId,
+                          jobId: selectedJobId,
+                          message: generatedMessage || message || "",
+                        })
+                      }
+                    />
                   ))
                 ) : (
                   <EmptyState
@@ -587,22 +685,22 @@ export default function Networking() {
               {generatedMessage ? (
                 <Textarea
                   label="Generated outreach"
-                  className="mt-4 min-h-[160px]"
+                  className={`${FIELD} mt-4 min-h-[160px]`}
                   value={generatedMessage}
                   onChange={(event) => setGeneratedMessage(event.target.value)}
                 />
               ) : null}
               {selectedJob ? (
-                <p className="mt-3 text-xs text-text-muted">
+                <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
                   Current target: {selectedJob.title} at {selectedJob.company_name ?? "Unknown company"}
                 </p>
               ) : null}
-            </Card>
+            </div>
           </div>
 
-          <Card className="p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
-              <PaperPlaneTilt size={16} weight="bold" className="text-accent-primary" />
+          <div className={`${PANEL} p-5 sm:p-6`}>
+            <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em]">
+              <PaperPlaneTilt size={16} weight="bold" className="text-[var(--color-accent-primary)]" />
               Referral request queue
             </div>
             <div className="mt-4 space-y-3">
@@ -610,23 +708,22 @@ export default function Networking() {
                 referralRequests.map((request) => {
                   const requestContact = contacts?.find((contact) => contact.id === request.contact_id);
                   return (
-                    <div
-                      key={request.id}
-                      className="rounded-[var(--radius-lg)] border border-border bg-bg-secondary px-4 py-4"
-                    >
+                    <div key={request.id} className={`${PANEL_ALT} px-4 py-4`}>
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <div className="text-sm font-medium text-text-primary">
+                          <div className="text-sm font-bold uppercase tracking-[0.08em]">
                             {requestContact?.name ?? "Unknown contact"}
                           </div>
-                          <div className="mt-1 text-sm text-text-secondary">
+                          <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
                             Job {request.job_id.slice(0, 10)}... • {request.status}
                           </div>
                         </div>
-                        <Badge variant={request.status === "draft" ? "warning" : "info"}>{request.status}</Badge>
+                        <Badge variant={request.status === "draft" ? "warning" : "info"} className="rounded-none">
+                          {request.status}
+                        </Badge>
                       </div>
                       {request.message_template ? (
-                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-text-secondary">
+                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--color-text-secondary)]">
                           {request.message_template}
                         </p>
                       ) : null}
@@ -641,7 +738,7 @@ export default function Networking() {
                 />
               )}
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     </div>

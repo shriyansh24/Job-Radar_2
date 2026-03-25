@@ -1,11 +1,12 @@
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "./testUtils";
 
 const phase7aMocks = vi.hoisted(() => ({
   listSourceHealth: vi.fn(),
   listCompanies: vi.fn(),
-  listTemplates: vi.fn(),
+  expand: vi.fn(),
 }));
 
 vi.mock("../api/phase7a", () => ({
@@ -16,7 +17,7 @@ vi.mock("../api/phase7a", () => ({
     list: phase7aMocks.listCompanies,
   },
   searchExpansionApi: {
-    listTemplates: phase7aMocks.listTemplates,
+    expand: phase7aMocks.expand,
   },
 }));
 
@@ -36,7 +37,8 @@ describe("Phase 7A pages", () => {
         total_jobs_found: 120,
         last_check_at: "2026-03-22T12:00:00Z",
         failure_count: 1,
-        source_type: "scraper",
+        backoff_until: null,
+        created_at: "2026-03-20T12:00:00Z",
       },
     ]);
     phase7aMocks.listCompanies.mockResolvedValue([
@@ -54,17 +56,12 @@ describe("Phase 7A pages", () => {
         last_validated_at: null,
       },
     ]);
-    phase7aMocks.listTemplates.mockResolvedValue([
-      {
-        id: "template-1",
-        name: "React Roles",
-        base_query: "react engineer",
-        expanded_queries: ["frontend engineer", "ui engineer"],
-        strictness: "balanced",
-        is_active: true,
-        created_at: "2026-03-22T12:00:00Z",
-      },
-    ]);
+    phase7aMocks.expand.mockResolvedValue({
+      original_query: "react engineer",
+      expanded_terms: ["frontend engineer", "ui engineer"],
+      synonyms: ["react developer"],
+      message: "Query expansion pending LLM integration",
+    });
   });
 
   it("renders source health cards from query data", async () => {
@@ -89,14 +86,22 @@ describe("Phase 7A pages", () => {
     expect(screen.getByText("91%")).toBeInTheDocument();
   });
 
-  it("renders search templates and expanded queries", async () => {
+  it("runs search expansion against the live endpoint contract", async () => {
+    const user = userEvent.setup();
+
     renderWithProviders(<SearchExpansion />);
 
     expect(
       await screen.findByRole("heading", { name: /Search Expansion/i })
     ).toBeInTheDocument();
-    expect(await screen.findByText("React Roles")).toBeInTheDocument();
-    expect(screen.getByText("react engineer")).toBeInTheDocument();
+
+    await user.clear(screen.getByPlaceholderText("senior frontend engineer"));
+    await user.type(screen.getByPlaceholderText("senior frontend engineer"), "react engineer");
+    await user.keyboard("{Enter}");
+
+    expect(phase7aMocks.expand).toHaveBeenCalledWith("react engineer");
+    expect(await screen.findByText("Query expansion pending LLM integration")).toBeInTheDocument();
     expect(screen.getByText("frontend engineer")).toBeInTheDocument();
+    expect(screen.getByText("react developer")).toBeInTheDocument();
   });
 });

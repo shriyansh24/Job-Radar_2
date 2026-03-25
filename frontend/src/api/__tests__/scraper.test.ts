@@ -53,7 +53,7 @@ describe("scraperApi", () => {
     scraperApi.importTargets([{ url: "https://acme.example/jobs" }]);
     scraperApi.triggerTarget("target-1");
     scraperApi.updateTarget("target-1", { enabled: false });
-    scraperApi.releaseTarget("target-1", { reason: "manual review" });
+    scraperApi.releaseTarget("target-1", { force_tier: 2 });
     scraperApi.triggerBatch({ priority_class: "watchlist", batch_size: 3 });
 
     expect(apiClientMock.post).toHaveBeenNthCalledWith(
@@ -72,7 +72,7 @@ describe("scraperApi", () => {
     expect(apiClientMock.post).toHaveBeenNthCalledWith(
       3,
       "/scraper/targets/target-1/release",
-      { reason: "manual review" }
+      { force_tier: 2 }
     );
     expect(apiClientMock.post).toHaveBeenNthCalledWith(
       4,

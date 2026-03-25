@@ -9,22 +9,22 @@ interface BadgeProps {
 
 export default function Badge({ variant = 'default', size = 'sm', children, className }: BadgeProps) {
   const variants = {
-    default: 'bg-bg-tertiary text-text-secondary border-border',
-    success: 'bg-accent-success/15 text-accent-success border-accent-success/30',
-    warning: 'bg-accent-warning/15 text-accent-warning border-accent-warning/30',
-    danger: 'bg-accent-danger/15 text-accent-danger border-accent-danger/30',
-    info: 'bg-accent-primary/15 text-accent-primary border-accent-primary/30',
+    default: 'bg-[var(--color-bg-tertiary)] text-foreground border-border',
+    success: 'bg-[var(--color-accent-success-subtle)] text-[var(--color-accent-success)] border-border',
+    warning: 'bg-[var(--color-accent-warning-subtle)] text-[var(--color-accent-warning)] border-border',
+    danger: 'bg-[var(--color-accent-danger-subtle)] text-[var(--color-accent-danger)] border-border',
+    info: 'bg-[var(--color-accent-primary-subtle)] text-[var(--color-accent-primary)] border-border',
   };
 
   const sizes = {
-    sm: 'px-2 py-0.5 text-xs',
-    md: 'px-2.5 py-1 text-sm',
+    sm: 'px-2 py-1 text-[10px]',
+    md: 'px-3 py-1.5 text-[11px]',
   };
 
   return (
     <span
       className={cn(
-        'inline-flex items-center font-medium rounded-full border',
+        'inline-flex items-center border-2 font-mono font-bold uppercase tracking-[0.16em] rounded-none',
         variants[variant],
         sizes[size],
         className

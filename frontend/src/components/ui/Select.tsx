@@ -1,5 +1,5 @@
 import { CaretDown } from "@phosphor-icons/react";
-import { forwardRef } from "react";
+import { forwardRef, useId } from "react";
 import { cn } from "../../lib/utils";
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
@@ -11,19 +11,26 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, placeholder, className, ...props }, ref) => {
+    const generatedId = useId();
+    const selectId = props.id ?? generatedId;
+
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-text-secondary mb-1.5">
+          <label
+            htmlFor={selectId}
+            className="mb-2 block font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted"
+          >
             {label}
           </label>
         )}
         <div className="relative">
           <select
             ref={ref}
+            id={selectId}
             className={cn(
-              "w-full appearance-none bg-bg-secondary border border-border rounded-[var(--radius-md)] px-3 py-2 pr-9 text-sm text-text-primary outline-none transition-[border-color,box-shadow,background-color] duration-[var(--transition-fast)] focus:border-border-focus focus:ring-2 focus:ring-border-focus/25",
-              error && "border-accent-danger focus:border-accent-danger focus:ring-accent-danger/20",
+              "w-full appearance-none border-2 border-border bg-[var(--color-bg-secondary)] px-3 py-3 pr-10 text-sm text-text-primary outline-none transition-[border-color,box-shadow,background-color] duration-[var(--transition-fast)] focus:border-border-focus focus:bg-[var(--color-bg-tertiary)] focus:shadow-[var(--shadow-blue)]",
+              error && "border-accent-danger focus:border-accent-danger focus:shadow-none",
               className
             )}
             {...props}

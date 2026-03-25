@@ -1,5 +1,4 @@
 import {
-  ArrowDown,
   ArrowUp,
   Building,
   CurrencyDollar,
@@ -11,18 +10,18 @@ import {
 } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { salaryApi, type OfferEvaluation, type SalaryResearch } from "../api/salary";
-import Badge from "../components/ui/Badge";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
-import Skeleton from "../components/ui/Skeleton";
 import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader } from "../components/system/PageHeader";
 import { SectionHeader } from "../components/system/SectionHeader";
 import { SplitWorkspace } from "../components/system/SplitWorkspace";
 import { StateBlock } from "../components/system/StateBlock";
 import { Surface } from "../components/system/Surface";
+import Badge from "../components/ui/Badge";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import Skeleton from "../components/ui/Skeleton";
 import { toast } from "../components/ui/toastService";
 
 interface SavedResearch {
@@ -34,7 +33,8 @@ interface SavedResearch {
   timestamp: string;
 }
 
-function formatSalary(value: number): string {
+function formatSalary(value: number | null | undefined): string {
+  if (!value) return "-";
   if (value >= 1000) {
     return `$${Math.round(value / 1000)}k`;
   }
@@ -42,106 +42,114 @@ function formatSalary(value: number): string {
 }
 
 function SalaryRangeBar({ research }: { research: SalaryResearch }) {
-  const min = research.min_salary ?? 0;
-  const p25 = research.percentile_25 ?? 0;
-  const median = research.median_salary ?? 0;
-  const p75 = research.percentile_75 ?? 0;
-  const max = research.max_salary ?? 0;
-  const range = max - min;
+  const markers = [
+    { label: "P25", value: research.p25 ?? 0, accent: "text-text-primary" },
+    { label: "P50", value: research.p50 ?? 0, accent: "text-accent-primary" },
+    { label: "P75", value: research.p75 ?? 0, accent: "text-text-primary" },
+    { label: "P90", value: research.p90 ?? 0, accent: "text-text-primary" },
+  ];
+  const values = markers.map((marker) => marker.value).filter((value) => value > 0);
+  if (values.length < 2) return null;
 
+  const floor = Math.min(...values);
+  const ceiling = Math.max(...values);
+  const range = ceiling - floor;
   if (range <= 0) return null;
 
-  const getPosition = (value: number) => ((value - min) / range) * 100;
+  const getPosition = (value: number) => ((value - floor) / range) * 100;
 
   return (
-    <div className="space-y-4">
-      <div className="relative h-8">
-        <div className="absolute top-1/2 h-2 w-full -translate-y-1/2 rounded-full bg-border/70" />
+    <div className="space-y-5">
+      <div className="relative h-12 border-2 border-border bg-[var(--color-bg-tertiary)] px-4">
+        <div className="absolute left-4 right-4 top-1/2 h-2 -translate-y-1/2 bg-border" />
         <div
-          className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-[var(--color-accent-primary)]/25"
+          className="absolute top-1/2 h-4 -translate-y-1/2 border-2 border-border bg-accent-primary/20"
           style={{
-            left: `${getPosition(p25)}%`,
-            width: `${getPosition(p75) - getPosition(p25)}%`,
+            left: `calc(${getPosition(research.p25 ?? floor)}% + 0.5rem)`,
+            width: `${getPosition(research.p75 ?? ceiling) - getPosition(research.p25 ?? floor)}%`,
           }}
         />
-        <div className="absolute left-0 top-1/2 size-3 -translate-y-1/2 rounded-full border-2 border-background bg-muted-foreground" />
-        <div
-          className="absolute top-1/2 size-3 -translate-y-1/2 rounded-full border-2 border-background bg-[var(--color-accent-primary)]/60"
-          style={{ left: `${getPosition(p25)}%` }}
-        />
-        <div
-          className="absolute top-1/2 z-10 size-4 -translate-y-1/2 rounded-full border-2 border-background bg-[var(--color-accent-primary)]"
-          style={{ left: `${getPosition(median)}%` }}
-        />
-        <div
-          className="absolute top-1/2 size-3 -translate-y-1/2 rounded-full border-2 border-background bg-[var(--color-accent-primary)]/60"
-          style={{ left: `${getPosition(p75)}%` }}
-        />
-        <div className="absolute left-full top-1/2 size-3 -translate-y-1/2 rounded-full border-2 border-background bg-muted-foreground" />
+        {markers.map((marker) => (
+          <div
+            key={marker.label}
+            className="absolute top-1/2 size-4 -translate-y-1/2 border-2 border-border shadow-[var(--shadow-xs)]"
+            style={{
+              left: `calc(${getPosition(marker.value)}% + 0.5rem)`,
+              backgroundColor:
+                marker.label === "P50" ? "var(--color-accent-primary)" : "var(--card)",
+            }}
+          />
+        ))}
       </div>
 
-      <div className="grid grid-cols-5 gap-2 text-center text-sm">
-        <div>
-          <p className="text-xs text-muted-foreground">Min</p>
-          <p className="font-medium text-foreground">{formatSalary(min)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">P25</p>
-          <p className="font-medium text-foreground">{formatSalary(p25)}</p>
-        </div>
-        <div>
-          <p className="text-xs font-medium text-[var(--color-accent-primary)]">Median</p>
-          <p className="font-semibold text-[var(--color-accent-primary)]">{formatSalary(median)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">P75</p>
-          <p className="font-medium text-foreground">{formatSalary(p75)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Max</p>
-          <p className="font-medium text-foreground">{formatSalary(max)}</p>
-        </div>
+      <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
+        {markers.map((item) => (
+          <div key={item.label} className="border-2 border-border bg-card px-2 py-3 shadow-[var(--shadow-xs)]">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              {item.label}
+            </p>
+            <p className={`mt-2 text-lg font-black uppercase tracking-[-0.05em] ${item.accent}`}>
+              {formatSalary(item.value)}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
 function VerdictDisplay({ evaluation }: { evaluation: OfferEvaluation }) {
-  const verdictConfig: Record<
-    "above" | "at" | "below",
-    { icon: ReactNode; variant: "success" | "warning" | "danger"; label: string }
-  > = {
-    above: { icon: <ArrowUp size={16} weight="bold" />, variant: "success", label: "Above Market" },
-    at: { icon: <Minus size={16} weight="bold" />, variant: "warning", label: "At Market" },
-    below: { icon: <ArrowDown size={16} weight="bold" />, variant: "danger", label: "Below Market" },
-  };
-
-  const rating = evaluation.overall_rating === "above_market" ? "above" : evaluation.overall_rating === "below_market" ? "below" : "at";
-  const config = verdictConfig[rating];
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Badge variant={config.variant} size="md">
-          {config.icon}
-          <span className="ml-1">{config.label}</span>
+        <Badge variant="info" size="md">
+          <Lightbulb size={14} weight="bold" />
+          <span className="ml-1">Negotiation guidance</span>
         </Badge>
-        <span className="text-sm text-muted-foreground">
-          Percentile <span className="font-semibold text-foreground">{evaluation.percentile}th</span>
-        </span>
+        {evaluation.counter_offer ? (
+          <Badge variant="success" size="md">
+            <ArrowUp size={14} weight="bold" />
+            <span className="ml-1">Counter {formatSalary(evaluation.counter_offer)}</span>
+          </Badge>
+        ) : null}
+        {evaluation.walkaway_point ? (
+          <Badge variant="warning" size="md">
+            <Minus size={14} weight="bold" />
+            <span className="ml-1">Walkaway {formatSalary(evaluation.walkaway_point)}</span>
+          </Badge>
+        ) : null}
       </div>
 
-      {evaluation.negotiation_tips?.length ? (
-        <div className="space-y-2">
-          <h4 className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Tips</h4>
-          <ul className="space-y-1.5">
-            {evaluation.negotiation_tips.map((tip, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-foreground">
-                <span className="mt-1 text-[var(--color-accent-primary)]">•</span>
-                <span className="leading-6 text-muted-foreground">{tip}</span>
-              </li>
+      <div className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-4 text-sm leading-6 text-text-secondary shadow-[var(--shadow-xs)]">
+        {evaluation.assessment}
+      </div>
+
+      {evaluation.talking_points.length ? (
+        <div className="space-y-3">
+          <h4 className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            Talking points
+          </h4>
+          <div className="space-y-2">
+            {evaluation.talking_points.map((tip, index) => (
+              <div
+                key={`${tip}-${index}`}
+                className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3 text-sm leading-6 text-text-secondary shadow-[var(--shadow-xs)]"
+              >
+                {tip}
+              </div>
             ))}
-          </ul>
+          </div>
+        </div>
+      ) : null}
+
+      {evaluation.negotiation_script ? (
+        <div className="space-y-3">
+          <h4 className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            Negotiation script
+          </h4>
+          <div className="border-2 border-border bg-card px-4 py-4 text-sm leading-6 text-text-secondary shadow-[var(--shadow-xs)]">
+            {evaluation.negotiation_script}
+          </div>
         </div>
       ) : null}
     </div>
@@ -205,27 +213,33 @@ export default function SalaryInsights() {
         label: "Saved research",
         value: savedResearches.length,
         hint: "Recent salary reads that can be reused later.",
+        icon: <Lightbulb size={18} weight="bold" />,
       },
       {
         key: "median",
-        label: "Latest median",
-        value: latestResearch ? formatSalary(latestResearch.median_salary ?? 0) : "—",
-        hint: "Most recent median salary pull.",
+        label: "Median",
+        value: latestResearch ? formatSalary(latestResearch.p50) : "-",
+        hint: "Most recent P50 market read.",
+        icon: <CurrencyDollar size={18} weight="bold" />,
+        tone: "warning" as const,
       },
       {
         key: "evaluation",
-        label: "Evaluation",
-        value: evaluation ? `${evaluation.percentile}th` : "—",
-        hint: "Where the offer lands relative to market.",
+        label: "Counter offer",
+        value: evaluation?.counter_offer ? formatSalary(evaluation.counter_offer) : "-",
+        hint: "Negotiation anchor from the latest evaluation.",
+        icon: <TrendUp size={18} weight="bold" />,
+        tone: "success" as const,
       },
       {
         key: "company",
         label: "Company set",
         value: company || "None",
         hint: "Used for market comparisons.",
+        icon: <Building size={18} weight="bold" />,
       },
     ],
-    [company, evaluation, latestResearch, savedResearches.length]
+    [company, evaluation?.counter_offer, latestResearch, savedResearches.length]
   );
 
   return (
@@ -233,7 +247,17 @@ export default function SalaryInsights() {
       <PageHeader
         eyebrow="Prepare"
         title="Salary Insights"
-        description="Research the market, compare offers, and keep a lightweight record of the numbers that matter."
+        description="Research the market, pressure-test offers, and keep a negotiation log that works cleanly on desktop, tablet, and phone."
+        meta={
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="warning" size="sm">
+              Market percentiles
+            </Badge>
+            <Badge variant="success" size="sm">
+              Offer coaching
+            </Badge>
+          </div>
+        }
       />
 
       <MetricStrip items={metrics} />
@@ -241,12 +265,12 @@ export default function SalaryInsights() {
       <SplitWorkspace
         primary={
           <div className="space-y-6">
-            <Surface tone="default" padding="md" radius="xl">
+            <Surface tone="default" padding="lg" radius="xl">
               <SectionHeader
                 title="Salary research"
-                description="Pull a market range for the role, company, and location you care about."
+                description="Pull a market range for the exact role, company, and location under consideration."
               />
-              <div className="mt-4 space-y-4">
+              <div className="mt-6 grid gap-4 xl:grid-cols-2">
                 <Input
                   label="Job title"
                   value={jobTitle}
@@ -254,46 +278,86 @@ export default function SalaryInsights() {
                   placeholder="Senior Frontend Engineer"
                   icon={<MagnifyingGlass size={16} weight="bold" />}
                 />
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Input
-                    label="Company"
-                    value={company}
-                    onChange={(event) => setCompany(event.target.value)}
-                    placeholder="Stripe"
-                    icon={<Building size={16} weight="bold" />}
-                  />
-                  <Input
-                    label="Location"
-                    value={location}
-                    onChange={(event) => setLocation(event.target.value)}
-                    placeholder="Remote"
-                    icon={<MapPin size={16} weight="bold" />}
-                  />
+                <Input
+                  label="Company"
+                  value={company}
+                  onChange={(event) => setCompany(event.target.value)}
+                  placeholder="Stripe"
+                  icon={<Building size={16} weight="bold" />}
+                />
+                <Input
+                  label="Location"
+                  value={location}
+                  onChange={(event) => setLocation(event.target.value)}
+                  placeholder="Remote"
+                  icon={<MapPin size={16} weight="bold" />}
+                />
+                <div className="flex items-end">
+                  <Button
+                    className="w-full"
+                    onClick={() => researchMutation.mutate()}
+                    loading={researchMutation.isPending}
+                    disabled={!jobTitle.trim()}
+                    icon={<TrendUp size={16} weight="bold" />}
+                  >
+                    Research salary
+                  </Button>
                 </div>
-                <Button
-                  onClick={() => researchMutation.mutate()}
-                  loading={researchMutation.isPending}
-                  disabled={!jobTitle.trim()}
-                  icon={<TrendUp size={16} weight="bold" />}
-                >
-                  Research salary
-                </Button>
               </div>
             </Surface>
 
             {researchMutation.isPending ? (
-              <Surface tone="default" padding="md" radius="xl">
-                <Skeleton variant="text" className="mb-4 h-5 w-1/2" />
-                <Skeleton variant="rect" className="h-24 w-full" />
+              <Surface tone="default" padding="lg" radius="xl">
+                <Skeleton variant="text" className="h-5 w-1/3" />
+                <Skeleton variant="rect" className="mt-6 h-32 w-full" />
               </Surface>
             ) : latestResearch ? (
-              <Surface tone="default" padding="md" radius="xl">
+              <Surface tone="default" padding="lg" radius="xl">
                 <SectionHeader
                   title="Range view"
-                  description={`Based on ${latestResearch.data_sources.length} sources and currency ${latestResearch.currency}.`}
+                  description={`Backend market percentiles returned in ${latestResearch.currency}${latestResearch.cached ? " from cache" : ""}.`}
                 />
-                <div className="mt-4">
+                <div className="mt-6 space-y-6">
+                  <Surface tone="subtle" padding="md" radius="xl">
+                    <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                      Active query
+                    </div>
+                    <div className="mt-3 text-3xl font-black uppercase tracking-[-0.06em] text-text-primary">
+                      {company || location ? "Market snapshot loaded" : "General market snapshot"}
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-text-secondary">
+                      {[company || null, location || null].filter(Boolean).join(" / ") || "General market snapshot"}
+                    </p>
+                  </Surface>
                   <SalaryRangeBar research={latestResearch} />
+                  {latestResearch.competing_companies.length ? (
+                    <div className="space-y-3">
+                      <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                        Competing companies
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {latestResearch.competing_companies.map((entry) => (
+                          <Badge key={entry} variant="info" size="sm">
+                            {entry}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  {latestResearch.yoe_brackets.length ? (
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                      {latestResearch.yoe_brackets.map((entry) => (
+                        <div key={entry.years} className="border-2 border-border bg-card px-4 py-4 shadow-[var(--shadow-xs)]">
+                          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                            {entry.years}
+                          </div>
+                          <div className="mt-3 text-lg font-black uppercase tracking-[-0.04em] text-text-primary">
+                            {entry.range}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               </Surface>
             ) : (
@@ -305,12 +369,12 @@ export default function SalaryInsights() {
               />
             )}
 
-            <Surface tone="default" padding="md" radius="xl">
+            <Surface tone="default" padding="lg" radius="xl">
               <SectionHeader
                 title="Offer evaluation"
-                description="Compare a concrete offer against the market range."
+                description="Compare a concrete offer against the latest market context."
               />
-              <div className="mt-4 space-y-4">
+              <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px]">
                 <Input
                   label="Offer amount"
                   type="number"
@@ -319,21 +383,23 @@ export default function SalaryInsights() {
                   placeholder="150000"
                   icon={<CurrencyDollar size={16} weight="bold" />}
                 />
-                <Button
-                  variant="success"
-                  onClick={() => evaluateMutation.mutate()}
-                  loading={evaluateMutation.isPending}
-                  disabled={!jobTitle.trim() || !offerAmount || Number(offerAmount) <= 0}
-                  icon={<TrendUp size={16} weight="bold" />}
-                >
-                  Evaluate offer
-                </Button>
+                <div className="flex items-end">
+                  <Button
+                    variant="success"
+                    className="w-full"
+                    onClick={() => evaluateMutation.mutate()}
+                    loading={evaluateMutation.isPending}
+                    disabled={!jobTitle.trim() || !offerAmount || Number(offerAmount) <= 0}
+                    icon={<TrendUp size={16} weight="bold" />}
+                  >
+                    Evaluate offer
+                  </Button>
+                </div>
               </div>
 
-              {evaluateMutation.isPending ? (
-                <Skeleton variant="rect" className="mt-4 h-20 w-full" />
-              ) : evaluation ? (
-                <div className="mt-4">
+              {evaluateMutation.isPending ? <Skeleton variant="rect" className="mt-6 h-24 w-full" /> : null}
+              {evaluation ? (
+                <div className="mt-6">
                   <VerdictDisplay evaluation={evaluation} />
                 </div>
               ) : null}
@@ -354,19 +420,20 @@ export default function SalaryInsights() {
                       setLocation(saved.location);
                     }}
                   >
-                    <div className="space-y-2">
-                      <div className="text-sm font-semibold tracking-[-0.01em]">{saved.job_title}</div>
-                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                        {saved.company ? <span>{saved.company}</span> : null}
-                        {saved.location ? <span>{saved.location}</span> : null}
+                    <div className="space-y-3">
+                      <div>
+                        <div className="text-lg font-black uppercase tracking-[-0.04em] text-text-primary">
+                          {saved.job_title}
+                        </div>
+                        <p className="mt-1 text-sm leading-6 text-text-secondary">
+                          {[saved.company || null, saved.location || null].filter(Boolean).join(" / ") || "General market"}
+                        </p>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-semibold text-[var(--color-accent-primary)]">
-                          {formatSalary(saved.research.median_salary ?? 0)}
+                        <span className="text-2xl font-black uppercase tracking-[-0.05em] text-accent-primary">
+                          {formatSalary(saved.research.p50)}
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(saved.timestamp), "PP")}
-                        </span>
+                        <span className="text-sm text-muted-foreground">{format(new Date(saved.timestamp), "PP")}</span>
                       </div>
                     </div>
                   </button>
@@ -384,7 +451,7 @@ export default function SalaryInsights() {
               tone="warning"
               icon={<Lightbulb size={18} weight="bold" />}
               title="Reading the result"
-              description="Use the median as the anchor, the band as context, and the percentile as the negotiation signal."
+              description="Use P50 as the anchor, P25/P75 as the bracket, and the coaching output as the negotiation plan."
             />
           </div>
         }

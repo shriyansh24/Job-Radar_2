@@ -1,0 +1,113 @@
+# Frontend Tree
+
+Root: `D:/jobradar-v2/frontend`
+Exclusions applied: `node_modules`, `dist`, `coverage`, `.vite`, and other generated/runtime artifacts.
+
+## Clean Tree
+
+```text
+D:/jobradar-v2/frontend
+|- src/
+|  |- main.tsx                      # Browser entrypoint
+|  |- App.tsx                       # Global providers, router, protected shell
+|  |- index.css                     # CSS variables, theme tokens, Tailwind v4 mapping
+|  |- vite-env.d.ts                 # Vite type ambient declarations
+|  |- pages/                        # Route containers
+|  |  |- Dashboard.tsx              # Home overview
+|  |  |- JobBoard.tsx               # Discovery/job search
+|  |  |- Companies.tsx              # Company registry UI
+|  |  |- Pipeline.tsx               # Application kanban
+|  |  |- AutoApply.tsx              # Auto-apply operations
+|  |  |- Networking.tsx             # Contacts and referrals
+|  |  |- Email.tsx                  # Email log and parsing surface
+|  |  |- Copilot.tsx                # LLM assistant workspace
+|  |  |- ResumeBuilder.tsx          # Resume tooling
+|  |  |- InterviewPrep.tsx          # Interview prep and evaluation
+|  |  |- SalaryInsights.tsx         # Salary research UI
+|  |  |- DocumentVault.tsx          # Resume/cover-letter vault
+|  |  |- Analytics.tsx              # Metrics dashboards
+|  |  |- Outcomes.tsx               # Outcome tracking and company insights
+|  |  |- Profile.tsx                # User profile
+|  |  |- Settings.tsx               # App settings, searches, integrations
+|  |  |- Admin.tsx                  # Diagnostics and admin actions
+|  |  |- Sources.tsx                # Source health reporting
+|  |  |- Targets.tsx                # Scrape target operations
+|  |  |- CanonicalJobs.tsx          # Canonical job operations
+|  |  |- SearchExpansion.tsx        # Search expansion operations
+|  |  |- Login.tsx                  # Public auth entry
+|  |  `- Onboarding.tsx             # Initial setup flow
+|  |- components/
+|  |  |- layout/                    # Auth guard, shell, sidebar, notifications
+|  |  |- system/                    # Shared workspace grammar and layout primitives
+|  |  |- ui/                        # Reusable form/display primitives
+|  |  |- jobs/                      # Job cards, filters, detail
+|  |  |- pipeline/                  # Application modals and kanban parts
+|  |  |- scraper/                   # Scraper control and live log UI
+|  |  |- analytics/AnalyticsCharts.tsx
+|  |  |- ErrorBoundary.tsx
+|  |  `- __tests__/AuthGuard.test.tsx
+|  |- api/                          # Axios-backed API wrappers
+|  |  |- client.ts                  # Shared axios client + refresh interceptor
+|  |  |- auth.ts                    # Auth endpoints
+|  |  |- jobs.ts                    # Jobs endpoints
+|  |  |- pipeline.ts                # Applications/pipeline endpoints
+|  |  |- profile.ts                 # Profile endpoints
+|  |  |- settings.ts                # Settings/search/integration endpoints
+|  |  |- analytics.ts               # Dashboard metrics endpoints
+|  |  |- scraper.ts                 # Scraper/career-page/target endpoints
+|  |  |- auto-apply.ts              # Auto-apply endpoints
+|  |  |- networking.ts              # Contact/referral endpoints
+|  |  |- email.ts                   # Email/log endpoints
+|  |  |- copilot.ts                 # Copilot endpoints
+|  |  |- resume.ts                  # Resume endpoints
+|  |  |- interview.ts               # Interview endpoints
+|  |  |- salary.ts                  # Salary endpoints
+|  |  |- outcomes.ts                # Outcome endpoints
+|  |  |- notifications.ts           # Notification endpoints
+|  |  |- admin.ts                   # Admin/source-health endpoints
+|  |  |- phase7a.ts                 # Companies/canonical/source-health/search-expansion
+|  |  |- vault.ts                   # Vault endpoints
+|  |  `- __tests__/                 # API wrapper tests
+|  |- store/                        # Zustand stores
+|  |  |- useAuthStore.ts
+|  |  |- useJobStore.ts
+|  |  |- useScraperStore.ts
+|  |  `- useUIStore.ts
+|  |- hooks/                        # Reusable hooks
+|  |  |- useDebounce.ts
+|  |  |- useKeyboard.ts
+|  |  |- useSSE.ts
+|  |  `- __tests__/
+|  |- lib/                          # Constants, navigation metadata, shared types/utils
+|  |  |- constants.ts
+|  |  |- navigation.tsx
+|  |  |- types.ts
+|  |  `- utils.ts
+|  `- __tests__/                    # Page/provider integration tests
+|- Dockerfile                       # Frontend multi-stage container build
+|- package.json                     # Scripts and dependency graph
+|- package-lock.json                # Locked npm dependency graph
+|- vite.config.ts                   # Vite build/dev proxy config
+|- vitest.config.ts                 # Vitest config
+|- eslint.config.js                 # ESLint config
+|- tsconfig*.json                   # TypeScript configs
+|- index.html                       # HTML shell
+|- system.md                        # Design-system thesis and component rules
+|- components.json                  # shadcn/radix-era config residue
+|- .dockerignore                    # Frontend build exclusions
+`- start-dev.cjs                    # Dev runner wrapper
+```
+
+## Grouping By Concern
+
+| Concern | Paths | Notes |
+|---|---|---|
+| Entry points | `D:/jobradar-v2/frontend/src/main.tsx`, `D:/jobradar-v2/frontend/src/App.tsx` | Runtime root, providers, route table |
+| Pages/routes | `D:/jobradar-v2/frontend/src/pages` | Route containers are large and stateful |
+| Shared layout/system | `D:/jobradar-v2/frontend/src/components/layout`, `D:/jobradar-v2/frontend/src/components/system` | Main shell grammar and reusable workspace composition |
+| UI primitives | `D:/jobradar-v2/frontend/src/components/ui` | Safest reuse surface for refactors |
+| Domain widgets | `D:/jobradar-v2/frontend/src/components/jobs`, `pipeline`, `scraper`, `analytics` | Mid-level feature composition |
+| API layer | `D:/jobradar-v2/frontend/src/api` | Frontend/backend contract boundary |
+| Local/global state | `D:/jobradar-v2/frontend/src/store`, `D:/jobradar-v2/frontend/src/hooks` | Zustand auth/UI state plus hook utilities |
+| Tests | `D:/jobradar-v2/frontend/src/__tests__`, `components/__tests__`, `api/__tests__`, `hooks/__tests__` | Route, provider, API wrapper, and hook coverage |
+| Config/design | `D:/jobradar-v2/frontend/system.md`, `vite.config.ts`, `vitest.config.ts`, `eslint.config.js` | Build, lint, test, and design-system rules |

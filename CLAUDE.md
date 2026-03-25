@@ -16,7 +16,7 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Auth: cookie-based access and refresh tokens
 - Scraping: ATS registry, target-based scheduler, browser pool, tier router, page crawler
 - CI: dependency checks, backend lint/tests, frontend audit/lint/tests/build
-- Current UI: Career OS workspace with shared primitives under `frontend/src/components/system`, a `frontend/system.md` design source of truth, and route groupings for `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, and `Operations`
+- Current UI: reference-first neo-brutalist shell with shared primitives under `frontend/src/components/system`, a `frontend/system.md` design source of truth, and routed workspace groupings for `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, and `Operations`
 
 ## Canonical Working Commands
 
@@ -40,19 +40,18 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Dev server: `cd frontend && npm run dev`
 
 ## Branch Context
-- `main` is the active branch in this workspace.
-- No open GitHub issues or bug-labeled issues are currently listed for the repo.
+- Active migration branch in this workspace: `codex/ui-changes`.
 
-## Current State Summary (2026-03-23)
-- Frontend: lint clean, tests pass, build clean.
-- Backend: targeted settings/auth/admin integration tests pass.
-- GitHub auth works in this environment, and the repo currently shows no open issues.
-- The audit ledger remains closed at `39 FIXED / 5 STALE / 0 OPEN / 0 PARTIAL`.
-- Alembic is at the current consolidation revision used by the repo.
+## Current State Summary (2026-03-24)
+- Frontend: reference-first UI migration is implemented and locally green for lint, tests, and build.
+- Backend: targeted auth/settings/admin/vault integration tests pass locally.
+- Browser QA: authenticated route sweeps passed across all 21 routed frontend surfaces on desktop, tablet, and phone, and representative screenshots were written to `output/playwright/`.
+- Local Postgres schema was upgraded from Alembic revision `005` to `head` during QA so the settings/integration surfaces match the live schema.
+- The audit ledger remains at `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
 
 ## Remaining Frontend Gaps
 - No blocking frontend gaps are currently known from the verified local pass.
-- Any remaining work should be treated as follow-up polish, coverage hardening, or product expansion rather than a known blocker.
+- Remaining work is follow-up polish, coverage hardening, or product expansion rather than a known blocker.
 
 ## Important Invariants
 - `jobs.id` is a SHA-256 string key, not a UUID.
@@ -71,7 +70,7 @@ Use `docs/research/00-index.md` only for future-planning context.
 
 ## Agent Rules
 - Read the current-state and audit docs before changing behavior.
-- Prefer minimal, high-confidence fixes over refactors, but keep the Career OS design system consistent across all new surfaces.
+- Preserve the reference-first shell, typography, color system, and responsive grammar across all new surfaces.
 - Prove behavior changes with focused tests when possible.
 - Do not treat old plan files or `docs/research/` as current product requirements.
 - Do not commit `.claude/launch.json`; it is machine-local.
@@ -79,3 +78,5 @@ Use `docs/research/00-index.md` only for future-planning context.
 
 ## Known Residual Noise
 - Frontend Vitest still prints a non-fatal `--localstorage-file` warning during test runs.
+- Vite still prints a chunk-size warning during production builds.
+- Browser-level QA still shows non-fatal password `autocomplete` hints on Settings inputs and Recharts width warnings when charts mount in hidden or zero-sized containers during automated sweeps.
