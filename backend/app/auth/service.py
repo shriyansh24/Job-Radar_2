@@ -156,7 +156,12 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> User
     return user
 
 
-async def change_password(db: AsyncSession, user: User, current_password: str, new_password: str) -> User:
+async def change_password(
+    db: AsyncSession,
+    user: User,
+    current_password: str,
+    new_password: str,
+) -> User:
     if not verify_password(current_password, user.password_hash):
         raise AuthError("Current password is incorrect")
     if current_password == new_password:

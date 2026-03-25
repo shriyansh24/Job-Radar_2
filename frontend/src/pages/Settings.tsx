@@ -97,7 +97,7 @@ function blankSearchEditor(): SearchEditorState {
   };
 }
 
-function summarizeFilters(filters: Record<string, unknown>): string {
+function summarizeLegacyFilters(filters: Record<string, unknown>): string {
   const entries = Object.entries(filters);
   if (!entries.length) return "No filters";
   return entries
@@ -113,6 +113,25 @@ function summarizeFilters(filters: Record<string, unknown>): string {
     })
     .join(" • ");
 }
+
+function summarizeFilters(filters: Record<string, unknown>): string {
+  const entries = Object.entries(filters);
+  if (!entries.length) return "No filters";
+  return entries
+    .slice(0, 3)
+    .map(([key, value]) => {
+      if (Array.isArray(value)) {
+        return `${key}: ${value.join(", ")}`;
+      }
+      if (value && typeof value === "object") {
+        return `${key}: {...}`;
+      }
+      return `${key}: ${String(value)}`;
+    })
+    .join(" | ");
+}
+
+void summarizeLegacyFilters;
 
 function formatCheckedAt(value: string | null): string {
   if (!value) return "Never checked";
@@ -345,6 +364,14 @@ export default function Settings() {
   const clearDataReady = clearConfirm.trim().toLowerCase() === "clear";
   const deleteAccountReady = deleteConfirm.trim().toLowerCase() === "delete";
 
+  function submitPasswordChange() {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast("error", "Passwords do not match");
+      return;
+    }
+    changePasswordMutation.mutate();
+  }
+
   return (
     <div className="space-y-6 px-4 py-4 sm:px-6 lg:px-8">
       <div className={`${BRUTAL_PANEL_ALT} overflow-hidden`}>
@@ -497,10 +524,28 @@ export default function Settings() {
                             </p>
                           </div>
 
-                          <div className="w-full max-w-xl space-y-3">
+                          <form
+                            className="w-full max-w-xl space-y-3"
+                            onSubmit={(event) => {
+                              event.preventDefault();
+                              integrationUpsertMutation.mutate(integration.provider);
+                            }}
+                          >
+                            <input
+                              type="text"
+                              name={`${integration.provider}-username`}
+                              autoComplete="username"
+                              value={user?.email ?? ""}
+                              readOnly
+                              tabIndex={-1}
+                              aria-hidden="true"
+                              className="sr-only"
+                            />
                             <Input
                               label="API key"
                               type="password"
+                              autoComplete="off"
+                              name={`${integration.provider}-api-key`}
                               value={draft}
                               onChange={(event) =>
                                 setIntegrationDrafts((current) => ({
@@ -513,6 +558,7 @@ export default function Settings() {
                             />
                             <div className="flex flex-wrap justify-end gap-2">
                               <Button
+                                type="button"
                                 variant="secondary"
                                 className={BRUTAL_BUTTON}
                                 onClick={() => integrationDeleteMutation.mutate(integration.provider)}
@@ -525,8 +571,8 @@ export default function Settings() {
                                 Disconnect
                               </Button>
                               <Button
+                                type="submit"
                                 className={BRUTAL_PRIMARY_BUTTON}
-                                onClick={() => integrationUpsertMutation.mutate(integration.provider)}
                                 loading={
                                   integrationUpsertMutation.isPending &&
                                   integrationUpsertMutation.variables === integration.provider
@@ -536,7 +582,7 @@ export default function Settings() {
                                 Save key
                               </Button>
                             </div>
-                          </div>
+                          </form>
                         </div>
                       </Surface>
                     );
@@ -646,7 +692,23 @@ export default function Settings() {
             >
               <div className="grid gap-6 lg:grid-cols-2">
                 <Surface tone="default" padding="md" radius="xl" className={BRUTAL_PANEL}>
-                  <div className="space-y-4">
+                  <form
+                    className="space-y-4"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      submitPasswordChange();
+                    }}
+                  >
+                    <input
+                      type="email"
+                      name="account-email"
+                      autoComplete="username"
+                      value={user?.email ?? ""}
+                      readOnly
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="sr-only"
+                    />
                     <div className="flex items-center gap-2">
                       <Lock size={16} weight="bold" className="text-muted-foreground" />
                       <h3 className="text-sm font-semibold tracking-[-0.01em]">Change password</h3>
@@ -654,6 +716,8 @@ export default function Settings() {
                     <Input
                       label="Current password"
                       type="password"
+                      autoComplete="current-password"
+                      name="current-password"
                       value={passwordForm.currentPassword}
                       onChange={(event) =>
                         setPasswordForm((current) => ({ ...current, currentPassword: event.target.value }))
@@ -663,6 +727,8 @@ export default function Settings() {
                     <Input
                       label="New password"
                       type="password"
+                      autoComplete="new-password"
+                      name="new-password"
                       value={passwordForm.newPassword}
                       onChange={(event) =>
                         setPasswordForm((current) => ({ ...current, newPassword: event.target.value }))
@@ -672,6 +738,8 @@ export default function Settings() {
                     <Input
                       label="Confirm password"
                       type="password"
+                      autoComplete="new-password"
+                      name="confirm-password"
                       value={passwordForm.confirmPassword}
                       onChange={(event) =>
                         setPasswordForm((current) => ({ ...current, confirmPassword: event.target.value }))
@@ -679,21 +747,15 @@ export default function Settings() {
                       className={BRUTAL_FIELD}
                     />
                     <Button
+                      type="submit"
                       variant="secondary"
                       className={BRUTAL_BUTTON}
-                      onClick={() => {
-                        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-                          toast("error", "Passwords do not match");
-                          return;
-                        }
-                        changePasswordMutation.mutate();
-                      }}
                       loading={changePasswordMutation.isPending}
                       icon={<Key size={16} weight="bold" />}
                     >
                       Update password
                     </Button>
-                  </div>
+                  </form>
                 </Surface>
 
                 <Surface tone="default" padding="md" radius="xl" className={BRUTAL_PANEL}>

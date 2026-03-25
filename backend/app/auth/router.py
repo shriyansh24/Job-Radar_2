@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.admin.service import AdminService
 from app.auth.models import User
 from app.auth.schemas import (
     ChangePasswordRequest,
@@ -23,7 +24,6 @@ from app.auth.service import (
     register_user,
     set_auth_cookies,
 )
-from app.admin.service import AdminService
 from app.config import settings
 from app.dependencies import get_current_user, get_db
 

@@ -24,7 +24,9 @@ jobs:
         working-directory: backend
       - run: uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt
         working-directory: backend
-      - run: uv tool run pip-audit -r .ci-requirements.txt
+      # pygments has no fixed release yet, and seleniumbase currently constrains requests
+      # onto the 2.32.5 line, so both CVEs stay explicitly tracked until upstream moves.
+      - run: uv tool run pip-audit --ignore-vuln CVE-2026-4539 --ignore-vuln CVE-2026-25645 -r .ci-requirements.txt
         working-directory: backend
       - run: uv tool run bandit -r app/ -c pyproject.toml --severity-level medium
         working-directory: backend

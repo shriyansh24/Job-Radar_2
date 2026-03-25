@@ -34,6 +34,7 @@
   --border-strong: #09090b;
   --accent-primary: #2563eb;
   --accent-success: #16a34a;
+  --accent-warning: #a16207;
   --accent-danger: #dc2626;
 
   --color-bg-primary: var(--bg-primary);
@@ -52,12 +53,24 @@
   --color-accent-primary-subtle: rgba(37, 99, 235, 0.12);
   --color-accent-secondary: var(--accent-success);
   --color-accent-secondary-subtle: rgba(22, 163, 74, 0.14);
-  --color-accent-warning: #ca8a04;
-  --color-accent-warning-subtle: rgba(202, 138, 4, 0.16);
+  --color-accent-warning: var(--accent-warning);
+  --color-accent-warning-subtle: rgba(161, 98, 7, 0.14);
   --color-accent-danger: var(--accent-danger);
   --color-accent-danger-subtle: rgba(220, 38, 38, 0.16);
   --color-accent-info: var(--accent-primary);
   --color-accent-info-subtle: rgba(37, 99, 235, 0.12);
+  --color-chart-grid: rgba(9, 9, 11, 0.14);
+  --color-chart-axis: var(--color-text-muted);
+  --color-chart-label: var(--color-text-secondary);
+  --color-chart-tooltip-bg: var(--color-bg-secondary);
+  --color-chart-tooltip-border: var(--color-border);
+  --color-chart-series-1: var(--color-accent-primary);
+  --color-chart-series-2: var(--color-accent-success);
+  --color-chart-series-3: var(--color-accent-warning);
+  --color-chart-series-4: var(--color-accent-danger);
+  --color-chart-series-5: #0f766e;
+  --color-chart-series-6: #44403c;
+  --color-chart-series-muted: rgba(9, 9, 11, 0.12);
 
   --color-outline: var(--border-strong);
   --color-outline-muted: var(--text-secondary);
@@ -116,11 +129,11 @@
   --border: var(--border-strong);
   --input: var(--border-strong);
   --ring: var(--accent-primary);
-  --chart-1: var(--accent-primary);
-  --chart-2: var(--accent-success);
-  --chart-3: #ca8a04;
-  --chart-4: var(--accent-danger);
-  --chart-5: #2a2723;
+  --chart-1: var(--color-chart-series-1);
+  --chart-2: var(--color-chart-series-2);
+  --chart-3: var(--color-chart-series-3);
+  --chart-4: var(--color-chart-series-4);
+  --chart-5: var(--color-chart-series-5);
   --radius: 0rem;
   --sidebar: var(--bg-secondary);
   --sidebar-foreground: var(--text-primary);
@@ -135,15 +148,16 @@
 .dark {
   color-scheme: dark;
 
-  --bg-primary: #09090b;
-  --bg-secondary: #171717;
-  --bg-tertiary: #262626;
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #141414;
   --text-primary: #fafafa;
   --text-secondary: #d4d4d4;
   --text-muted: #737373;
   --border-strong: #fafafa;
   --accent-primary: #3b82f6;
   --accent-success: #22c55e;
+  --accent-warning: #f59e0b;
   --accent-danger: #ef4444;
 
   --color-bg-primary: var(--bg-primary);
@@ -151,7 +165,7 @@
   --color-bg-tertiary: var(--bg-tertiary);
   --color-bg-elevated: #111111;
   --color-bg-hover: var(--bg-tertiary);
-  --color-bg-active: #262626;
+  --color-bg-active: #1f1f1f;
 
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
@@ -162,12 +176,24 @@
   --color-accent-primary-subtle: rgba(59, 130, 246, 0.16);
   --color-accent-secondary: var(--accent-success);
   --color-accent-secondary-subtle: rgba(34, 197, 94, 0.18);
-  --color-accent-warning: #f59e0b;
+  --color-accent-warning: var(--accent-warning);
   --color-accent-warning-subtle: rgba(245, 158, 11, 0.2);
   --color-accent-danger: var(--accent-danger);
   --color-accent-danger-subtle: rgba(239, 68, 68, 0.2);
   --color-accent-info: var(--accent-primary);
   --color-accent-info-subtle: rgba(59, 130, 246, 0.16);
+  --color-chart-grid: rgba(250, 250, 250, 0.18);
+  --color-chart-axis: var(--color-text-muted);
+  --color-chart-label: var(--color-text-secondary);
+  --color-chart-tooltip-bg: var(--color-bg-secondary);
+  --color-chart-tooltip-border: var(--color-border);
+  --color-chart-series-1: var(--color-accent-primary);
+  --color-chart-series-2: var(--color-accent-success);
+  --color-chart-series-3: var(--color-accent-warning);
+  --color-chart-series-4: var(--color-accent-danger);
+  --color-chart-series-5: #22d3ee;
+  --color-chart-series-6: #d6d3d1;
+  --color-chart-series-muted: rgba(250, 250, 250, 0.16);
 
   --color-outline: var(--border-strong);
   --color-outline-muted: var(--text-secondary);
@@ -210,11 +236,11 @@
   --border: var(--border-strong);
   --input: var(--border-strong);
   --ring: var(--accent-primary);
-  --chart-1: var(--accent-primary);
-  --chart-2: var(--accent-success);
-  --chart-3: #f59e0b;
-  --chart-4: var(--accent-danger);
-  --chart-5: var(--text-primary);
+  --chart-1: var(--color-chart-series-1);
+  --chart-2: var(--color-chart-series-2);
+  --chart-3: var(--color-chart-series-3);
+  --chart-4: var(--color-chart-series-4);
+  --chart-5: var(--color-chart-series-5);
   --sidebar: var(--bg-secondary);
   --sidebar-foreground: var(--text-primary);
   --sidebar-primary: var(--accent-primary);

@@ -456,7 +456,17 @@ export default function Onboarding() {
                     title="Integrations"
                     description="Optional keys unlock broader search coverage and stronger drafting. Leave them blank if you want to finish setup first."
                   />
-                  <div className="grid gap-4">
+                  <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
+                    <input
+                      type="text"
+                      name="integration-username"
+                      autoComplete="username"
+                      value={form.fullName || "onboarding"}
+                      readOnly
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="sr-only"
+                    />
                     {INTEGRATIONS.map((integration) => {
                       const fieldKey = INTEGRATION_FIELDS[integration.provider];
                       const connected = Boolean(form[fieldKey]);
@@ -479,6 +489,8 @@ export default function Onboarding() {
                               <Input
                                 label={`${integration.label} API key`}
                                 type="password"
+                                autoComplete="off"
+                                name={`${integration.provider}-api-key`}
                                 value={form[fieldKey]}
                                 onChange={(event) =>
                                   setForm((current) => ({
@@ -493,7 +505,7 @@ export default function Onboarding() {
                         </div>
                       );
                     })}
-                  </div>
+                  </form>
                 </div>
               ) : null}
             </Surface>

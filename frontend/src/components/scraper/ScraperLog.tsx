@@ -113,11 +113,11 @@ export default function ScraperLog() {
   }, [logs, paused]);
 
   const typeColors: Record<string, string> = {
-    scraper_started: "text-blue-400",
-    job_found: "text-green-400",
-    scraper_completed: "text-green-300",
-    scraper_error: "text-red-400",
-    error: "text-red-400",
+    scraper_started: "text-[var(--color-accent-info)]",
+    job_found: "text-[var(--color-accent-secondary)]",
+    scraper_completed: "text-[var(--color-accent-secondary)]",
+    scraper_error: "text-[var(--color-accent-danger)]",
+    error: "text-[var(--color-accent-danger)]",
     info: "text-text-muted",
   };
 
