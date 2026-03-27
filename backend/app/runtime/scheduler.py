@@ -11,6 +11,7 @@ from sqlalchemy import text
 
 from app.config import settings, validate_runtime_settings
 from app.database import engine
+from app.runtime.queue import shutdown_queue_pool, startup_queue_pool
 from app.shared.logging import setup_logging
 from app.workers.scheduler import create_scheduler
 
@@ -39,7 +40,10 @@ async def _verify_dependencies() -> None:
     async with engine.connect() as connection:
         await connection.execute(text("SELECT 1"))
 
-    logger.info("scheduler_dependencies_ready", database="connected")
+    queue_pool = await startup_queue_pool()
+    await queue_pool.ping()
+
+    logger.info("scheduler_dependencies_ready", database="connected", redis="connected")
 
 
 def _install_signal_handlers(stop_event: asyncio.Event) -> None:
@@ -63,6 +67,7 @@ async def run() -> int:
         scheduler.start()
     except Exception:
         logger.exception("scheduler_startup_failed")
+        await shutdown_queue_pool()
         await engine.dispose()
         return 1
 
@@ -79,6 +84,7 @@ async def run() -> int:
     finally:
         _clear_ready()
         scheduler.shutdown(wait=False)
+        await shutdown_queue_pool()
         await engine.dispose()
         logger.info("scheduler_stopped")
 

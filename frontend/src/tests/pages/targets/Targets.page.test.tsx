@@ -1,7 +1,7 @@
 import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { renderWithProviders } from "../support/test-utils";
+import { renderWithProviders } from "../../support/test-utils";
 
 const scraperMocks = vi.hoisted(() => ({
   listTargets: vi.fn(),
@@ -13,11 +13,11 @@ const scraperMocks = vi.hoisted(() => ({
   importTargets: vi.fn(),
 }));
 
-vi.mock("../../api/scraper", () => ({
+vi.mock("../../../api/scraper", () => ({
   scraperApi: scraperMocks,
 }));
 
-import Targets from "../../pages/Targets";
+import Targets from "../../../pages/Targets";
 
 const defaultTargetDetail = {
   id: "target-1",

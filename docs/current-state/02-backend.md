@@ -11,12 +11,13 @@
 ## Key Runtime Areas
 - Auth: cookie-based access and refresh flow with revocation, CSRF protection on unsafe cookie-auth requests, trusted-host enforcement, rate limiting, and explicit lifecycle logs for login/refresh/logout/password-change/session-clear/account-delete paths
 - Auto-apply: field learning, Workday adapter, recovered form extraction, Greenhouse/Lever adapters, a pre-flight safety layer, live batch/single service wiring, and worker-level batch execution; broader operator tooling and end-to-end coverage still remain partial
+- Resume: upload parsing now supports `.pdf`, `.docx`, `.tex`, and `.txt` into persisted structured IR payloads, and ATS validation is available as a backend module; tailoring sessions, PDF rendering, and richer operator/API follow-through still remain partial
 - Jobs: SHA-256 string IDs, enrichment fields, lifecycle tracking, application relationship via `selectin`
 - Enrichment: HTML cleaning, markdown conversion, LLM extraction, salary/experience enrichment
 - Interview: question generation, prep bundles, answer evaluation, persisted interview sessions
 - Scraping: ATS registry, scheduler, tier routing, page crawling, adapter registry, browser pool
-- Runtime topology: API process via `backend/app/main.py`, dedicated scheduler process via `backend/app/runtime/scheduler.py`, one-shot worker runtime via `backend/app/runtime/worker.py`, and compose-managed Postgres/Redis
-- Workers: scraping, enrichment, follow-up/notification support, scheduled job registration, and scheduler-dispatched worker subprocesses
+- Runtime topology: API process via `backend/app/main.py`, dedicated scheduler process via `backend/app/runtime/scheduler.py`, ARQ queue services via `backend/app/runtime/arq_worker.py`, and compose-managed Postgres/Redis; scheduler now enqueues jobs onto `scraping`, `analysis`, and `ops`
+- Workers: scraping, enrichment, follow-up/notification support, scheduled job registration, queue registry ownership, and queue-specific ARQ worker services
 
 ## Runtime Invariants
 - Runtime `DateTime` columns should be timezone-aware.
@@ -59,5 +60,6 @@
 - Bandit, pip-audit, pip check, backend Ruff, and the targeted backend mypy gate are green in the current branch.
 - The revalidated backend slice covers auth, settings, admin, and vault contract changes used by the reference-first frontend migration.
 - Auto-apply backend foundations are broader than `main`, but the live API/service execution path is still not end to end.
+- Resume upload parsing is broader than `main` now that structured IR extraction and ATS validation modules are live on `codex/ui-changes`, but the deeper tailoring/PDF family is still not end to end.
 - Cookie-authenticated unsafe requests now require the readable `jr_csrf_token` cookie to be echoed via `X-CSRF-Token`, and `TrustedHostMiddleware` is part of the live middleware stack.
-- Scheduler isolation is stronger than the earlier in-process model because APScheduler now dispatches named one-shot worker subprocesses instead of executing job bodies inline.
+- Scheduler isolation is now queue-backed: APScheduler enqueues named jobs, worker services consume queue-owned jobs directly, and Redis is part of the active background-execution critical path.

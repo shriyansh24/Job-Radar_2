@@ -23,6 +23,8 @@
 ## Operational Notes
 - Historical implementation/inventory context now lives in `docs/system-inventory/` and `docs/repo-hardening/`.
 - `docs/audit/03-scraper.md` is the bug ledger for scraper issues.
+- The live branch now executes scheduled scraping and adjacent background work through the dedicated scheduler plus ARQ queue boundary; `scraping`, `analysis`, and `ops` are owned by queue-specific worker services.
 
 ## Current Assessment
 - No known blocking scraper or database bugs remain after the latest verified pass.
+- The remaining runtime gaps are queue retry/back-pressure validation and broader worker coverage, not scraper topology ownership.

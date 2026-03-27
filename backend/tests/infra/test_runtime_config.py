@@ -42,6 +42,17 @@ def test_validate_runtime_settings_rejects_missing_database_url():
         raise AssertionError("Expected RuntimeError when database URL is missing")
 
 
+def test_validate_runtime_settings_rejects_invalid_redis_url():
+    settings = Settings(secret_key="not-default", redis_url="http://redis")
+
+    try:
+        validate_runtime_settings(settings)
+    except RuntimeError as exc:
+        assert "JR_REDIS_URL" in str(exc)
+    else:
+        raise AssertionError("Expected RuntimeError when redis URL is invalid")
+
+
 def test_validate_runtime_settings_rejects_non_positive_rate_limits():
     settings = Settings(
         secret_key="not-default",

@@ -22,6 +22,45 @@ services:
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
       JR_SCHEDULER_READY_MARKER: /tmp/jobradar-scheduler.ready
 
+  worker-scraping:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+    command: ["python", "-m", "app.runtime.arq_worker", "scraping"]
+    environment:
+      JR_DEBUG: "true"
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+      JR_WORKER_ROLE: scraping
+      JR_WORKER_READY_MARKER: /tmp/jobradar-worker-scraping.ready
+
+  worker-analysis:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+    command: ["python", "-m", "app.runtime.arq_worker", "analysis"]
+    environment:
+      JR_DEBUG: "true"
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+      JR_WORKER_ROLE: analysis
+      JR_WORKER_READY_MARKER: /tmp/jobradar-worker-analysis.ready
+
+  worker-ops:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+    command: ["python", "-m", "app.runtime.arq_worker", "ops"]
+    environment:
+      JR_DEBUG: "true"
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+      JR_WORKER_ROLE: ops
+      JR_WORKER_READY_MARKER: /tmp/jobradar-worker-ops.ready
+
   frontend:
     build:
       context: ./frontend

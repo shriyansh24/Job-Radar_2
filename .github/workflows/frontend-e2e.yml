@@ -76,7 +76,22 @@ jobs:
         run: |
           nohup uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/backend.log" 2>&1 &
 
-      - name: Start dedicated scheduler
+      - name: Start scraping worker
+        working-directory: backend
+        run: |
+          nohup env JR_WORKER_READY_MARKER="$RUNNER_TEMP/worker-scraping.ready" uv run python -m app.runtime.arq_worker scraping > "$RUNNER_TEMP/worker-scraping.log" 2>&1 &
+
+      - name: Start analysis worker
+        working-directory: backend
+        run: |
+          nohup env JR_WORKER_READY_MARKER="$RUNNER_TEMP/worker-analysis.ready" uv run python -m app.runtime.arq_worker analysis > "$RUNNER_TEMP/worker-analysis.log" 2>&1 &
+
+      - name: Start ops worker
+        working-directory: backend
+        run: |
+          nohup env JR_WORKER_READY_MARKER="$RUNNER_TEMP/worker-ops.ready" uv run python -m app.runtime.arq_worker ops > "$RUNNER_TEMP/worker-ops.log" 2>&1 &
+
+      - name: Start queue-backed scheduler
         working-directory: backend
         run: |
           nohup uv run python -m app.runtime.scheduler > "$RUNNER_TEMP/scheduler.log" 2>&1 &
@@ -101,6 +116,17 @@ jobs:
             sleep 2
           done
           echo "Scheduler did not emit the ready marker." >&2
+          exit 1
+
+      - name: Wait for worker ready markers
+        run: |
+          for attempt in $(seq 1 60); do
+            if [ -f "$RUNNER_TEMP/worker-scraping.ready" ] && [ -f "$RUNNER_TEMP/worker-analysis.ready" ] && [ -f "$RUNNER_TEMP/worker-ops.ready" ]; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "One or more workers did not emit the ready marker." >&2
           exit 1
 
       - name: Setup Node
@@ -130,3 +156,6 @@ jobs:
             frontend/test-results/e2e
             ${{ runner.temp }}/backend.log
             ${{ runner.temp }}/scheduler.log
+            ${{ runner.temp }}/worker-scraping.log
+            ${{ runner.temp }}/worker-analysis.log
+            ${{ runner.temp }}/worker-ops.log

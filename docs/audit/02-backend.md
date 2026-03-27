@@ -3,7 +3,7 @@
 ## BE-01 - CRITICAL: Hardcoded `/tmp` Path
 - **File:** `backend/app/auto_apply/orchestrator.py`
 - **Detail:** Fixed. Screenshot paths now use the system temp directory instead of a Linux-only hardcoded `/tmp` path.
-- **Evidence:** `backend/tests/unit/test_auto_apply_orchestrator.py`
+- **Evidence:** `backend/tests/unit/auto_apply/test_auto_apply_orchestrator.py`
 - **Status:** FIXED
 
 ## BE-02 - CRITICAL: Silent Exception Swallowing in Worker
@@ -21,7 +21,7 @@
 ## BE-04 - HIGH: LLM Failures Return Empty Dict
 - **File:** `backend/app/enrichment/service.py`
 - **Detail:** Fixed. Enrichment now raises an explicit `EnrichmentError` for empty or unparsable LLM responses instead of silently returning `{}` and marking the job enriched.
-- **Evidence:** `backend/tests/integration/test_enrichment.py`
+- **Evidence:** `backend/tests/integration/enrichment/test_enrichment_service.py`
 - **Status:** FIXED
 
 ## BE-05 - HIGH: Placeholder Questions on LLM Failure
@@ -62,7 +62,7 @@
 - **Status:** FIXED
 
 ## BE-F02 - FIXED: Failed Enrichment No Longer Persists Partial Job Mutations
-- **Files:** `backend/app/enrichment/service.py`, `backend/tests/integration/test_enrichment.py`
+- **Files:** `backend/app/enrichment/service.py`, `backend/tests/integration/enrichment/test_enrichment_service.py`
 - **Detail:** The enrichment pipeline now snapshots and restores the mutable enrichment fields on failure, so a job that fails LLM enrichment does not commit cleaned-description or partial enrichment state.
 - **Status:** FIXED
 

@@ -29,9 +29,9 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `CLAUDE.md`
   - `.env.example`
 - Why it matters:
-  - the compose-first baseline is now documented, but legacy local assumptions still exist in developer muscle memory and some older historical docs.
+  - the compose-first baseline is now documented, and the repo now runs through the live ARQ queue topology, but worker-lane coverage and queue telemetry are still not comprehensive.
 - Remaining risk:
-  - engineers can still follow stale local patterns if they ignore the current docs
+  - engineers can still under-test queue behavior if they treat readiness markers as full proof of throughput, retries, and back-pressure health
 
 ### 3. Test taxonomy is only partially normalized
 - Status: `PARTIAL`
@@ -52,7 +52,7 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `docs/current-state/05-ops-and-ci.md`
   - `.claude/ui-captures/`
 - Why it matters:
-  - a committed low-noise browser lane now exists, including shell, theme persistence, dashboard/jobs/pipeline, and settings/targets flows, but it still covers only part of the routed app.
+  - a committed low-noise browser lane now exists, including auth/shell smoke, responsive shell behavior, route-family outcomes for dashboard/jobs/pipeline/settings/targets, and representative 8-mode route-theme checks, but it still covers only part of the routed app.
 - Remaining risk:
   - regressions deeper in route families, richer page workflows, and cross-route state transitions can still slip past the committed suite
 
@@ -69,15 +69,15 @@ Record the major unresolved risks and deferred work that remain after the curren
 - Remaining risk:
   - auth diagnosis is materially better, but not yet at the level of a distinct audit trail
 
-### 6. Dedicated scheduler runtime exists, but worker/process isolation is still partial
-- Status: `DOCUMENTED`
+### 6. Dedicated scheduler runtime exists, but queue telemetry and worker validation are still incomplete
+- Status: `PARTIAL_PROGRESS`
 - Evidence:
   - `docs/repo-hardening/03-runtime-truth-matrix.md`
   - `docs/repo-hardening/07-observability-and-failure-map.md`
 - Why it matters:
-  - the scheduler now has its own runtime entrypoint and dispatches per-job worker subprocesses, but the repo still does not have a broader dedicated worker-process set or strong multi-process operational guidance.
+  - the scheduler now has its own runtime entrypoint and the live topology is scheduler -> ARQ queues (`scraping`, `analysis`, `ops`) -> queue-specific worker services.
 - Remaining risk:
-  - background execution semantics are clearer than before, but scaling, retries, and isolation boundaries are still only partially explicit
+  - background execution ownership is explicit, but retries, queue depth, and back-pressure are still only partially validated end to end
 
 ### 7. Migration replay has a gate now, but rollback/backfill guidance is still thin
 - Status: `PARTIAL`
@@ -101,6 +101,7 @@ Record the major unresolved risks and deferred work that remain after the curren
 ## What Would Count As The Next Credible Finish Line
 1. Continue selective P1 recovery beyond the recovered backend auto-apply slice.
 2. Complete the second test-taxonomy pass for the broad `unit/` and umbrella page/component suites.
-3. Expand the committed browser/e2e lane by route family and core outcomes.
-4. Add request-correlation and stronger audit-stream discipline to the new auth lifecycle logs.
-5. Strengthen migration docs with rollback/backfill expectations where the risk is non-trivial.
+3. Extend queue validation to cover retries, back-pressure, and richer worker-lane behavior.
+4. Expand the committed browser/e2e lane by route family and deeper workflow outcomes.
+5. Add request-correlation and stronger audit-stream discipline to the new auth lifecycle logs.
+6. Strengthen migration docs with rollback/backfill expectations where the risk is non-trivial.

@@ -19,6 +19,7 @@ from app.nlp.model_router import ModelRouter
 from app.resume.council import council_evaluate as _council_evaluate
 from app.resume.gap_analyzer import run_gap_analysis
 from app.resume.models import ResumeVersion
+from app.resume.parser import ResumeParser
 from app.resume.prompts import STAGE1_PROMPT, STAGE2_PROMPT, STAGE3_PROMPT
 from app.resume.schemas import (
     VALID_TONES,
@@ -72,7 +73,7 @@ class ResumeService:
             raise NotFoundError(detail=f"Job {job_id} not found")
         return job
 
-    def _resume_as_parsed(self, version: ResumeVersion) -> dict:
+    def _resume_as_parsed(self, version: ResumeVersion) -> dict[str, Any]:
         structured = version.parsed_structured or {}
         return {
             "text": version.parsed_text or "",
@@ -80,7 +81,7 @@ class ResumeService:
             "sections": structured.get("sections", {}),
         }
 
-    def _job_as_dict(self, job: Job) -> dict:
+    def _job_as_dict(self, job: Job) -> dict[str, Any]:
         return {
             "title": job.title,
             "description_clean": job.description_clean or "",
@@ -108,8 +109,29 @@ class ResumeService:
         self, filename: str, content: bytes, user_id: uuid.UUID
     ) -> ResumeVersion:
         logger.info("resume.upload_resume", filename=filename, user_id=str(user_id))
+        parsed_text = content.decode(errors="replace")
+        parsed_structured: dict[str, Any] | None = None
+        try:
+            parsed_ir = await ResumeParser(self._llm).parse(content, filename)
+            parsed_text = parsed_ir.raw_text or parsed_text
+            parsed_structured = parsed_ir.model_dump()
+        except ValueError as exc:
+            logger.info(
+                "resume.upload_resume.unsupported_format",
+                filename=filename,
+                error=str(exc),
+            )
+        except Exception as exc:
+            logger.warning(
+                "resume.upload_resume.parse_failed",
+                filename=filename,
+                error=str(exc),
+            )
         version = ResumeVersion(
-            user_id=user_id, filename=filename, parsed_text=content.decode(errors="replace")
+            user_id=user_id,
+            filename=filename,
+            parsed_text=parsed_text,
+            parsed_structured=parsed_structured,
         )
         self.db.add(version)
         await self.db.commit()

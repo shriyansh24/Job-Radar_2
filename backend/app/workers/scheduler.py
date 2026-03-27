@@ -10,7 +10,8 @@ from apscheduler.events import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
-from app.runtime.worker import get_registered_job_ids, spawn_worker_process
+from app.runtime.job_registry import get_registered_job_ids
+from app.runtime.queue import enqueue_registered_job
 
 logger = structlog.get_logger()
 
@@ -38,7 +39,7 @@ def _log_job_event(event: JobExecutionEvent) -> None:
         return
 
     logger.info(
-        "scheduler_job_completed",
+        "scheduler_job_dispatched",
         job_id=event.job_id,
         scheduled_run_time=event.scheduled_run_time.isoformat()
         if event.scheduled_run_time
@@ -52,7 +53,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Scraping: every 6 hours
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(hours=6),
         id="scheduled_scrape",
         kwargs={"job_name": "scheduled_scrape"},
@@ -61,7 +62,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Career pages: every 12 hours
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(hours=12),
         id="career_page_scrape",
         kwargs={"job_name": "career_page_scrape"},
@@ -70,7 +71,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Enrichment: every 30 minutes
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(minutes=30),
         id="enrichment_batch",
         kwargs={"job_name": "enrichment_batch"},
@@ -79,7 +80,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Embeddings: every hour
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(hours=1),
         id="embedding_batch",
         kwargs={"job_name": "embedding_batch"},
@@ -88,7 +89,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # TF-IDF: every 2 hours
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(hours=2),
         id="tfidf_scoring",
         kwargs={"job_name": "tfidf_scoring"},
@@ -97,7 +98,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Cleanup: daily
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(days=1),
         id="cleanup",
         kwargs={"job_name": "cleanup"},
@@ -106,7 +107,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Source health: every 4 hours
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(hours=4),
         id="source_health",
         kwargs={"job_name": "source_health"},
@@ -115,7 +116,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Auto-apply: every 4 hours
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(hours=4),
         id="auto_apply_batch",
         kwargs={"job_name": "auto_apply_batch"},
@@ -124,7 +125,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Saved search alerts: every 30 minutes
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(minutes=30),
         id="saved_search_alerts",
         kwargs={"job_name": "saved_search_alerts"},
@@ -133,7 +134,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Phase 7A: staleness sweep every 6 hours
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(hours=6),
         id="staleness_sweep",
         kwargs={"job_name": "staleness_sweep"},
@@ -142,7 +143,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Phase 7A: source health checks every 4 hours
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(hours=4),
         id="phase7a_source_health",
         kwargs={"job_name": "phase7a_source_health"},
@@ -151,7 +152,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Phase 7A: follow-up reminders every hour
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(hours=1),
         id="followup_reminders",
         kwargs={"job_name": "followup_reminders"},
@@ -160,7 +161,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Target-based pipeline: career page targets every 30 minutes
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(minutes=30),
         id="target_batch_career_page",
         kwargs={"job_name": "target_batch_career_page"},
@@ -169,7 +170,7 @@ def create_scheduler() -> AsyncIOScheduler:
 
     # Target-based pipeline: watchlist targets every 2 hours
     scheduler.add_job(
-        spawn_worker_process,
+        enqueue_registered_job,
         IntervalTrigger(hours=2),
         id="target_batch_watchlist",
         kwargs={"job_name": "target_batch_watchlist"},
@@ -183,6 +184,7 @@ def create_scheduler() -> AsyncIOScheduler:
         job_count=len(jobs),
         job_ids=[job.id for job in jobs],
         worker_job_ids=get_registered_job_ids(),
+        dispatch_mode="arq_enqueue",
     )
 
     return scheduler

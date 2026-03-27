@@ -11,6 +11,7 @@ Define and track the purpose-driven test layout used by the repository.
 ## Current State
 - Frontend support files, page suites, hook suites, component suites, and API client suites now live under `frontend/src/tests/`.
 - Frontend browser/e2e coverage now has a committed home under `frontend/e2e/`.
+- Frontend browser/e2e coverage now includes auth/shell smoke, responsive shell behavior, route-family outcomes, and representative route/theme matrix checks.
 - Backend runtime, migration, security, contract, and worker-lifecycle suites now have dedicated directories under `backend/tests/`.
 - Backend auto-apply extractor, adapter, and safety coverage now has explicit unit suites under `backend/tests/unit/`.
 - Several older service/model suites still remain in broad backend `unit/` buckets, and some frontend page/component files still cover multiple behaviors inside one suite.
@@ -65,10 +66,14 @@ backend/tests/
   - `frontend/src/tests/pages/Companies.page.test.tsx`
   - `frontend/src/tests/pages/SearchExpansion.page.test.tsx`
   - `frontend/src/tests/pages/Sources.page.test.tsx`
-  - `frontend/src/tests/pages/Targets.page.test.tsx`
+  - `frontend/src/tests/pages/targets/Targets.page.test.tsx`
 - Focused operator exposure coverage is now in:
   - `frontend/src/tests/components/layout/AppShell.scraper-operator.test.tsx`
-  - `frontend/src/tests/pages/Targets.operator-exposure.page.test.tsx`
+  - `frontend/src/tests/pages/targets/Targets.operator-exposure.test.tsx`
+- Committed browser coverage now includes:
+  - `frontend/e2e/flows/route-family-outcomes.spec.ts`
+  - `frontend/e2e/flows/shell-responsive.spec.ts`
+  - `frontend/e2e/theme-matrix/route-theme-matrix.spec.ts`
 
 ### Backend
 - Migration regression suite moved:
@@ -85,10 +90,10 @@ backend/tests/
   - `backend/tests/workers/scraping/test_target_batch_worker.py`
   - `backend/tests/workers/scraping/test_scrape_scheduler.py`
 - Auto-apply capability recovery suites added:
-  - `backend/tests/unit/test_form_extractor.py`
-  - `backend/tests/unit/test_greenhouse_adapter.py`
-  - `backend/tests/unit/test_lever_adapter.py`
-  - `backend/tests/unit/test_safety_layer.py`
+  - `backend/tests/unit/auto_apply/test_form_extractor.py`
+  - `backend/tests/unit/auto_apply/test_greenhouse_adapter.py`
+  - `backend/tests/unit/auto_apply/test_lever_adapter.py`
+  - `backend/tests/unit/auto_apply/test_safety_layer.py`
 
 ## Remaining Rename / Split Candidates
 
@@ -96,7 +101,8 @@ backend/tests/
 - `frontend/src/tests/pages/*.page.test.tsx` still communicate route ownership better than behavior; some should later be narrowed into more behavior-specific suites when the page APIs stabilize.
 - UI primitive coverage is now split across `frontend/src/tests/components/ui/Card.test.tsx`, `frontend/src/tests/components/ui/Dropdown.test.tsx`, and `frontend/src/tests/components/ui/StatCard.test.tsx`; buttons, inputs, tables, and toggles still need first-class suites.
 - Several page suites still define inline `renderWithProviders` helpers and should converge on `support/test-utils.tsx`.
-- `frontend/e2e/flows/` currently protects only a narrow authenticated shell-navigation slice and still needs broader route-level outcomes.
+- `frontend/e2e/flows/` now protects responsive shell behavior plus one combined route-family outcomes slice, but it still needs broader route-level outcomes and richer task-level workflows.
+- `frontend/e2e/theme-matrix/` now covers representative 8-mode route checks, but it does not yet prove every routed family across all theme combinations.
 
 ### Backend
 - `backend/tests/unit/` still contains broad service/model suites that should eventually be regrouped by subsystem ownership.
@@ -104,9 +110,9 @@ backend/tests/
 - Non-scraping workers from deferred or retained branches still have no dedicated `backend/tests/workers/` coverage.
 
 ## Coverage Gaps That Need First-Class Homes
-- Browser e2e route breadth across more route families and all 8 theme combinations
+- Browser e2e route breadth across more route families and deeper workflow coverage beyond the representative 8-mode matrix checks
 - Migration replay and rollback safety beyond the current targeted replay suite
-- Worker lifecycle and scheduler execution behavior for non-scraping jobs
+- Worker lifecycle and queue-owned execution behavior for non-scraping jobs once the ARQ split lands
 - Auto-apply orchestration, service wiring, and browser/integration coverage beyond the new unit-level extractor/adapter/safety tests
 - Scraper failure handling and conditional request behavior
 - Frontend critical flows that currently rely on manual browser QA artifacts rather than committed tests

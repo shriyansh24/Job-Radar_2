@@ -83,6 +83,13 @@ def validate_runtime_settings(settings: Settings) -> None:
         )
     if not settings.database_url:
         raise RuntimeError("JR_DATABASE_URL must be set.")
+    if not settings.redis_url:
+        raise RuntimeError("JR_REDIS_URL must be set.")
+    parsed_redis = urlparse(settings.redis_url)
+    if parsed_redis.scheme not in {"redis", "rediss"} or not parsed_redis.hostname:
+        raise RuntimeError(
+            "JR_REDIS_URL must use redis:// or rediss:// with an explicit host."
+        )
     if not normalized_origins:
         raise RuntimeError("JR_CORS_ORIGINS must include at least one explicit origin.")
     if "*" in normalized_origins:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from types import SimpleNamespace
 
 import pytest
@@ -24,50 +23,33 @@ async def test_run_registered_job_rejects_unknown_jobs() -> None:
 
 
 @pytest.mark.asyncio
-async def test_spawn_worker_process_raises_on_non_zero_exit(
+async def test_run_registered_job_invokes_registered_runner(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class _FakeProcess:
-        async def wait(self) -> int:
-            return 7
+    seen: list[dict[str, object]] = []
 
-    async def _fake_create_subprocess_exec(*args: str) -> _FakeProcess:
-        assert args[0]
-        assert args[1:] == ("-m", "app.runtime.worker", "auto_apply_batch")
-        return _FakeProcess()
+    async def _fake_runner(ctx: dict[str, object]) -> None:
+        seen.append(ctx)
 
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", _fake_create_subprocess_exec)
+    async def _fake_dispose() -> None:
+        return None
 
-    with pytest.raises(RuntimeError, match="exited with code 7"):
-        await worker_runtime.spawn_worker_process("auto_apply_batch")
+    monkeypatch.setattr(
+        worker_runtime,
+        "get_registered_job",
+        lambda name: SimpleNamespace(
+            name=name,
+            queue_name="arq:queue:test",
+            runner=_fake_runner,
+        ),
+    )
+    monkeypatch.setattr(worker_runtime, "setup_logging", lambda debug: None)
+    monkeypatch.setattr(worker_runtime, "validate_runtime_settings", lambda settings: None)
+    monkeypatch.setattr(worker_runtime, "engine", SimpleNamespace(dispose=_fake_dispose))
 
+    await worker_runtime.run_registered_job("scheduled_scrape")
 
-@pytest.mark.asyncio
-async def test_spawn_worker_process_accepts_zero_exit(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    class _FakeProcess:
-        async def wait(self) -> int:
-            return 0
-
-    seen: list[tuple[str, ...]] = []
-
-    async def _fake_create_subprocess_exec(*args: str) -> _FakeProcess:
-        seen.append(args)
-        return _FakeProcess()
-
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", _fake_create_subprocess_exec)
-
-    await worker_runtime.spawn_worker_process("scheduled_scrape")
-
-    assert seen == [
-        (
-            worker_runtime.sys.executable,
-            "-m",
-            "app.runtime.worker",
-            "scheduled_scrape",
-        )
-    ]
+    assert seen == [{}]
 
 
 def test_worker_main_lists_jobs(

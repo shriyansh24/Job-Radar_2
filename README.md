@@ -19,7 +19,7 @@ JobRadar V2 is a full-stack job-search and career-operations workspace. It combi
 ## Architecture At A Glance
 - Frontend: React 19, Vite 6, TypeScript, Tailwind CSS v4, Zustand, React Query
 - Backend: FastAPI, SQLAlchemy async, PostgreSQL, Alembic, `uv`
-- Runtime: compose-first local stack with Postgres, Redis, one-shot migrations, API, dedicated scheduler, and frontend
+- Runtime: compose-first local stack with Postgres, Redis, one-shot migrations, API, dedicated scheduler, queue-specific ARQ workers (`scraping`, `analysis`, `ops`), and frontend
 - Browser validation: committed Playwright coverage under `frontend/e2e/` plus broader screenshot sweeps under `.claude/ui-captures/`
 
 ## Current Branch Strategy
@@ -42,7 +42,9 @@ This compose baseline starts:
 - one-shot migrations
 - backend API on `8000`
 - dedicated scheduler runtime
-- per-job worker subprocesses launched by the scheduler runtime
+- `worker-scraping`
+- `worker-analysis`
+- `worker-ops`
 - frontend container on `3000`
 
 Host-local development is still supported, but it is an override on top of the compose baseline rather than the canonical repo story.
@@ -62,7 +64,16 @@ uv sync --frozen
 uv run python -m app.runtime.scheduler
 ```
 
-The dedicated scheduler process now dispatches each scheduled run through the worker runtime entrypoint at `backend/app/runtime/worker.py` instead of executing job bodies inline inside APScheduler.
+### Dedicated Queue Workers
+```bash
+cd backend
+uv sync --frozen
+uv run python -m app.runtime.arq_worker scraping
+uv run python -m app.runtime.arq_worker analysis
+uv run python -m app.runtime.arq_worker ops
+```
+
+The scheduler now enqueues named jobs onto ARQ queues `scraping`, `analysis`, and `ops`. Queue-specific worker services consume those queues directly instead of the scheduler spawning one-shot worker subprocesses. Treat [05-ops-and-ci.md](D:/jobradar-v2/docs/current-state/05-ops-and-ci.md) as the authoritative runtime-status page for current worker ownership, health markers, and validation commands.
 
 ### Host-Local Frontend
 ```bash
@@ -96,6 +107,7 @@ npm run build
 ### Browser QA
 - Keep broader screenshot captures in `.claude/ui-captures/`
 - Keep committed browser coverage in `frontend/e2e/`
+- The committed browser lane currently covers auth/shell smoke, responsive shell behavior, route-family outcomes for `dashboard/jobs/pipeline/settings/targets`, prepare/intelligence surfaces, operations/admin/data surfaces, profile/settings/auth roundtrips, and representative 8-mode route-theme checks.
 - Treat `docs/current-state/05-ops-and-ci.md` as the authoritative validation and CI reference
 
 ## Test Taxonomy
@@ -130,6 +142,7 @@ jobradar-v2/
 - GitHub Actions currently cover repository validation, docs/path validation, migration replay safety, dependency review, CodeQL, and a dedicated frontend browser smoke lane.
 - Treat `main` as PR-only.
 - Keep docs, tests, and runtime-truth updates in the same batch as behavior changes.
+- Keep ARQ queue-topology claims, worker-service claims, and retry-policy changes in `docs/current-state/05-ops-and-ci.md`.
 - Do not treat `docs/research/` as committed scope unless it is explicitly promoted into `docs/current-state/` and the relevant front-door docs.
 
 ## Read Next

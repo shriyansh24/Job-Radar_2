@@ -38,6 +38,7 @@ async def test_scheduler_runtime_starts_and_cleans_up_ready_marker(
     monkeypatch.setattr(scheduler_runtime, "validate_runtime_settings", lambda settings: None)
     monkeypatch.setattr(scheduler_runtime, "create_scheduler", lambda: fake_scheduler)
     monkeypatch.setattr(scheduler_runtime, "_verify_dependencies", lambda: asyncio.sleep(0))
+    monkeypatch.setattr(scheduler_runtime, "shutdown_queue_pool", lambda: asyncio.sleep(0))
 
     def _install_signal_handlers(event: asyncio.Event) -> None:
         nonlocal stop_event
@@ -66,6 +67,7 @@ async def test_scheduler_runtime_returns_non_zero_when_startup_fails(
     monkeypatch.setattr(scheduler_runtime, "validate_runtime_settings", lambda settings: None)
     monkeypatch.setattr(scheduler_runtime, "create_scheduler", lambda: fake_scheduler)
     monkeypatch.setattr(scheduler_runtime, "_verify_dependencies", lambda: asyncio.sleep(0))
+    monkeypatch.setattr(scheduler_runtime, "shutdown_queue_pool", lambda: asyncio.sleep(0))
 
     exit_code = await scheduler_runtime.run()
 
@@ -88,6 +90,7 @@ async def test_scheduler_runtime_returns_non_zero_when_dependency_probe_fails(
     monkeypatch.setattr(scheduler_runtime, "validate_runtime_settings", lambda settings: None)
     monkeypatch.setattr(scheduler_runtime, "create_scheduler", lambda: fake_scheduler)
     monkeypatch.setattr(scheduler_runtime, "_verify_dependencies", _fail_dependencies)
+    monkeypatch.setattr(scheduler_runtime, "shutdown_queue_pool", lambda: asyncio.sleep(0))
 
     exit_code = await scheduler_runtime.run()
 
