@@ -1,5 +1,15 @@
 # Infrastructure And Runtime Tree
 
+Historical note: this is an archived infra/runtime snapshot, not the live runtime or GitHub automation map.
+
+Do not use this file as the current source of truth for compose topology, workflow inventory, or local startup guidance.
+
+Use these docs instead:
+- `docs/current-state/00-index.md`
+- `docs/current-state/05-ops-and-ci.md`
+- `docs/repo-hardening/00-index.md`
+- `docs/repo-hardening/03-runtime-truth-matrix.md`
+
 Root scope: `D:/jobradar-v2/infra` plus root-level operational/runtime files and workflow automation.
 
 ## Infra / Runtime Tree

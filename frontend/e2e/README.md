@@ -21,3 +21,5 @@ frontend/e2e/
 - `smoke/` should fail fast on auth/bootstrap or shell regressions.
 - `flows/` should protect real route transitions and user-visible outcomes, not pixel snapshots.
 - `theme-matrix/` is the canonical home for 8-mode coverage as it expands.
+- `theme-matrix/route-theme-matrix.spec.ts` is the route-level check for representative pages across all 8 theme combinations.
+- `flows/shell-responsive.spec.ts` is the shell behavior check for desktop, tablet, and phone chrome without screenshot assertions.
