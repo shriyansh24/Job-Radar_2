@@ -31,7 +31,7 @@
 ## SC-06 - HIGH: Missing Workday Rate Policy
 - **File:** `backend/app/scraping/rate_limiter.py`
 - **Detail:** Fixed. `DEFAULT_POLICIES` now includes a dedicated Workday policy.
-- **Evidence:** `backend/tests/unit/test_rate_limiter.py`
+- **Evidence:** `backend/tests/security/test_rate_limiter.py`
 - **Status:** FIXED
 
 ## SC-07 - HIGH: Simhash False Positives
@@ -60,13 +60,13 @@
 ## SC-11 - MEDIUM: No Pagination Timeout
 - **File:** `backend/app/scraping/service.py`
 - **Detail:** Fixed. Pagination is now bounded by a service timeout so a stalled crawler cannot hang the target run forever.
-- **Evidence:** `backend/tests/unit/scraping/test_run_target_batch.py`
+- **Evidence:** `backend/tests/workers/scraping/test_target_batch_worker.py`
 - **Status:** FIXED
 
 ## SC-12 - MEDIUM: Scheduler No Interval Validation
 - **File:** `backend/app/scraping/control/scheduler.py`
 - **Detail:** Fixed. `compute_next_run()` now clamps `schedule_interval_m` to a positive minimum instead of trusting zero or negative intervals.
-- **Evidence:** `backend/tests/unit/scraping/test_scheduler.py`
+- **Evidence:** `backend/tests/workers/scraping/test_scrape_scheduler.py`
 - **Status:** FIXED
 
 ## SC-13 - LOW: Dead Code - ScrapingBee
@@ -82,6 +82,6 @@
 ## Verified Fixes Since Initial Audit
 
 ## SC-F01 - FIXED: Circuit Breaker Recovery Timing Was Flaky On Windows
-- **Files:** `backend/app/scraping/rate_limiter.py`, `backend/tests/unit/test_rate_limiter.py`
+- **Files:** `backend/app/scraping/rate_limiter.py`, `backend/tests/security/test_rate_limiter.py`
 - **Detail:** The live issue was not the original audited "stuck half-open" claim, but a Windows clock-resolution edge case. The breaker now uses the hardened monotonic timing path and the regression tests avoid sleep-based flakiness.
 - **Status:** FIXED

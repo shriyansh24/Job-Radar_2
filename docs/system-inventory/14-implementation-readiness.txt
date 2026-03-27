@@ -1,5 +1,10 @@
 # Implementation Readiness
 
+Historical inventory note:
+- This file captures readiness concerns from the earlier system-inventory pass.
+- Use it as a risk register, not as the live state source of truth.
+- `docs/current-state/*` and the repo-hardening evidence ledger should win when the status has been revalidated since this snapshot.
+
 ## Overall Readiness Summary
 
 - Frontend readiness: medium

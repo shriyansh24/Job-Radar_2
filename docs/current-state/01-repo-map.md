@@ -8,12 +8,22 @@ jobradar-v2/
 |-- frontend/     React app, API clients, state, tests
 |-- docs/         Audit, current-state, research, historical plans
 |-- infra/        Infrastructure support files
-|-- .github/      CI, CodeQL, dependency review, Dependabot
+|-- .github/      CI, repo guardrails, templates, CODEOWNERS
+|-- scripts/      Repo-level validation helpers
 |-- CLAUDE.md     Agent playbook
 |-- AGENTS.md     User preferences and workspace facts
 |-- PROJECT_STATUS.md
 `-- README.md
 ```
+
+## Test Layout
+- `frontend/src/tests/` is the live Vitest taxonomy:
+  - `app/`, `api/`, `components/`, `hooks/`, `pages/`, `support/`
+- `backend/tests/` is the live pytest taxonomy:
+  - `contracts/`, `edge_cases/`, `fixtures/`, `infra/`, `integration/`, `migrations/`, `security/`, `unit/`, `workers/`
+- The authoritative per-tree breadcrumbs live in:
+  - `frontend/src/tests/README.md`
+  - `backend/tests/README.md`
 
 ## Operational Read Order
 1. `docs/current-state/00-index.md`
@@ -32,7 +42,8 @@ jobradar-v2/
 - Future-looking:
   - `docs/research/`
 - Historical:
-  - `docs/superpowers/`
+  - `docs/system-inventory/`
+  - `docs/repo-hardening/` while the hardening program is still in progress
 
 ## Important Local-Only Files
 - `.claude/launch.json` is machine-local and should not be committed.

@@ -27,6 +27,7 @@ backend/downloaded_files/
 codeql-alerts.json
 .cursor/
 current_ui_screenshots/
+output/
 job_radar_v2_folder_tree*.txt
 v2_*_files.txt
 v2_full_tree.txt

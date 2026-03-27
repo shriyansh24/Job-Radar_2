@@ -3,7 +3,7 @@
 ## Visual Thesis
 - Build JobRadar as a reference-first command center.
 - Preserve the current app's routes, auth, and backend behavior, but use Figma Make as the live authority for theme families, typography, shell posture, and interaction language.
-- Light mode stays bright, neutral, and technical. Dark mode stays jet black, high-contrast, and crisp.
+- Light mode stays bright, neutral, and technical. Dark mode stays high-contrast and crisp; the default family is near-black, while some alternate families push darker toward jet black.
 - The live type system is `Inter` for interface copy, `Space Grotesk` for display and section headlines, and `JetBrains Mono` for labels, metrics, tabs, and system readouts.
 - The current sweep is stripping generated copy from login, settings, dashboard, jobs, pipeline, and copilot while preserving behavior.
 

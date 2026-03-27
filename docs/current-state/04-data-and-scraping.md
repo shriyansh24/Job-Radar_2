@@ -21,7 +21,7 @@
 - Circuit-breaker timing uses a high-resolution monotonic clock path and deterministic regression coverage.
 
 ## Operational Notes
-- `docs/superpowers/` contains the historical design/build plan for this subsystem.
+- Historical implementation/inventory context now lives in `docs/system-inventory/` and `docs/repo-hardening/`.
 - `docs/audit/03-scraper.md` is the bug ledger for scraper issues.
 
 ## Current Assessment

@@ -5,6 +5,7 @@ AI-powered job hunting assistant with direct-job scraping, enrichment, pipeline 
 ## Start Here
 - Current repo state: `docs/current-state/00-index.md`
 - Audit ledger: `docs/audit/00-index.md`
+- Repo hardening trail: `docs/repo-hardening/00-index.md`
 - Agent preferences and frontend expectations: `AGENTS.md`
 - Agent playbook and command surface: `CLAUDE.md`
 - High-level project summary: `PROJECT_STATUS.md`
@@ -26,8 +27,11 @@ AI-powered job hunting assistant with direct-job scraping, enrichment, pipeline 
 ### Infrastructure
 
 ```bash
-docker start jobradar-postgres
+docker compose up -d postgres redis
 ```
+
+This compose flow is the canonical local runtime baseline for the repo.
+If you already have a separate manual `jobradar-postgres` container, treat it as a legacy local override rather than the documented default.
 
 ### Backend
 
@@ -47,6 +51,8 @@ npm run dev
 ```
 
 Open `http://localhost:5173`.
+
+If you run the bind-mounted Docker dev overlay instead of host-local Vite, the checked-in `docker-compose.dev.yml` already sets `VITE_API_PROXY_TARGET=http://backend:8000` so the frontend container can proxy to the backend container correctly.
 
 ## Validation Commands
 
@@ -73,6 +79,14 @@ npm run build
 - Sweep the routed app in desktop, tablet, and phone layouts.
 - Store screenshots and other QA artifacts in `.claude/ui-captures/`.
 
+## Repo Protections
+- GitHub Actions currently cover repository validation, CodeQL, dependency review, docs/path validation, and migration replay safety.
+- Dependabot is enabled for GitHub Actions, frontend npm dependencies, and backend Python dependencies.
+- Healthy branch-protection assumptions for this repo:
+  - treat `main` as PR-only
+  - require repository validation, docs validation, migration safety, dependency review, and CodeQL before merge
+  - keep docs, tests, and runtime-truth updates in the same batch as behavior changes
+
 ## Current Verification Snapshot (2026-03-27)
 - Frontend lint passed.
 - Frontend tests passed.
@@ -88,16 +102,20 @@ jobradar-v2/
 |-- backend/
 |   |-- app/            # FastAPI application (domain modules)
 |   |-- scripts/        # CLI utilities
-|   `-- tests/          # pytest suite
+|   |-- tests/          # pytest suite grouped by role (contracts/infra/integration/migrations/security/unit/workers)
+|   `-- pyproject.toml  # backend tooling + pytest config
 |-- frontend/
 |   |-- src/            # React 19 application
+|   |   `-- tests/      # Vitest suites grouped by app/api/components/hooks/pages/support
 |   `-- system.md       # Frontend design-system source of truth
 |-- docs/
 |   |-- audit/          # Bug ledger (39 FIXED / 1 VERIFIED_CLEAN / 4 STALE)
 |   |-- current-state/  # Canonical live state docs
+|   |-- repo-hardening/ # Repository normalization and traceability artifacts
 |   `-- research/       # Future design research
+|-- scripts/           # Repo-level validation helpers
 |-- .claude/ui-captures/ # Browser QA artifacts and route/theme capture packs
-|-- .github/workflows/  # CI: lint, test, build, CodeQL
+|-- .github/workflows/  # CI and repo guardrails
 |-- AGENTS.md           # Agent preferences and frontend expectations
 |-- CLAUDE.md           # Agent playbook and working commands
 |-- DECISIONS.md        # Architectural decisions
@@ -109,5 +127,7 @@ jobradar-v2/
 - Use `uv run` for backend commands and `npm` for frontend commands.
 - The live frontend is a reference-first command-center UI while preserving the app's routed behavior and backend contracts.
 - Buttons are intentionally shadowless; elevation is reserved for panels and structural surfaces.
+- Test taxonomy now lives alongside the code: `frontend/src/tests/README.md` and `backend/tests/README.md`.
 - The current live product state is documented under `docs/current-state/`.
+- `docs/repo-hardening/` is the active normalization trail while the repository hardening pass is in progress.
 - `docs/research/` contains future-planning material, not current requirements.

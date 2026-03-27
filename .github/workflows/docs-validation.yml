@@ -1,0 +1,59 @@
+name: Docs Validation
+
+on:
+  pull_request:
+    paths:
+      - ".env.example"
+      - ".github/workflows/**"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "DECISIONS.md"
+      - "PROJECT_STATUS.md"
+      - "README.md"
+      - "SECURITY.md"
+      - "docker-compose.yml"
+      - "docker-compose.dev.yml"
+      - "docs/**"
+      - "scripts/check_docs_truth.py"
+  push:
+    branches: [main]
+    paths:
+      - ".env.example"
+      - ".github/workflows/**"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "DECISIONS.md"
+      - "PROJECT_STATUS.md"
+      - "README.md"
+      - "SECURITY.md"
+      - "docker-compose.yml"
+      - "docker-compose.dev.yml"
+      - "docs/**"
+      - "scripts/check_docs_truth.py"
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs-validation:
+    name: Docs truth and path validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Validate local documentation references
+        run: python scripts/check_docs_truth.py

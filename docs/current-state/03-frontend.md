@@ -39,6 +39,7 @@
 - `cd frontend && npm run test -- --run`
 - `cd frontend && npm run build`
 - Authenticated browser QA was rerun after the decomposition/copy-cleanup pass, covering the routed app with representative captures in `.claude/ui-captures/`.
+- Frontend test suites now live under `frontend/src/tests/` with `app/`, `api/`, `components/`, `hooks/`, `pages/`, and `support/` lanes.
 
 ## Non-Blocking Residual
 - Route-by-route visual polish remains iterative work on some larger surfaces, but no blocking frontend issue is currently known from the latest validated pass.

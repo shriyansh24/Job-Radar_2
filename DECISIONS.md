@@ -79,3 +79,9 @@ Key technical decisions made during the development of JobRadar V2.
 **Decision**: Support `theme family + mode` in the frontend runtime instead of a simple light/dark toggle.
 
 **Rationale**: The current visual direction now includes `default`, `terminal`, `blueprint`, and `phosphor` families. Modeling the theme as a family plus mode keeps the implementation extensible without changing route or data contracts.
+
+## 14. Purpose-Driven Test Taxonomy
+
+**Decision**: Organize frontend and backend tests by protection goal and system boundary rather than historical accident.
+
+**Rationale**: Frontend tests are now grouped under `frontend/src/tests/{app,api,components,hooks,pages,support}` and backend tests increasingly live under role-based directories such as `infra/`, `migrations/`, `security/`, and `workers/`. This makes the suite easier to navigate and reduces drift between what a test protects and where it lives.

@@ -15,7 +15,7 @@
 ## SEC-03 - CRITICAL: Default Secret Key Not Blocked
 - **Files:** `backend/app/config.py`, `backend/app/main.py`
 - **Detail:** Fixed. The backend now aborts startup when `JR_SECRET_KEY` is still the default and `JR_DEBUG` is false.
-- **Evidence:** `backend/tests/unit/test_config.py`
+- **Evidence:** `backend/tests/infra/test_runtime_config.py`
 - **Status:** FIXED
 
 ## SEC-04 - HIGH: Overpermissive CORS
