@@ -16,7 +16,7 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Auth: cookie-based access and refresh tokens
 - Scraping: ATS registry, target-based scheduler, browser pool, tier router, page crawler
 - CI: dependency checks, backend lint/tests, frontend audit/lint/tests/build
-- Current UI: reference-first neo-brutalist shell with shared primitives under `frontend/src/components/system`, a `frontend/system.md` design source of truth, and routed workspace groupings for `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, and `Operations`
+- Current UI: reference-first command-center shell with shared primitives under `frontend/src/components/system`, a `frontend/system.md` design source of truth, shadowless buttons, and routed workspace groupings for `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, and `Operations`
 
 ## Canonical Working Commands
 
@@ -42,24 +42,25 @@ Use `docs/research/00-index.md` only for future-planning context.
 ## Branch Context
 - Active migration branch in this workspace: `codex/ui-changes`.
 
-## Current State Summary (2026-03-24)
-- Frontend: reference-first UI migration is implemented and locally green for lint, tests, and build.
+## Current State Summary (2026-03-27)
+- Frontend: reference-first UI migration is implemented, the shared system is flatter and shadowless on controls, the largest routed pages have been broken into smaller component groups, and the slop-copy cleanup pass is already integrated into login, settings, dashboard, jobs, pipeline, and copilot.
 - Backend: targeted auth/settings/admin/vault integration tests pass locally.
-- Browser QA: authenticated route sweeps passed across all 21 routed frontend surfaces on desktop, tablet, and phone, and representative screenshots were written to `output/playwright/`.
+- Browser QA: the latest authenticated route sweep is current and representative captures live under `.claude/ui-captures/`.
 - Local Postgres schema was upgraded from Alembic revision `005` to `head` during QA so the settings/integration surfaces match the live schema.
 - The audit ledger remains at `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
 
 ## Remaining Frontend Gaps
 - No blocking frontend gaps are currently known from the verified local pass.
-- Remaining work is follow-up polish, coverage hardening, or product expansion rather than a known blocker.
+- Remaining work is iterative polish on the remaining larger routed surfaces and deeper route-by-route theme review, not a known blocker.
 
 ## Important Invariants
 - `jobs.id` is a SHA-256 string key, not a UUID.
 - Runtime `DateTime` columns should use `DateTime(timezone=True)`.
 - Use `uv run` for backend commands; do not mix in ad hoc Python invocations when repo-managed commands exist.
 - Use `npm` for frontend commands.
-- The frontend theme system is driven by `useUIStore` and a `.dark` class on the root element.
+- The frontend theme system is driven by `useUIStore`, stores theme family plus mode, and applies a `.dark` class on the root element for dark variants.
 - The frontend icon set is `@phosphor-icons/react`, not `lucide-react`.
+- Buttons should not carry drop shadows; elevation belongs to surfaces and containers, not interactive controls.
 - Keep `frontend/system.md` aligned with any new visual or layout rule.
 
 ## Infrastructure
@@ -77,6 +78,4 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Ignore `.claude/worktrees/` for live repo state unless you are explicitly working inside one.
 
 ## Known Residual Noise
-- Frontend Vitest still prints a non-fatal `--localstorage-file` warning during test runs.
-- Vite still prints a chunk-size warning during production builds.
-- Browser-level QA still shows non-fatal password `autocomplete` hints on Settings inputs and Recharts width warnings when charts mount in hidden or zero-sized containers during automated sweeps.
+- Browser QA is current for the latest integrated sweep; additional captures should be treated as incremental visual regression checks, not as a missing validation step.

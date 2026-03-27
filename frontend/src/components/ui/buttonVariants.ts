@@ -1,27 +1,27 @@
 import { cva } from "class-variance-authority";
 
 export const buttonVariants = cva(
-  "hard-press inline-flex min-h-11 items-center justify-center gap-2 border-2 border-border px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.18em] transition-[background-color,color,transform,border-color,box-shadow] duration-[var(--transition-fast)] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-0 aria-invalid:border-[var(--color-accent-danger)] aria-invalid:shadow-none",
+  "hard-press inline-flex min-h-11 items-center justify-center gap-2 border-2 border-border px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.18em] transition-[background-color,color,transform,border-color] duration-[var(--transition-fast)] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-0 aria-invalid:border-[var(--color-accent-danger)]",
   {
     variants: {
       variant: {
-        default: "bg-card text-foreground shadow-[var(--shadow-sm)]",
+        default: "bg-card text-foreground shadow-none",
         primary:
-          "bg-primary text-primary-foreground shadow-[var(--shadow-blue)] hover:border-[var(--color-accent-primary)]",
+          "bg-primary text-primary-foreground shadow-none hover:border-[var(--color-accent-primary)]",
         secondary:
-          "bg-card text-foreground shadow-[var(--shadow-sm)] hover:bg-[var(--color-bg-tertiary)]",
+          "bg-card text-foreground shadow-none hover:bg-[var(--color-bg-tertiary)]",
         outline:
-          "bg-transparent text-foreground shadow-[var(--shadow-sm)] hover:bg-[var(--color-bg-secondary)]",
+          "bg-transparent text-foreground shadow-none hover:bg-[var(--color-bg-secondary)]",
         danger:
-          "bg-[var(--color-accent-danger)] text-white shadow-[var(--shadow-sm)] hover:border-[var(--color-accent-danger)]",
+          "bg-[var(--color-accent-danger)] text-white shadow-none hover:border-[var(--color-accent-danger)]",
         destructive:
-          "bg-[var(--color-accent-danger)] text-white shadow-[var(--shadow-sm)] hover:border-[var(--color-accent-danger)]",
+          "bg-[var(--color-accent-danger)] text-white shadow-none hover:border-[var(--color-accent-danger)]",
         success:
-          "bg-[var(--color-accent-success)] text-white shadow-[var(--shadow-sm)] hover:border-[var(--color-accent-success)]",
+          "bg-[var(--color-accent-success)] text-white shadow-none hover:border-[var(--color-accent-success)]",
         warning:
-          "bg-[var(--color-accent-warning)] text-[var(--color-text-primary)] shadow-[var(--shadow-sm)] hover:border-[var(--color-accent-warning)]",
+          "bg-[var(--color-accent-warning)] text-[var(--color-text-primary)] shadow-none hover:border-[var(--color-accent-warning)]",
         info:
-          "bg-[var(--color-accent-primary)] text-primary-foreground shadow-[var(--shadow-blue)] hover:border-[var(--color-accent-primary)]",
+          "bg-[var(--color-accent-primary)] text-primary-foreground shadow-none hover:border-[var(--color-accent-primary)]",
         ghost:
           "border-transparent bg-transparent px-3 py-2 text-text-secondary shadow-none hover:border-border hover:bg-[var(--color-bg-secondary)] hover:text-foreground",
         link:

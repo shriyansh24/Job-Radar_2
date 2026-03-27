@@ -11,7 +11,7 @@
 ## Learned Workspace Facts
 - The `jobradar-v2` frontend uses Tailwind CSS v4 with design tokens defined via CSS variables in `frontend/src/index.css`.
 - The frontend uses `@phosphor-icons/react` and `Inter` / `JetBrains Mono` as the live type system.
-- The theme system is wired through a Zustand `useUIStore` that toggles a `.dark` class on the HTML root and persists the choice in `localStorage`.
-- The current UI surface is a reference-first neo-brutalist command center: fixed top bar, desktop rail, mobile drawer, mobile bottom nav, and routed page families under `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, and `Operations`.
-- `frontend/system.md` is the design-system source of truth for tokens, layout grammar, shell posture, and component rules.
-- Verified local validation is currently green for frontend lint, frontend tests, frontend build, targeted backend auth/settings/admin/vault integration tests, and browser-level desktop/tablet/phone route sweeps with artifacts in `output/playwright/`.
+- The theme system is wired through a Zustand `useUIStore` that persists both theme family and mode, toggles a `.dark` class on the HTML root, and keeps the current choice in `localStorage`.
+- The current UI surface is a reference-first command center with a simplified shell, shadowless buttons, a fixed top bar, desktop rail, mobile drawer, mobile bottom nav, and routed page families under `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, and `Operations`.
+- `frontend/system.md` is the design-system source of truth for tokens, layout grammar, shell posture, and component rules, including the no-button-shadow rule.
+- Verified local validation currently covers frontend lint, frontend tests, frontend build, targeted backend auth/settings/admin/vault integration tests, and a refreshed authenticated browser sweep with captures in `.claude/ui-captures/`.

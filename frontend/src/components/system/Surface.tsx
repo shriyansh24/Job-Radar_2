@@ -8,9 +8,9 @@ const surfaceVariants = cva(
   {
     variants: {
       tone: {
-        default: "bg-card shadow-[var(--shadow-sm)]",
-        subtle: "bg-[var(--color-bg-secondary)] shadow-[var(--shadow-sm)]",
-        elevated: "bg-[var(--color-bg-secondary)] shadow-[var(--shadow-lg)]",
+        default: "bg-card shadow-none",
+        subtle: "bg-[var(--color-bg-secondary)] shadow-none",
+        elevated: "bg-[var(--color-bg-secondary)] shadow-[var(--shadow-hard-sm)]",
         ghost: "border-transparent bg-transparent shadow-none",
       },
       padding: {

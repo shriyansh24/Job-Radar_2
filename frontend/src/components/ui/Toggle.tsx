@@ -18,7 +18,7 @@ export default function Toggle({ checked, onChange, label, disabled, className }
         disabled={disabled}
         onClick={() => !disabled && onChange(!checked)}
         className={clsx(
-          'hard-press relative inline-flex h-7 w-14 shrink-0 border-2 border-border shadow-[var(--shadow-xs)] transition-colors duration-200 focus:outline-none',
+          'hard-press relative inline-flex h-7 w-14 shrink-0 border-2 border-border shadow-none transition-colors duration-200 focus:outline-none',
           checked ? 'bg-accent-primary text-primary-foreground' : 'bg-card'
         )}
       >

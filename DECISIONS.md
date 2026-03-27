@@ -67,3 +67,15 @@ Key technical decisions made during the development of JobRadar V2.
 **Decision**: Use the reference repo's visual system as the frontend authority for typography, colors, shell posture, and page framing while keeping this repo authoritative for routes, auth, data flow, and backend semantics.
 
 **Rationale**: The reference implementation produced a stronger shell, clearer hierarchy, and better visual rhythm. Porting its visual language without inheriting its mock-data architecture preserves the current product behavior while materially improving the shipped UI.
+
+## 12. Shadowless Buttons
+
+**Decision**: Keep interactive buttons visually flat and shadowless across the frontend.
+
+**Rationale**: The current UI direction favors sharper surfaces and clearer separation between controls and containers. Buttons should read as controls, while structural elevation is reserved for cards, panels, and shell regions.
+
+## 13. Theme Families In Runtime
+
+**Decision**: Support `theme family + mode` in the frontend runtime instead of a simple light/dark toggle.
+
+**Rationale**: The current visual direction now includes `default`, `terminal`, `blueprint`, and `phosphor` families. Modeling the theme as a family plus mode keeps the implementation extensible without changing route or data contracts.

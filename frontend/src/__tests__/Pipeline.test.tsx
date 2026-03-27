@@ -57,15 +57,15 @@ describe("Pipeline page", () => {
     renderWithProviders(<Pipeline />);
 
     expect(await screen.findByRole("heading", { name: "Pipeline" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /run auto-apply/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open copilot/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^auto-apply$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^copilot$/i })).toBeInTheDocument();
     expect(await screen.findByText("Saved")).toBeInTheDocument();
     expect(await screen.findByText("Applied")).toBeInTheDocument();
     expect((await screen.findAllByText("Backend Engineer")).length).toBeGreaterThan(0);
     expect(screen.getByText("Frontend Engineer")).toBeInTheDocument();
-    expect(screen.getByText("Selected application")).toBeInTheDocument();
+    expect(screen.getByText("Details")).toBeInTheDocument();
     expect(screen.getAllByText("Acme").length).toBeGreaterThan(0);
-    expect(screen.getByText("LinkedIn")).toBeInTheDocument();
+    expect(screen.getAllByText("LinkedIn").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("button", { name: /^advance$/i }).length).toBeGreaterThan(0);
   });
 });

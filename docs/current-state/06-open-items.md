@@ -1,9 +1,9 @@
 # Open Items - JobRadar V2
 
 ## Blocking Bugs
-- None verified in the current `2026-03-24` migration pass.
+- None verified in the current `2026-03-27` cleanup pass.
 
-## Fixed Structural Gaps (2026-03-24)
+## Fixed Structural Gaps (2026-03-27)
 - Reference-first frontend migration shipped across all routed pages.
 - Shared shell, navigation, tokens, and page grammar now follow the reference-first command-center system.
 - `SearchExpansion`, `Resume Studio`, `Compensation`, `Settings`, `Admin`, and `Targets` now align to the live backend contracts used by the app.
@@ -11,17 +11,14 @@
 - Local Postgres schema was upgraded to Alembic `head` so the settings/integration surfaces match the current app.
 
 ## Remaining Frontend Gaps
+- Route-by-route copy cleanup and page decomposition are still worth continuing on the largest remaining surfaces, but the main frontend sweep is now integrated and validated.
 - Semantic search can still be made richer inside the Job Board beyond the current exact/semantic mode toggle.
 - Auto-apply still has room for broader operator tooling and coverage beyond the current route surface.
 - Saved-search alerts UI and scheduler UX remain a follow-up enhancement.
 - Resume PDF generation and additional template flows remain deferred.
 
 ## Non-Blocking Residuals
-- Vitest still prints `--localstorage-file was provided without a valid path` warnings during frontend tests.
-- Vite still prints a chunk-size warning during production builds.
-- Login/auth bootstrap still emits transient `401` / `422` network noise before cookies exist.
-- Browser-level QA still surfaces password `autocomplete` hints on Settings inputs.
-- Recharts can still emit width warnings when charts mount in hidden or zero-sized containers during automated sweeps.
+- No blocking residual is currently tied to the frontend sweep; additional browser captures are incremental QA rather than a missing validation gate.
 
 ## Coverage TODOs
 - `backend/app/auto_apply/ats_detector.py`, `backend/app/auto_apply/ats_filler.py`, `backend/app/auto_apply/orchestrator.py`, `backend/app/auto_apply/portal_config.py`, `backend/app/auto_apply/question_engine.py`, `backend/app/auto_apply/service.py`, `backend/app/auto_apply/validator.py`, and `backend/app/auto_apply/workday_filler.py` remain below `50%` coverage.

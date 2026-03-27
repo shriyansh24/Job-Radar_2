@@ -1,23 +1,23 @@
 # JobRadar V2 - Project Status
 
-> Last updated: 2026-03-24
+> Last updated: 2026-03-27
 > Canonical operational state lives in `docs/current-state/00-index.md`.
 
 ## Current Snapshot
 - See `docs/current-state/00-index.md` for the canonical live state.
 - Active branch in this workspace: `codex/ui-changes`.
-- Frontend: reference-first UI migration is in place, and lint, tests, and build pass locally.
+- Frontend: reference-first UI migration is in place, major routed pages have been decomposed into smaller component groups, generated shell/page copy has been stripped from the main surfaces, and lint/test/build are green.
 - Backend: targeted auth/settings/admin/vault integration tests pass locally.
-- Browser QA: desktop, tablet, and phone sweeps passed across all routed frontend surfaces, and representative screenshots were written to `output/playwright/`.
+- Browser QA: the latest authenticated sweep is current, and representative screenshots are stored in `.claude/ui-captures/`.
 - Audit status remains `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
 
 ## What Is Stable
 - Cookie-based auth, refresh, revocation, rate limiting, and security headers
 - Target-based scraping platform with ATS detection, tier routing, pagination crawling, and attempt telemetry
 - Job enrichment, salary analysis, cover-letter generation, interview prep, resume tailoring, and application pipeline flows
-- Reference-first frontend shell with fixed header, responsive desktop rail, mobile drawer, mobile bottom nav, and light/dark parity
+- Reference-first frontend shell with fixed header, responsive desktop rail, mobile drawer, mobile bottom nav, shadowless buttons, and light/dark parity
 - Search expansion, resume tailoring, salary research/evaluation, settings integrations, vault editing, and target/scraper surfaces aligned to live backend contracts
-- Local browser QA artifacts for the current migration pass under `output/playwright/`
+- Current browser QA artifacts under `.claude/ui-captures/`
 
 ## Current Feature Status
 The current shipped UI and backend contract are aligned for the reference-first migration:
@@ -34,9 +34,7 @@ The current shipped UI and backend contract are aligned for the reference-first 
 
 ## Non-Blocking Residuals
 - Repo-wide strict backend mypy remains deferred outside the targeted CI scope.
-- Vitest still emits non-fatal `--localstorage-file` warnings.
-- Vite still emits a chunk-size warning during production builds.
-- Browser-level QA still surfaces non-fatal password `autocomplete` hints on Settings inputs and Recharts width warnings when charts mount in hidden or zero-sized containers during automated sweeps.
+- Further route-by-route visual polish and decomposition are still worthwhile, but the current frontend/browser verification set is already current.
 
 ## Deferred Work (Not Current Bugs)
 - Wire semantic search into the Job Board as a richer interactive filter flow
@@ -44,3 +42,4 @@ The current shipped UI and backend contract are aligned for the reference-first 
 - Saved-search alerts UI and scheduler UX
 - Additional parser tuning for difficult JS-heavy career pages
 - Broader end-to-end Playwright coverage beyond the current smoke and screenshot pass
+- Continued route-by-route visual cleanup and decomposition for the remaining larger frontend surfaces

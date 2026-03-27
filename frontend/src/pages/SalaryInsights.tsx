@@ -1,13 +1,4 @@
-import {
-  ArrowUp,
-  Building,
-  CurrencyDollar,
-  Lightbulb,
-  MagnifyingGlass,
-  MapPin,
-  Minus,
-  TrendUp,
-} from "@phosphor-icons/react";
+import { Building, CurrencyDollar, Lightbulb, MapPin, MagnifyingGlass, TrendUp } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
@@ -18,11 +9,16 @@ import { SectionHeader } from "../components/system/SectionHeader";
 import { SplitWorkspace } from "../components/system/SplitWorkspace";
 import { StateBlock } from "../components/system/StateBlock";
 import { Surface } from "../components/system/Surface";
-import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import Skeleton from "../components/ui/Skeleton";
 import { toast } from "../components/ui/toastService";
+import {
+  SalaryRangeBar,
+  SalarySavedResearchCard,
+  SalaryScopeRail,
+  SalaryVerdictDisplay,
+} from "../components/salary/SalaryWidgets";
 
 interface SavedResearch {
   id: string;
@@ -35,125 +31,8 @@ interface SavedResearch {
 
 function formatSalary(value: number | null | undefined): string {
   if (!value) return "-";
-  if (value >= 1000) {
-    return `$${Math.round(value / 1000)}k`;
-  }
+  if (value >= 1000) return `$${Math.round(value / 1000)}k`;
   return `$${value.toLocaleString()}`;
-}
-
-function SalaryRangeBar({ research }: { research: SalaryResearch }) {
-  const markers = [
-    { label: "P25", value: research.p25 ?? 0, accent: "text-text-primary" },
-    { label: "P50", value: research.p50 ?? 0, accent: "text-accent-primary" },
-    { label: "P75", value: research.p75 ?? 0, accent: "text-text-primary" },
-    { label: "P90", value: research.p90 ?? 0, accent: "text-text-primary" },
-  ];
-  const values = markers.map((marker) => marker.value).filter((value) => value > 0);
-  if (values.length < 2) return null;
-
-  const floor = Math.min(...values);
-  const ceiling = Math.max(...values);
-  const range = ceiling - floor;
-  if (range <= 0) return null;
-
-  const getPosition = (value: number) => ((value - floor) / range) * 100;
-
-  return (
-    <div className="space-y-5">
-      <div className="hero-panel relative h-12 px-4">
-        <div className="absolute left-4 right-4 top-1/2 h-2 -translate-y-1/2 bg-border" />
-        <div
-          className="absolute top-1/2 h-4 -translate-y-1/2 border-2 border-border bg-accent-primary/20"
-          style={{
-            left: `calc(${getPosition(research.p25 ?? floor)}% + 0.5rem)`,
-            width: `${getPosition(research.p75 ?? ceiling) - getPosition(research.p25 ?? floor)}%`,
-          }}
-        />
-        {markers.map((marker) => (
-          <div
-            key={marker.label}
-            className="absolute top-1/2 size-4 -translate-y-1/2 border-2 border-border shadow-[var(--shadow-xs)]"
-            style={{
-              left: `calc(${getPosition(marker.value)}% + 0.5rem)`,
-              backgroundColor:
-                marker.label === "P50" ? "var(--color-accent-primary)" : "var(--card)",
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-        {markers.map((item) => (
-          <div key={item.label} className="border-2 border-border bg-card px-2 py-3 shadow-[var(--shadow-xs)]">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              {item.label}
-            </p>
-            <p className={`mt-2 text-lg font-black uppercase tracking-[-0.05em] ${item.accent}`}>
-              {formatSalary(item.value)}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function VerdictDisplay({ evaluation }: { evaluation: OfferEvaluation }) {
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <Badge variant="info" size="md">
-          <Lightbulb size={14} weight="bold" />
-          <span className="ml-1">Negotiation guidance</span>
-        </Badge>
-        {evaluation.counter_offer ? (
-          <Badge variant="success" size="md">
-            <ArrowUp size={14} weight="bold" />
-            <span className="ml-1">Counter {formatSalary(evaluation.counter_offer)}</span>
-          </Badge>
-        ) : null}
-        {evaluation.walkaway_point ? (
-          <Badge variant="warning" size="md">
-            <Minus size={14} weight="bold" />
-            <span className="ml-1">Walkaway {formatSalary(evaluation.walkaway_point)}</span>
-          </Badge>
-        ) : null}
-      </div>
-
-      <div className="brutal-panel px-4 py-4 text-sm leading-6 text-text-secondary">
-        {evaluation.assessment}
-      </div>
-
-      {evaluation.talking_points.length ? (
-        <div className="space-y-3">
-          <h4 className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-            Talking points
-          </h4>
-          <div className="space-y-2">
-            {evaluation.talking_points.map((tip, index) => (
-              <div
-                key={`${tip}-${index}`}
-                className="brutal-panel px-4 py-3 text-sm leading-6 text-text-secondary"
-              >
-                {tip}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {evaluation.negotiation_script ? (
-        <div className="space-y-3">
-          <h4 className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-            Negotiation script
-          </h4>
-          <div className="border-2 border-border bg-card px-4 py-4 text-sm leading-6 text-text-secondary shadow-[var(--shadow-xs)]">
-            {evaluation.negotiation_script}
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
 }
 
 export default function SalaryInsights() {
@@ -212,14 +91,14 @@ export default function SalaryInsights() {
         key: "saved",
         label: "Saved research",
         value: savedResearches.length,
-        hint: "Recent salary reads that can be reused later.",
+        hint: "Recent salary reads.",
         icon: <Lightbulb size={18} weight="bold" />,
       },
       {
         key: "median",
         label: "Median",
         value: latestResearch ? formatSalary(latestResearch.p50) : "-",
-        hint: "Most recent P50 market read.",
+        hint: "Latest P50 read.",
         icon: <CurrencyDollar size={18} weight="bold" />,
         tone: "warning" as const,
       },
@@ -227,15 +106,15 @@ export default function SalaryInsights() {
         key: "evaluation",
         label: "Counter offer",
         value: evaluation?.counter_offer ? formatSalary(evaluation.counter_offer) : "-",
-        hint: "Negotiation anchor from the latest evaluation.",
+        hint: "Negotiation anchor.",
         icon: <TrendUp size={18} weight="bold" />,
         tone: "success" as const,
       },
       {
         key: "company",
-        label: "Company set",
+        label: "Company",
         value: company || "None",
-        hint: "Used for market comparisons.",
+        hint: "Used for comparisons.",
         icon: <Building size={18} weight="bold" />,
       },
     ],
@@ -248,15 +127,15 @@ export default function SalaryInsights() {
         className="hero-panel"
         eyebrow="Prepare"
         title="Salary Insights"
-        description="Research the market, pressure-test offers, and keep a negotiation log that works cleanly on desktop, tablet, and phone."
+        description="Research a market range and compare a live offer against it."
         meta={
           <div className="flex flex-wrap gap-2">
-            <Badge variant="warning" size="sm">
-              Market percentiles
-            </Badge>
-            <Badge variant="success" size="sm">
-              Offer coaching
-            </Badge>
+            <span className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
+              Market range
+            </span>
+            <span className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
+              Offer guidance
+            </span>
           </div>
         }
       />
@@ -267,10 +146,7 @@ export default function SalaryInsights() {
         primary={
           <div className="space-y-6">
             <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
-              <SectionHeader
-                title="Salary research"
-                description="Pull a market range for the exact role, company, and location under consideration."
-              />
+              <SectionHeader title="Salary research" description="Pull a market range for the current role." />
               <div className="mt-6 grid gap-4 xl:grid-cols-2">
                 <Input
                   label="Job title"
@@ -301,7 +177,7 @@ export default function SalaryInsights() {
                     disabled={!jobTitle.trim()}
                     icon={<TrendUp size={16} weight="bold" />}
                   >
-                    Research salary
+                    Research
                   </Button>
                 </div>
               </div>
@@ -316,12 +192,12 @@ export default function SalaryInsights() {
               <Surface tone="default" padding="lg" radius="xl">
                 <SectionHeader
                   title="Range view"
-                  description={`Backend market percentiles returned in ${latestResearch.currency}${latestResearch.cached ? " from cache" : ""}.`}
+                  description={`Backend percentiles returned in ${latestResearch.currency}${latestResearch.cached ? " from cache" : ""}.`}
                 />
                 <div className="mt-6 space-y-6">
                   <Surface tone="subtle" padding="md" radius="xl" className="hero-panel">
                     <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                      Active query
+                      Query
                     </div>
                     <div className="mt-3 text-3xl font-black uppercase tracking-[-0.06em] text-text-primary">
                       {company || location ? "Market snapshot loaded" : "General market snapshot"}
@@ -338,9 +214,9 @@ export default function SalaryInsights() {
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {latestResearch.competing_companies.map((entry) => (
-                          <Badge key={entry} variant="info" size="sm">
+                          <span key={entry} className="border-2 border-border px-3 py-2 text-xs uppercase tracking-[0.14em]">
                             {entry}
-                          </Badge>
+                          </span>
                         ))}
                       </div>
                     </div>
@@ -366,15 +242,12 @@ export default function SalaryInsights() {
                 tone="muted"
                 icon={<CurrencyDollar size={18} weight="bold" />}
                 title="No research yet"
-                description="Research a job title to see the market distribution."
+                description="Research a job title to see the market range."
               />
             )}
 
             <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
-              <SectionHeader
-                title="Offer evaluation"
-                description="Compare a concrete offer against the latest market context."
-              />
+              <SectionHeader title="Offer evaluation" description="Compare an offer against the latest market context." />
               <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px]">
                 <Input
                   label="Offer amount"
@@ -393,7 +266,7 @@ export default function SalaryInsights() {
                     disabled={!jobTitle.trim() || !offerAmount || Number(offerAmount) <= 0}
                     icon={<TrendUp size={16} weight="bold" />}
                   >
-                    Evaluate offer
+                    Evaluate
                   </Button>
                 </div>
               </div>
@@ -401,7 +274,7 @@ export default function SalaryInsights() {
               {evaluateMutation.isPending ? <Skeleton variant="rect" className="mt-6 h-24 w-full" /> : null}
               {evaluation ? (
                 <div className="mt-6">
-                  <VerdictDisplay evaluation={evaluation} />
+                  <SalaryVerdictDisplay evaluation={evaluation as OfferEvaluation} />
                 </div>
               ) : null}
             </Surface>
@@ -411,48 +284,31 @@ export default function SalaryInsights() {
           <div className="space-y-4">
             {savedResearches.length ? (
               savedResearches.map((saved) => (
-                <Surface key={saved.id} tone="default" padding="md" radius="xl" interactive className="brutal-panel">
-                  <button
-                    type="button"
-                    className="block w-full text-left"
-                    onClick={() => {
-                      setJobTitle(saved.job_title);
-                      setCompany(saved.company);
-                      setLocation(saved.location);
-                    }}
-                  >
-                    <div className="space-y-3">
-                      <div>
-                        <div className="text-lg font-black uppercase tracking-[-0.04em] text-text-primary">
-                          {saved.job_title}
-                        </div>
-                        <p className="mt-1 text-sm leading-6 text-text-secondary">
-                          {[saved.company || null, saved.location || null].filter(Boolean).join(" / ") || "General market"}
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-2xl font-black uppercase tracking-[-0.05em] text-accent-primary">
-                          {formatSalary(saved.research.p50)}
-                        </span>
-                        <span className="text-sm text-muted-foreground">{format(new Date(saved.timestamp), "PP")}</span>
-                      </div>
-                    </div>
-                  </button>
-                </Surface>
+                <SalarySavedResearchCard
+                  key={saved.id}
+                  title={saved.job_title}
+                  company={saved.company}
+                  location={saved.location}
+                  market={formatSalary(saved.research.p50)}
+                  timestamp={format(new Date(saved.timestamp), "PP")}
+                  onSelect={() => {
+                    setJobTitle(saved.job_title);
+                    setCompany(saved.company);
+                    setLocation(saved.location);
+                  }}
+                />
               ))
             ) : (
               <StateBlock
                 tone="muted"
                 icon={<Lightbulb size={18} weight="bold" />}
                 title="Recent research"
-                description="Your most recent salary pulls and offer evaluations will collect here."
+                description="Saved salary pulls and offer evaluations will collect here."
               />
             )}
-            <StateBlock
-              tone="warning"
-              icon={<Lightbulb size={18} weight="bold" />}
+            <SalaryScopeRail
               title="Reading the result"
-              description="Use P50 as the anchor, P25/P75 as the bracket, and the coaching output as the negotiation plan."
+              description="Use P50 as the anchor, P25/P75 as the bracket, and the coaching output as the plan."
             />
           </div>
         }

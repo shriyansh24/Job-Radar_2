@@ -33,7 +33,8 @@
 - Start backend and frontend locally.
 - Log in through the real UI.
 - Sweep the routed app on desktop, tablet, and phone.
-- Write screenshots to `output/playwright/`.
+- Write screenshots to `.claude/ui-captures/`.
+- The latest authenticated sweep is current for the integrated frontend cleanup pass; treat further runs as incremental regression checks.
 
 ## GitHub Actions
 - `ci.yml` uses:

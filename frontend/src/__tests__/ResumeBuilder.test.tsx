@@ -110,7 +110,7 @@ describe("ResumeBuilder page", () => {
     expect(
       await screen.findByRole("heading", { name: /Resume Builder/i })
     ).toBeInTheDocument();
-    expect(screen.getByText(/Drag & drop your resume here/i)).toBeInTheDocument();
+    expect(screen.getByText(/Drag and drop a resume/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Versions/i }));
 
@@ -123,11 +123,12 @@ describe("ResumeBuilder page", () => {
 
     renderWithProviders(<ResumeBuilder />);
 
-    await user.click(await screen.findByRole("button", { name: /Tailor/i }));
+    await user.click(await screen.findByRole("button", { name: /^Tailor$/i }));
     const selects = screen.getAllByRole("combobox");
     await user.selectOptions(selects[0], "resume-1");
     await user.selectOptions(selects[1], "job-1");
-    await user.click(screen.getByRole("button", { name: /Tailor Resume/i }));
+    const tailorButtons = screen.getAllByRole("button", { name: /^Tailor$/i });
+    await user.click(tailorButtons[tailorButtons.length - 1]);
 
     expect(await screen.findByText("Tailored resume")).toBeInTheDocument();
     expect(screen.getByText("Tailored for Staff Frontend Engineer")).toBeInTheDocument();

@@ -14,7 +14,7 @@ AI-powered job hunting assistant with direct-job scraping, enrichment, pipeline 
 - Frontend: React 19, Vite 6, TypeScript, Tailwind CSS v4, Zustand, React Query
 - AI/LLM: OpenRouter-backed services for enrichment, interview prep, salary analysis, resume tailoring, cover letters, and copilot flows
 - Scraping: ATS adapters, target scheduler, browser pool, page crawler, deduplication, telemetry
-- UI system: reference-first neo-brutalist command-center shell with `Inter`, `JetBrains Mono`, Phosphor icons, and light/dark parity
+- UI system: reference-first command-center shell with `Inter`, `JetBrains Mono`, Phosphor icons, light/dark parity, and shadowless buttons
 
 ## Quick Start
 
@@ -71,14 +71,14 @@ npm run build
 - Start the backend and frontend dev servers locally.
 - Authenticate through `/login`.
 - Sweep the routed app in desktop, tablet, and phone layouts.
-- Store screenshots and other QA artifacts in `output/playwright/`.
+- Store screenshots and other QA artifacts in `.claude/ui-captures/`.
 
-## Current Verification Snapshot (2026-03-24)
+## Current Verification Snapshot (2026-03-27)
 - Frontend lint passed.
-- Frontend Vitest suite passed: `24` test files, `39` tests.
+- Frontend tests passed.
 - Frontend production build passed.
 - Targeted backend auth/settings/admin/vault integration tests passed: `26` tests.
-- Browser sweeps passed across all 21 authenticated routes on desktop, tablet, and phone, with representative screenshots written to `output/playwright/`.
+- The integrated frontend sweep has current authenticated browser captures under `.claude/ui-captures/`.
 - Local Postgres schema was upgraded to Alembic `head` during QA so the live settings/integration surfaces match the current code.
 
 ## Repo Layout
@@ -96,7 +96,7 @@ jobradar-v2/
 |   |-- audit/          # Bug ledger (39 FIXED / 1 VERIFIED_CLEAN / 4 STALE)
 |   |-- current-state/  # Canonical live state docs
 |   `-- research/       # Future design research
-|-- output/playwright/  # Browser QA artifacts when a local validation pass generates them
+|-- .claude/ui-captures/ # Browser QA artifacts and route/theme capture packs
 |-- .github/workflows/  # CI: lint, test, build, CodeQL
 |-- AGENTS.md           # Agent preferences and frontend expectations
 |-- CLAUDE.md           # Agent playbook and working commands
@@ -108,5 +108,6 @@ jobradar-v2/
 ## Notes
 - Use `uv run` for backend commands and `npm` for frontend commands.
 - The live frontend is a reference-first command-center UI while preserving the app's routed behavior and backend contracts.
+- Buttons are intentionally shadowless; elevation is reserved for panels and structural surfaces.
 - The current live product state is documented under `docs/current-state/`.
 - `docs/research/` contains future-planning material, not current requirements.
