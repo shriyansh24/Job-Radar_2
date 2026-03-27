@@ -1,9 +1,12 @@
 # Open Questions
 
+Historical status: archived ambiguity snapshot, not the live unresolved-work list.
+
 Historical inventory note:
 - This file is an inventory snapshot from the earlier system-inventory pass.
 - When it conflicts with verified live behavior, `docs/current-state/*` is authoritative.
-- Several frontend contract questions below were already resolved in the current-state/frontend alignment work and should be treated as historical unless code reopens them.
+- Several questions below were later resolved in `docs/current-state/` and `docs/repo-hardening/`; keep this file for historical context, not live planning.
+- Use `docs/current-state/00-index.md`, `docs/current-state/02-backend.md`, `docs/current-state/03-frontend.md`, `docs/current-state/05-ops-and-ci.md`, and `docs/repo-hardening/00-index.md` for current truth.
 
 ## Contract And Behavior Questions
 

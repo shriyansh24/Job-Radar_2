@@ -1,5 +1,15 @@
 # Repository Tree
 
+Historical note: this is an archived repository snapshot, not the live repo map.
+
+Do not use this file as the current source of truth for layout, workflows, tests, or runtime topology.
+
+Use these docs instead:
+- `docs/current-state/00-index.md`
+- `docs/current-state/01-repo-map.md`
+- `docs/current-state/05-ops-and-ci.md`
+- `docs/repo-hardening/00-index.md`
+
 Root: `D:/jobradar-v2`
 Exclusions applied: `node_modules`, `dist`, `coverage`, `.vite`, `.git`, `.venv`, `venv`, `__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.terraform`, `logs`, runtime artifact folders.
 

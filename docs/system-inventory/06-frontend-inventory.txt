@@ -1,5 +1,15 @@
 # Frontend Inventory
 
+Historical note: this is an archived frontend inventory snapshot, not the live frontend truth.
+
+Do not use this file as the current source of truth for route contracts, test paths, token wording, or UI-system status.
+
+Use these docs instead:
+- `docs/current-state/00-index.md`
+- `docs/current-state/03-frontend.md`
+- `frontend/system.md`
+- `docs/repo-hardening/06-test-taxonomy.md`
+
 Root: `D:/jobradar-v2/frontend`
 
 ## Frontend Architecture Summary

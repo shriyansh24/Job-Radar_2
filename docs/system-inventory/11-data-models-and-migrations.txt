@@ -1,5 +1,15 @@
 # Data Models And Migrations
 
+Historical note: this is an archived schema-analysis snapshot, not the live migration or model authority.
+
+Do not use this file as the current source of truth for replay safety, migration overlap disposition, or current data-model completeness.
+
+Use these docs instead:
+- `docs/current-state/00-index.md`
+- `docs/current-state/02-backend.md`
+- `docs/current-state/05-ops-and-ci.md`
+- `docs/repo-hardening/03-runtime-truth-matrix.md`
+
 Root scope: `D:/jobradar-v2/backend/app/*/models.py`, mixed model-bearing modules, and Alembic migrations in `D:/jobradar-v2/backend/app/migrations/versions`.
 
 ## Persistent Entity Catalog

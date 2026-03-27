@@ -1,5 +1,15 @@
 # System Inventory Overview
 
+Historical status: archived inventory snapshot.
+
+Do not treat this file or this directory as live operational truth. These system-inventory files are preserved for forensic context, branch-era analysis, and repo archaeology.
+
+Use these docs instead when you need current truth:
+- `docs/current-state/00-index.md`
+- `docs/current-state/05-ops-and-ci.md`
+- `docs/repo-hardening/00-index.md`
+- `docs/repo-hardening/03-runtime-truth-matrix.md`
+
 Root: `D:/jobradar-v2`
 Inventory date: `2026-03-24`
 
