@@ -1,30 +1,34 @@
 # JobRadar V2
 
-AI-powered job hunting assistant with direct-job scraping, enrichment, pipeline tracking, interview prep, resume tooling, compensation research, vault management, and auto-apply support.
+JobRadar V2 is a full-stack job-search and career-operations workspace. It combines direct job scraping, enrichment, pipeline tracking, interview prep, resume tooling, compensation analysis, vault management, and auto-apply support behind a single React frontend and FastAPI backend.
 
 ## Start Here
-- Current repo state: `docs/current-state/00-index.md`
-- Audit ledger: `docs/audit/00-index.md`
-- Repo hardening trail: `docs/repo-hardening/00-index.md`
-- Agent preferences and frontend expectations: `AGENTS.md`
-- Agent playbook and command surface: `CLAUDE.md`
-- High-level project summary: `PROJECT_STATUS.md`
+- Live repo state: `docs/current-state/00-index.md`
+- Bug ledger: `docs/audit/00-index.md`
+- Hardening and traceability trail: `docs/repo-hardening/00-index.md`
+- Operator/agent command surface: `CLAUDE.md`
+- Workspace-specific preferences and facts: `AGENTS.md`
+- High-level status summary: `PROJECT_STATUS.md`
 
-## Stack
-- Backend: Python 3.12, FastAPI, SQLAlchemy async, PostgreSQL, Redis, Alembic, `uv`
+## Documentation Hierarchy
+- `docs/current-state/` is the live operational source of truth.
+- `docs/audit/` is the bug ledger.
+- `docs/research/` is exploratory roadmap material, not shipped scope by default.
+- `docs/repo-hardening/` is the repository normalization and traceability trail while the hardening program is active.
+
+## Architecture At A Glance
 - Frontend: React 19, Vite 6, TypeScript, Tailwind CSS v4, Zustand, React Query
-- AI/LLM: OpenRouter-backed services for enrichment, interview prep, salary analysis, resume tailoring, cover letters, and copilot flows
-- Scraping: ATS adapters, target scheduler, browser pool, page crawler, deduplication, telemetry
-- UI system: reference-first command-center shell with `Inter`, `JetBrains Mono`, Phosphor icons, light/dark parity, and shadowless buttons
+- Backend: FastAPI, SQLAlchemy async, PostgreSQL, Alembic, `uv`
+- Runtime: compose-first local stack with Postgres, Redis, one-shot migrations, API, dedicated scheduler, and frontend
+- Browser validation: committed Playwright coverage under `frontend/e2e/` plus broader screenshot sweeps under `.claude/ui-captures/`
 
-## Quick Start
+## Current Branch Strategy
+- `main` is the baseline/default branch.
+- `codex/ui-changes` is the active workspace branch for the current frontend and repo-hardening work.
+- `feat/p1-core-value` is a selective recovery source, not a blind-merge target.
+- Historical and retained branch decisions are tracked in `docs/repo-hardening/04-branch-disposition.md`.
 
-### Prerequisites
-- Docker
-- Node.js 22+
-- Python 3.12+
-
-### Infrastructure
+## Local Runtime Baseline
 
 Canonical full-stack local runtime:
 
@@ -32,13 +36,18 @@ Canonical full-stack local runtime:
 docker compose up -d
 ```
 
-This base compose flow now starts Postgres, Redis, one-shot migrations, the API, the dedicated scheduler, and the frontend.
-Host-local frontend/backend development is still supported, but it is an override on top of the compose infrastructure baseline rather than the canonical repo story.
-If you already have a separate manual `jobradar-postgres` container, treat it as a legacy local override rather than the documented default.
-Redis is still provisioned in the compose stack, but the current API and dedicated scheduler do not depend on it to reach their ready state.
+This compose baseline starts:
+- Postgres on `5432`
+- Redis on `6379`
+- one-shot migrations
+- backend API on `8000`
+- dedicated scheduler runtime
+- per-job worker subprocesses launched by the scheduler runtime
+- frontend container on `3000`
 
-### Backend
+Host-local development is still supported, but it is an override on top of the compose baseline rather than the canonical repo story.
 
+### Host-Local Backend
 ```bash
 cd backend
 uv sync --frozen
@@ -46,30 +55,29 @@ uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
 ```
 
-Dedicated scheduler process:
-
+### Dedicated Scheduler
 ```bash
 cd backend
 uv sync --frozen
 uv run python -m app.runtime.scheduler
 ```
 
-### Frontend
+The dedicated scheduler process now dispatches each scheduled run through the worker runtime entrypoint at `backend/app/runtime/worker.py` instead of executing job bodies inline inside APScheduler.
 
+### Host-Local Frontend
 ```bash
 cd frontend
 npm ci
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Host-local frontend runs on `http://localhost:5173`.
 
-If you run the bind-mounted Docker dev overlay instead of host-local Vite, the checked-in `docker-compose.dev.yml` already sets `VITE_API_PROXY_TARGET=http://backend:8000` so the frontend container can proxy to the backend container correctly.
+If you use the bind-mounted dev overlay instead, `docker-compose.dev.yml` already sets `VITE_API_PROXY_TARGET=http://backend:8000` for the frontend container.
 
-## Validation Commands
+## Validation
 
 ### Backend
-
 ```bash
 cd backend
 uv run ruff check .
@@ -77,87 +85,55 @@ uv run pytest
 ```
 
 ### Frontend
-
 ```bash
 cd frontend
 npm run lint
 npm run test -- --run
+npm run e2e
 npm run build
 ```
 
 ### Browser QA
-- Start the backend and frontend dev servers locally.
-- Authenticate through `/login`.
-- Sweep the routed app in desktop, tablet, and phone layouts.
-- Store screenshots and other QA artifacts in `.claude/ui-captures/`.
-- Committed browser/e2e coverage now lives under `frontend/e2e/`.
+- Keep broader screenshot captures in `.claude/ui-captures/`
+- Keep committed browser coverage in `frontend/e2e/`
+- Treat `docs/current-state/05-ops-and-ci.md` as the authoritative validation and CI reference
 
-## Repo Protections
-- GitHub Actions currently cover repository validation, CodeQL, dependency review, docs/path validation, and migration replay safety.
-- A dedicated `Frontend E2E Smoke / frontend-e2e-smoke` check now exercises the live login, authenticated shell navigation, and theme persistence flows against the real backend.
-- The browser lane also runs weekly as a low-noise drift check for the dedicated scheduler/bootstrap/login path.
-- Dependabot is enabled for GitHub Actions, frontend npm dependencies, and backend Python dependencies.
-- Healthy branch-protection assumptions for this repo:
-  - treat `main` as PR-only
-  - require:
-    - `Repository Validation / Backend quality and security checks`
-    - `Repository Validation / Backend test suite`
-    - `Repository Validation / Frontend audit and lint`
-    - `Repository Validation / Frontend tests and build`
-    - `Docs Validation / Docs truth and path validation`
-    - `Migration Safety / Alembic replay on clean Postgres`
-    - `Dependency Review / Dependency review`
-    - `CodeQL / CodeQL (python)`
-    - `CodeQL / CodeQL (javascript-typescript)`
-    - `Frontend E2E Smoke / frontend-e2e-smoke`
-    before merge
-  - keep docs, tests, and runtime-truth updates in the same batch as behavior changes
-  - do not turn the required browser workflow into a matrix or a path-filtered PR workflow, because the emitted check name must stay stable and always present
+## Test Taxonomy
+- Frontend unit and route tests: `frontend/src/tests/`
+- Frontend browser/e2e tests: `frontend/e2e/`
+- Backend tests: `backend/tests/{contracts,edge_cases,fixtures,infra,integration,migrations,security,unit,workers}`
 
-## Current Verification Snapshot (2026-03-27)
-- Frontend lint passed.
-- Frontend tests passed.
-- Frontend production build passed.
-- Targeted backend auth/settings/admin/vault integration tests passed: `26` tests.
-- The integrated frontend sweep has current authenticated browser captures under `.claude/ui-captures/`.
-- Local Postgres schema was upgraded to Alembic `head` during QA so the live settings/integration surfaces match the current code.
+Per-tree guidance lives in:
+- `frontend/src/tests/README.md`
+- `frontend/e2e/README.md`
+- `backend/tests/README.md`
 
 ## Repo Layout
 
 ```text
 jobradar-v2/
-|-- backend/
-|   |-- app/            # FastAPI application (domain modules)
-|   |-- scripts/        # CLI utilities
-|   |-- tests/          # pytest suite grouped by role (contracts/infra/integration/migrations/security/unit/workers)
-|   `-- pyproject.toml  # backend tooling + pytest config
-|-- frontend/
-|   |-- src/            # React 19 application
-|   |   `-- tests/      # Vitest suites grouped by app/api/components/hooks/pages/support
-|   |-- e2e/            # Playwright smoke/flows/theme-matrix coverage
-|   `-- system.md       # Frontend design-system source of truth
-|-- docs/
-|   |-- audit/          # Bug ledger (39 FIXED / 1 VERIFIED_CLEAN / 4 STALE)
-|   |-- current-state/  # Canonical live state docs
-|   |-- repo-hardening/ # Repository normalization and traceability artifacts
-|   `-- research/       # Future design research
-|-- scripts/           # Repo-level validation helpers
-|-- .claude/ui-captures/ # Browser QA artifacts and route/theme capture packs
-|-- .github/workflows/  # CI and repo guardrails
-|-- AGENTS.md           # Agent preferences and frontend expectations
-|-- CLAUDE.md           # Agent playbook and working commands
-|-- DECISIONS.md        # Architectural decisions
-|-- PROJECT_STATUS.md   # High-level project status
-`-- README.md
+|-- backend/              FastAPI app, migrations, workers, backend tests
+|-- frontend/             React app, Vitest suites, Playwright suites
+|-- docs/                 current-state, audit, research, repo-hardening
+|-- infra/                minimal runtime support assets
+|-- scripts/              repo-level validation helpers
+|-- .github/              workflows, templates, CODEOWNERS
+|-- .claude/ui-captures/  browser QA artifacts
+|-- README.md
+|-- CLAUDE.md
+|-- AGENTS.md
+|-- PROJECT_STATUS.md
+`-- DECISIONS.md
 ```
 
-## Notes
-- Use `uv run` for backend commands and `npm` for frontend commands.
-- The live frontend is a reference-first command-center UI while preserving the app's routed behavior and backend contracts.
-- Buttons are intentionally shadowless; elevation is reserved for panels and structural surfaces.
-- Test taxonomy now lives alongside the code: `frontend/src/tests/README.md` and `backend/tests/README.md`.
-- Browser test taxonomy now lives in `frontend/e2e/README.md`.
-- The current live product state is documented under `docs/current-state/`.
-- `docs/repo-hardening/` is the active normalization trail while the repository hardening pass is in progress.
-- `docs/research/` contains future-planning material, not current requirements.
-- Cookie-authenticated unsafe requests are protected by the readable `jr_csrf_token` cookie plus the `X-CSRF-Token` header; FastAPI trusted hosts are enforced through `JR_TRUSTED_HOSTS`.
+## GitHub And Safety
+- GitHub Actions currently cover repository validation, docs/path validation, migration replay safety, dependency review, CodeQL, and a dedicated frontend browser smoke lane.
+- Treat `main` as PR-only.
+- Keep docs, tests, and runtime-truth updates in the same batch as behavior changes.
+- Do not treat `docs/research/` as committed scope unless it is explicitly promoted into `docs/current-state/` and the relevant front-door docs.
+
+## Read Next
+- `docs/current-state/00-index.md`
+- `docs/current-state/05-ops-and-ci.md`
+- `docs/repo-hardening/04-branch-disposition.md`
+- `docs/repo-hardening/05-implementation-traceability-matrix.md`

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import uuid as uuid_mod
+
 from fastapi import APIRouter, Depends, Request, Response
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin.service import AdminService
@@ -21,11 +24,14 @@ from app.auth.service import (
     decode_refresh_token,
     decode_token_payload,
     get_token_version,
+    log_auth_info,
+    log_auth_warning,
     register_user,
     set_auth_cookies,
 )
 from app.config import settings
 from app.dependencies import get_current_user, get_db
+from app.shared.errors import AuthError
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -45,6 +51,12 @@ async def login(
     user = await authenticate_user(db, data.email, data.password)
     tokens = create_tokens(str(user.id), token_version=get_token_version(user))
     set_auth_cookies(response, tokens)
+    log_auth_info(
+        "auth_login_succeeded",
+        user_id=str(user.id),
+        token_version=get_token_version(user),
+        auth_source="password",
+    )
     return tokens
 
 
@@ -55,27 +67,39 @@ async def refresh(
     data: RefreshRequest | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
-    import uuid as uuid_mod
-
-    from sqlalchemy import select
-
-    from app.shared.errors import AuthError
-
     refresh_token = data.refresh_token if data and data.refresh_token else None
+    auth_source = "body" if refresh_token else "cookie"
+    refresh_user_id: str | None = None
     if not refresh_token:
         refresh_token = request.cookies.get(settings.refresh_cookie_name)
-    if not refresh_token:
-        raise AuthError("Refresh token required")
-    payload = decode_token_payload(refresh_token, expected_type="refresh")
-    user_id = decode_refresh_token(refresh_token)
-    result = await db.execute(select(User).where(User.id == uuid_mod.UUID(user_id)))
-    user = result.scalar_one_or_none()
-    if user is None or not user.is_active:
-        raise AuthError("User not found or inactive")
-    if int(payload.get("ver", 0)) != get_token_version(user):
-        raise AuthError("Token revoked")
+    try:
+        if not refresh_token:
+            raise AuthError("Refresh token required")
+        payload = decode_token_payload(refresh_token, expected_type="refresh")
+        refresh_user_id = decode_refresh_token(refresh_token)
+        result = await db.execute(select(User).where(User.id == uuid_mod.UUID(refresh_user_id)))
+        user = result.scalar_one_or_none()
+        if user is None or not user.is_active:
+            raise AuthError("User not found or inactive")
+        if int(payload.get("ver", 0)) != get_token_version(user):
+            raise AuthError("Token revoked")
+    except AuthError as exc:
+        log_auth_warning(
+            "auth_refresh_failed",
+            user_id=refresh_user_id,
+            reason=str(getattr(exc, "detail", str(exc))),
+            auth_source=auth_source,
+        )
+        raise
+
     tokens = create_tokens(str(user.id), token_version=get_token_version(user))
     set_auth_cookies(response, tokens)
+    log_auth_info(
+        "auth_refresh_succeeded",
+        user_id=str(user.id),
+        token_version=get_token_version(user),
+        auth_source=auth_source,
+    )
     return tokens
 
 
@@ -89,7 +113,12 @@ async def logout(
         current_user.token_version = get_token_version(current_user) + 1
         await db.commit()
         await db.refresh(current_user)
-    clear_auth_cookies(response)
+    log_auth_info(
+        "auth_logout_succeeded",
+        user_id=str(current_user.id),
+        token_version=get_token_version(current_user),
+    )
+    clear_auth_cookies(response, reason="logout", user=current_user)
     return {"status": "ok"}
 
 
@@ -112,11 +141,13 @@ async def delete_account(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
+    user_id = str(current_user.id)
     admin_service = AdminService(db)
     await admin_service.clear_data(current_user.id, commit=False)
     await db.delete(current_user)
     await db.commit()
-    clear_auth_cookies(response)
+    log_auth_info("auth_account_deleted", user_id=user_id)
+    clear_auth_cookies(response, reason="account_deleted", user_id=user_id)
 
 
 @router.get("/me", response_model=UserResponse)

@@ -38,7 +38,7 @@ frontend/e2e/
 ```text
 backend/tests/
   contracts/   schema and adapter contract assertions
-  edge_cases/  catch-all edge cases still awaiting split
+  edge_cases/  route-owned API edge cases and unusual input-path coverage
   fixtures/    shared fixtures and factories
   infra/       config, database bootstrap, and operational CLI behavior
   integration/ API and cross-module integration coverage
@@ -100,7 +100,7 @@ backend/tests/
 
 ### Backend
 - `backend/tests/unit/` still contains broad service/model suites that should eventually be regrouped by subsystem ownership.
-- `backend/tests/edge_cases/test_api_edge_cases.py` remains a catch-all lane and should be split by API behavior when touched next.
+- `backend/tests/edge_cases/` is now split by route family, but additional subsystem-owned API edge suites are still likely as more broad tests are drained out of `unit/` and `integration/`.
 - Non-scraping workers from deferred or retained branches still have no dedicated `backend/tests/workers/` coverage.
 
 ## Coverage Gaps That Need First-Class Homes

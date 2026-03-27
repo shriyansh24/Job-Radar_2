@@ -44,9 +44,19 @@ Document where the major runtime flows log today, where failures surface, and wh
   - explicit token creation and cookie issuance
   - readable CSRF cookie issuance and deletion
   - token version rotation on password change
+  - structured lifecycle events for:
+    - `auth_login_succeeded`
+    - `auth_login_failed`
+    - `auth_refresh_succeeded`
+    - `auth_refresh_failed`
+    - `auth_logout_succeeded`
+    - `auth_account_deleted`
+    - `auth_password_changed`
+    - `auth_password_change_failed`
+    - `auth_session_cleared`
 - Current gap:
-  - no explicit auth event logging for login success/failure, refresh, logout, or account deletion
-  - cookie-auth now has CSRF enforcement, but auth event logging is still absent
+  - auth logs still do not include request IDs because the lifecycle logging happens below middleware binding
+  - there is still no separate security audit sink beyond the app log stream
 
 ### Migration lifecycle
 - Files:
@@ -74,15 +84,20 @@ Document where the major runtime flows log today, where failures surface, and wh
   - `scheduler_job_completed`
   - `scheduler_job_failed`
   - `scheduler_job_missed`
+  - `worker_subprocess_starting`
+  - `worker_subprocess_completed`
+  - `worker_starting`
+  - `worker_failed`
+  - `worker_completed`
 - Current gap:
-  - no centralized worker heartbeat/completion/failure logging standard
+  - no queue-backed worker pool or centralized heartbeat standard
   - scheduler readiness is still represented by a sentinel file after startup + DB reachability; downstream dependency or per-job health can still drift after the marker is written
-  - several workers are inferred by schedule registration, but they still do not emit a uniform completion/failure envelope beyond scheduler-level event hooks
+  - worker subprocesses now emit a uniform start/failure/completion envelope, but there is still no richer retry/back-pressure telemetry
 
 ## Current Blind Spots
 - Browser/e2e now exists, but route-family coverage is still shallow.
 - Scheduler job execution semantics are not described or monitored in one place.
-- Auth success/failure, refresh, logout, and account-deletion events still do not emit structured auth lifecycle logs.
+- Auth logs are now explicit, but they are not yet correlated with request IDs or separated into a dedicated audit sink.
 
 ## Existing Positive Controls
 - `request_completed` structured logs exist.
@@ -94,4 +109,4 @@ Document where the major runtime flows log today, where failures surface, and wh
 ## Hardening Direction
 1. Add job-level worker logging only where it improves diagnosis without flooding logs.
 2. Keep scheduler process health separate from API readiness in docs, compose, and CI.
-3. Add explicit auth lifecycle logging before claiming the auth surface is fully observable.
+3. Add request-correlation and audit-sink discipline before claiming the auth surface is fully observable.

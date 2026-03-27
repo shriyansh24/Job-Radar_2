@@ -9,14 +9,14 @@
 - `uv` for dependency and command execution
 
 ## Key Runtime Areas
-- Auth: cookie-based access and refresh flow with revocation, CSRF protection on unsafe cookie-auth requests, trusted-host enforcement, and rate limiting
-- Auto-apply: field learning, Workday adapter, recovered form extraction, Greenhouse/Lever adapters, and a pre-flight safety layer; route/service execution remains partial
+- Auth: cookie-based access and refresh flow with revocation, CSRF protection on unsafe cookie-auth requests, trusted-host enforcement, rate limiting, and explicit lifecycle logs for login/refresh/logout/password-change/session-clear/account-delete paths
+- Auto-apply: field learning, Workday adapter, recovered form extraction, Greenhouse/Lever adapters, a pre-flight safety layer, live batch/single service wiring, and worker-level batch execution; broader operator tooling and end-to-end coverage still remain partial
 - Jobs: SHA-256 string IDs, enrichment fields, lifecycle tracking, application relationship via `selectin`
 - Enrichment: HTML cleaning, markdown conversion, LLM extraction, salary/experience enrichment
 - Interview: question generation, prep bundles, answer evaluation, persisted interview sessions
 - Scraping: ATS registry, scheduler, tier routing, page crawling, adapter registry, browser pool
-- Runtime topology: API process via `backend/app/main.py`, dedicated scheduler process via `backend/app/runtime/scheduler.py`, and compose-managed Postgres/Redis
-- Workers: scraping, enrichment, follow-up/notification support, and scheduled job registration
+- Runtime topology: API process via `backend/app/main.py`, dedicated scheduler process via `backend/app/runtime/scheduler.py`, one-shot worker runtime via `backend/app/runtime/worker.py`, and compose-managed Postgres/Redis
+- Workers: scraping, enrichment, follow-up/notification support, scheduled job registration, and scheduler-dispatched worker subprocesses
 
 ## Runtime Invariants
 - Runtime `DateTime` columns should be timezone-aware.
@@ -42,6 +42,7 @@
 - `cd backend && uv run pytest --cov=app --cov-fail-under=60 tests/`
 - Latest local result: `26 passed` for the targeted auth/settings/admin/vault integration slice
 - Backend tests now use explicit `contracts/`, `infra/`, `integration/`, `migrations/`, `security/`, `unit/`, and `workers/` directories under `backend/tests/`.
+- Auth lifecycle events now emit structured logs without credential/token payloads.
 
 ## Entry Points
 - App bootstrap: `backend/app/main.py`
@@ -59,3 +60,4 @@
 - The revalidated backend slice covers auth, settings, admin, and vault contract changes used by the reference-first frontend migration.
 - Auto-apply backend foundations are broader than `main`, but the live API/service execution path is still not end to end.
 - Cookie-authenticated unsafe requests now require the readable `jr_csrf_token` cookie to be echoed via `X-CSRF-Token`, and `TrustedHostMiddleware` is part of the live middleware stack.
+- Scheduler isolation is stronger than the earlier in-process model because APScheduler now dispatches named one-shot worker subprocesses instead of executing job bodies inline.

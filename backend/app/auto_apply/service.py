@@ -7,12 +7,16 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auto_apply.models import AutoApplyProfile, AutoApplyRule, AutoApplyRun
+from app.auto_apply.orchestrator import AutoApplyOrchestrator
 from app.auto_apply.schemas import (
     AutoApplyProfileCreate,
     AutoApplyProfileUpdate,
     RuleCreate,
     RuleUpdate,
 )
+from app.config import Settings
+from app.enrichment.llm_client import LLMClient
+from app.jobs.models import Job
 from app.shared.errors import NotFoundError
 
 logger = structlog.get_logger()
@@ -128,19 +132,82 @@ class AutoApplyService:
         return list(result.all())
 
     async def trigger_run(self, user_id: uuid.UUID) -> dict:
-        """Trigger auto-apply run. Full implementation pending."""
-        logger.info("auto_apply_trigger_run", user_id=str(user_id))
-        return {"status": "queued", "message": "Auto-apply run queued"}
+        profile = await self._get_active_profile(user_id)
+        if profile is None:
+            return {"status": "idle", "message": "No active auto-apply profile"}
+
+        active_rule_count = await self.db.scalar(
+            select(func.count()).where(
+                AutoApplyRule.user_id == user_id,
+                AutoApplyRule.is_active == True,  # noqa: E712
+            )
+        )
+        if not active_rule_count:
+            return {"status": "idle", "message": "No active auto-apply rules"}
+
+        orchestrator = self._build_orchestrator()
+        runs = await orchestrator.run_batch(user_id)
+        logger.info("auto_apply_trigger_run", user_id=str(user_id), runs=len(runs))
+        return {
+            "status": "completed" if runs else "idle",
+            "message": "Auto-apply batch executed" if runs else "No jobs matched active rules",
+            "runs_created": len(runs),
+            "run_ids": [str(run.id) for run in runs],
+        }
 
     async def apply_single(self, job_id: str, user_id: uuid.UUID) -> dict:
-        """Apply to a single job. Full implementation pending."""
-        logger.info("auto_apply_single", job_id=job_id, user_id=str(user_id))
-        return {"status": "queued", "job_id": job_id, "message": "Single application queued"}
+        profile = await self._get_active_profile(user_id)
+        if profile is None:
+            return {
+                "status": "idle",
+                "job_id": job_id,
+                "message": "No active auto-apply profile",
+            }
+
+        job = await self.db.scalar(
+            select(Job).where(
+                Job.id == job_id,
+                Job.user_id == user_id,
+            )
+        )
+        if job is None:
+            return {"status": "not_found", "job_id": job_id, "message": "Job not found"}
+
+        orchestrator = self._build_orchestrator()
+        run = await orchestrator.apply_to_job(job, profile, allow_first_time_ats=True)
+        logger.info(
+            "auto_apply_single",
+            job_id=job_id,
+            user_id=str(user_id),
+            run_id=str(run.id),
+            status=run.status,
+        )
+        return {
+            "status": run.status,
+            "job_id": job_id,
+            "run_id": str(run.id),
+            "message": self._message_for_run(run.status, run.error_message),
+        }
 
     async def pause(self, user_id: uuid.UUID) -> dict:
-        """Pause auto-apply. Full implementation pending."""
-        logger.info("auto_apply_pause", user_id=str(user_id))
-        return {"status": "paused", "message": "Auto-apply paused"}
+        rules = (
+            await self.db.scalars(
+                select(AutoApplyRule).where(
+                    AutoApplyRule.user_id == user_id,
+                    AutoApplyRule.is_active == True,  # noqa: E712
+                )
+            )
+        ).all()
+        for rule in rules:
+            rule.is_active = False
+
+        await self.db.commit()
+        logger.info("auto_apply_pause", user_id=str(user_id), rules_paused=len(rules))
+        return {
+            "status": "paused",
+            "message": "Auto-apply paused",
+            "rules_paused": len(rules),
+        }
 
     async def get_stats(self, user_id: uuid.UUID) -> dict:
         # Total runs
@@ -153,7 +220,7 @@ class AutoApplyService:
             await self.db.scalar(
                 select(func.count()).where(
                     AutoApplyRun.user_id == user_id,
-                    AutoApplyRun.status == "success",
+                    AutoApplyRun.status.in_(["success", "filled", "submitted"]),
                 )
             )
             or 0
@@ -175,7 +242,7 @@ class AutoApplyService:
             await self.db.scalar(
                 select(func.count()).where(
                     AutoApplyRun.user_id == user_id,
-                    AutoApplyRun.status == "pending",
+                    AutoApplyRun.status.in_(["pending", "queued", "running"]),
                 )
             )
             or 0
@@ -187,3 +254,25 @@ class AutoApplyService:
             "failed": failed,
             "pending": pending,
         }
+
+    async def _get_active_profile(self, user_id: uuid.UUID) -> AutoApplyProfile | None:
+        return await self.db.scalar(
+            select(AutoApplyProfile).where(
+                AutoApplyProfile.user_id == user_id,
+                AutoApplyProfile.is_active == True,  # noqa: E712
+            )
+        )
+
+    def _build_orchestrator(self) -> AutoApplyOrchestrator:
+        settings = Settings()
+        llm_client = LLMClient(settings.openrouter_api_key, settings.default_llm_model)
+        return AutoApplyOrchestrator(self.db, settings, llm_client)
+
+    def _message_for_run(self, status: str, error_message: str | None) -> str:
+        if status in {"success", "submitted"}:
+            return "Application submitted"
+        if status == "filled":
+            return "Application filled and ready for review"
+        if status == "failed":
+            return error_message or "Application attempt failed"
+        return error_message or f"Run ended with status '{status}'"
