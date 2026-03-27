@@ -29,9 +29,9 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `CLAUDE.md`
   - `.env.example`
 - Why it matters:
-  - the compose-first baseline is now documented, and the repo now runs through the live ARQ queue topology with queue depth and retry metadata, but worker-lane coverage, honest retry semantics, and alerting are still not comprehensive.
+  - the compose-first baseline is now documented, the repo now runs through the live ARQ queue topology, scheduler and worker health is probeable through runtime healthchecks, the scheduler heartbeat lives in Redis, and retry semantics now reflect real ARQ backoff behavior.
 - Remaining risk:
-  - engineers can still under-test queue behavior if they treat readiness markers as full proof of throughput, retries, and back-pressure health
+  - engineers can still under-test queue behavior if they treat runtime health as full proof of sustained throughput, queue-depth pressure, and end-to-end request correlation
 
 ### 3. Test taxonomy is only partially normalized
 - Status: `PARTIAL`
@@ -75,9 +75,9 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `docs/repo-hardening/03-runtime-truth-matrix.md`
   - `docs/repo-hardening/07-observability-and-failure-map.md`
 - Why it matters:
-  - the scheduler now has its own runtime entrypoint and the live topology is scheduler -> ARQ queues (`scraping`, `analysis`, `ops`) -> queue-specific worker services, and the digest worker is now registered on the ops lane.
+  - the scheduler now has its own runtime entrypoint, writes a Redis-backed heartbeat key, schedules `daily_digest`, and the live topology is scheduler -> ARQ queues (`scraping`, `analysis`, `ops`) -> queue-specific worker services with ARQ health surfaces.
 - Remaining risk:
-  - background execution ownership is explicit and queue telemetry is richer, but retries, alerting, digest scheduling, and queue pressure are still only partially validated end to end
+  - background execution ownership is explicit, retry semantics are now honest, and queue telemetry is richer, but alerting, queue-pressure monitoring, request/job correlation, and richer lane validation are still only partially validated end to end
 
 ### 7. Migration replay has a gate now, but rollback/backfill guidance is still thin
 - Status: `PARTIAL`
@@ -97,12 +97,12 @@ Record the major unresolved risks and deferred work that remain after the curren
 - Why it matters:
   - major blind spots are now documented, but structured logging and lifecycle event consistency still vary across modules.
 - Remaining risk:
-  - failure diagnosis is clearer on paper than it is uniformly in code
+  - failure diagnosis is clearer in queue/auth paths than before, but queue-depth alerting and request-to-job correlation are still not uniformly first-class
 
 ## What Would Count As The Next Credible Finish Line
 1. Continue selective P1 recovery beyond the recovered backend auto-apply, ATS identity, interview prep, hybrid-search, freshness, normalization, digest-worker, and pipeline-state slices.
 2. Complete the second test-taxonomy pass for the broad `unit/` and umbrella page/component suites.
-3. Extend queue validation to cover alerting, honest retry semantics, back-pressure, and richer worker-lane behavior beyond the current queue-depth and retry metadata probes.
+3. Extend queue validation to cover alerting, back-pressure, request-to-job correlation, and richer worker-lane behavior beyond the current queue-depth, retry, and health probes.
 4. Expand the committed browser/e2e lane by route family and deeper workflow outcomes.
 5. Add a dedicated audit-stream strategy for the auth lifecycle logs.
 6. Strengthen in-file migration docs with rollback/backfill expectations where the risk is non-trivial.

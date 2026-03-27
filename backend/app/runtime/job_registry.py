@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import structlog
+from arq.worker import Retry
 
 from app.workers.alert_worker import check_saved_search_alerts
 from app.workers.auto_apply_worker import run_auto_apply_batch
@@ -61,6 +62,10 @@ def _job_log_fields(ctx: dict[str, Any], *, queue_name: str) -> dict[str, Any]:
     }
 
 
+def _retry_delay_seconds(job_try: int) -> int:
+    return int(min(30 * (2 ** max(job_try - 1, 0)), 300))
+
+
 async def _run_with_lifecycle(
     *,
     job_name: str,
@@ -73,11 +78,33 @@ async def _run_with_lifecycle(
     logger.info("queue_job_started", job_name=job_name, **log_fields)
     try:
         await callback()
+    except Retry as exc:
+        logger.warning(
+            "queue_job_retry_requested",
+            job_name=job_name,
+            retry_in_seconds=(exc.defer_score or 0) / 1000,
+            **log_fields,
+        )
+        raise
     except Exception:
+        if (
+            log_fields["job_retryable"]
+            and log_fields["job_max_tries"] is not None
+            and log_fields["job_try"] < log_fields["job_max_tries"]
+        ):
+            retry_in_seconds = _retry_delay_seconds(log_fields["job_try"])
+            logger.exception(
+                "queue_job_retry_scheduled",
+                job_name=job_name,
+                retry_in_seconds=retry_in_seconds,
+                **log_fields,
+            )
+            raise Retry(defer=retry_in_seconds)
         logger.exception(
             "queue_job_failed",
             job_name=job_name,
-            will_retry=(log_fields["job_retry_remaining"] or 0) > 0,
+            will_retry=False,
+            retry_exhausted=bool(log_fields["job_retryable"]),
             **log_fields,
         )
         raise

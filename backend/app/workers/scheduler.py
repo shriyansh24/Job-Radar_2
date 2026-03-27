@@ -105,6 +105,15 @@ def create_scheduler() -> AsyncIOScheduler:
         replace_existing=True,
     )
 
+    # Daily digest: once per day
+    scheduler.add_job(
+        enqueue_registered_job,
+        IntervalTrigger(days=1),
+        id="daily_digest",
+        kwargs={"job_name": "daily_digest"},
+        replace_existing=True,
+    )
+
     # Source health: every 4 hours
     scheduler.add_job(
         enqueue_registered_job,

@@ -24,6 +24,8 @@
 - The dev overlay now publishes only `5173:5173`, health-checks `http://127.0.0.1:5173/`, and sets `VITE_API_PROXY_TARGET=http://backend:8000` so the frontend container can proxy `/api` traffic to the backend container instead of incorrectly looping back to itself.
 - Redis is provisioned in the compose baseline and is now the active queue backbone for background execution.
 - The live runtime shape is: scheduler enqueues named jobs to ARQ queues `scraping`, `analysis`, and `ops`; queue-specific worker services consume those queues.
+- The scheduler now writes a Redis-backed heartbeat key and owns the `daily_digest` schedule on the ops lane.
+- Compose healthchecks now use runtime healthcheck commands against the live scheduler and worker surfaces rather than ready-marker files.
 - `backend/app/runtime/worker.py` remains as a manual one-shot/debug runner, not the scheduled execution path.
 
 ## Validation Commands
@@ -55,6 +57,7 @@
   - `actions/setup-python@v6`
   - `actions/setup-node@v6`
 - `frontend-e2e.yml` runs a dedicated browser check against the live backend API, the dedicated scheduler process, the queue-specific worker processes, and the Vite dev server.
+- `frontend-e2e.yml` now waits on runtime healthcheck probes for the scheduler and workers rather than file markers.
 - Backend quality job runs:
   - `uv sync --frozen`
   - `uv run python -m pip check`
@@ -93,5 +96,6 @@
 - Frontend tests now live under `frontend/src/tests/`, browser suites live under `frontend/e2e/`, and backend tests use role-based directories under `backend/tests/`.
 - Local browser QA now depends on a migrated schema; make sure the backend DB is at Alembic `head` before validating settings, integrations, and other current-schema surfaces.
 - Compose-first local runtime is the repo default; older manual `jobradar-postgres` flows are now treated as legacy local overrides.
-- Scheduler readiness now proves startup, DB reachability, and Redis/queue reachability; queue enqueue/dequeue logs also emit queue depth and retry metadata, but health is still not a substitute for sustained throughput monitoring.
-- Worker isolation is queue-backed and compose-visible; the remaining runtime work is broader worker-lane coverage, honest retry semantics, and alerting around queue depth / retry pressure rather than basic queue ownership.
+- Scheduler and worker readiness now come from runtime healthcheck probes against the live queue surfaces rather than ready-marker files; the scheduler heartbeat also lives in Redis so compose and CI can probe the real runtime state.
+- Queue enqueue/dequeue logs now emit queue depth and retry metadata, retryable jobs raise real ARQ `Retry` with scheduled backoff, and non-retryable or final failures log `retry_exhausted` truthfully.
+- Worker isolation is queue-backed and compose-visible; the remaining runtime work is now narrower: queue depth / alerting, request-to-job correlation, and richer lane validation beyond the current queue ownership and retry signal.

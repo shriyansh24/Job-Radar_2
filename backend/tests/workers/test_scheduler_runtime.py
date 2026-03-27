@@ -26,6 +26,13 @@ class _FakeScheduler:
         self.shutdown_called = True
 
 
+def test_create_scheduler_registers_daily_digest() -> None:
+    scheduler = scheduler_runtime.create_scheduler()
+    job_ids = {job.id for job in scheduler.get_jobs()}
+
+    assert "daily_digest" in job_ids
+
+
 @pytest.mark.asyncio
 async def test_scheduler_runtime_starts_and_cleans_up_ready_marker(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -38,6 +45,8 @@ async def test_scheduler_runtime_starts_and_cleans_up_ready_marker(
     monkeypatch.setattr(scheduler_runtime, "validate_runtime_settings", lambda settings: None)
     monkeypatch.setattr(scheduler_runtime, "create_scheduler", lambda: fake_scheduler)
     monkeypatch.setattr(scheduler_runtime, "_verify_dependencies", lambda: asyncio.sleep(0))
+    monkeypatch.setattr(scheduler_runtime, "_record_health", lambda: asyncio.sleep(0))
+    monkeypatch.setattr(scheduler_runtime, "_clear_health", lambda: asyncio.sleep(0))
     monkeypatch.setattr(scheduler_runtime, "shutdown_queue_pool", lambda: asyncio.sleep(0))
 
     def _install_signal_handlers(event: asyncio.Event) -> None:
@@ -46,6 +55,11 @@ async def test_scheduler_runtime_starts_and_cleans_up_ready_marker(
         asyncio.get_running_loop().call_soon(event.set)
 
     monkeypatch.setattr(scheduler_runtime, "_install_signal_handlers", _install_signal_handlers)
+    monkeypatch.setattr(
+        scheduler_runtime,
+        "_health_loop",
+        lambda event: event.wait(),
+    )
 
     exit_code = await scheduler_runtime.run()
 

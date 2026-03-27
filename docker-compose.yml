@@ -51,13 +51,17 @@ services:
       JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
       JR_SCHEDULER_READY_MARKER: /tmp/jobradar-scheduler.ready
+      JR_SCHEDULER_HEALTHCHECK_KEY: jobradar:scheduler-health
+      JR_SCHEDULER_HEALTHCHECK_INTERVAL_SECONDS: "15"
     depends_on:
       migrate:
         condition: service_completed_successfully
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "test -f /tmp/jobradar-scheduler.ready"]
+      test: ["CMD", "python", "-m", "app.runtime.healthcheck", "scheduler"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -75,6 +79,8 @@ services:
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
       JR_WORKER_ROLE: scraping
       JR_WORKER_READY_MARKER: /tmp/jobradar-worker-scraping.ready
+      JR_WORKER_HEALTHCHECK_KEY: jobradar:worker-health:scraping
+      JR_WORKER_HEALTHCHECK_INTERVAL_SECONDS: "15"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -83,7 +89,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "test -f /tmp/jobradar-worker-scraping.ready"]
+      test: ["CMD", "python", "-m", "app.runtime.healthcheck", "worker", "scraping"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -101,6 +107,8 @@ services:
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
       JR_WORKER_ROLE: analysis
       JR_WORKER_READY_MARKER: /tmp/jobradar-worker-analysis.ready
+      JR_WORKER_HEALTHCHECK_KEY: jobradar:worker-health:analysis
+      JR_WORKER_HEALTHCHECK_INTERVAL_SECONDS: "15"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -109,7 +117,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "test -f /tmp/jobradar-worker-analysis.ready"]
+      test: ["CMD", "python", "-m", "app.runtime.healthcheck", "worker", "analysis"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -127,6 +135,8 @@ services:
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
       JR_WORKER_ROLE: ops
       JR_WORKER_READY_MARKER: /tmp/jobradar-worker-ops.ready
+      JR_WORKER_HEALTHCHECK_KEY: jobradar:worker-health:ops
+      JR_WORKER_HEALTHCHECK_INTERVAL_SECONDS: "15"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -135,7 +145,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "test -f /tmp/jobradar-worker-ops.ready"]
+      test: ["CMD", "python", "-m", "app.runtime.healthcheck", "worker", "ops"]
       interval: 10s
       timeout: 5s
       retries: 12
