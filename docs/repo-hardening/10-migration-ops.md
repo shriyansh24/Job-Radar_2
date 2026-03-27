@@ -37,6 +37,10 @@ Important operational characteristics:
 - `005` is a consolidation migration that creates multiple branch-era tables idempotently.
 - `20260321_db_audit_fixes` rewires foreign keys and indexes and should be treated as structurally sensitive.
 - `002` has the only explicitly targeted downgrade test in the current test suite.
+- The ATS identity lineage in this repo is currently represented by the `scrape_targets` contract rather than a dedicated identity table:
+  - `aaba1d3f957f` introduces `scrape_targets.ats_vendor` and `scrape_targets.ats_board_token`
+  - `45613a5a2f78` links `jobs.source_target_id` back to `scrape_targets`
+  - this means ATS identity integrity depends on both the target table migration and the later job-link migration remaining aligned
 
 ## Replay Procedure
 Replay is the primary safety contract for this repo.
@@ -95,6 +99,8 @@ When a revision performs data movement:
 For this tree:
 - `backend/app/migrations/versions/e5d40ea7c9db_migrate_career_pages_to_scrape_targets_.py` is a data migration and should be treated as a model for explicit column mapping notes
 - `backend/app/migrations/versions/005_create_p2_tables.py` is a consolidation migration and should remain idempotent-aware
+- `backend/app/migrations/versions/aaba1d3f957f_create_scrape_targets_and_scrape_.py` carries the ATS identity surface for scrape targets and should not lose `ats_vendor`, `ats_board_token`, or the `idx_targets_ats` index without an explicit contract change
+- `backend/app/migrations/versions/45613a5a2f78_add_job_lifecycle_columns_and_tier_.py` is part of the same identity story because it wires jobs back to scrape targets through `source_target_id`
 
 Preferred backfill pattern:
 1. add schema
@@ -113,7 +119,7 @@ Minimum validation for migration-bearing changes:
 ```powershell
 cd D:\jobradar-v2\backend
 uv run alembic upgrade head
-uv run pytest tests/migrations/test_alembic_revisions.py
+uv run pytest tests/migrations/
 ```
 
 Recommended validation when the migration touches runtime-coupled areas:
@@ -126,11 +132,17 @@ uv run pytest tests/workers/test_scheduler_runtime.py
 
 Use broader backend tests when the migration changes tables consumed by auth, scraping, pipeline, or queue-backed worker flows.
 
+For ATS identity changes specifically, expect the migration test package to cover:
+- the target table columns `ats_vendor` and `ats_board_token`
+- the `idx_targets_ats` index
+- the `jobs.source_target_id` foreign-key linkage back to `scrape_targets`
+
 ## CI And Failure Handling
 When the migration safety lane fails:
 - inspect the uploaded `migration-safety-diagnostics` artifact
 - check `alembic-heads.txt` for unexpected multi-head state
 - check `alembic-current.txt` to see where replay stopped
+- check `alembic-history.txt` to confirm the exact branch/merge ordering that led to failure
 
 Do not treat CI failure as permission to stamp or skip revisions locally.
 

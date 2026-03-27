@@ -27,6 +27,8 @@
 - `Login` is now a lean auth surface instead of a marketing-style two-column screen.
 - `Settings` is a cleaner operator page with smaller extracted sections, fewer dead imports, and the live settings/data flows intact.
 - `Dashboard`, `Jobs`, `Pipeline`, and `Copilot` have been stripped of the most obvious generated copy and fake system commentary.
+- `AutoApply` now exposes real operator controls for refresh, pause, and run-now instead of a passive status-only surface.
+- `Pipeline` now renders `rejected` and `withdrawn` stages and supports bounded drag/drop transitions that respect the workflow transition map.
 - `SearchExpansion` now uses the live backend expansion endpoint instead of a fake template inventory.
 - `Resume Studio` consumes the backend `ResumeTailorResponse` contract directly.
 - `Compensation` uses the backend salary percentile and offer-evaluation contract directly.
@@ -40,6 +42,7 @@
 - `cd frontend && npm run test -- --run`
 - `cd frontend && npm run build`
 - Authenticated browser QA was rerun after the decomposition/copy-cleanup pass, covering the routed app with representative captures in `.claude/ui-captures/`.
+- The current validated route-family browser pass also covers Auto Apply operator controls and the updated pipeline board flow.
 - Frontend test suites now live under `frontend/src/tests/` with `app/`, `api/`, `components/`, `hooks/`, `pages/`, and `support/` lanes.
 
 ## Non-Blocking Residual

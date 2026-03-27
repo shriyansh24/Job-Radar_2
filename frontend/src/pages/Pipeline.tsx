@@ -6,9 +6,10 @@ import { pipelineApi, type Application } from "../api/pipeline";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import { MetricStrip, PageHeader, SplitWorkspace } from "../components/system";
+import KanbanBoard from "../components/pipeline/KanbanBoard";
 import { PipelineBoard } from "../components/pipeline/PipelineBoard";
 import { PipelineDetailPanel } from "../components/pipeline/PipelineDetailPanel";
-import { NEXT_STAGE, PIPELINE_STAGES } from "../components/pipeline/pipelineWorkflow";
+import { NEXT_STAGE, PIPELINE_STAGES, getAllowedTransitions } from "../components/pipeline/pipelineWorkflow";
 
 export default function Pipeline() {
   const navigate = useNavigate();
@@ -135,29 +136,42 @@ export default function Pipeline() {
 
       <SplitWorkspace
         primary={
-          <PipelineBoard
-            isLoading={isLoading}
-            isError={isError}
-            stageColumns={stageColumns}
-            selectedApplicationId={selectedApplicationId}
-            onSelect={(application) => setSelectedApplicationId(application.id)}
-            onAdvance={(application) => {
-              const nextStatus = NEXT_STAGE[application.status];
-              if (!nextStatus) {
+          <KanbanBoard
+            apps={allApplications}
+            onDragTransition={(appId, newStatus) => {
+              const application = allApplications.find((item) => item.id === appId);
+              if (!application || application.status === newStatus) {
                 return;
               }
-              transitionMutation.mutate({ application, nextStatus });
+              if (!getAllowedTransitions(application.status).includes(newStatus)) {
+                return;
+              }
+              transitionMutation.mutate({ application, nextStatus: newStatus });
             }}
-            advancingId={advancingId}
-          />
+          >
+            <PipelineBoard
+              isLoading={isLoading}
+              isError={isError}
+              stageColumns={stageColumns}
+              selectedApplicationId={selectedApplicationId}
+              onSelect={(application) => setSelectedApplicationId(application.id)}
+              onAdvance={(application) => {
+                const nextStatus = NEXT_STAGE[application.status];
+                if (!nextStatus) {
+                  return;
+                }
+                transitionMutation.mutate({ application, nextStatus });
+              }}
+              advancingId={advancingId}
+            />
+          </KanbanBoard>
         }
         secondary={
           <PipelineDetailPanel
             selectedApplication={selectedApplication}
             firstApplicationId={firstApplicationId}
             advancingId={advancingId}
-            onAdvance={(application) => {
-              const nextStatus = NEXT_STAGE[application.status];
+            onTransition={(application, nextStatus) => {
               if (!nextStatus) {
                 return;
               }

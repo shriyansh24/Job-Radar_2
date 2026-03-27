@@ -46,8 +46,30 @@ describe("Pipeline page", () => {
         interviewing: [],
         offer: [],
         accepted: [],
-        rejected: [],
-        withdrawn: [],
+        rejected: [
+          {
+            id: "app-3",
+            position_title: "Platform Engineer",
+            company_name: "Gamma",
+            status: "rejected",
+            updated_at: "2026-03-22T10:00:00Z",
+            source: "Direct",
+            salary_offered: null,
+            notes: "Closed after final loop.",
+          },
+        ],
+        withdrawn: [
+          {
+            id: "app-4",
+            position_title: "Infra Engineer",
+            company_name: "Delta",
+            status: "withdrawn",
+            updated_at: "2026-03-22T10:00:00Z",
+            source: "Referral",
+            salary_offered: null,
+            notes: "Role paused internally.",
+          },
+        ],
       },
     });
     pipelineMocks.transition.mockResolvedValue({ data: null });
@@ -61,11 +83,16 @@ describe("Pipeline page", () => {
     expect(screen.getByRole("button", { name: /^copilot$/i })).toBeInTheDocument();
     expect(await screen.findByText("Saved")).toBeInTheDocument();
     expect(await screen.findByText("Applied")).toBeInTheDocument();
+    expect(await screen.findByText("Rejected")).toBeInTheDocument();
+    expect(await screen.findByText("Withdrawn")).toBeInTheDocument();
     expect((await screen.findAllByText("Backend Engineer")).length).toBeGreaterThan(0);
     expect(screen.getByText("Frontend Engineer")).toBeInTheDocument();
+    expect(screen.getByText("Platform Engineer")).toBeInTheDocument();
+    expect(screen.getByText("Infra Engineer")).toBeInTheDocument();
     expect(screen.getByText("Details")).toBeInTheDocument();
     expect(screen.getAllByText("Acme").length).toBeGreaterThan(0);
     expect(screen.getAllByText("LinkedIn").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("button", { name: /^advance$/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /move to withdrawn/i })).toBeInTheDocument();
   });
 });

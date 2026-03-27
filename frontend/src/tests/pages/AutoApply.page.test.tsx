@@ -10,6 +10,8 @@ const autoApplyMocks = vi.hoisted(() => ({
   createRule: vi.fn(),
   updateRule: vi.fn(),
   getStats: vi.fn(),
+  pause: vi.fn(),
+  run: vi.fn(),
   runs: vi.fn(),
 }));
 
@@ -85,6 +87,8 @@ describe("AutoApply page", () => {
     autoApplyMocks.createProfile.mockResolvedValue({ data: null });
     autoApplyMocks.createRule.mockResolvedValue({ data: null });
     autoApplyMocks.updateRule.mockResolvedValue({ data: null });
+    autoApplyMocks.pause.mockResolvedValue({ data: { status: "paused" } });
+    autoApplyMocks.run.mockResolvedValue({ data: { status: "queued" } });
   });
 
   it("renders profile data and stats across the main auto-apply tabs", async () => {
@@ -101,5 +105,20 @@ describe("AutoApply page", () => {
     expect(await screen.findByText("Total Runs")).toBeInTheDocument();
     expect(screen.getByText("Successful")).toBeInTheDocument();
     expect(screen.getByText("Summary")).toBeInTheDocument();
+  });
+
+  it("exposes operator controls and triggers run and pause actions", async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<AutoApply />);
+
+    expect(await screen.findByText("Operator controls")).toBeInTheDocument();
+    expect(screen.getByText("Latest run")).toBeInTheDocument();
+
+    await user.click(screen.getAllByRole("button", { name: /^run now$/i })[0]);
+    expect(autoApplyMocks.run).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getAllByRole("button", { name: /^pause$/i })[0]);
+    expect(autoApplyMocks.pause).toHaveBeenCalledTimes(1);
   });
 });

@@ -16,6 +16,7 @@ backend/tests/
   fixtures/       shared test fixtures and factories
   infra/          config, database bootstrap, and operational CLI behavior
   integration/    API and cross-module integration coverage
+    auto_apply/   live operator endpoints for profiles, runs, pause, and single-apply flows
     enrichment/   enrichment pipeline integration behavior
     scraping/     scraping orchestration integration behavior
   migrations/     Alembic and schema replay checks

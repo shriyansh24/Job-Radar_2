@@ -60,12 +60,15 @@ Document where the major runtime flows log today, where failures surface, and wh
 ### Migration lifecycle
 - Files:
   - `backend/app/migrations/env.py`
-- `backend/tests/migrations/test_alembic_revisions.py`
+  - `backend/tests/migrations/test_alembic_revisions.py`
+  - `backend/tests/migrations/test_scrape_target_identity_migrations.py`
 - Signals:
   - Alembic drives migrations from the configured DB URL
+  - CI now records `alembic heads`, `alembic current`, and verbose `alembic history` when the migration safety lane runs
+  - migration tests now cover both downgrade behavior and the ATS identity lineage through `scrape_targets.ats_vendor`, `scrape_targets.ats_board_token`, `idx_targets_ats`, and `jobs.source_target_id`
 - Current gap:
   - migration start/completion is not logged by app startup
-  - replay safety is only partially covered by unit tests and manual/operator discipline
+  - replay safety is stronger in CI now, but migration observability still depends on workflow artifacts rather than first-class runtime logs
 
 ### Scheduler and worker lifecycle
 - Files:

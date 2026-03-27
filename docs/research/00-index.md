@@ -23,11 +23,11 @@
 ## Promotion Status Snapshot
 
 - `01-smart-dedup.md`: `PARTIALLY_ADOPTED`
-  - normalization, freshness scoring, and the first hybrid-search slice are now live on `codex/ui-changes`
+  - normalization, freshness scoring, the first hybrid-search slice, and ATS identity persistence on `jobs` are now live on `codex/ui-changes`
 - `02-resume-pipeline.md`: `PARTIALLY_ADOPTED`
   - multi-format parsing, structured IR persistence, and ATS validation are live; tailoring/rendering/preview depth is not
 - `03-form-filling.md`: `PARTIALLY_ADOPTED`
-  - form extraction, field mapping, Workday plus Greenhouse/Lever adapter coverage, and safety-layer wiring are live; broader operator UX and checkpointing are not
+  - form extraction, field mapping, Workday plus Greenhouse/Lever adapter coverage, safety-layer wiring, and operator run/pause/list/stats coverage are live; broader operator UX and checkpointing are not
 - `04-learning-kb.md`: `EXPLORATORY`
 - `05-local-stack.md`: `EXPLORATORY`
 
@@ -67,7 +67,7 @@
 
 ### Phase 1 - Foundation (Week 1-2)
 - [ ] Add `rapidfuzz`, `onnxruntime` to deps
-- [ ] Smart dedup: ATS ID extraction in all 4 scrapers
+- [x] Smart dedup: ATS ID extraction in live Greenhouse, Lever, and Workday scrapers plus persisted ATS identity columns on `jobs`
 - [x] Smart dedup: Company/title normalization + blocking (partially promoted to the live dedup/search path)
 - [ ] Learning: SQL PatternDetector on existing tables
 

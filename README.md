@@ -21,7 +21,7 @@ JobRadar V2 is a full-stack job-search and career-operations workspace. It combi
 - Backend: FastAPI, SQLAlchemy async, PostgreSQL, Alembic, `uv`
 - Runtime: compose-first local stack with Postgres, Redis, one-shot migrations, API, dedicated scheduler, queue-specific ARQ workers (`scraping`, `analysis`, `ops`), and frontend
 - Browser validation: committed Playwright coverage under `frontend/e2e/` plus broader screenshot sweeps under `.claude/ui-captures/`
-- Selective P1 recovery already live on this branch: queue-backed worker runtime, recovered auto-apply execution foundations, richer interview prep bundles, and bounded hybrid semantic search
+- Selective P1 recovery already live on this branch: queue-backed worker runtime, ATS identity persistence on scraped jobs, recovered auto-apply execution and operator controls, richer interview prep bundles, bounded hybrid semantic search, and the digest-worker follow-through on the ops lane
 
 ## Current Branch Strategy
 - `main` is the baseline/default branch.
@@ -109,7 +109,7 @@ npm run build
 ### Browser QA
 - Keep broader screenshot captures in `.claude/ui-captures/`
 - Keep committed browser coverage in `frontend/e2e/`
-- The committed browser lane currently covers auth/shell smoke, responsive shell behavior, route-family outcomes for `dashboard/jobs/pipeline/settings/targets`, prepare/intelligence surfaces, operations/admin/data surfaces, the recovered interview/search flow, profile/settings/auth roundtrips, and representative 8-mode route-theme checks.
+- The committed browser lane currently covers auth/shell smoke, responsive shell behavior, route-family outcomes for `dashboard/jobs/pipeline/settings/targets`, prepare/intelligence surfaces, operations/admin/data surfaces including the Auto Apply operator controls, the recovered interview/search flow, profile/settings/auth roundtrips, and representative 8-mode route-theme checks.
 - Treat `docs/current-state/05-ops-and-ci.md` as the authoritative validation and CI reference
 
 ## Test Taxonomy

@@ -17,6 +17,7 @@ from sqlalchemy import (
     String,
     Text,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,6 +32,14 @@ class Job(Base):
         Index("idx_jobs_scraped_at", "scraped_at"),
         Index("idx_jobs_match_score", "match_score"),
         Index("idx_jobs_dedup", "dedup_hash"),
+        Index("idx_jobs_ats_job_id", "ats_job_id"),
+        Index("idx_jobs_ats_provider", "ats_provider"),
+        Index(
+            "uq_jobs_ats_composite_key",
+            "ats_composite_key",
+            unique=True,
+            postgresql_where=text("ats_composite_key IS NOT NULL"),
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -65,14 +74,20 @@ class Job(Base):
     is_enriched: Mapped[bool] = mapped_column(Boolean, default=False)
     enriched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     summary_ai: Mapped[str | None] = mapped_column(Text)
-    skills_required: Mapped[list | None] = mapped_column(JSONB, default=list)
-    skills_nice_to_have: Mapped[list | None] = mapped_column(JSONB, default=list)
-    tech_stack: Mapped[list | None] = mapped_column(JSONB, default=list)
-    red_flags: Mapped[list | None] = mapped_column(JSONB, default=list)
-    green_flags: Mapped[list | None] = mapped_column(JSONB, default=list)
+    skills_required: Mapped[list[str] | None] = mapped_column(JSONB, default=list)
+    skills_nice_to_have: Mapped[list[str] | None] = mapped_column(
+        JSONB, default=list
+    )
+    tech_stack: Mapped[list[str] | None] = mapped_column(JSONB, default=list)
+    red_flags: Mapped[list[str] | None] = mapped_column(JSONB, default=list)
+    green_flags: Mapped[list[str] | None] = mapped_column(JSONB, default=list)
     # Scoring
     match_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 1))
     tfidf_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 1))
+    # ATS identity
+    ats_job_id: Mapped[str | None] = mapped_column(String(200))
+    ats_provider: Mapped[str | None] = mapped_column(String(50))
+    ats_composite_key: Mapped[str | None] = mapped_column(String(64))
     # embedding: Vector(384) — added conditionally for PostgreSQL only
     # Dedup
     dedup_hash: Mapped[str | None] = mapped_column(String(32))

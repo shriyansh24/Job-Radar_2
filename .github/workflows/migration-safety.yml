@@ -85,9 +85,14 @@ jobs:
         working-directory: backend
         run: uv run alembic current > "$RUNNER_TEMP/alembic-current.txt"
 
-      - name: Run targeted migration contract tests
+      - name: Record Alembic history
+        if: always()
         working-directory: backend
-        run: uv run pytest tests/migrations/test_alembic_revisions.py
+        run: uv run alembic history --verbose > "$RUNNER_TEMP/alembic-history.txt"
+
+      - name: Run migration contract tests
+        working-directory: backend
+        run: uv run pytest tests/migrations/
 
       - name: Upload migration diagnostics
         if: failure()
@@ -97,3 +102,4 @@ jobs:
           path: |
             ${{ runner.temp }}/alembic-heads.txt
             ${{ runner.temp }}/alembic-current.txt
+            ${{ runner.temp }}/alembic-history.txt

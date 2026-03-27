@@ -1,4 +1,5 @@
 import {
+  ArrowClockwise,
   ChartBar,
   CheckCircle,
   Clock,
@@ -8,6 +9,8 @@ import {
   Pulse,
   Shield,
   ShieldCheck,
+  Pause,
+  Play,
   User,
   XCircle,
 } from "@phosphor-icons/react";
@@ -66,6 +69,32 @@ export default function AutoApply() {
     queryFn: () => autoApplyApi.runs().then((response) => response.data),
   });
 
+  const runNowMutation = useMutation({
+    mutationFn: () => autoApplyApi.run(),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["auto-apply-runs"] }),
+        queryClient.invalidateQueries({ queryKey: ["auto-apply-stats"] }),
+      ]);
+      toast("success", "Auto-apply run triggered");
+      setActiveTab("history");
+    },
+    onError: () => toast("error", "Failed to trigger auto-apply"),
+  });
+
+  const pauseMutation = useMutation({
+    mutationFn: () => autoApplyApi.pause(),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["auto-apply-rules"] }),
+        queryClient.invalidateQueries({ queryKey: ["auto-apply-runs"] }),
+        queryClient.invalidateQueries({ queryKey: ["auto-apply-stats"] }),
+      ]);
+      toast("success", "Auto-apply pause sent");
+    },
+    onError: () => toast("error", "Failed to pause auto-apply"),
+  });
+
   const toggleRuleMutation = useMutation({
     mutationFn: (rule: AutoApplyRule) =>
       autoApplyApi.updateRule(rule.id, {
@@ -82,6 +111,16 @@ export default function AutoApply() {
   const activeRuleCount = rules?.filter((rule) => rule.is_active).length ?? 0;
   const successRate =
     stats && stats.total_runs > 0 ? Math.round((stats.successful / stats.total_runs) * 100) : 0;
+  const latestRun = useMemo(
+    () =>
+      [...(runs ?? [])].sort((left, right) => {
+        const leftStamp = left.started_at ?? left.completed_at ?? "";
+        const rightStamp = right.started_at ?? right.completed_at ?? "";
+        return rightStamp.localeCompare(leftStamp);
+      })[0] ?? null,
+    [runs]
+  );
+  const operatorBusy = runNowMutation.isPending || pauseMutation.isPending;
 
   const metricItems = useMemo(
     () => [
@@ -104,7 +143,7 @@ export default function AutoApply() {
         label: "Runs",
         value: statsLoading ? "..." : String(stats?.total_runs ?? 0),
         hint: "Execution attempts recorded.",
-        tone: "success" as const,
+        tone: latestRun?.status === "failed" ? ("danger" as const) : ("success" as const),
       },
       {
         key: "success",
@@ -114,19 +153,50 @@ export default function AutoApply() {
         tone: "danger" as const,
       },
     ],
-    [activeRuleCount, profiles?.length, profilesLoading, rulesLoading, stats, statsLoading, successRate]
+    [activeRuleCount, latestRun?.status, profiles?.length, profilesLoading, rulesLoading, stats, statsLoading, successRate]
   );
 
-  const headerActions =
-    activeTab === "profiles" ? (
-      <Button onClick={() => setShowCreateProfile(true)} icon={<Plus size={16} weight="bold" />}>
-        Add Profile
+  const headerActions = (
+    <>
+      <Button
+        variant="secondary"
+        onClick={() => {
+          queryClient.invalidateQueries({ queryKey: ["auto-apply-rules"] });
+          queryClient.invalidateQueries({ queryKey: ["auto-apply-runs"] });
+          queryClient.invalidateQueries({ queryKey: ["auto-apply-stats"] });
+        }}
+        icon={<ArrowClockwise size={16} weight="bold" />}
+      >
+        Refresh
       </Button>
-    ) : activeTab === "rules" ? (
-      <Button onClick={() => setShowCreateRule(true)} icon={<Plus size={16} weight="bold" />}>
-        Add Rule
+      <Button
+        variant="secondary"
+        loading={pauseMutation.isPending}
+        disabled={operatorBusy}
+        onClick={() => pauseMutation.mutate()}
+        icon={<Pause size={16} weight="bold" />}
+      >
+        Pause
       </Button>
-    ) : null;
+      <Button
+        loading={runNowMutation.isPending}
+        disabled={operatorBusy}
+        onClick={() => runNowMutation.mutate()}
+        icon={<Play size={16} weight="bold" />}
+      >
+        Run now
+      </Button>
+      {activeTab === "profiles" ? (
+        <Button variant="secondary" onClick={() => setShowCreateProfile(true)} icon={<Plus size={16} weight="bold" />}>
+          Add Profile
+        </Button>
+      ) : activeTab === "rules" ? (
+        <Button variant="secondary" onClick={() => setShowCreateRule(true)} icon={<Plus size={16} weight="bold" />}>
+          Add Rule
+        </Button>
+      ) : null}
+    </>
+  );
 
   return (
     <div className="space-y-6">
@@ -145,6 +215,104 @@ export default function AutoApply() {
       />
 
       <MetricStrip items={metricItems} />
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+        <Surface padding="lg" radius="xl">
+          <SectionHeader
+            title="Operator controls"
+            description="Trigger a run, pause submission, and keep the latest execution visible."
+          />
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Button
+              loading={runNowMutation.isPending}
+              disabled={operatorBusy}
+              onClick={() => runNowMutation.mutate()}
+              icon={<Play size={14} weight="bold" />}
+            >
+              Run now
+            </Button>
+            <Button
+              variant="secondary"
+              loading={pauseMutation.isPending}
+              disabled={operatorBusy}
+              onClick={() => pauseMutation.mutate()}
+              icon={<Pause size={14} weight="bold" />}
+            >
+              Pause
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ["auto-apply-rules"] });
+                queryClient.invalidateQueries({ queryKey: ["auto-apply-runs"] });
+                queryClient.invalidateQueries({ queryKey: ["auto-apply-stats"] });
+              }}
+              icon={<ArrowClockwise size={14} weight="bold" />}
+            >
+              Refresh status
+            </Button>
+          </div>
+        </Surface>
+
+        <Surface padding="lg" radius="xl">
+          <SectionHeader
+            title="Latest run"
+            description="Most recent execution attempt and queue posture."
+          />
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <StateBlock
+              tone={
+                latestRun?.status === "failed"
+                  ? "danger"
+                  : latestRun?.status === "running" || stats?.pending
+                    ? "warning"
+                    : latestRun
+                      ? "success"
+                      : "muted"
+              }
+              icon={<Lightning size={18} weight="bold" />}
+              title={latestRun ? latestRun.status : "Idle"}
+              description={
+                latestRun
+                  ? `${latestRun.ats_provider ?? "Unknown ATS"} - ${Object.keys(latestRun.fields_filled ?? {}).length} fields filled`
+                  : "No execution has been recorded yet."
+              }
+            />
+            <StateBlock
+              tone={stats?.pending ? "warning" : "success"}
+              icon={<Clock size={18} weight="bold" />}
+              title="Queue"
+              description={
+                stats?.pending
+                  ? `${stats.pending} run${stats.pending === 1 ? "" : "s"} pending`
+                  : "No runs waiting."
+              }
+            />
+          </div>
+          {latestRun ? (
+            <div className="mt-4 rounded-none border-2 border-border bg-bg-tertiary p-4">
+              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                Run details
+              </div>
+              <div className="mt-3 grid gap-3 text-sm text-text-secondary sm:grid-cols-2">
+                <div>
+                  <span className="font-semibold text-text-primary">Job</span>
+                  <div className="mt-1 break-all">{latestRun.job_id}</div>
+                </div>
+                <div>
+                  <span className="font-semibold text-text-primary">Missed fields</span>
+                  <div className="mt-1">{latestRun.fields_missed.length || 0}</div>
+                </div>
+              </div>
+              {latestRun.error_message ? (
+                <p className="mt-3 text-sm leading-6 text-[var(--color-accent-danger)]">
+                  {latestRun.error_message}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </Surface>
+      </div>
 
       <Tabs tabs={TABS.map((tab) => ({ ...tab }))} activeTab={activeTab} onChange={setActiveTab} />
 
@@ -202,10 +370,14 @@ export default function AutoApply() {
                 }
               />
               <StateBlock
-                tone="warning"
+                tone={latestRun?.status === "failed" ? "danger" : "warning"}
                 icon={<Envelope size={18} weight="bold" />}
-                title="Coverage"
-                description="Add LinkedIn, GitHub, and a template."
+                title="Latest operator signal"
+                description={
+                  latestRun
+                    ? `${latestRun.status} - ${Object.keys(latestRun.fields_filled ?? {}).length} fields filled`
+                    : "Run the first batch to see field coverage."
+                }
               />
             </div>
           }
@@ -266,10 +438,14 @@ export default function AutoApply() {
                 description="Required keywords shrink the pool. Excluded keywords block bad fits."
               />
               <StateBlock
-                tone="danger"
+                tone={stats?.pending ? "warning" : "danger"}
                 icon={<Lightning size={18} weight="bold" />}
-                title="Operating note"
-                description="If success drops, narrow active rules before adding profiles."
+                title="Run posture"
+                description={
+                  stats?.pending
+                    ? `${stats.pending} pending item${stats.pending === 1 ? "" : "s"} still in queue.`
+                    : "If success drops, narrow active rules before adding profiles."
+                }
               />
             </div>
           }
