@@ -79,7 +79,9 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Repository validation workflow: backend quality, backend tests, frontend quality, and frontend tests/build.
 - Docs validation workflow: checks repo-local doc/path references.
 - Migration safety workflow: replays Alembic on clean Postgres and runs targeted migration tests.
+- Frontend E2E Smoke workflow: emits the required `Frontend E2E Smoke / frontend-e2e-smoke` check against the live login, shell, scheduler bootstrap, and theme persistence path.
 - CodeQL and dependency review remain enabled.
+- The browser lane is intentionally single-job and non-matrix so the emitted required-check name stays stable for branch protection.
 
 ## Agent Rules
 - Read the current-state and audit docs before changing behavior.

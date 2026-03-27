@@ -8,6 +8,7 @@ services:
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     environment:
       JR_DEBUG: "true"
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
 
   scheduler:
     build:
@@ -18,6 +19,7 @@ services:
     command: ["python", "-m", "app.runtime.scheduler"]
     environment:
       JR_DEBUG: "true"
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
       JR_SCHEDULER_READY_MARKER: /tmp/jobradar-scheduler.ready
 
   frontend:
@@ -28,7 +30,14 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    ports: ["5173:5173"]
+    ports: !override
+      - "5173:5173"
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
     environment:
       VITE_API_PROXY_TARGET: http://backend:8000
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:5173/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s

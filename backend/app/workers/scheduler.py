@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import structlog
+from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED, EVENT_JOB_MISSED, JobExecutionEvent
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
@@ -26,6 +27,37 @@ from app.workers.scraping_worker import (
 )
 
 logger = structlog.get_logger()
+
+
+def _log_job_event(event: JobExecutionEvent) -> None:
+    if event.exception:
+        logger.error(
+            "scheduler_job_failed",
+            job_id=event.job_id,
+            scheduled_run_time=event.scheduled_run_time.isoformat()
+            if event.scheduled_run_time
+            else None,
+            exception=str(event.exception),
+        )
+        return
+
+    if event.code == EVENT_JOB_MISSED:
+        logger.warning(
+            "scheduler_job_missed",
+            job_id=event.job_id,
+            scheduled_run_time=event.scheduled_run_time.isoformat()
+            if event.scheduled_run_time
+            else None,
+        )
+        return
+
+    logger.info(
+        "scheduler_job_completed",
+        job_id=event.job_id,
+        scheduled_run_time=event.scheduled_run_time.isoformat()
+        if event.scheduled_run_time
+        else None,
+    )
 
 
 def create_scheduler() -> AsyncIOScheduler:
@@ -155,6 +187,7 @@ def create_scheduler() -> AsyncIOScheduler:
     )
 
     jobs = scheduler.get_jobs()
+    scheduler.add_listener(_log_job_event, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR | EVENT_JOB_MISSED)
     logger.info(
         "scheduler_configured",
         job_count=len(jobs),

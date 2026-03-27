@@ -36,7 +36,7 @@ Key technical decisions made during the development of JobRadar V2.
 
 **Decision**: Use APScheduler (`AsyncIOScheduler`) for background tasks instead of Celery.
 
-**Rationale**: It keeps development and local deployment simpler by avoiding a mandatory extra worker service from day one while still allowing a later migration to a dedicated queue.
+**Rationale**: It keeps development and local deployment simpler than introducing a queue-first architecture while still allowing a dedicated scheduler process today and a later migration to a dedicated worker queue if the job mix outgrows in-process scheduled execution.
 
 ## 7. SSE For Real-Time Updates
 

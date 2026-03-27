@@ -6,7 +6,7 @@
 jobradar-v2/
 |-- backend/      FastAPI app, workers, scripts, tests
 |-- frontend/     React app, API clients, state, tests
-|-- docs/         Audit, current-state, research, historical plans
+|-- docs/         Audit, current-state, repo-hardening, research, historical plans
 |-- infra/        Infrastructure support files
 |-- .github/      CI, repo guardrails, templates, CODEOWNERS
 |-- scripts/      Repo-level validation helpers

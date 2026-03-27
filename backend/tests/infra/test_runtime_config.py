@@ -77,3 +77,36 @@ def test_validate_runtime_settings_rejects_wildcard_trusted_hosts_outside_debug(
         assert "JR_TRUSTED_HOSTS" in str(exc)
     else:
         raise AssertionError("Expected RuntimeError when wildcard trusted hosts are used")
+
+
+def test_validate_runtime_settings_rejects_empty_cors_origins():
+    settings = Settings(secret_key="not-default", cors_origins=[])
+
+    try:
+        validate_runtime_settings(settings)
+    except RuntimeError as exc:
+        assert "JR_CORS_ORIGINS" in str(exc)
+    else:
+        raise AssertionError("Expected RuntimeError when CORS origins are missing")
+
+
+def test_validate_runtime_settings_rejects_wildcard_cors_origin():
+    settings = Settings(secret_key="not-default", cors_origins=["*"])
+
+    try:
+        validate_runtime_settings(settings)
+    except RuntimeError as exc:
+        assert "JR_CORS_ORIGINS" in str(exc)
+    else:
+        raise AssertionError("Expected RuntimeError when wildcard CORS origins are used")
+
+
+def test_validate_runtime_settings_rejects_malformed_cors_origin():
+    settings = Settings(secret_key="not-default", cors_origins=["localhost:5173"])
+
+    try:
+        validate_runtime_settings(settings)
+    except RuntimeError as exc:
+        assert "JR_CORS_ORIGINS" in str(exc)
+    else:
+        raise AssertionError("Expected RuntimeError when a CORS origin is malformed")

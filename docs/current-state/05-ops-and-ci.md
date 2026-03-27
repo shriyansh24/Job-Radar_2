@@ -21,7 +21,8 @@
 - `docker compose up -d` is the canonical full-stack compose runtime
 - Base compose now owns `postgres`, `redis`, `migrate`, `backend`, `scheduler`, and `frontend`
 - `docker compose -f docker-compose.yml -f docker-compose.dev.yml up backend scheduler frontend` is the bind-mounted dev overlay for Uvicorn, the dedicated scheduler process, and Vite on top of the base compose services
-- The dev overlay sets `VITE_API_PROXY_TARGET=http://backend:8000` so the frontend container can proxy `/api` traffic to the backend container instead of incorrectly looping back to itself.
+- The dev overlay now publishes only `5173:5173`, health-checks `http://127.0.0.1:5173/`, and sets `VITE_API_PROXY_TARGET=http://backend:8000` so the frontend container can proxy `/api` traffic to the backend container instead of incorrectly looping back to itself.
+- Redis is still provisioned in the compose baseline, but the API and dedicated scheduler do not currently depend on Redis to reach their ready state.
 
 ## Validation Commands
 
@@ -69,6 +70,7 @@
 - Browser/e2e coverage now has a committed Playwright tree under `frontend/e2e/`; CI wiring for that lane should be kept separate from the fast PR lint/unit/build gates.
 - `frontend-e2e.yml` emits one required check:
   - `Frontend E2E Smoke / frontend-e2e-smoke`
+- `frontend-e2e.yml` also runs weekly as a drift-detection lane in addition to PR, `main` push, and manual runs.
 - `docs-validation.yml` runs repo-local path/reference validation for live docs and workflow-linked files.
 - `migration-safety.yml` replays Alembic on clean Postgres and runs `backend/tests/migrations/test_alembic_revisions.py`.
 - `codeql.yml` and `dependency-review.yml` remain enabled.
@@ -84,3 +86,4 @@
 - Frontend tests now live under `frontend/src/tests/`, browser suites live under `frontend/e2e/`, and backend tests use role-based directories under `backend/tests/`.
 - Local browser QA now depends on a migrated schema; make sure the backend DB is at Alembic `head` before validating settings, integrations, and other current-schema surfaces.
 - Compose-first local runtime is the repo default; older manual `jobradar-postgres` flows are now treated as legacy local overrides.
+- Scheduler readiness now proves startup plus DB reachability, but it is still a file-based health boundary rather than a full worker/job liveness signal.

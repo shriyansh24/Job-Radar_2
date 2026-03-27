@@ -4,13 +4,13 @@ import {
   CaretRight,
   CheckCircle,
   Crosshair,
-  Lightning,
   UploadSimple,
   Warning,
 } from "@phosphor-icons/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { scraperApi, type TargetListParams } from "../api/scraper";
+import ScraperControlPanel from "../components/scraper/ScraperControlPanel";
 import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader } from "../components/system/PageHeader";
 import { StateBlock } from "../components/system/StateBlock";
@@ -57,15 +57,6 @@ export default function Targets() {
     placeholderData: keepPreviousData,
   });
 
-  const batchMutation = useMutation({
-    mutationFn: () => scraperApi.triggerBatch(),
-    onSuccess: (result) => {
-      toast("success", `Batch triggered - ${result.data.jobs_found} jobs found`);
-      queryClient.invalidateQueries({ queryKey: ["targets"] });
-    },
-    onError: () => toast("error", "Batch trigger failed"),
-  });
-
   const toggleEnabledMutation = useMutation({
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
       scraperApi.updateTarget(id, { enabled }),
@@ -90,27 +81,16 @@ export default function Targets() {
         className="hero-panel"
         eyebrow="Operations"
         title="Scrape Targets"
-        description="Control target ingestion, quarantine state, and batch runs."
+        description="Review targets, quarantine state, and batch runs."
         actions={
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowImport(true)}
-              icon={<UploadSimple size={14} weight="bold" />}
-            >
-              Import Targets
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              loading={batchMutation.isPending}
-              onClick={() => batchMutation.mutate()}
-              icon={<Lightning size={14} weight="bold" />}
-            >
-              Trigger Batch
-            </Button>
-          </>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowImport(true)}
+            icon={<UploadSimple size={14} weight="bold" />}
+          >
+            Import Targets
+          </Button>
         }
         meta={
           !isLoading ? (
@@ -156,55 +136,59 @@ export default function Targets() {
         ]}
       />
 
-      <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
-        <div className="grid gap-4 md:grid-cols-3">
-          <Select
-            value={filters.priority_class}
-            onChange={(event) => {
-              setFilters((current) => ({ ...current, priority_class: event.target.value }));
-              setPage(0);
-            }}
-            options={[
-              { value: "watchlist", label: "Watchlist" },
-              { value: "hot", label: "Hot" },
-              { value: "warm", label: "Warm" },
-              { value: "cool", label: "Cool" },
-            ]}
-            placeholder="All priorities"
-            label="Priority"
-          />
-          <Select
-            value={filters.ats_vendor}
-            onChange={(event) => {
-              setFilters((current) => ({ ...current, ats_vendor: event.target.value }));
-              setPage(0);
-            }}
-            options={[
-              { value: "greenhouse", label: "Greenhouse" },
-              { value: "lever", label: "Lever" },
-              { value: "ashby", label: "Ashby" },
-              { value: "workday", label: "Workday" },
-              { value: "unknown", label: "Unknown" },
-            ]}
-            placeholder="All vendors"
-            label="ATS vendor"
-          />
-          <Select
-            value={filters.status}
-            onChange={(event) => {
-              setFilters((current) => ({ ...current, status: event.target.value }));
-              setPage(0);
-            }}
-            options={[
-              { value: "enabled", label: "Enabled" },
-              { value: "disabled", label: "Disabled" },
-              { value: "quarantined", label: "Quarantined" },
-            ]}
-            placeholder="All statuses"
-            label="Status"
-          />
-        </div>
-      </Surface>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+        <ScraperControlPanel />
+
+        <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
+          <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-1">
+            <Select
+              value={filters.priority_class}
+              onChange={(event) => {
+                setFilters((current) => ({ ...current, priority_class: event.target.value }));
+                setPage(0);
+              }}
+              options={[
+                { value: "watchlist", label: "Watchlist" },
+                { value: "hot", label: "Hot" },
+                { value: "warm", label: "Warm" },
+                { value: "cool", label: "Cool" },
+              ]}
+              placeholder="All priorities"
+              label="Priority"
+            />
+            <Select
+              value={filters.ats_vendor}
+              onChange={(event) => {
+                setFilters((current) => ({ ...current, ats_vendor: event.target.value }));
+                setPage(0);
+              }}
+              options={[
+                { value: "greenhouse", label: "Greenhouse" },
+                { value: "lever", label: "Lever" },
+                { value: "ashby", label: "Ashby" },
+                { value: "workday", label: "Workday" },
+                { value: "unknown", label: "Unknown" },
+              ]}
+              placeholder="All vendors"
+              label="ATS vendor"
+            />
+            <Select
+              value={filters.status}
+              onChange={(event) => {
+                setFilters((current) => ({ ...current, status: event.target.value }));
+                setPage(0);
+              }}
+              options={[
+                { value: "enabled", label: "Enabled" },
+                { value: "disabled", label: "Disabled" },
+                { value: "quarantined", label: "Quarantined" },
+              ]}
+              placeholder="All statuses"
+              label="Status"
+            />
+          </div>
+        </Surface>
+      </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]">
         <Surface tone="default" padding="none" radius="xl" className="brutal-panel overflow-hidden">

@@ -7,8 +7,10 @@ import tempfile
 from pathlib import Path
 
 import structlog
+from sqlalchemy import text
 
 from app.config import settings, validate_runtime_settings
+from app.database import engine
 from app.shared.logging import setup_logging
 from app.workers.scheduler import create_scheduler
 
@@ -16,7 +18,10 @@ logger = structlog.get_logger()
 READY_MARKER = Path(
     os.getenv(
         "JR_SCHEDULER_READY_MARKER",
-        str(Path(tempfile.gettempdir()) / "jobradar-scheduler.ready"),
+        os.getenv(
+            "JR_SCHEDULER_READY_FILE",
+            str(Path(tempfile.gettempdir()) / "jobradar-scheduler.ready"),
+        ),
     )
 )
 
@@ -28,6 +33,13 @@ def _mark_ready() -> None:
 
 def _clear_ready() -> None:
     READY_MARKER.unlink(missing_ok=True)
+
+
+async def _verify_dependencies() -> None:
+    async with engine.connect() as connection:
+        await connection.execute(text("SELECT 1"))
+
+    logger.info("scheduler_dependencies_ready", database="connected")
 
 
 def _install_signal_handlers(stop_event: asyncio.Event) -> None:
@@ -47,9 +59,11 @@ async def run() -> int:
     scheduler = create_scheduler()
 
     try:
+        await _verify_dependencies()
         scheduler.start()
     except Exception:
         logger.exception("scheduler_startup_failed")
+        await engine.dispose()
         return 1
 
     job_ids = [job.id for job in scheduler.get_jobs()]
@@ -65,6 +79,7 @@ async def run() -> int:
     finally:
         _clear_ready()
         scheduler.shutdown(wait=False)
+        await engine.dispose()
         logger.info("scheduler_stopped")
 
     return 0
