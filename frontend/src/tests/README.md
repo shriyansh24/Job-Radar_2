@@ -11,15 +11,19 @@ Document the committed frontend test layout so page, hook, component, and API co
 ## Layout
 ```text
 frontend/src/tests/
-  app/         App-level boot and auth-boundary coverage
-  api/         frontend API client contract wrappers
-  components/  shared component behavior and rendering
-  hooks/       reusable hook behavior
-  pages/       route-level page behavior
-  support/     test bootstrap and render helpers
+  app/             App-level boot and auth-boundary coverage
+  api/             frontend API client contract wrappers
+  components/
+    layout/        shell and layout behavior
+    ui/            shared presentation primitives
+  hooks/           reusable hook behavior
+  pages/           route-level page behavior
+  support/         test bootstrap and render helpers
 ```
 
 ## Notes
 - `support/` owns shared helpers and should be preferred over inline render wrappers when practical.
 - `pages/` protects route behavior, not visual snapshots.
-- Browser/e2e coverage is still a planned separate lane and does not live under this tree yet.
+- API client tests should stay named `*.api.test.ts` so boundary intent is visible at the path level.
+- Component suites should prefer `components/layout/` or `components/ui/` once they stop being generic umbrella files.
+- Browser/e2e coverage now lives under `frontend/e2e/` with `smoke/`, `flows/`, `theme-matrix/`, and `support/` lanes.

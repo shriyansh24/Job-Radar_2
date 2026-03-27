@@ -31,8 +31,8 @@
 ## Current Security Boundaries And Known Gaps
 - Backend auth is cookie-capable and also accepts bearer tokens; cookies are `HttpOnly`, `SameSite=Lax`, and `secure` is environment-driven through backend settings.
 - The backend sets security headers in middleware, including CSP, `X-Frame-Options`, `X-Content-Type-Options`, and `Referrer-Policy`.
-- Current hardening gap: the repo does not yet implement a dedicated CSRF token flow for cookie-authenticated state-changing requests. Track this as a hardening item rather than assuming SameSite alone is sufficient.
-- Current hardening gap: trusted-host enforcement is not yet explicit in the FastAPI middleware stack.
+- Cookie-authenticated unsafe requests now use a readable `jr_csrf_token` cookie and require the `X-CSRF-Token` header on the backend.
+- Trusted-host enforcement is now explicit through FastAPI `TrustedHostMiddleware` and the validated `JR_TRUSTED_HOSTS` setting.
 
 ## Scope Limits
 - This repository does not assume GitHub Advanced Security features beyond the workflows and settings visible in the repo itself.

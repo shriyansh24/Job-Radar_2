@@ -3,19 +3,19 @@
 ## DB-01 - HIGH: DateTime Columns Missing Timezone
 - **Files:** Multiple models
 - **Detail:** Fixed. The remaining audited runtime model columns are timezone-aware, and the migration pass normalizes the previously naive `users.*` and `jobs.expires_at` columns.
-- **Evidence:** `backend/tests/contracts/test_sqlalchemy_models.py`, `backend/app/migrations/versions/20260321_db_audit_fixes.py`
+- **Evidence:** `backend/tests/contracts/test_sqlalchemy_model_contracts.py`, `backend/app/migrations/versions/20260321_db_audit_fixes.py`
 - **Status:** FIXED
 
 ## DB-02 - HIGH: Nullable FKs Without Cascade
 - **Files:** `backend/app/auto_apply/models.py`, `backend/app/copilot/models.py`, `backend/app/interview/models.py`, `backend/app/pipeline/models.py`
 - **Detail:** Fixed. Nullable job foreign keys now specify `ondelete="SET NULL"` and the migration replaces the existing constraints accordingly.
-- **Evidence:** `backend/tests/contracts/test_sqlalchemy_models.py`, `backend/app/migrations/versions/20260321_db_audit_fixes.py`
+- **Evidence:** `backend/tests/contracts/test_sqlalchemy_model_contracts.py`, `backend/app/migrations/versions/20260321_db_audit_fixes.py`
 - **Status:** FIXED
 
 ## DB-03 - HIGH: No Connection Pool Configuration
 - **File:** `backend/app/database.py`
 - **Detail:** Fixed. Non-SQLite engines now use explicit pool sizing, overflow, pre-ping, and recycle settings.
-- **Evidence:** `backend/tests/infra/test_database_bootstrap.py`
+- **Evidence:** `backend/tests/infra/test_database.py`
 - **Status:** FIXED
 
 ## DB-04 - MEDIUM: Embedding Batch Partial Failures
@@ -39,6 +39,6 @@
 ## Verified Fixes Since Initial Audit
 
 ## DB-F01 - FIXED: Notification Timestamp ORM Type Did Not Match Schema
-- **Files:** `backend/app/notifications/models.py`, `backend/tests/contracts/test_sqlalchemy_models.py`
+- **Files:** `backend/app/notifications/models.py`, `backend/tests/contracts/test_sqlalchemy_model_contracts.py`
 - **Detail:** `Notification.created_at` is now explicitly `DateTime(timezone=True)` so the ORM contract matches the migration-defined database column.
 - **Status:** FIXED

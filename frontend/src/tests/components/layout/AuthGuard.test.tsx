@@ -24,13 +24,13 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-vi.mock("../../store/useAuthStore", () => ({
+vi.mock("../../../store/useAuthStore", () => ({
   useAuthStore: (
     selector: (state: typeof authGuardMocks.state.current) => unknown
   ) => selector(authGuardMocks.state.current),
 }));
 
-import AuthGuard from "../../components/layout/AuthGuard";
+import AuthGuard from "../../../components/layout/AuthGuard";
 
 function renderGuard(children: ReactNode = <div>Secret Panel</div>) {
   return render(<AuthGuard>{children}</AuthGuard>);

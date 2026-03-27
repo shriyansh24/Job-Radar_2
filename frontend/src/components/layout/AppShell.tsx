@@ -7,7 +7,7 @@ import {
 } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuthStore } from "../../store/useAuthStore";
 import { useUIStore } from "../../store/useUIStore";
@@ -29,6 +29,7 @@ function navLinkActive(targetPath: string, pathname: string) {
 
 export default function AppShell() {
   const location = useLocation();
+  const navigate = useNavigate();
   const pathname = location.pathname;
   const currentRoute = getWorkspaceRoute(pathname);
 
@@ -47,6 +48,11 @@ export default function AppShell() {
   useEffect(() => {
     setMobileNavOpen(false);
   }, [pathname, setMobileNavOpen]);
+
+  async function handleLogout() {
+    await logout();
+    navigate("/login", { replace: true });
+  }
 
   const headerButtonClass =
     "hard-press inline-flex size-10 items-center justify-center border-2 border-border bg-background text-foreground shadow-none";
@@ -126,7 +132,9 @@ export default function AppShell() {
 
             <button
               type="button"
-              onClick={logout}
+              onClick={() => {
+                void handleLogout();
+              }}
               className="hard-press inline-flex items-center gap-2 border-2 border-border bg-foreground px-3 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-background shadow-none"
             >
               <SignOut size={14} weight="bold" />

@@ -61,7 +61,7 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 | `DOCUMENTED` | Redis truth is split | `.env.example` shows no Redis password; `backend/app/config.py` expects a password by default; `docker-compose.yml` requires `jobradar-redis` and may enable TLS | The compose/runtime truth is passworded Redis with optional TLS; `.env.example` is stale/incomplete |
 | `DOCUMENTED` | Startup model is split | `README.md` says `docker start jobradar-postgres`; `docs/current-state/05-ops-and-ci.md` says `docker compose up -d postgres redis`; `docker-compose.dev.yml` is only an overlay | There are at least two different local boot models documented without an explicit decision hierarchy |
 | `DOCUMENTED` | Backend validation counts drift | `docs/current-state/00-index.md` says targeted backend slice is `26 passed`; `docs/current-state/02-backend.md` still says `24 passed` | The newer `26 passed` claim is the fresher state; backend docs still need reconciliation |
-| `DOCUMENTED` | Current-state references a missing path | `docs/current-state/04-data-and-scraping.md` says `docs/superpowers/` contains historical plans | `docs/superpowers/` does not exist on the current branch |
+| `DOCUMENTED` | Current-state references a missing historical doc set | `docs/current-state/04-data-and-scraping.md` says a legacy superpowers doc set contains historical plans | That legacy superpowers doc set does not exist on the current branch |
 | `DOCUMENTED` | Current-state and system-inventory conflict | `docs/system-inventory/13-open-questions.txt` still treats search expansion, resume tailor, salary typing, scraper responses, admin typing, and vault updates as open | `docs/current-state/03-frontend.md` says those surfaces are aligned; inventory docs are stale unless code disproves current-state |
 | `DOCUMENTED` | Theme wording drifts from tokens | `frontend/system.md` says dark mode is “jet black” | Default dark tokens in `frontend/src/index.css` are near-black (`#0A0A0A` / `#2A2A2C` / `#353437`), not literal `#000000` |
 | `DOCUMENTED` | Dev proxy does not match containerized dev | `frontend/vite.config.ts` proxies `/api` to `http://localhost:8000`; `docker-compose.dev.yml` runs the frontend inside a container | In containerized dev, `localhost:8000` points at the frontend container, not backend; proxy truth is only correct for host-local frontend dev |
@@ -70,10 +70,10 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 
 | Status | Area | Evidence | Finding |
 |---|---|---|---|
-| `FIXED` | Frontend tests | `frontend/src/tests/pages/OperationsPages.contract.test.tsx` | The misleading phase-based page suite now lives under the page-test taxonomy with a contract-focused name. |
-| `DOCUMENTED` | Frontend test topology | `frontend/src/__tests__`, `frontend/src/api/__tests__`, `frontend/src/components/__tests__`, `frontend/src/hooks/__tests__` | The structure is small but inconsistent and still route/component/api mixed rather than purpose-driven |
-| `DOCUMENTED` | Backend test topology | `backend/tests/{unit,integration,contracts,security,edge_cases}` | Better segmented than frontend, but migration and contract tests are still mixed into generic buckets |
-| `DOCUMENTED` | Missing e2e harness | no committed Playwright spec tree or config found | Browser QA exists as artifacts, not as a checked-in e2e test system |
+| `FIXED` | Frontend ops-page tests | `frontend/src/tests/pages/Admin.page.test.tsx`, `frontend/src/tests/pages/Companies.page.test.tsx`, `frontend/src/tests/pages/SearchExpansion.page.test.tsx`, `frontend/src/tests/pages/Sources.page.test.tsx`, `frontend/src/tests/pages/Targets.page.test.tsx` | The misleading phase-based ops suite has been replaced with route-owned page tests inside the new taxonomy. |
+| `DOCUMENTED` | Frontend test topology | `frontend/src/tests/`, `frontend/e2e/` | The frontend now has role-based unit and browser lanes, but several page and component suites still cover multiple behaviors inside one file. |
+| `DOCUMENTED` | Backend test topology | `backend/tests/{contracts,infra,integration,migrations,security,unit,workers}` | The backend layout is now role-based, but `unit/` and `edge_cases/` still contain mixed ownership and should continue to be drained deliberately. |
+| `FIXED_IN_WORKTREE` | Committed browser/e2e lane exists but is still shallow | `frontend/playwright.config.ts`, `frontend/e2e/README.md`, and the first `smoke/`, `flows/`, and `theme-matrix/` specs are now checked in | Browser QA is no longer manual-only, but the committed lane still covers only a narrow authenticated shell/theme slice |
 | `DOCUMENTED` | CI job naming is too coarse | `.github/workflows/ci.yml` has only `backend` and `frontend` jobs | Failures are hard to localize from GitHub UI because security, lint, type, and test steps are collapsed into generic jobs |
 | `DOCUMENTED` | Coverage expectations are uneven | backend gate uses `--cov-fail-under=60`; frontend gate uses `40` statement coverage | The repo has no explicit rationale for why frontend quality policy is materially lower |
 | `DOCUMENTED` | CODEOWNERS / templates absent | no `CODEOWNERS`, no issue or PR templates under `.github/` | There is no repo-level guidance for review ownership or PR hygiene beyond workflow checks |
@@ -101,7 +101,7 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 ## Immediate Risks
 - Runtime instructions can still boot the wrong DB or Redis configuration depending on which doc is followed.
 - `feat/p1-core-value` contains meaningful capability work that can be lost by neglect, but it is too stale to merge blindly.
-- The repo still lacks a committed e2e/browser test harness even though browser QA is treated as important.
+- The repo now has a committed Playwright/browser lane, but route-family and outcome-level coverage are still thin.
 - The frontend/backend contract claims in `docs/system-inventory/13-open-questions.txt` are no longer trustworthy as live truth.
 
 ## What This Ledger Does Not Yet Prove

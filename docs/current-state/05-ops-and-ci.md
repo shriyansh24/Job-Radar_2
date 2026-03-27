@@ -18,23 +18,26 @@
 - `VITE_API_PROXY_TARGET=http://backend:8000 cd frontend && npm run dev` only when running Vite inside the frontend container rather than on the host
 
 ### Infrastructure
-- `docker compose up -d postgres redis`
-- `docker compose up -d frontend backend` if you want the base compose app containers as well
-- `docker compose -f docker-compose.yml -f docker-compose.dev.yml up frontend backend` for bind-mounted Vite/Uvicorn dev on top of the base compose services
+- `docker compose up -d` is the canonical full-stack compose runtime
+- Base compose now owns `postgres`, `redis`, `migrate`, `backend`, `scheduler`, and `frontend`
+- `docker compose -f docker-compose.yml -f docker-compose.dev.yml up backend scheduler frontend` is the bind-mounted dev overlay for Uvicorn, the dedicated scheduler process, and Vite on top of the base compose services
 - The dev overlay sets `VITE_API_PROXY_TARGET=http://backend:8000` so the frontend container can proxy `/api` traffic to the backend container instead of incorrectly looping back to itself.
 
 ## Validation Commands
 
 ### Backend
 - `cd backend && uv run pytest tests/integration/test_auth_api.py tests/integration/test_settings_api.py tests/integration/test_admin_api.py tests/integration/test_vault_api.py`
+- `cd backend && uv run pytest tests/infra/test_runtime_config.py tests/workers/test_scheduler_runtime.py tests/workers/scraping/test_scrape_scheduler.py`
 
 ### Frontend
 - `cd frontend && npm run lint`
 - `cd frontend && npm run test -- --run`
+- `cd frontend && npm run e2e`
 - `cd frontend && npm run build`
 
 ### Browser QA
 - Start backend and frontend locally.
+- Start the dedicated scheduler locally as well if you are not using compose.
 - Log in through the real UI.
 - Sweep the routed app on desktop, tablet, and phone.
 - Write screenshots to `.claude/ui-captures/`.
@@ -45,6 +48,7 @@
   - `actions/checkout@v6`
   - `actions/setup-python@v6`
   - `actions/setup-node@v6`
+- `frontend-e2e.yml` runs a dedicated browser check against the live backend API, the dedicated scheduler process, and the Vite dev server.
 - Backend quality job runs:
   - `uv sync --frozen`
   - `uv run python -m pip check`
@@ -62,17 +66,21 @@
 - Frontend test/build job runs:
   - `npm run test -- --run --coverage --coverage.thresholds.statements=40`
   - `npm run build`
+- Browser/e2e coverage now has a committed Playwright tree under `frontend/e2e/`; CI wiring for that lane should be kept separate from the fast PR lint/unit/build gates.
+- `frontend-e2e.yml` emits one required check:
+  - `Frontend E2E Smoke / frontend-e2e-smoke`
 - `docs-validation.yml` runs repo-local path/reference validation for live docs and workflow-linked files.
 - `migration-safety.yml` replays Alembic on clean Postgres and runs `backend/tests/migrations/test_alembic_revisions.py`.
 - `codeql.yml` and `dependency-review.yml` remain enabled.
 
 ## Branch Protection Assumptions
 - Treat `main` as PR-only.
-- Require repository validation, docs validation, migration safety, dependency review, and CodeQL before merge.
+- Require repository validation, docs validation, migration safety, dependency review, CodeQL, and `Frontend E2E Smoke / frontend-e2e-smoke` before merge.
 - Keep docs, tests, and runtime-truth updates in the same batch as behavior changes.
+- Do not make the required browser workflow path-filtered or matrix-shaped while branch protection depends on that exact emitted check name.
 
 ## Current Assessment
 - Local validation and GitHub workflow configuration are aligned with the current repo state.
-- Frontend tests now live under `frontend/src/tests/`; backend tests use role-based directories under `backend/tests/`.
+- Frontend tests now live under `frontend/src/tests/`, browser suites live under `frontend/e2e/`, and backend tests use role-based directories under `backend/tests/`.
 - Local browser QA now depends on a migrated schema; make sure the backend DB is at Alembic `head` before validating settings, integrations, and other current-schema surfaces.
 - Compose-first local runtime is the repo default; older manual `jobradar-postgres` flows are now treated as legacy local overrides.

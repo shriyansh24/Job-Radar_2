@@ -29,10 +29,7 @@ logger = structlog.get_logger()
 
 
 def create_scheduler() -> AsyncIOScheduler:
-    """Create and configure the background job scheduler.
-
-    Jobs are started/stopped via FastAPI lifespan.
-    """
+    """Create and configure the background job scheduler."""
     scheduler = AsyncIOScheduler()
 
     # Scraping: every 6 hours
@@ -155,6 +152,13 @@ def create_scheduler() -> AsyncIOScheduler:
         id="target_batch_watchlist",
         kwargs={"source_kind": "watchlist", "batch_size": 25},
         replace_existing=True,
+    )
+
+    jobs = scheduler.get_jobs()
+    logger.info(
+        "scheduler_configured",
+        job_count=len(jobs),
+        job_ids=[job.id for job in jobs],
     )
 
     return scheduler

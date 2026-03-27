@@ -13,6 +13,8 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/tests/support/setup.ts"],
     globals: true,
+    include: ["src/tests/**/*.{test,spec}.{ts,tsx}"],
+    exclude: ["e2e/**", "playwright-report/**", "test-results/**"],
     coverage: {
       reporter: ["text", "json", "html"],
       include: ["src/**/*.{ts,tsx}"],

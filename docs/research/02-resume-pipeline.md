@@ -1,6 +1,6 @@
 # Resume & Cover Letter Pipeline — Technical Design
 
-> Full research output from resume agent. See also: `docs/resume-pipeline-architecture.md` for extended version.
+> Full research output from the resume agent. No separate maintained extended-architecture doc exists on this branch; treat this page as the current research slice for the resume pipeline.
 
 ## Existing Assets (~70% Reuse)
 

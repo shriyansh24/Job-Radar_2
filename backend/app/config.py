@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
     access_cookie_name: str = "jr_access_token"
     refresh_cookie_name: str = "jr_refresh_token"
+    csrf_cookie_name: str = "jr_csrf_token"
+    csrf_header_name: str = "X-CSRF-Token"
     cookie_secure: bool = False
     cookie_samesite: Literal["lax", "strict", "none"] = "lax"
 
@@ -52,7 +54,14 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: list[str] = ["http://localhost:5173"]
     cors_methods: list[str] = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-    cors_headers: list[str] = ["Accept", "Authorization", "Content-Type", "X-Request-ID"]
+    cors_headers: list[str] = [
+        "Accept",
+        "Authorization",
+        "Content-Type",
+        "X-CSRF-Token",
+        "X-Request-ID",
+    ]
+    trusted_hosts: list[str] = ["localhost", "127.0.0.1", "test"]
 
     # Intel GPU acceleration (optional - requires openvino or ipex)
     intel_gpu_enabled: bool = False
@@ -69,6 +78,22 @@ def validate_runtime_settings(settings: Settings) -> None:
             "JR_SECRET_KEY is using the default value. Set a secure secret key "
             "or enable JR_DEBUG for local-only development."
         )
+    if not settings.database_url:
+        raise RuntimeError("JR_DATABASE_URL must be set.")
+    if not settings.redis_url:
+        raise RuntimeError("JR_REDIS_URL must be set.")
+    if settings.cookie_samesite == "none" and not settings.cookie_secure:
+        raise RuntimeError(
+            "JR_COOKIE_SECURE must be enabled when JR_COOKIE_SAMESITE is set to 'none'."
+        )
+    if not settings.trusted_hosts:
+        raise RuntimeError("JR_TRUSTED_HOSTS must include at least one host.")
+    if "*" in settings.trusted_hosts and not settings.debug:
+        raise RuntimeError("JR_TRUSTED_HOSTS cannot use '*' outside debug mode.")
+    if settings.api_rate_limit_per_minute <= 0:
+        raise RuntimeError("JR_API_RATE_LIMIT_PER_MINUTE must be greater than zero.")
+    if settings.login_rate_limit_per_minute <= 0:
+        raise RuntimeError("JR_LOGIN_RATE_LIMIT_PER_MINUTE must be greater than zero.")
 
 
 settings = Settings()
