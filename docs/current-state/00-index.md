@@ -57,5 +57,6 @@
 ## Notes For Agents
 - Treat this directory plus `docs/audit/` as the current source of truth.
 - Treat `docs/research/` as future-looking reference material.
+- Treat `docs/repo-hardening/` as the normalization and traceability audit trail while the hardening pass is in progress, not as a replacement for current-state.
 - Use `CLAUDE.md` and `AGENTS.md` for working conventions, not product-state discovery.
 - The current workspace includes the reference-first frontend migration: shared shell, responsive navigation, light/dark parity, backend-aligned settings/admin/resume/salary/search-expansion surfaces, decomposed page families, and a completed browser-verified cleanup pass over the main routed surfaces.

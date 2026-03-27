@@ -8,6 +8,7 @@
 - Active branch in this workspace: `codex/ui-changes`.
 - Frontend: reference-first UI migration is in place, major routed pages have been decomposed into smaller component groups, generated shell/page copy has been stripped from the main surfaces, and lint/test/build are green.
 - Backend: targeted auth/settings/admin/vault integration tests pass locally.
+- Test layout: frontend suites now live under `frontend/src/tests/`, and backend runtime/migration/security/worker suites now have dedicated directories under `backend/tests/`.
 - Browser QA: the latest authenticated sweep is current, and representative screenshots are stored in `.claude/ui-captures/`.
 - Audit status remains `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
 

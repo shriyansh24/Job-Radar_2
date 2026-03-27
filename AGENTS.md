@@ -6,6 +6,7 @@
 ## Agent Read Order
 - Current operational state lives in `docs/current-state/00-index.md`.
 - Audit and bug-history state lives in `docs/audit/00-index.md`.
+- Repository normalization and traceability work-in-progress lives in `docs/repo-hardening/00-index.md`.
 - Repo working conventions and command surface live in `CLAUDE.md`.
 
 ## Learned Workspace Facts
@@ -14,4 +15,5 @@
 - The theme system is wired through a Zustand `useUIStore` that persists both theme family and mode, toggles a `.dark` class on the HTML root, and keeps the current choice in `localStorage`.
 - The current UI surface is a reference-first command center with a simplified shell, shadowless buttons, a fixed top bar, desktop rail, mobile drawer, mobile bottom nav, and routed page families under `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, and `Operations`.
 - `frontend/system.md` is the design-system source of truth for tokens, layout grammar, shell posture, and component rules, including the no-button-shadow rule.
+- Frontend tests now live under `frontend/src/tests/`; backend tests are being normalized into role-based directories under `backend/tests/`.
 - Verified local validation currently covers frontend lint, frontend tests, frontend build, targeted backend auth/settings/admin/vault integration tests, and a refreshed authenticated browser sweep with captures in `.claude/ui-captures/`.

@@ -11,13 +11,13 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    setupFiles: ["./src/__tests__/setup.ts"],
+    setupFiles: ["./src/tests/support/setup.ts"],
     globals: true,
     coverage: {
       reporter: ["text", "json", "html"],
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
-        "src/__tests__/**",
+        "src/tests/**",
         "src/api/**",
         "src/components/analytics/**",
         "src/components/pipeline/**",

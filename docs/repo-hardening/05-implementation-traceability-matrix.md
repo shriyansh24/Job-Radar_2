@@ -1,0 +1,51 @@
+# Implementation Traceability Matrix
+
+## Purpose
+Show what P0, P1, and P2 were supposed to deliver, what is actually present now, and what should be ported, hardened, deferred, or rejected.
+
+## Source-Of-Truth Status
+- Status: `DOCUMENTED_WORKING_SET`
+- Scope: phase and branch traceability for repository hardening
+- Last validation basis: GitHub PR metadata for PRs `#12`, `#13`, `#17`, local branch history, and direct file inspection on `2026-03-27`
+
+## Interpretation Rules
+- `main` is treated as the stable merged backend/P2 baseline.
+- `codex/ui-changes` is treated as the live UI and current workspace baseline.
+- `feat/p1-core-value` is treated as a selective port source, not as a merge candidate.
+- A capability is only marked `shipped` when the code exists on the current branch tip, not because a PR body claimed it.
+
+## Matrix
+
+| Capability | Intended phase / source | Backend | Frontend | DB / migrations | Workers / infra | Test evidence | Doc evidence | Current branch locus | Disposition | Required action |
+|---|---|---|---|---|---|---|---|---|---|---|
+| ATS IDs and composite dedup keys | P0 / PR `#12` | `partial` on `feat/p1-core-value` via `jobs/models.py` + scraper updates | `absent` | `partial` via `005_add_ats_dedup_columns.py` on `feat/p1-core-value` | `n/a` | `backend/tests/unit/test_ats_composite_key.py` on `feat/p1-core-value` | `partial` | branch-only on `feat/p1-core-value` | `PORT_OR_REVERIFY` | Verify whether current job/scraper models still preserve ATS identity fields; port the missing schema/model pieces or reject them explicitly. |
+| Company/title/location normalization | P0 / PR `#12` | `absent` on current branches; implementation exists only on `feat/p1-core-value` | `absent` | `n/a` | `n/a` | `backend/tests/unit/test_normalization.py` on `feat/p1-core-value` | `research_only` | branch-only on `feat/p1-core-value` | `PORT` | Re-evaluate this slice for current dedup/search quality goals and port only if it still improves the live scraper pipeline. |
+| Resume IR parsing | P0 / PR `#12` | `partial` on `feat/p1-core-value` via parser + IR schema | `absent` | `partial` via `20260322_add_resume_ir_columns.py` on `feat/p1-core-value` | `n/a` | `backend/tests/unit/test_resume_parser.py` on `feat/p1-core-value` | `partial` | branch-only on `feat/p1-core-value` | `PORT_SELECTIVELY` | Compare current resume services against the IR parser path and deliberately promote only the parser/IR pieces that still fit the current resume flow. |
+| SQL pattern detector | P0 / PR `#12` | `absent` on current branches; implementation exists on `feat/p1-core-value` | `absent` | `n/a` | `n/a` | `backend/tests/unit/test_pattern_detector.py` on `feat/p1-core-value` | `underdocumented` | branch-only on `feat/p1-core-value` | `PORT` | Restore only if analytics still needs this pure-SQL insight layer; otherwise document it as rejected historical work. |
+| Local-first / hybrid model router | P0 / PR `#12` | `absent` on current branches; implementation exists on `feat/p1-core-value` | `absent` | `n/a` | `n/a` | `backend/tests/unit/test_hybrid_router.py` on `feat/p1-core-value` | `research_only` | branch-only on `feat/p1-core-value` | `DEFER_OR_PORT` | Decide whether local-first routing is committed roadmap or remains research. |
+| Freshness scoring | P0 / PR `#12` | `absent` on current branches; implementation exists on `feat/p1-core-value` | `partial` via `FreshnessBadge.tsx` only on `feat/p1-core-value` | `n/a` | `n/a` | `backend/tests/unit/test_freshness.py` on `feat/p1-core-value` | `partial` | branch-only on `feat/p1-core-value` | `PORT` | Recover the scoring path if freshness is still part of job ranking/product semantics. |
+| Six-stage dedup pipeline | P1 / PR `#13` | `partial` via enhanced dedup logic on `feat/p1-core-value` | `absent` | `n/a` | `n/a` | `backend/tests/unit/test_six_stage_dedup.py` on `feat/p1-core-value` | `underdocumented` | branch-only on `feat/p1-core-value` | `PORT_SELECTIVELY` | Audit current dedup flow versus the six-stage version and port only the pieces that survive current scraper architecture. |
+| Embedding upgrade and hybrid search | P1 / PR `#13` | `partial` via embedding/search modules on `feat/p1-core-value` | `absent` | `partial` via embedding-related migration on `feat/p1-core-value` | `partial` via backfill worker on `feat/p1-core-value` | `backend/tests/unit/test_embedding_upgrade.py`, `test_hybrid_search.py` on `feat/p1-core-value` | `partial` | branch-only on `feat/p1-core-value` | `PORT_SELECTIVELY` | Treat as a backend search roadmap slice, not a blind merge. |
+| Resume tailoring, rendering, and ATS validation | P1 / PR `#13` | `partial` because the current branch ships resume flows but not the full `feat/p1-core-value` validator/tailoring set | `partial` because the current UI has resume surfaces but not the full branch-specific renderer/validator behavior | `partial` via tailoring-session migration on `feat/p1-core-value` | `n/a` | `backend/tests/unit/test_tailoring.py`, `test_renderer.py`, `test_ats_validator.py` on `feat/p1-core-value` | `partial` | mixed: current branch plus deeper branch-only implementation on `feat/p1-core-value` | `PORT` | Compare current resume services with the branch implementation and port the missing tailoring/validator semantics deliberately. |
+| Form extraction and field mapping | P1 / PR `#13` | `absent` on current branches; concrete implementation exists on `feat/p1-core-value` | `absent` | `n/a` | `n/a` | `backend/tests/unit/test_form_extractor.py`, `test_field_mapper.py` on `feat/p1-core-value` | `research_only` | branch-only on `feat/p1-core-value` | `PORT` | This is the clearest bridge from research into shipped auto-apply capability. |
+| Lever/Greenhouse adapters and safety layer | P1 / PR `#13` | `absent` on current branches; concrete adapters exist on `feat/p1-core-value` | `absent` | `n/a` | `n/a` | `backend/tests/unit/test_lever_adapter.py`, `test_greenhouse_adapter.py`, `test_safety_layer.py` on `feat/p1-core-value` | `research_only` | branch-only on `feat/p1-core-value` | `PORT` | High-value selective recovery target from `feat/p1-core-value`. |
+| Outcomes tracking | P1 / PR `#13` | `shipped` on current branches | `shipped` on current branches | `shipped` | `partial` because follow-on worker/search integrations are not explicit | `backend/tests/unit/test_outcomes.py` on `feat/p1-core-value` plus current route/API coverage | `current_state` | `main` and `codex/ui-changes` | `HARDEN` | Keep current shipped outcomes surfaces and document any remaining worker/search follow-through. |
+| Interview prep engine | P1 / PR `#13` | `partial` on `feat/p1-core-value` via prep engine + prompts | `partial` because the current UI and API expose interview prep, but the deeper engine/panel path remains branch-specific | `n/a` | `n/a` | `backend/tests/unit/test_interview_prep.py` on `feat/p1-core-value` | `partial` | mixed: current branch plus deeper branch-only implementation on `feat/p1-core-value` | `PORT` | Backend engine and frontend panel still need an explicit integration decision. |
+| Pipeline drag/drop ergonomics | P1 / PR `#13` | `n/a` | `partial` on `feat/p1-core-value` via draggable card / kanban interaction work | `n/a` | `n/a` | `frontend/src/__tests__/ApplicationModal.test.tsx`, `frontend/src/__tests__/KanbanBoard.test.tsx` on `feat/p1-core-value` | `underdocumented` | branch-only on `feat/p1-core-value` | `PORT_SELECTIVELY` | Preserve only the interaction improvements that still fit the current pipeline surface. |
+| Email module | P2 / PR `#17` | `shipped` on `main` and `codex/ui-changes` | `shipped` | `shipped` | `n/a` | `backend/tests/unit/test_email_parser.py` on `main` | `current_state` | `main` and `codex/ui-changes` | `HARDEN` | Add clearer taxonomy and observability notes; no recovery work required. |
+| Networking module | P2 / PR `#17` | `shipped` on `main` and `codex/ui-changes` | `shipped` | `shipped` | `n/a` | `backend/tests/unit/test_networking.py` on `main` | `current_state` | `main` and `codex/ui-changes` | `HARDEN` | Keep and improve taxonomy/docs. |
+| Analytics predictor / RAG / GPU acceleration | P2 / PR `#17` | `shipped` on `main` and `codex/ui-changes` | `shipped` via analytics UI surfaces | `n/a` | `partial` because the worker/runtime expectations are still lightly documented | `backend/tests/unit/test_ml_predictor.py`, `test_rag_pipeline.py`, `test_gpu_accelerator.py` on `main` | `partial` | `main` and `codex/ui-changes` | `HARDEN` | Document limits and coverage boundaries instead of treating the stack as fully production-complete. |
+| Form learning and Workday adapter | P2 / PR `#17` | `shipped` on `main` and `codex/ui-changes` | `shipped` indirectly through current auto-apply surfaces | `shipped` | `n/a` | `backend/tests/unit/test_form_learning.py`, `test_workday_adapter.py` on `main` | `partial` | `main` and `codex/ui-changes` | `HARDEN` | Align docs and tests with the live backend reality. |
+| Salary intelligence | P2 / PR `#17` | `shipped` on `main` and `codex/ui-changes` | `shipped` on current branches | `shipped` | `n/a` | `backend/tests/unit/test_salary_intel.py` on `main` | `current_state` | `main` and `codex/ui-changes` | `HARDEN` | Keep shipped surface and close remaining coverage/documentation gaps. |
+| Dedup feedback | P2 / PR `#17` | `shipped` on `main` and `codex/ui-changes` | `absent` as a first-class UI feature | `shipped` | `n/a` | `backend/tests/unit/test_dedup_feedback.py` on `main` | `research_to_current` | `main` and `codex/ui-changes` | `HARDEN` | Keep and clarify how it fits the current dedup roadmap. |
+
+## High-Value Selective Port Targets
+1. Form extraction, field mapping, and ATS adapter safety from `feat/p1-core-value`
+2. Resume tailoring / validator path from `feat/p1-core-value`
+3. Interview prep backend engine and its route integration
+4. Dedup / normalization slices that still survive the current scraper architecture
+
+## Explicit Non-Decisions
+- This matrix does not authorize a blind merge of `feat/p1-core-value`.
+- This matrix does not promote `docs/research/` into shipped scope by itself.
+- This matrix does not treat PR body claims as proof unless the file-level evidence exists on a branch tip.

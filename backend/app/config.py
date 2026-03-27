@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     database_echo: bool = False
 
     # Redis
-    redis_url: str = "redis://:change-me-redis-password@localhost:6379/0"
+    redis_url: str = "redis://:jobradar-redis@localhost:6379/0"
     redis_use_tls: bool = False
 
     # LLM

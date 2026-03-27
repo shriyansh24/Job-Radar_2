@@ -27,7 +27,7 @@
 ## INF-05 - LOW: Orphaned Config Keys
 - **File:** `backend/app/config.py`
 - **Detail:** Fixed. The truly unused ScrapingBee and Scrapling flags were removed from `Settings`, and legacy local env files are tolerated through `extra="ignore"` during cleanup.
-- **Evidence:** `backend/tests/unit/test_config.py`, `backend/app/config.py`
+- **Evidence:** `backend/tests/infra/test_runtime_config.py`, `backend/app/config.py`
 - **Status:** FIXED
 
 ## Verified Fixes Since Initial Audit

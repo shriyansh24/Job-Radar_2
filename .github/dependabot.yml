@@ -2,15 +2,25 @@ version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
+    open-pull-requests-limit: 5
     schedule:
       interval: weekly
+    commit-message:
+      prefix: deps
 
   - package-ecosystem: npm
     directory: /frontend
+    open-pull-requests-limit: 5
     schedule:
       interval: weekly
+    commit-message:
+      prefix: deps
+      prefix-development: deps
 
   - package-ecosystem: pip
     directory: /backend
+    open-pull-requests-limit: 5
     schedule:
       interval: weekly
+    commit-message:
+      prefix: deps

@@ -1,0 +1,75 @@
+name: Migration Safety
+
+on:
+  pull_request:
+    paths:
+      - "backend/alembic.ini"
+      - "backend/app/**"
+      - "backend/pyproject.toml"
+      - "backend/tests/**"
+      - "docker-compose.yml"
+      - "docker-compose.dev.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/alembic.ini"
+      - "backend/app/**"
+      - "backend/pyproject.toml"
+      - "backend/tests/**"
+      - "docker-compose.yml"
+      - "docker-compose.dev.yml"
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migration-safety-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  alembic-replay:
+    name: Alembic replay on clean Postgres
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      JR_DATABASE_URL: postgresql+asyncpg://test:test@127.0.0.1:5432/test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          pip install uv
+          uv sync --frozen
+
+      - name: Replay Alembic migrations to head
+        working-directory: backend
+        run: uv run alembic upgrade head
+
+      - name: Run targeted migration contract tests
+        working-directory: backend
+        run: uv run pytest tests/migrations/test_alembic_revisions.py

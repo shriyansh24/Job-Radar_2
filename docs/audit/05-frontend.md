@@ -9,13 +9,13 @@
 ## FE-02 - HIGH: Rebuild Embeddings Calls Wrong API
 - **File:** `frontend/src/pages/Admin.tsx`
 - **Detail:** Fixed. The misleading embeddings action was removed, so the admin page no longer claims to perform an embeddings rebuild through the unrelated reindex endpoint.
-- **Evidence:** `frontend/src/__tests__/Admin.test.tsx`
+- **Evidence:** `frontend/src/tests/pages/Admin.page.test.tsx`
 - **Status:** FIXED
 
 ## FE-03 - MEDIUM: Vault API Client is Still Partial
 - **Files:** `frontend/src/api/vault.ts`, `frontend/src/pages/DocumentVault.tsx`
 - **Detail:** Fixed. Resume and cover-letter PATCH flows now exist in the client and the document vault UI wires them through editable metadata forms.
-- **Evidence:** `frontend/src/__tests__/DocumentVault.test.tsx`
+- **Evidence:** `frontend/src/tests/pages/DocumentVault.page.test.tsx`
 - **Status:** FIXED
 
 ## Verified Fixes Since Initial Audit
@@ -27,7 +27,7 @@
 - **Status:** FIXED
 
 ## FE-F02 - FIXED: Login Test Was Brittle Against Current Heading Markup
-- **File:** `frontend/src/__tests__/Login.test.tsx`
+- **File:** `frontend/src/tests/pages/Login.page.test.tsx`
 - **Detail:** The test now queries the heading by accessible name instead of relying on raw concatenated text.
 - **Evidence:** `npm run test -- --run`
 - **Status:** FIXED

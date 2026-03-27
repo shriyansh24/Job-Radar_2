@@ -1,5 +1,10 @@
 # Open Questions
 
+Historical inventory note:
+- This file is an inventory snapshot from the earlier system-inventory pass.
+- When it conflicts with verified live behavior, `docs/current-state/*` is authoritative.
+- Several frontend contract questions below were already resolved in the current-state/frontend alignment work and should be treated as historical unless code reopens them.
+
 ## Contract And Behavior Questions
 
 1. Should `GET /api/v1/search-expansion` exist, or should the frontend be rewritten to use `POST /api/v1/search-expansion/expand`?

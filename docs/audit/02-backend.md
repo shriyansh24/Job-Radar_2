@@ -15,7 +15,7 @@
 ## BE-03 - HIGH: Partial Failure Commit
 - **File:** `backend/app/scraping/service.py`
 - **Detail:** Fixed. Batch execution now inspects `asyncio.gather()` results, rolls back on task failures, and avoids committing partial target batches.
-- **Evidence:** `backend/tests/unit/scraping/test_run_target_batch.py`
+- **Evidence:** `backend/tests/workers/scraping/test_target_batch_worker.py`
 - **Status:** FIXED
 
 ## BE-04 - HIGH: LLM Failures Return Empty Dict
@@ -33,19 +33,19 @@
 ## BE-06 - HIGH: No Timeout on `run_scrape()`
 - **File:** `backend/app/scraping/service.py`
 - **Detail:** Fixed. The legacy source-fetch path is now wrapped in `asyncio.wait_for()`, so a hung scraper cannot block the run indefinitely.
-- **Evidence:** `backend/tests/unit/scraping/test_run_scrape.py`
+- **Evidence:** `backend/tests/workers/scraping/test_scrape_run_worker.py`
 - **Status:** FIXED
 
 ## BE-07 - MEDIUM: Assertion in Production
 - **File:** `backend/app/scraping/rate_limiter.py`
 - **Detail:** Fixed. The production `assert` has been replaced with an explicit runtime error fallback.
-- **Evidence:** `backend/tests/unit/test_rate_limiter.py`
+- **Evidence:** `backend/tests/security/test_rate_limiter.py`
 - **Status:** FIXED
 
 ## BE-08 - MEDIUM: Event Callback Failure = Scraper Failure
 - **File:** `backend/app/scraping/service.py`
 - **Detail:** Fixed. Progress callback failures are now isolated and logged instead of being treated as scraper failures.
-- **Evidence:** `backend/tests/unit/scraping/test_run_scrape.py`
+- **Evidence:** `backend/tests/workers/scraping/test_scrape_run_worker.py`
 - **Status:** FIXED
 
 ## BE-09 - LOW: Adapter Registry Logs at DEBUG

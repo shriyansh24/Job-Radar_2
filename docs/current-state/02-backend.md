@@ -38,7 +38,8 @@
 - `cd backend && uv run ruff check .`
 - `cd backend && uv run mypy app/auth/service.py app/config.py app/shared/middleware.py app/scraping/deduplication.py app/scraping/port.py --ignore-missing-imports`
 - `cd backend && uv run pytest --cov=app --cov-fail-under=60 tests/`
-- Latest local result: `24 passed` for the targeted settings/auth/admin integration slice
+- Latest local result: `26 passed` for the targeted auth/settings/admin/vault integration slice
+- Backend tests now use explicit `contracts/`, `infra/`, `integration/`, `migrations/`, `security/`, `unit/`, and `workers/` directories under `backend/tests/`.
 
 ## Entry Points
 - App bootstrap: `backend/app/main.py`
