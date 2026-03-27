@@ -1,7 +1,6 @@
 import {
   Briefcase,
   Clock,
-  DownloadSimple,
   PaperPlaneTilt,
   TrendUp,
 } from "@phosphor-icons/react";
@@ -10,15 +9,14 @@ import { lazy, Suspense } from "react";
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { analyticsApi } from "../api/analytics";
+import { AnalyticsPatternsPanel } from "../components/analytics/AnalyticsPatternsPanel";
 import Badge from "../components/ui/Badge";
-import Button from "../components/ui/Button";
 import EmptyState from "../components/ui/EmptyState";
 import Skeleton from "../components/ui/Skeleton";
 import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader } from "../components/system/PageHeader";
 import { SectionHeader } from "../components/system/SectionHeader";
 import { SplitWorkspace } from "../components/system/SplitWorkspace";
-import { StateBlock } from "../components/system/StateBlock";
 import { Surface } from "../components/system/Surface";
 import { cn } from "../lib/utils";
 
@@ -108,6 +106,12 @@ export default function Analytics() {
     staleTime: ANALYTICS_STALE_TIME,
   });
 
+  const { data: patterns, isLoading: patternsLoading } = useQuery({
+    queryKey: ["analytics", "patterns"],
+    queryFn: () => analyticsApi.patterns().then((response) => response.data),
+    staleTime: ANALYTICS_STALE_TIME,
+  });
+
   const summary = overview ?? {
     total_jobs: 0,
     total_applications: 0,
@@ -136,7 +140,7 @@ export default function Analytics() {
       key: "responses",
       label: "Response rate",
       value: loadingOverview ? "..." : `${Math.round(summary.response_rate * 100)}%`,
-      hint: "How often the market answers back.",
+      hint: "Reply rate on tracked applications.",
       icon: <TrendUp size={18} weight="bold" />,
       tone: "success" as const,
     },
@@ -144,7 +148,7 @@ export default function Analytics() {
       key: "latency",
       label: "Avg days to response",
       value: loadingOverview ? "..." : summary.avg_days_to_response.toFixed(1),
-      hint: "Average time from application to a meaningful reply.",
+      hint: "Mean time from application to reply.",
       icon: <Clock size={18} weight="bold" />,
       tone: "warning" as const,
     },
@@ -161,17 +165,7 @@ export default function Analytics() {
         <PageHeader
           eyebrow="Intelligence"
           title="Analytics"
-          description="A compact control surface for discovery volume, application outcomes, response quality, and source health."
-          actions={
-            <>
-              <Button variant="secondary" size="sm" icon={<Clock size={14} weight="bold" />}>
-                Last 30 days
-              </Button>
-              <Button variant="primary" size="sm" icon={<DownloadSimple size={14} weight="bold" />}>
-                Export PDF
-              </Button>
-            </>
-          }
+          description="Track discovery volume, application outcomes, response quality, and source health."
           meta={
             <>
               <Badge variant="info" size="sm">
@@ -179,6 +173,9 @@ export default function Analytics() {
               </Badge>
               <Badge variant="success" size="sm">
                 Source feed
+              </Badge>
+              <Badge variant="secondary" size="sm">
+                30 day window
               </Badge>
             </>
           }
@@ -192,8 +189,8 @@ export default function Analytics() {
           <div className="space-y-4">
             <Surface tone="default" padding="lg" radius="xl">
               <SectionHeader
-                title="Trend slab"
-                description="History, response rate, and source mix share one surface so the signal stays easy to compare."
+                title="Trend"
+                description="History, response rate, and source mix stay on one surface for quick comparison."
                 action={<Badge variant="info">Lazy loaded</Badge>}
               />
               <div className="mt-5">
@@ -202,6 +199,8 @@ export default function Analytics() {
                 </Suspense>
               </div>
             </Surface>
+
+            <AnalyticsPatternsPanel patterns={patterns} loading={patternsLoading} />
 
             <Surface tone="subtle" padding="lg" radius="xl">
               <SectionHeader
@@ -244,7 +243,7 @@ export default function Analytics() {
                 label="Offers"
                 value={loadingOverview ? "..." : summary.total_offers.toLocaleString()}
                 hint="Late-stage outcomes currently on the board."
-                icon={<DownloadSimple size={18} weight="bold" className="text-accent-warning" />}
+                icon={<Clock size={18} weight="bold" className="text-accent-warning" />}
                 tone="warning"
               />
             </div>
@@ -289,7 +288,7 @@ export default function Analytics() {
                             </span>
                           </td>
                           <td className="border-b-2 border-border pl-3 py-4 text-right font-mono text-sm text-text-primary">
-                            {source.avg_match_score ? `${(source.avg_match_score * 100).toFixed(0)}%` : "—"}
+                            {source.avg_match_score ? `${(source.avg_match_score * 100).toFixed(0)}%` : "-"}
                           </td>
                         </tr>
                       ))}
@@ -306,13 +305,6 @@ export default function Analytics() {
                 </div>
               )}
             </Surface>
-
-            <StateBlock
-              tone="neutral"
-              icon={<TrendUp size={18} weight="bold" />}
-              title="Live feed"
-              description="This page stays coupled to the live analytics contract so charts and feed quality remain accurate."
-            />
           </div>
         }
       />

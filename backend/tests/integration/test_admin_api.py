@@ -12,6 +12,7 @@ from app.pipeline.models import Application
 
 
 async def _register_and_login(client: AsyncClient) -> tuple[str, str]:
+    client.cookies.clear()
     email = f"admin-api-{uuid.uuid4().hex[:8]}@test.com"
     await client.post(
         "/api/v1/auth/register",

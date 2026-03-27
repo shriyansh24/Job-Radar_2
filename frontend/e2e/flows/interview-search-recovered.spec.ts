@@ -1,18 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-import { buildTestUser, expectShellChrome, registerTestUser } from "../support/auth";
-
-async function loginWithStableSubmit(
-  page: import("@playwright/test").Page,
-  user: { email: string; password: string }
-) {
-  await page.goto("/login");
-  await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible();
-  await page.getByLabel(/email address/i).fill(user.email);
-  await page.getByLabel(/password/i).fill(user.password);
-  await page.getByLabel(/password/i).press("Enter");
-  await expect(page).toHaveURL(/\/$/);
-}
+import {
+  buildTestUser,
+  expectShellChrome,
+  loginThroughUi,
+  registerTestUser,
+} from "../support/auth";
 
 test.describe("flows/interview-search-recovered", () => {
   test("keeps recovered interview prep and semantic search handoff usable", async ({
@@ -24,7 +17,7 @@ test.describe("flows/interview-search-recovered", () => {
     const user = buildTestUser("interview-search-recovered");
 
     await registerTestUser(request, user);
-    await loginWithStableSubmit(page, user);
+    await loginThroughUi(page, user);
     await expectShellChrome(page);
 
     await page.goto("/interview");

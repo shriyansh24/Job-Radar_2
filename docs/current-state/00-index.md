@@ -17,7 +17,7 @@
 - Active branch in this workspace: `codex/ui-changes`.
 - Backend targeted auth/settings/admin/vault integration tests pass locally.
 - Frontend lint, test, and build pass locally after the latest frontend decomposition and copy cleanup pass.
-- Committed browser coverage now includes auth/shell smoke, responsive shell behavior, route-family outcomes, prepare/intelligence flows, operations/admin/data flows, profile/settings/auth roundtrips, and representative 8-mode route-theme assertions under `frontend/e2e/`.
+- Committed browser coverage now includes auth/shell smoke, shell navigation, responsive shell behavior, route-family outcomes, communications/setup flows, prepare/intelligence/outcomes flows, operations/admin/data flows, profile/settings/auth roundtrips, resume preview/export, and route-family 8-mode theme assertions under `frontend/e2e/`.
 - The current authenticated browser sweep is up to date, and representative screenshots now live in `.claude/ui-captures/`.
 - Local Postgres schema was upgraded from Alembic revision `005` to `head` during QA so the settings/integration surfaces match the current schema.
 - The audit ledger remains `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
@@ -42,7 +42,7 @@
 - Authenticate through `/login`.
 - Sweep every authenticated route on desktop, tablet, and phone.
 - Capture representative screenshots into `.claude/ui-captures/`.
-- Committed browser/e2e coverage now lives under `frontend/e2e/` and covers auth/shell smoke, responsive shell behavior, route-family outcomes, prepare/intelligence flows, operations/admin/data flows, profile/settings/auth roundtrips, and representative 8-mode route-theme assertions; the screenshot sweep is still useful as a broader operator QA lane, not the only browser signal.
+- Committed browser/e2e coverage now lives under `frontend/e2e/` and covers auth/shell smoke, shell navigation, responsive shell behavior, route-family outcomes, communications/setup flows, prepare/intelligence/outcomes flows, operations/admin/data flows, profile/settings/auth roundtrips, resume preview/export, and route-family 8-mode theme assertions; the screenshot sweep is still useful as a broader operator QA lane, not the only browser signal.
 
 ## Documentation Map
 
@@ -64,3 +64,4 @@
 - Use `CLAUDE.md` and `AGENTS.md` for working conventions, not product-state discovery.
 - Treat `05-ops-and-ci.md` as the canonical runtime-status page for the live ARQ queue topology, worker services, and remaining queue-validation gaps.
 - The current workspace includes the reference-first frontend migration: shared shell, responsive navigation, light/dark parity, backend-aligned settings/admin/resume/salary/search-expansion surfaces, decomposed page families, and a completed browser-verified cleanup pass over the main routed surfaces.
+- The current routed app now includes live analytics pattern panels plus backend-backed resume template preview and PDF export flows on the main branch, not just branch-only recovery code.

@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid as uuid_mod
 from collections.abc import AsyncGenerator
 from functools import lru_cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -43,7 +43,7 @@ async def get_current_user(
         raise AuthError("Authentication required")
 
     payload = decode_token_payload(access_token, expected_type="access")
-    user_id: str | None = payload.get("sub")
+    user_id = cast(str | None, payload.get("sub"))
     if user_id is None:
         raise AuthError("Invalid token")
 
@@ -53,6 +53,7 @@ async def get_current_user(
         raise AuthError("User not found")
     if not user.is_active:
         raise AuthError("User is inactive")
-    if int(payload.get("ver", 0)) != get_token_version(user):
+    if int(cast(int | str, payload.get("ver", 0))) != get_token_version(user):
         raise AuthError("Token revoked")
+    request.state.auth_user_id = str(user.id)
     return user

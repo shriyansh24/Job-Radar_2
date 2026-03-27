@@ -6,6 +6,7 @@ import pytest
 from httpx import AsyncClient
 
 import app.auth.service as auth_service
+import app.shared.middleware as shared_middleware
 from app.shared.middleware import api_rate_limiter
 
 
@@ -31,6 +32,51 @@ async def test_register(client: AsyncClient):
     assert data["email"] == "test@example.com"
     assert data["display_name"] == "Test User"
     assert "id" in data
+
+
+@pytest.mark.asyncio
+async def test_register_logging_and_request_log_include_user_context(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    auth_logger = Mock()
+    request_logger = Mock()
+    monkeypatch.setattr(auth_service, "logger", auth_logger)
+    monkeypatch.setattr(shared_middleware, "logger", request_logger)
+
+    registered = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "logging-register@example.com",
+            "password": "securepassword123",
+            "display_name": "Register Logger",
+        },
+    )
+
+    logged_in = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "logging-register@example.com", "password": "securepassword123"},
+    )
+    me = await client.get("/api/v1/auth/me")
+
+    assert registered.status_code == 201
+    assert logged_in.status_code == 200
+    assert me.status_code == 200
+
+    info_events = {call.args[0]: call.kwargs for call in auth_logger.info.call_args_list}
+    assert "auth_register_succeeded" in info_events
+    assert info_events["auth_register_succeeded"]["auth_source"] == "registration"
+    _assert_no_sensitive_fields(info_events["auth_register_succeeded"])
+
+    request_events = [
+        call.kwargs
+        for call in request_logger.info.call_args_list
+        if call.args[0] == "request_completed"
+    ]
+    me_event = next(event for event in request_events if event["path"] == "/api/v1/auth/me")
+    assert me_event["auth_user_id"] == me.json()["id"]
+    assert me_event["route_name"] == "me"
+    assert me_event["route_path"] == "/api/v1/auth/me"
 
 
 @pytest.mark.asyncio

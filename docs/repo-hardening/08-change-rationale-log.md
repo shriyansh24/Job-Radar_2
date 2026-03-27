@@ -111,7 +111,7 @@ Record why major repo-hardening decisions were made, what alternatives were reje
   - replay still needs broader rollback/backfill documentation beyond the basic upgrade check
 
 ### Purpose-driven test taxonomy
-- Status: `PARTIALLY_IMPLEMENTED`
+- Status: `IMPLEMENTED`
 - Changed because:
   - frontend tests were split across `__tests__` pockets with little ownership signal
   - backend migration, infra, security, and worker suites were still living under generic `unit/` buckets
@@ -121,11 +121,11 @@ Record why major repo-hardening decisions were made, what alternatives were reje
   - the repo already had enough historical sprawl that a doc-only taxonomy would immediately drift from the filesystem
 - Files touched:
   - `frontend/src/tests/**`
-  - `backend/tests/{contracts,infra,migrations,security,workers}/**`
+  - `backend/tests/{contracts,infra,integration,migrations,security,unit,workers}/**`
   - `frontend/vitest.config.ts`
   - `.github/workflows/migration-safety.yml`
   - `frontend/src/tests/README.md`
   - `backend/tests/README.md`
   - `docs/repo-hardening/06-test-taxonomy.md`
 - Remaining risk:
-  - several backend `unit/` and frontend page/component suites still need a second-pass split by behavior rather than route or historical grouping
+  - the taxonomy is now stable, but some broad lanes such as `backend/tests/unit/scraping/` and a few route-owned frontend suites are still intentionally coarse and should only be split further when a concrete ownership gain exists

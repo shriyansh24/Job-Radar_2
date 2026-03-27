@@ -49,7 +49,7 @@
 - Sweep the routed app on desktop, tablet, and phone.
 - Write screenshots to `.claude/ui-captures/`.
 - The latest authenticated sweep is current for the integrated frontend cleanup pass; treat further runs as incremental regression checks.
-- The committed browser lane now covers shell/auth smoke, shell navigation, responsive shell behavior, a combined route-family outcomes flow for dashboard/jobs/pipeline/settings/targets, prepare/intelligence/outcomes flows, operations/admin/data flows, profile/settings/auth roundtrips, the recovered interview/search flow, and representative theme persistence/route-matrix assertions across all 8 theme combinations.
+- The committed browser lane now covers shell/auth smoke, shell navigation, responsive shell behavior, a combined route-family outcomes flow for dashboard/jobs/pipeline/settings/targets, communications/setup flows, prepare/intelligence/outcomes flows, operations/admin/data flows, profile/settings/auth roundtrips, the recovered interview/search flow, the live analytics patterns surface, resume template preview/export, and route-family theme persistence/route-matrix assertions across all 8 theme combinations.
 
 ## GitHub Actions
 - `ci.yml` uses:
@@ -62,7 +62,8 @@
   - `uv sync --frozen`
   - `uv run python -m pip check`
   - `uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
-  - `uv tool run pip-audit -r .ci-requirements.txt`
+  - `uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
+  - `python ../scripts/run_backend_dependency_audit.py --requirements .ci-requirements.txt`
   - `uv tool run bandit -r app/ -c pyproject.toml --severity-level medium`
   - `uv run ruff check .`
   - targeted `mypy`
@@ -76,18 +77,19 @@
   - `npm run test -- --run --coverage --coverage.thresholds.statements=40`
   - `npm run build`
 - Browser/e2e coverage now has a committed Playwright tree under `frontend/e2e/`; CI wiring for that lane should be kept separate from the fast PR lint/unit/build gates.
-- Route-family browser coverage now includes `frontend/e2e/smoke/auth-shell.spec.ts`, `frontend/e2e/flows/route-shell-navigation.spec.ts`, `frontend/e2e/flows/route-family-outcomes.spec.ts`, `frontend/e2e/flows/prepare-intelligence-outcomes.spec.ts`, `frontend/e2e/flows/operations-admin-data.spec.ts`, `frontend/e2e/flows/profile-settings-auth.spec.ts`, `frontend/e2e/flows/interview-search-recovered.spec.ts`, `frontend/e2e/flows/shell-responsive.spec.ts`, `frontend/e2e/theme-matrix/theme-persistence.spec.ts`, and `frontend/e2e/theme-matrix/route-theme-matrix.spec.ts`.
+- Route-family browser coverage now includes `frontend/e2e/smoke/auth-shell.spec.ts`, `frontend/e2e/flows/route-shell-navigation.spec.ts`, `frontend/e2e/flows/route-family-outcomes.spec.ts`, `frontend/e2e/flows/communications-setup.spec.ts`, `frontend/e2e/flows/prepare-intelligence-outcomes.spec.ts`, `frontend/e2e/flows/operations-admin-data.spec.ts`, `frontend/e2e/flows/profile-settings-auth.spec.ts`, `frontend/e2e/flows/interview-search-recovered.spec.ts`, `frontend/e2e/flows/resume-template-preview.spec.ts`, `frontend/e2e/flows/shell-responsive.spec.ts`, `frontend/e2e/theme-matrix/theme-persistence.spec.ts`, and `frontend/e2e/theme-matrix/route-theme-matrix.spec.ts`.
 - `frontend-e2e.yml` emits one required check:
   - `Frontend E2E Smoke / frontend-e2e-smoke`
 - `frontend-e2e.yml` also runs weekly as a drift-detection lane in addition to PR, `main` push, and manual runs.
 - `docs-validation.yml` runs repo-local path/reference validation for live docs and workflow-linked files.
-- `migration-safety.yml` replays Alembic on clean Postgres and runs `backend/tests/migrations/test_alembic_revisions.py`.
+- `migration-safety.yml` replays Alembic on clean Postgres and runs the full `backend/tests/migrations/` lane.
 - `migration-safety.yml` now runs the full `backend/tests/migrations/` lane and uploads `alembic history --verbose` output on failure for replay debugging.
 - `codeql.yml` and `dependency-review.yml` remain enabled.
 
 ## Branch Protection Assumptions
 - Treat `main` as PR-only.
-- Require repository validation, docs validation, migration safety, dependency review, CodeQL, and `Frontend E2E Smoke / frontend-e2e-smoke` before merge.
+- Require repository validation, dependency review, CodeQL, and `Frontend E2E Smoke / frontend-e2e-smoke` before merge.
+- Treat `Docs Validation` and `Migration Safety` as required path-scoped checks for doc/workflow/runtime and backend/migration changes respectively; if they must become unconditional required checks, convert them to always-run wrappers before tightening branch protection.
 - Keep docs, tests, and runtime-truth updates in the same batch as behavior changes.
 - Do not make the required browser workflow path-filtered or matrix-shaped while branch protection depends on that exact emitted check name.
 
@@ -98,4 +100,5 @@
 - Compose-first local runtime is the repo default; older manual `jobradar-postgres` flows are now treated as legacy local overrides.
 - Scheduler and worker readiness now come from runtime healthcheck probes against the live queue surfaces rather than ready-marker files; the scheduler heartbeat also lives in Redis so compose and CI can probe the real runtime state.
 - Queue enqueue/dequeue logs now emit queue depth and retry metadata, retryable jobs raise real ARQ `Retry` with scheduled backoff, and non-retryable or final failures log `retry_exhausted` truthfully.
-- Worker isolation is queue-backed and compose-visible; the remaining runtime work is now narrower: queue depth / alerting, request-to-job correlation, and richer lane validation beyond the current queue ownership and retry signal.
+- Worker isolation is queue-backed and compose-visible; queue telemetry now includes depth, oldest-job age, pressure, alert state, truthful retry exhaustion, worker-lane counters, and request/job correlation on queue-triggered operator paths. Request lifecycle logs also now carry route identity and authenticated user context when available. The remaining follow-through is mostly deployment-level alert routing and dashboards rather than missing repo-local runtime ownership.
+- Backend dependency auditing now runs through `scripts/run_backend_dependency_audit.py`, which applies the checked-in reviewed exception policy from `backend/pip-audit-policy.json` instead of burying CVE ignores inline in workflow YAML.

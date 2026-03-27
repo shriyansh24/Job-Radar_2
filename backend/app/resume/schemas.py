@@ -13,9 +13,20 @@ class ResumeVersionResponse(BaseModel):
     label: str | None = None
     filename: str | None = None
     parsed_text: str | None = None
-    parsed_structured: dict | None = None
+    parsed_structured: dict[str, object] | None = None
     is_default: bool
     created_at: datetime
+
+
+class ResumeTemplateResponse(BaseModel):
+    id: str
+    name: str
+    description: str
+
+
+class ResumePreviewResponse(BaseModel):
+    template_id: str
+    html: str
 
 
 # ---------------------------------------------------------------------------
@@ -174,7 +185,7 @@ class ATSCheckResult(BaseModel):
     field: str
     passed: bool
     message: str
-    details: dict | None = None
+    details: dict[str, object] | None = None
 
 
 class ATSValidationResult(BaseModel):

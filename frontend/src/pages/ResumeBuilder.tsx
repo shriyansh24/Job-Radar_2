@@ -7,10 +7,11 @@ import {
   Eye,
 } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { jobsApi, type Job } from "../api/jobs";
 import { resumeApi, type ResumeVersion } from "../api/resume";
+import { ResumeTemplatePreviewPanel } from "../components/resume/ResumeTemplatePreviewPanel";
 import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader } from "../components/system/PageHeader";
 import { SectionHeader } from "../components/system/SectionHeader";
@@ -44,10 +45,23 @@ export default function ResumeBuilder() {
   const [selectedResume, setSelectedResume] = useState("");
   const [selectedJob, setSelectedJob] = useState("");
   const [showPreview, setShowPreview] = useState<ResumeVersion | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
   const { data: versions, isLoading } = useQuery({
     queryKey: ["resume-versions"],
     queryFn: () => resumeApi.listVersions().then((response) => response.data),
+  });
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ["resume-templates"],
+    queryFn: () => resumeApi.listTemplates().then((response) => response.data),
+  });
+
+  const { data: previewData, isLoading: previewLoading } = useQuery({
+    queryKey: ["resume-preview", showPreview?.id, selectedTemplateId],
+    queryFn: () =>
+      resumeApi.preview(showPreview!.id, selectedTemplateId).then((response) => response.data),
+    enabled: !!showPreview && !!selectedTemplateId,
   });
 
   const { data: jobs } = useQuery({
@@ -71,10 +85,42 @@ export default function ResumeBuilder() {
   });
 
   const councilMutation = useMutation({
-    mutationFn: () => resumeApi.council(selectedResume),
+    mutationFn: () => resumeApi.council(selectedResume, selectedJob || undefined),
     onSuccess: () => toast("success", "Council review complete"),
     onError: () => toast("error", "Evaluation failed"),
   });
+
+  const exportMutation = useMutation({
+    mutationFn: () => {
+      if (!showPreview || !selectedTemplateId) {
+        throw new Error("Preview selection missing");
+      }
+      return resumeApi.exportVersion(showPreview.id, selectedTemplateId);
+    },
+    onSuccess: (response) => {
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      const contentDisposition = response.headers["content-disposition"] ?? "";
+      const filenameMatch = /filename="([^"]+)"/.exec(contentDisposition);
+      link.href = blobUrl;
+      link.download = filenameMatch?.[1] ?? `${showPreview?.filename ?? "resume"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+      toast("success", "Resume export ready");
+    },
+    onError: () => toast("error", "PDF export unavailable"),
+  });
+
+  useEffect(() => {
+    if (!templates.length) {
+      return;
+    }
+    setSelectedTemplateId((current) =>
+      templates.some((template) => template.id === current) ? current : templates[0].id
+    );
+  }, [templates]);
 
   const onDrop = useCallback(
     (accepted: File[]) => {
@@ -210,7 +256,7 @@ export default function ResumeBuilder() {
                 tone="neutral"
                 icon={<Eye size={18} weight="bold" />}
                 title="Preview"
-                description="Open a version to inspect parsed text."
+                description="Open a version to inspect parsed text, rendered output, and export templates."
               />
             </div>
           }
@@ -289,7 +335,7 @@ export default function ResumeBuilder() {
         <SplitWorkspace
           primary={
             <Surface tone="default" padding="lg" radius="xl">
-              <SectionHeader title="Council" description="Run a multi-model review on the selected resume." />
+              <SectionHeader title="Council" description="Run a multi-model review on the selected resume, with optional job context." />
               <div className="mt-5 space-y-4">
                 <Select
                   label="Resume version"
@@ -297,6 +343,13 @@ export default function ResumeBuilder() {
                   value={selectedResume}
                   onChange={(event) => setSelectedResume(event.target.value)}
                   placeholder="Select a resume..."
+                />
+                <Select
+                  label="Target job"
+                  options={jobOptions}
+                  value={selectedJob}
+                  onChange={(event) => setSelectedJob(event.target.value)}
+                  placeholder="Optional job context"
                 />
                 <Button
                   variant="primary"
@@ -323,7 +376,11 @@ export default function ResumeBuilder() {
                 tone="neutral"
                 icon={<UsersThree size={18} weight="bold" />}
                 title="Review"
-                description="Use council feedback to compare models and tune the draft."
+                description={
+                  selectedJob
+                    ? "Council output will be scored against the selected target role."
+                    : "Use council feedback to compare models and tune the draft."
+                }
               />
             </div>
           }
@@ -334,16 +391,35 @@ export default function ResumeBuilder() {
         open={!!showPreview}
         onClose={() => setShowPreview(null)}
         title={showPreview?.filename ?? "Resume preview"}
-        size="lg"
+        size="xl"
       >
-        {showPreview?.parsed_text ? (
-          <pre className="whitespace-pre-wrap font-mono text-sm text-text-primary">{showPreview.parsed_text}</pre>
-        ) : (
-          <div className="flex items-center justify-center gap-3 py-8 text-text-muted">
-            <FileText size={20} weight="bold" />
-            <span className="text-sm">No parsed text available yet.</span>
-          </div>
-        )}
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <Surface tone="default" padding="md" radius="xl">
+            <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+              Parsed text
+            </div>
+            {showPreview?.parsed_text ? (
+              <pre className="mt-4 whitespace-pre-wrap font-mono text-sm text-text-primary">
+                {showPreview.parsed_text}
+              </pre>
+            ) : (
+              <div className="flex items-center justify-center gap-3 py-8 text-text-muted">
+                <FileText size={20} weight="bold" />
+                <span className="text-sm">No parsed text available yet.</span>
+              </div>
+            )}
+          </Surface>
+
+          <ResumeTemplatePreviewPanel
+            templates={templates}
+            selectedTemplateId={selectedTemplateId}
+            onTemplateChange={setSelectedTemplateId}
+            previewHtml={previewData?.html ?? null}
+            previewLoading={previewLoading}
+            exportLoading={exportMutation.isPending}
+            onExport={() => exportMutation.mutate()}
+          />
+        </div>
       </Modal>
     </div>
   );

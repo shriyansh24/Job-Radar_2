@@ -191,7 +191,7 @@ class ATSValidator:
         quant_ratio = quant_count / total
         good_quality = action_ratio >= 0.5 and quant_ratio >= 0.2
 
-        details = {
+        details: dict[str, object] = {
             "total_bullets": total,
             "action_verb_ratio": round(action_ratio, 2),
             "quantified_ratio": round(quant_ratio, 2),

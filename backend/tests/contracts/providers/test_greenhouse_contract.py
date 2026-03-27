@@ -16,7 +16,7 @@ import pytest
 from app.scraping.port import ScrapedJob
 from app.scraping.scrapers.greenhouse import GreenhouseScraper
 
-FIXTURES = Path(__file__).parent.parent / "fixtures" / "greenhouse"
+FIXTURES = Path(__file__).resolve().parents[2] / "fixtures" / "greenhouse"
 
 # Valid enum values for ScrapedJob fields
 VALID_REMOTE_TYPES = {None, "remote", "hybrid", "onsite"}

@@ -12,6 +12,7 @@ export default function Admin() {
   const queryClient = useQueryClient();
   const [sortKey, setSortKey] = useState<string | undefined>();
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [clearDataOpen, setClearDataOpen] = useState(false);
 
   const { data: health, isLoading: loadingHealth } = useQuery({
     queryKey: ["admin", "health"],
@@ -61,6 +62,20 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["admin"] });
     },
     onError: () => toast("error", "Failed to import data"),
+  });
+
+  const clearDataMutation = useMutation({
+    mutationFn: () => adminApi.clearData(),
+    onSuccess: async (response) => {
+      setClearDataOpen(false);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin"] }),
+        queryClient.invalidateQueries({ queryKey: ["jobs"] }),
+        queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
+      ]);
+      toast("success", `Cleared ${response.data.rows_deleted} rows`);
+    },
+    onError: () => toast("error", "Failed to clear data"),
   });
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -164,6 +179,11 @@ export default function Admin() {
         exportPending={exportMutation.isPending}
         onImportFile={handleFileChange}
         importPending={importMutation.isPending}
+        clearDataOpen={clearDataOpen}
+        onRequestClearData={() => setClearDataOpen(true)}
+        onCancelClearData={() => setClearDataOpen(false)}
+        onConfirmClearData={() => clearDataMutation.mutate()}
+        clearDataPending={clearDataMutation.isPending}
       />
     </div>
   );

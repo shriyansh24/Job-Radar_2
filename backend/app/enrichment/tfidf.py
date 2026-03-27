@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
@@ -20,7 +20,7 @@ class TFIDFScorer:
         self._vectorizer = None
 
     @property
-    def vectorizer(self):
+    def vectorizer(self) -> Any | None:
         if self._vectorizer is None:
             try:
                 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -34,7 +34,7 @@ class TFIDFScorer:
                 return None
         return self._vectorizer
 
-    def score_jobs(self, resume_text: str, jobs: list) -> list[tuple[str, float]]:
+    def score_jobs(self, resume_text: str, jobs: list[object]) -> list[tuple[str, float]]:
         """Score jobs against resume text. Returns list of (job_id, score).
 
         Jobs should have .id, .title, .company_name, .description_clean,
@@ -57,7 +57,7 @@ class TFIDFScorer:
             sim = cosine_similarity(resume_vec, tfidf_matrix[i + 1])[0][0]
             score = round(sim * 100, 1)
             score = max(10.0, min(99.0, score))
-            scores.append((job.id, score))
+            scores.append((str(getattr(job, "id", "")), score))
 
         return sorted(scores, key=lambda x: x[1], reverse=True)
 

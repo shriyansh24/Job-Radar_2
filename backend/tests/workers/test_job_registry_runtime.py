@@ -22,6 +22,16 @@ class _FakeLogger:
 async def test_run_with_lifecycle_logs_retryable_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     fake_logger = _FakeLogger()
     monkeypatch.setattr(job_registry, "logger", fake_logger)
+    counter_calls: list[str] = []
+
+    async def _fake_increment(*args: object, counter_name: str, **kwargs: object) -> None:
+        counter_calls.append(counter_name)
+
+    monkeypatch.setattr(
+        job_registry,
+        "increment_worker_counter",
+        _fake_increment,
+    )
 
     async def _failing_callback() -> None:
         raise RuntimeError("boom")
@@ -40,6 +50,8 @@ async def test_run_with_lifecycle_logs_retryable_failure(monkeypatch: pytest.Mon
             {
                 "job_name": "scheduled_scrape",
                 "job_id": "job-1",
+                "queue_job_id": "job-1",
+                "queue_correlation_id": "job-1",
                 "job_try": 1,
                 "queue_name": SCRAPING_QUEUE,
                 "job_max_tries": 2,
@@ -55,6 +67,8 @@ async def test_run_with_lifecycle_logs_retryable_failure(monkeypatch: pytest.Mon
                 "job_name": "scheduled_scrape",
                 "retry_in_seconds": 30,
                 "job_id": "job-1",
+                "queue_job_id": "job-1",
+                "queue_correlation_id": "job-1",
                 "job_try": 1,
                 "queue_name": SCRAPING_QUEUE,
                 "job_max_tries": 2,
@@ -63,6 +77,7 @@ async def test_run_with_lifecycle_logs_retryable_failure(monkeypatch: pytest.Mon
             },
         )
     ]
+    assert counter_calls == ["retry_scheduled_total"]
 
 
 @pytest.mark.asyncio
@@ -71,6 +86,16 @@ async def test_run_with_lifecycle_logs_non_retryable_failure(
 ) -> None:
     fake_logger = _FakeLogger()
     monkeypatch.setattr(job_registry, "logger", fake_logger)
+    counter_calls: list[str] = []
+
+    async def _fake_increment(*args: object, counter_name: str, **kwargs: object) -> None:
+        counter_calls.append(counter_name)
+
+    monkeypatch.setattr(
+        job_registry,
+        "increment_worker_counter",
+        _fake_increment,
+    )
 
     async def _failing_callback() -> None:
         raise RuntimeError("boom")
@@ -91,6 +116,8 @@ async def test_run_with_lifecycle_logs_non_retryable_failure(
                 "will_retry": False,
                 "retry_exhausted": False,
                 "job_id": "job-2",
+                "queue_job_id": "job-2",
+                "queue_correlation_id": "job-2",
                 "job_try": 1,
                 "queue_name": OPS_QUEUE,
                 "job_max_tries": 1,
@@ -99,6 +126,7 @@ async def test_run_with_lifecycle_logs_non_retryable_failure(
             },
         )
     ]
+    assert counter_calls == ["queue_job_failed_total"]
 
 
 @pytest.mark.asyncio
@@ -107,6 +135,16 @@ async def test_run_with_lifecycle_logs_final_attempt_without_retry(
 ) -> None:
     fake_logger = _FakeLogger()
     monkeypatch.setattr(job_registry, "logger", fake_logger)
+    counter_calls: list[str] = []
+
+    async def _fake_increment(*args: object, counter_name: str, **kwargs: object) -> None:
+        counter_calls.append(counter_name)
+
+    monkeypatch.setattr(
+        job_registry,
+        "increment_worker_counter",
+        _fake_increment,
+    )
 
     async def _failing_callback() -> None:
         raise RuntimeError("boom")
@@ -127,6 +165,8 @@ async def test_run_with_lifecycle_logs_final_attempt_without_retry(
                 "will_retry": False,
                 "retry_exhausted": True,
                 "job_id": "job-3",
+                "queue_job_id": "job-3",
+                "queue_correlation_id": "job-3",
                 "job_try": 2,
                 "queue_name": SCRAPING_QUEUE,
                 "job_max_tries": 2,
@@ -135,6 +175,7 @@ async def test_run_with_lifecycle_logs_final_attempt_without_retry(
             },
         )
     ]
+    assert counter_calls == ["queue_job_failed_total", "retry_exhausted_total"]
 
 
 @pytest.mark.asyncio
@@ -143,6 +184,16 @@ async def test_run_with_lifecycle_logs_completion_fields_for_success(
 ) -> None:
     fake_logger = _FakeLogger()
     monkeypatch.setattr(job_registry, "logger", fake_logger)
+    counter_calls: list[str] = []
+
+    async def _fake_increment(*args: object, counter_name: str, **kwargs: object) -> None:
+        counter_calls.append(counter_name)
+
+    monkeypatch.setattr(
+        job_registry,
+        "increment_worker_counter",
+        _fake_increment,
+    )
 
     async def _successful_callback() -> None:
         return None
@@ -160,6 +211,8 @@ async def test_run_with_lifecycle_logs_completion_fields_for_success(
             {
                 "job_name": "embedding_batch",
                 "job_id": "job-4",
+                "queue_job_id": "job-4",
+                "queue_correlation_id": "job-4",
                 "job_try": 1,
                 "queue_name": job_registry.ANALYSIS_QUEUE,
                 "job_max_tries": 3,
@@ -172,6 +225,8 @@ async def test_run_with_lifecycle_logs_completion_fields_for_success(
             {
                 "job_name": "embedding_batch",
                 "job_id": "job-4",
+                "queue_job_id": "job-4",
+                "queue_correlation_id": "job-4",
                 "job_try": 1,
                 "queue_name": job_registry.ANALYSIS_QUEUE,
                 "job_max_tries": 3,
@@ -180,3 +235,4 @@ async def test_run_with_lifecycle_logs_completion_fields_for_success(
             },
         ),
     ]
+    assert counter_calls == ["queue_job_completed_total"]

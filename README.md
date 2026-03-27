@@ -21,7 +21,7 @@ JobRadar V2 is a full-stack job-search and career-operations workspace. It combi
 - Backend: FastAPI, SQLAlchemy async, PostgreSQL, Alembic, `uv`
 - Runtime: compose-first local stack with Postgres, Redis, one-shot migrations, API, dedicated scheduler, queue-specific ARQ workers (`scraping`, `analysis`, `ops`), and frontend
 - Browser validation: committed Playwright coverage under `frontend/e2e/` plus broader screenshot sweeps under `.claude/ui-captures/`
-- Selective P1 recovery already live on this branch: queue-backed worker runtime, ATS identity persistence on scraped jobs, recovered auto-apply execution and operator controls, richer interview prep bundles, bounded hybrid semantic search, and the digest-worker follow-through on the ops lane
+- Selective P1 recovery already live on this branch: queue-backed worker runtime, ATS identity persistence on scraped jobs, recovered auto-apply execution and operator controls, richer interview prep bundles, bounded hybrid semantic search, live analytics pattern surfaces, resume preview/export flows, and the digest-worker follow-through on the ops lane
 
 ## Current Branch Strategy
 - `main` is the baseline/default branch.
@@ -74,7 +74,7 @@ uv run python -m app.runtime.arq_worker analysis
 uv run python -m app.runtime.arq_worker ops
 ```
 
-The scheduler now enqueues named jobs onto ARQ queues `scraping`, `analysis`, and `ops`. Queue-specific worker services consume those queues directly instead of the scheduler spawning one-shot worker subprocesses. Treat [05-ops-and-ci.md](D:/jobradar-v2/docs/current-state/05-ops-and-ci.md) as the authoritative runtime-status page for current worker ownership, health markers, and validation commands.
+The scheduler now enqueues named jobs onto ARQ queues `scraping`, `analysis`, and `ops`. Queue-specific worker services consume those queues directly instead of the scheduler spawning one-shot worker subprocesses. Treat [05-ops-and-ci.md](D:/jobradar-v2/docs/current-state/05-ops-and-ci.md) as the authoritative runtime-status page for current worker ownership, runtime health probes, and validation commands.
 Migration replay, rollback stance, and backfill guidance for the current tree are documented in [10-migration-ops.md](D:/jobradar-v2/docs/repo-hardening/10-migration-ops.md).
 
 ### Host-Local Frontend
@@ -109,7 +109,7 @@ npm run build
 ### Browser QA
 - Keep broader screenshot captures in `.claude/ui-captures/`
 - Keep committed browser coverage in `frontend/e2e/`
-- The committed browser lane currently covers auth/shell smoke, responsive shell behavior, route-family outcomes for `dashboard/jobs/pipeline/settings/targets`, prepare/intelligence surfaces, operations/admin/data surfaces including the Auto Apply operator controls, the recovered interview/search flow, profile/settings/auth roundtrips, and representative 8-mode route-theme checks.
+- The committed browser lane currently covers auth/shell smoke, shell navigation, responsive shell behavior, route-family outcomes for `dashboard/jobs/pipeline/settings/targets`, communications/setup flows, prepare/intelligence/outcomes flows, operations/admin/data surfaces including the Auto Apply operator controls, the recovered interview/search flow, profile/settings/auth roundtrips, resume template preview/export, and route-family 8-mode theme checks across the routed families the app exposes. The live frontend also now exposes analytics pattern panels and backend-backed resume preview/export flows on the main routed surfaces.
 - Treat `docs/current-state/05-ops-and-ci.md` as the authoritative validation and CI reference
 
 ## Test Taxonomy
@@ -141,7 +141,8 @@ jobradar-v2/
 ```
 
 ## GitHub And Safety
-- GitHub Actions currently cover repository validation, docs/path validation, migration replay safety, dependency review, CodeQL, and a dedicated frontend browser smoke lane.
+- GitHub Actions currently cover `Repository Validation`, `Docs Validation`, `Migration Safety`, `Dependency Review`, `CodeQL`, and the dedicated browser check `Frontend E2E Smoke / frontend-e2e-smoke`.
+- Backend dependency auditing runs through `scripts/run_backend_dependency_audit.py` and the reviewed exception policy in `backend/pip-audit-policy.json` so CVE exceptions are explicit, dated, and checked in instead of hidden inside workflow YAML.
 - Treat `main` as PR-only.
 - Keep docs, tests, and runtime-truth updates in the same batch as behavior changes.
 - Keep ARQ queue-topology claims, worker-service claims, and retry-policy changes in `docs/current-state/05-ops-and-ci.md`.

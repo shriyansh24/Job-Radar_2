@@ -6,6 +6,7 @@ Delegates to ``prompts``, ``gap_analyzer``, and ``council`` submodules.
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 from typing import Any
 
 import structlog
@@ -21,6 +22,7 @@ from app.resume.gap_analyzer import run_gap_analysis
 from app.resume.models import ResumeVersion
 from app.resume.parser import ResumeParser
 from app.resume.prompts import STAGE1_PROMPT, STAGE2_PROMPT, STAGE3_PROMPT
+from app.resume.renderer import ResumeRenderer
 from app.resume.schemas import (
     VALID_TONES,
     CouncilRequest,
@@ -28,7 +30,7 @@ from app.resume.schemas import (
     GapAnalysisRequest,
     ResumeTailorRequest,
 )
-from app.shared.errors import NotFoundError
+from app.shared.errors import AppError, NotFoundError, ValidationError
 
 logger = structlog.get_logger()
 
@@ -43,6 +45,7 @@ class ResumeService:
             model=settings.default_llm_model,
         )
         self._router = ModelRouter(self._llm)
+        self._renderer = ResumeRenderer()
 
     # -- DB helpers --------------------------------------------------------
 
@@ -90,6 +93,12 @@ class ResumeService:
             "tech_stack": job.tech_stack or [],
         }
 
+    def _render_source(self, version: ResumeVersion) -> dict[str, Any]:
+        structured = version.parsed_structured or {}
+        if not structured:
+            raise ValidationError("Resume does not have structured data available for rendering")
+        return structured
+
     # -- CRUD --------------------------------------------------------------
 
     async def list_versions(self, user_id: uuid.UUID) -> list[ResumeVersion]:
@@ -104,6 +113,43 @@ class ResumeService:
     async def get_version(self, resume_id: uuid.UUID, user_id: uuid.UUID) -> ResumeVersion:
         logger.info("resume.get_version", resume_id=str(resume_id), user_id=str(user_id))
         return await self._get_resume(resume_id, user_id)
+
+    async def update_version(
+        self,
+        resume_id: uuid.UUID,
+        user_id: uuid.UUID,
+        *,
+        label: str | None,
+        is_default: bool | None,
+    ) -> ResumeVersion:
+        logger.info(
+            "resume.update_version",
+            resume_id=str(resume_id),
+            user_id=str(user_id),
+            set_default=is_default,
+        )
+        version = await self._get_resume(resume_id, user_id)
+
+        if label is not None:
+            version.label = label.strip() or None
+
+        if is_default is not None:
+            if is_default:
+                current_versions = await self.list_versions(user_id)
+                for item in current_versions:
+                    item.is_default = item.id == resume_id
+            else:
+                version.is_default = False
+
+        await self.db.commit()
+        await self.db.refresh(version)
+        return version
+
+    async def delete_version(self, resume_id: uuid.UUID, user_id: uuid.UUID) -> None:
+        logger.info("resume.delete_version", resume_id=str(resume_id), user_id=str(user_id))
+        version = await self._get_resume(resume_id, user_id)
+        await self.db.delete(version)
+        await self.db.commit()
 
     async def upload_resume(
         self, filename: str, content: bytes, user_id: uuid.UUID
@@ -344,3 +390,46 @@ class ResumeService:
             "tone_used": tone,
             "company_context_used": company_context_used,
         }
+
+    # -- Rendering --------------------------------------------------------
+
+    async def list_templates(self) -> list[dict[str, str]]:
+        return self._renderer.get_templates()
+
+    async def render_preview(
+        self,
+        resume_id: uuid.UUID,
+        user_id: uuid.UUID,
+        template_id: str,
+    ) -> dict[str, str]:
+        version = await self._get_resume(resume_id, user_id)
+        try:
+            html = self._renderer.render_html(
+                self._render_source(version),
+                template_id=template_id,
+            )
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+        return {"template_id": template_id, "html": html}
+
+    async def export_pdf(
+        self,
+        resume_id: uuid.UUID,
+        user_id: uuid.UUID,
+        template_id: str,
+    ) -> tuple[bytes, str]:
+        version = await self._get_resume(resume_id, user_id)
+        try:
+            pdf_bytes = self._renderer.render_pdf(
+                self._render_source(version),
+                template_id=template_id,
+            )
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+        except RuntimeError as exc:
+            raise AppError(str(exc), status_code=503) from exc
+
+        stem = version.label or version.filename or f"resume-{resume_id.hex[:8]}"
+        safe_stem = Path(stem).stem.replace(" ", "-")
+        filename = f"{safe_stem}-{template_id}.pdf"
+        return pdf_bytes, filename

@@ -38,7 +38,7 @@ jobs:
 
       - name: Audit backend dependencies
         working-directory: backend
-        run: uv tool run pip-audit --ignore-vuln CVE-2026-4539 --ignore-vuln CVE-2026-25645 -r .ci-requirements.txt
+        run: python ../scripts/run_backend_dependency_audit.py --requirements .ci-requirements.txt
 
       - name: Run Bandit
         working-directory: backend

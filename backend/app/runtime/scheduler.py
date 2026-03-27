@@ -12,7 +12,13 @@ from sqlalchemy import text
 
 from app.config import settings, validate_runtime_settings
 from app.database import engine
-from app.runtime.queue import get_queue_depths, shutdown_queue_pool, startup_queue_pool
+from app.runtime.queue import (
+    derive_overall_alert,
+    derive_overall_pressure,
+    get_queue_snapshots,
+    shutdown_queue_pool,
+    startup_queue_pool,
+)
 from app.shared.logging import setup_logging
 from app.workers.scheduler import create_scheduler
 
@@ -54,12 +60,37 @@ def _clear_ready() -> None:
 
 async def _record_health() -> None:
     queue_pool = await startup_queue_pool()
-    queue_depths = await get_queue_depths(queue_pool)
+    queue_snapshots = await get_queue_snapshots(queue_pool)
+    queue_pressures = {
+        queue_name: snapshot.queue_pressure for queue_name, snapshot in queue_snapshots.items()
+    }
+    queue_alerts = {
+        queue_name: snapshot.queue_alert for queue_name, snapshot in queue_snapshots.items()
+    }
+    overall_pressure = derive_overall_pressure(queue_pressures)
+    overall_alert = derive_overall_alert(queue_alerts)
     payload = " ".join(
         [
             f"{datetime.now(UTC).isoformat()}",
             "scheduler_running=1",
-            *[f"{queue_name}={queue_depth}" for queue_name, queue_depth in queue_depths.items()],
+            f"overall_pressure={overall_pressure}",
+            f"overall_alert={overall_alert}",
+            *[
+                f"{queue_name}={snapshot.queue_depth}"
+                for queue_name, snapshot in queue_snapshots.items()
+            ],
+            *[
+                f"{queue_name}.pressure={queue_pressure}"
+                for queue_name, queue_pressure in queue_pressures.items()
+            ],
+            *[
+                f"{queue_name}.alert={queue_alert}"
+                for queue_name, queue_alert in queue_alerts.items()
+            ],
+            *[
+                f"{queue_name}.oldest_job_age_seconds={snapshot.oldest_job_age_seconds}"
+                for queue_name, snapshot in queue_snapshots.items()
+            ],
         ]
     )
     ttl_ms = (_scheduler_healthcheck_interval_seconds() + 5) * 1000

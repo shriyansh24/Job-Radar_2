@@ -10,6 +10,17 @@ export interface ResumeVersion {
   created_at: string;
 }
 
+export interface ResumeTemplate {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface ResumePreview {
+  template_id: string;
+  html: string;
+}
+
 export interface ResumeTailorStage1 {
   hard_requirements: string[];
   soft_requirements: string[];
@@ -65,8 +76,19 @@ export interface CouncilEvaluation {
 export const resumeApi = {
   listVersions: () =>
     apiClient.get<ResumeVersion[]>('/resume/versions'),
+  listTemplates: () =>
+    apiClient.get<ResumeTemplate[]>('/resume/templates'),
   getVersion: (id: string) =>
     apiClient.get<ResumeVersion>(`/resume/versions/${id}`),
+  preview: (resumeVersionId: string, templateId: string) =>
+    apiClient.get<ResumePreview>(`/resume/versions/${resumeVersionId}/preview`, {
+      params: { template_id: templateId },
+    }),
+  exportVersion: (resumeVersionId: string, templateId: string) =>
+    apiClient.get<Blob>(`/resume/versions/${resumeVersionId}/export`, {
+      params: { template_id: templateId },
+      responseType: 'blob',
+    }),
   upload: (file: File) => {
     const form = new FormData();
     form.append('file', file);

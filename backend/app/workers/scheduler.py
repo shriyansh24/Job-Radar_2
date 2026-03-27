@@ -11,7 +11,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.runtime.job_registry import get_registered_job_ids
-from app.runtime.queue import enqueue_registered_job
+from app.runtime.queue import QueueDispatchResult, enqueue_registered_job
 
 logger = structlog.get_logger()
 
@@ -43,6 +43,42 @@ def _log_job_event(event: JobExecutionEvent) -> None:
         job_id=event.job_id,
         scheduled_run_time=event.scheduled_run_time.isoformat()
         if event.scheduled_run_time
+        else None,
+        enqueued_job_id=event.retval.enqueued_job_id
+        if isinstance(event.retval, QueueDispatchResult)
+        else None,
+        queue_job_id=event.retval.queue_job_id
+        if isinstance(event.retval, QueueDispatchResult)
+        else None,
+        queue_correlation_id=event.retval.queue_correlation_id
+        if isinstance(event.retval, QueueDispatchResult)
+        else None,
+        queue_name=(
+            event.retval.queue_name if isinstance(event.retval, QueueDispatchResult) else None
+        ),
+        queue_depth_before=event.retval.queue_depth_before
+        if isinstance(event.retval, QueueDispatchResult)
+        else None,
+        queue_depth_after=event.retval.queue_depth_after
+        if isinstance(event.retval, QueueDispatchResult)
+        else None,
+        queue_pressure_before=event.retval.queue_pressure_before
+        if isinstance(event.retval, QueueDispatchResult)
+        else None,
+        queue_pressure_after=event.retval.queue_pressure_after
+        if isinstance(event.retval, QueueDispatchResult)
+        else None,
+        oldest_job_age_seconds_before=event.retval.oldest_job_age_seconds_before
+        if isinstance(event.retval, QueueDispatchResult)
+        else None,
+        oldest_job_age_seconds_after=event.retval.oldest_job_age_seconds_after
+        if isinstance(event.retval, QueueDispatchResult)
+        else None,
+        queue_alert_before=event.retval.queue_alert_before
+        if isinstance(event.retval, QueueDispatchResult)
+        else None,
+        queue_alert_after=event.retval.queue_alert_after
+        if isinstance(event.retval, QueueDispatchResult)
         else None,
     )
 

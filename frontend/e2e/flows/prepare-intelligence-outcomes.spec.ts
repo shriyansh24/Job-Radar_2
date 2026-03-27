@@ -77,8 +77,8 @@ test.describe("flows/prepare-intelligence-outcomes", () => {
     await expect(
       page.getByRole("main").getByRole("heading", { name: "Analytics", exact: true })
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: /last 30 days/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /export pdf/i })).toBeVisible();
+    await expect(page.getByText("30 day window", { exact: true })).toBeVisible();
+    await expect(page.getByText("Application patterns", { exact: true })).toBeVisible();
 
     await page.goto("/outcomes");
     await expect(

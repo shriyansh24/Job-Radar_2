@@ -15,7 +15,7 @@ import pytest
 from app.scraping.port import ScrapedJob
 from app.scraping.scrapers.workday import WorkdayScraper
 
-FIXTURES = Path(__file__).parent.parent / "fixtures" / "workday"
+FIXTURES = Path(__file__).resolve().parents[2] / "fixtures" / "workday"
 BASE_URL = "https://microsoft.wd5.myworkdayjobs.com"
 
 # Valid enum values for ScrapedJob fields

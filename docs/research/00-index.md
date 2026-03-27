@@ -2,13 +2,13 @@
 
 > **Date:** 2026-03-20 | **Agents:** 5 | **Coverage:** Dedup, Resume, Form Filling, Learning/KB, Local Stack
 >
-> Historical note on `2026-03-27`: parts of the dedup/search, resume, and form-filling roadmap are no longer purely exploratory. Company/title/location normalization, freshness scoring, the first hybrid-search slice, multi-format resume parsing plus ATS validation, and the recovered auto-apply extractor/adapter/safety path were selectively promoted into the live branch and are now tracked in `docs/current-state/02-backend.md` plus `docs/repo-hardening/05-implementation-traceability-matrix.md`. The remaining research items below stay exploratory unless and until they are promoted explicitly.
+> Historical note on `2026-03-27`: parts of the dedup/search, resume, and form-filling roadmap are no longer purely exploratory. Company/title/location normalization, freshness scoring, the first hybrid-search slice, multi-format resume parsing plus ATS validation, analytics patterns, resume preview/export, and the recovered auto-apply extractor/adapter/safety path were selectively promoted into the live branch and are now tracked in `docs/current-state/02-backend.md` plus `docs/repo-hardening/05-implementation-traceability-matrix.md`. The non-promoted branch-era variants below are historical/archive material unless explicitly reintroduced.
 
 ## How to Use This Index
 
 1. Read this file first to understand the landscape.
 2. Open only the segment file relevant to your current work.
-3. Treat these files as exploratory material unless a capability is explicitly promoted into `docs/current-state/`.
+3. Treat these files as exploratory or archived material unless a capability is explicitly promoted into `docs/current-state/`.
 
 ## Segment Files
 
@@ -25,11 +25,17 @@
 - `01-smart-dedup.md`: `PARTIALLY_ADOPTED`
   - normalization, freshness scoring, the first hybrid-search slice, and ATS identity persistence on `jobs` are now live on `codex/ui-changes`
 - `02-resume-pipeline.md`: `PARTIALLY_ADOPTED`
-  - multi-format parsing, structured IR persistence, and ATS validation are live; tailoring/rendering/preview depth is not
+  - multi-format parsing, structured IR persistence, ATS validation, template preview, and PDF export are live; the branch-era proposal/session model is archived
 - `03-form-filling.md`: `PARTIALLY_ADOPTED`
   - form extraction, field mapping, Workday plus Greenhouse/Lever adapter coverage, safety-layer wiring, and operator run/pause/list/stats coverage are live; broader operator UX and checkpointing are not
 - `04-learning-kb.md`: `EXPLORATORY`
-- `05-local-stack.md`: `EXPLORATORY`
+- `05-local-stack.md`: `ARCHIVED_RESEARCH`
+
+## Archived Branch-Era Variants
+
+- The branch-era `HybridLLMRouter` / local-first fallback stack remains historical research and is not part of the committed live runtime.
+- The branch-era 4-stage resume proposal/session approval flow is archived in favor of the current direct tailor + preview/export + council workflow.
+- The branch-era interview prep-package persistence model is archived in favor of the current interview prep/session flow.
 
 ## Unified Local Stack (Cross-Segment Winners)
 
@@ -86,9 +92,9 @@
 
 ### Phase 4 - Local LLM Integration (Week 7-8)
 - [ ] Ollama setup + Qwen3 model download
-- [ ] HybridLLMRouter (local-first, cloud fallback)
+- [ ] HybridLLMRouter (local-first, cloud fallback) [archived historical variant]
 - [ ] LLM-powered field classification for unknown forms
-- [ ] 4-stage resume tailoring with local LLM
+- [ ] 4-stage resume tailoring with local LLM [archived historical variant]
 - [ ] Cover letter generation
 
 ### Phase 5 - Learning Loop (Week 9-10)

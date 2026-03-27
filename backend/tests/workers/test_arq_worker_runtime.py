@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.runtime import arq_worker
+from app.runtime import queue as queue_runtime
 from app.runtime.job_registry import (
     ANALYSIS_QUEUE,
     OPS_QUEUE,
@@ -92,6 +93,8 @@ async def test_worker_startup_marks_ready_and_pings_dependencies(
     class _FakeRedis:
         def __init__(self) -> None:
             self.ping_called = False
+            self.metrics: dict[str, dict[str, str]] = {}
+            self.expirations: dict[str, int] = {}
 
         async def ping(self) -> None:
             self.ping_called = True
@@ -99,6 +102,28 @@ async def test_worker_startup_marks_ready_and_pings_dependencies(
         async def zcard(self, queue_name: str) -> int:
             assert queue_name == ANALYSIS_QUEUE
             return 6
+
+        async def zrange(
+            self,
+            queue_name: str,
+            _start: int,
+            _stop: int,
+            *,
+            withscores: bool = False,
+        ) -> list[tuple[str, int]]:
+            assert queue_name == ANALYSIS_QUEUE
+            assert withscores is True
+            return [("job-1", 1_000)]
+
+        async def hmget(self, key: str, *fields: str) -> list[str | None]:
+            return [self.metrics.get(key, {}).get(field) for field in fields]
+
+        async def hset(self, key: str, mapping: dict[str, object]) -> None:
+            bucket = self.metrics.setdefault(key, {})
+            bucket.update({field: str(value) for field, value in mapping.items()})
+
+        async def expire(self, key: str, ttl: int) -> None:
+            self.expirations[key] = ttl
 
     class _FakeLogger:
         def info(self, event: str, **fields: object) -> None:
@@ -110,6 +135,7 @@ async def test_worker_startup_marks_ready_and_pings_dependencies(
     monkeypatch.setattr(arq_worker, "validate_runtime_settings", lambda settings: None)
     monkeypatch.setattr(arq_worker, "engine", SimpleNamespace(connect=lambda: _FakeConnection()))
     monkeypatch.setattr(arq_worker, "logger", _FakeLogger())
+    monkeypatch.setattr(queue_runtime, "_current_unix_ms", lambda: 361_000)
 
     ctx: dict[str, object] = {
         "worker_role": "analysis",
@@ -127,6 +153,8 @@ async def test_worker_startup_marks_ready_and_pings_dependencies(
 
     assert fake_redis.ping_called is True
     assert Path(tmp_path / "worker.ready").exists() is True
+    assert fake_redis.metrics["jobradar:worker-metrics:analysis"]["queue_depth"] == "6"
+    assert fake_redis.metrics["jobradar:worker-metrics:analysis"]["queue_alert"] == "watch"
     assert seen == [
         (
             "arq_worker_started",
@@ -140,6 +168,9 @@ async def test_worker_startup_marks_ready_and_pings_dependencies(
                 "health_check_key": "jobradar:worker-health:analysis",
                 "health_check_interval_seconds": 15,
                 "queue_depth": 6,
+                "queue_pressure": "nominal",
+                "oldest_job_age_seconds": 360,
+                "queue_alert": "watch",
                 "ready_marker": str(tmp_path / "worker.ready"),
             },
         )
@@ -193,22 +224,51 @@ async def test_worker_job_hooks_report_queue_depth(monkeypatch: pytest.MonkeyPat
     seen: list[tuple[str, dict[str, object]]] = []
 
     class _FakeRedis:
+        def __init__(self) -> None:
+            self.metrics: dict[str, dict[str, str]] = {}
+
         async def zcard(self, queue_name: str) -> int:
             assert queue_name == SCRAPING_QUEUE
             return 5
+
+        async def zrange(
+            self,
+            queue_name: str,
+            _start: int,
+            _stop: int,
+            *,
+            withscores: bool = False,
+        ) -> list[tuple[str, int]]:
+            assert queue_name == SCRAPING_QUEUE
+            assert withscores is True
+            return [("job-1", 1_000)]
+
+        async def hmget(self, key: str, *fields: str) -> list[str | None]:
+            return [self.metrics.get(key, {}).get(field) for field in fields]
+
+        async def hset(self, key: str, mapping: dict[str, object]) -> None:
+            bucket = self.metrics.setdefault(key, {})
+            bucket.update({field: str(value) for field, value in mapping.items()})
+
+        async def expire(self, key: str, _ttl: int) -> None:
+            return None
 
     class _FakeLogger:
         def info(self, event: str, **fields: object) -> None:
             seen.append((event, fields))
 
     monkeypatch.setattr(arq_worker, "logger", _FakeLogger())
+    monkeypatch.setattr(queue_runtime, "_current_unix_ms", lambda: 6_000)
     ctx: dict[str, object] = {
         "worker_role": "scraping",
         "queue_name": SCRAPING_QUEUE,
         "job_id": "job-123",
         "job_try": 2,
-        "redis": _FakeRedis(),
+        "health_check_interval_seconds": 15,
     }
+
+    fake_redis = _FakeRedis()
+    ctx["redis"] = fake_redis
 
     await arq_worker._on_job_start(ctx)
     await arq_worker._on_job_end(ctx)
@@ -220,8 +280,13 @@ async def test_worker_job_hooks_report_queue_depth(monkeypatch: pytest.MonkeyPat
                 "worker_role": "scraping",
                 "queue_name": SCRAPING_QUEUE,
                 "job_id": "job-123",
+                "queue_job_id": "job-123",
+                "queue_correlation_id": "job-123",
                 "job_try": 2,
                 "queue_depth": 5,
+                "queue_pressure": "nominal",
+                "oldest_job_age_seconds": 5,
+                "queue_alert": "clear",
             },
         ),
         (
@@ -230,8 +295,15 @@ async def test_worker_job_hooks_report_queue_depth(monkeypatch: pytest.MonkeyPat
                 "worker_role": "scraping",
                 "queue_name": SCRAPING_QUEUE,
                 "job_id": "job-123",
+                "queue_job_id": "job-123",
+                "queue_correlation_id": "job-123",
                 "job_try": 2,
                 "queue_depth": 5,
+                "queue_pressure": "nominal",
+                "oldest_job_age_seconds": 5,
+                "queue_alert": "clear",
             },
         ),
     ]
+    assert fake_redis.metrics["jobradar:worker-metrics:scraping"]["queue_depth"] == "5"
+    assert fake_redis.metrics["jobradar:worker-metrics:scraping"]["queue_alert"] == "clear"

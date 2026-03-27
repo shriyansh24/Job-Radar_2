@@ -100,7 +100,8 @@ def validate_runtime_settings(settings: Settings) -> None:
         parsed = urlparse(origin)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise RuntimeError(
-                f"JR_CORS_ORIGINS contains an invalid origin: {origin!r}. Use full http(s) origins."
+                "JR_CORS_ORIGINS contains an invalid origin: "
+                f"{origin!r}. Use full http(s) origins."
             )
     if settings.cookie_samesite == "none" and not settings.cookie_secure:
         raise RuntimeError(
