@@ -7,6 +7,7 @@
 - Active workspace branch: `codex/ui-changes`
 - Compose-first local runtime is the current repo baseline
 - Dedicated scheduler runtime is live alongside the API process
+- Queue-backed ARQ worker services are now live for `scraping`, `analysis`, and `ops`
 - Frontend test taxonomy lives under `frontend/src/tests/`
 - Browser/e2e coverage lives under `frontend/e2e/`
 - Backend pytest lanes now use explicit role-based directories under `backend/tests/`
@@ -22,7 +23,8 @@
 ## What Is Not Finished
 - Selective P1 recovery is still in progress and must stay evidence-based.
 - Repo-wide backend mypy is still narrower than a full-program strict pass.
-- Browser/e2e coverage now protects shell plus dashboard/jobs/pipeline/settings/targets flows, but it is still shallower than full route-family coverage.
+- Browser/e2e coverage now protects auth/shell smoke, responsive shell behavior, route-family outcomes for `dashboard/jobs/pipeline/settings/targets`, and representative 8-mode route checks, but it is still shallower than full route-family coverage.
+- Queue-backed runtime is live, but retry/back-pressure policy validation and worker-lane coverage still need hardening.
 - Migration rollback/backfill guidance still needs hardening.
 
 ## Read Order
@@ -40,6 +42,7 @@
 
 ## Current Hardening Posture
 - Runtime/doc truth is materially reconciled around the compose-first baseline.
+- Current docs now distinguish the live queue-backed runtime from the remaining migration/coverage hardening work instead of treating ARQ as a future-only target.
 - GitHub protections now include repo validation, docs validation, migration safety, dependency review, CodeQL, and a dedicated frontend browser smoke lane.
 - Test taxonomy is improved but still not fully normalized.
 
@@ -47,5 +50,5 @@
 - Resume PDF generation and related template flows
 - Saved-search alerts UI and scheduler UX
 - Additional parser tuning for difficult JS-heavy career pages
-- Broader route-family browser coverage beyond the current smoke/theme/dashboard-jobs-pipeline/settings-targets baseline
+- Broader route-family browser coverage beyond the current smoke/responsive/theme/dashboard-jobs-pipeline/settings-targets baseline
 - Remaining second-pass frontend decomposition and copy cleanup on larger surfaces

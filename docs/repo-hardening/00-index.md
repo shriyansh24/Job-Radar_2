@@ -41,4 +41,4 @@ It is not the live product-state source of truth. Live repo truth still lives in
 - Phase 0 is complete: evidence collection and contradiction capture are on disk
 - Phase 1 is complete: runtime/doc truth reconciliation, compose-first runtime alignment, and the first GitHub guardrail changes are landed
 - Phase 2 is materially complete: the first test-taxonomy normalization batch, committed browser lane, and branch-protection-facing workflow names are now implemented in the filesystem, runners, and docs
-- Phase 3 is active: selective capability recovery is proceeding in bounded slices rather than branch-wide merges
+- Phase 3 is active: selective capability recovery is proceeding in bounded slices rather than branch-wide merges, and the remaining runtime closure is now documented around the ARQ queue target (`scraping`, `analysis`, `ops`) instead of the older inline/subprocess-only story

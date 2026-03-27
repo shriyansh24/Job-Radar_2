@@ -40,7 +40,7 @@ The repo is well-instrumented enough to begin refactoring, but not yet safe for 
 2. `frontend/src/tests/pages/JobBoard.page.test.tsx`
 3. `frontend/src/tests/pages/Pipeline.page.test.tsx`
 4. `frontend/src/tests/pages/Settings.page.test.tsx`
-5. `frontend/src/tests/pages/Targets.page.test.tsx`
+5. `frontend/src/tests/pages/targets/Targets.page.test.tsx`
 6. Ops route suites under `frontend/src/tests/pages/`, especially `Admin.page.test.tsx`, `Companies.page.test.tsx`, `SearchExpansion.page.test.tsx`, and `Sources.page.test.tsx`
 
 ### Frontend Blockers
@@ -72,7 +72,7 @@ The repo is well-instrumented enough to begin refactoring, but not yet safe for 
 2. `backend/tests/integration/test_jobs_api.py`
 3. `backend/tests/integration/test_pipeline_api.py`
 4. `backend/tests/integration/test_settings_api.py`
-5. `backend/tests/integration/test_scraping_service.py`
+5. `backend/tests/integration/scraping/test_scraping_service.py`
 6. `backend/tests/unit/test_job_model.py`
 7. `backend/tests/contracts/test_sqlalchemy_model_contracts.py`
 8. `backend/tests/security/test_api_security.py`

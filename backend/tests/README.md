@@ -16,15 +16,19 @@ backend/tests/
   fixtures/       shared test fixtures and factories
   infra/          config, database bootstrap, and operational CLI behavior
   integration/    API and cross-module integration coverage
+    enrichment/   enrichment pipeline integration behavior
+    scraping/     scraping orchestration integration behavior
   migrations/     Alembic and schema replay checks
   security/       auth, rate limiting, and security-focused behavior
   unit/           remaining subsystem unit suites still grouped by service/module
+    auto_apply/   ATS detection, adapters, form extraction, and safety behavior
   workers/        background execution and scheduler behavior
 ```
 
 ## Notes
 - `unit/` is still being normalized; new tests should prefer the more specific role-based directories when possible.
 - `edge_cases/` should be split by route or subsystem, not collected into one umbrella suite.
+- `integration/` should prefer subsystem folders once a domain owns more than one suite or has a service-specific name.
 - `migrations/` is the canonical home for schema replay safety checks.
 - `workers/` should cover lifecycle and retry semantics, not just helper functions.
 - Scheduler and worker runtime entrypoint coverage belongs under `workers/` when it protects the dedicated process topology rather than pure selection logic.

@@ -81,22 +81,25 @@ Document where the major runtime flows log today, where failures surface, and wh
   - `scheduler_ready`
   - `scheduler_shutdown_requested`
   - `scheduler_stopped`
-  - `scheduler_job_completed`
+  - `scheduler_job_enqueued`
+  - `scheduler_job_dispatched`
   - `scheduler_job_failed`
   - `scheduler_job_missed`
-  - `worker_subprocess_starting`
-  - `worker_subprocess_completed`
-  - `worker_starting`
-  - `worker_failed`
-  - `worker_completed`
+  - `queue_pool_ready`
+  - `queue_pool_stopped`
+  - `arq_worker_booting`
+  - `arq_worker_started`
+  - `arq_worker_stopped`
+  - `queue_job_started`
+  - `queue_job_failed`
+  - `queue_job_completed`
 - Current gap:
-  - no queue-backed worker pool or centralized heartbeat standard
-  - scheduler readiness is still represented by a sentinel file after startup + DB reachability; downstream dependency or per-job health can still drift after the marker is written
-  - worker subprocesses now emit a uniform start/failure/completion envelope, but there is still no richer retry/back-pressure telemetry
+  - scheduler and worker readiness are still represented by sentinel files after startup probes; downstream dependency or per-job health can still drift after the markers are written
+  - queue lifecycle is now explicit, but there is still no richer retry/back-pressure telemetry or queue-depth alerting
 
 ## Current Blind Spots
 - Browser/e2e now exists, but route-family coverage is still shallow.
-- Scheduler job execution semantics are not described or monitored in one place.
+- Scheduler job execution semantics are now explicit, but queue throughput and retry pressure are not yet monitored in one place.
 - Auth logs are now explicit, but they are not yet correlated with request IDs or separated into a dedicated audit sink.
 
 ## Existing Positive Controls

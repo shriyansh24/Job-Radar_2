@@ -21,6 +21,9 @@ frontend/e2e/
 - `smoke/` should fail fast on auth/bootstrap or shell regressions.
 - `flows/` should protect real route transitions and user-visible outcomes, not pixel snapshots.
 - `flows/route-family-outcomes.spec.ts` is the current route-family baseline for dashboard/jobs/pipeline/settings/targets outcomes and persisted theme changes.
+- `flows/prepare-intelligence-outcomes.spec.ts` protects the prepare and intelligence route family on a fresh account.
+- `flows/operations-admin-data.spec.ts` protects admin and operations data surfaces that should stay safe to load without destructive actions.
+- `flows/profile-settings-auth.spec.ts` protects the profile/settings/auth roundtrip without relying on external providers.
 - `theme-matrix/` is the canonical home for 8-mode coverage as it expands.
-- `theme-matrix/route-theme-matrix.spec.ts` is the route-level check for representative pages across all 8 theme combinations.
+- `theme-matrix/route-theme-matrix.spec.ts` is the desktop representative-route check for all 8 theme combinations across home, discover, execute, prepare, intelligence, and operations.
 - `flows/shell-responsive.spec.ts` is the shell behavior check for desktop, tablet, and phone chrome without screenshot assertions.

@@ -1,14 +1,14 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import JobDetail from "../../components/jobs/JobDetail";
-import { renderWithProviders } from "../support/test-utils";
+import JobDetail from "../../../components/jobs/JobDetail";
+import { renderWithProviders } from "../../support/test-utils";
 
 const pipelineMocks = vi.hoisted(() => ({
   create: vi.fn(),
 }));
 
-vi.mock("../../api/pipeline", () => ({
+vi.mock("../../../api/pipeline", () => ({
   pipelineApi: pipelineMocks,
 }));
 

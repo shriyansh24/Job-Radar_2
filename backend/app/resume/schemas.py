@@ -163,3 +163,23 @@ class CoverLetterGenerateResponse(BaseModel):
     reading_level: str = ""
     tone_used: str = ""
     company_context_used: bool = False
+
+
+# ---------------------------------------------------------------------------
+# ATS Validation
+# ---------------------------------------------------------------------------
+
+
+class ATSCheckResult(BaseModel):
+    field: str
+    passed: bool
+    message: str
+    details: dict | None = None
+
+
+class ATSValidationResult(BaseModel):
+    score: int = Field(ge=0, le=100)
+    passed: bool
+    checks: list[ATSCheckResult] = []
+    warnings: list[str] = []
+    extracted_text_length: int = 0

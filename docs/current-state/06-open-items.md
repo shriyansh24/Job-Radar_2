@@ -15,12 +15,12 @@
 - Semantic search can still be made richer inside the Job Board beyond the current exact/semantic mode toggle.
 - Auto-apply backend now includes recovered form extraction, Greenhouse/Lever adapters, a pre-flight safety layer, live manual/batch service wiring, and worker-level batch execution, but broader operator tooling and end-to-end coverage are still partial.
 - Saved-search alerts UI and scheduler UX remain a follow-up enhancement.
-- Resume PDF generation and additional template flows remain deferred.
+- Resume upload parsing and ATS validation are now live in the backend, but resume PDF generation and additional template flows remain deferred.
 
 ## Non-Blocking Residuals
 - No blocking residual is currently tied to the frontend sweep; additional browser captures are incremental QA rather than a missing validation gate.
 - Migration replay now has a dedicated GitHub workflow, but rollback and backfill guidance remain a follow-up hardening task.
-- Scheduler isolation is now stronger than the earlier inline model, but worker execution is still not queue-backed and job liveness remains shallower than startup readiness.
+- Scheduler isolation is now queue-backed through ARQ, but retry/back-pressure validation and broader queue-owned worker coverage still need hardening.
 
 ## Coverage TODOs
 - `backend/app/auto_apply/ats_detector.py`, `backend/app/auto_apply/ats_filler.py`, `backend/app/auto_apply/orchestrator.py`, `backend/app/auto_apply/portal_config.py`, `backend/app/auto_apply/question_engine.py`, `backend/app/auto_apply/service.py`, `backend/app/auto_apply/validator.py`, and `backend/app/auto_apply/workday_filler.py` remain below `50%` coverage.
@@ -34,7 +34,7 @@
 - Resume PDF generation and additional template flows
 - Saved-search alerts UI and related UX
 - Further parser tuning for difficult JS-heavy career pages
-- Broader end-to-end Playwright coverage beyond the current smoke/route-shell/theme/dashboard-jobs-pipeline/settings-targets pass
+- Broader end-to-end Playwright coverage beyond the current smoke/responsive/theme/dashboard-jobs-pipeline/settings-targets pass
 - Longer-term vendoring or repackaging decisions for scraper dependencies
 
 ## Historical Planning Material
