@@ -242,7 +242,28 @@ async def test_refresh_logging_omits_sensitive_fields(
 
     assert "auth_refresh_failed" in warning_events
     assert warning_events["auth_refresh_failed"]["auth_source"] == "body"
-    assert warning_events["auth_refresh_failed"]["reason"].endswith("Invalid token type")
+    assert warning_events["auth_refresh_failed"]["reason"] == "invalid_token_type"
+    _assert_no_sensitive_fields(warning_events["auth_refresh_failed"])
+
+
+@pytest.mark.asyncio
+async def test_refresh_missing_token_logs_normalized_reason(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    logger = Mock()
+    monkeypatch.setattr(auth_service, "logger", logger)
+
+    response = await client.post(
+        "/api/v1/auth/refresh",
+        headers={"X-CSRF-Token": "placeholder"},
+    )
+
+    assert response.status_code == 401
+
+    warning_events = {call.args[0]: call.kwargs for call in logger.warning.call_args_list}
+    assert warning_events["auth_refresh_failed"]["auth_source"] == "cookie"
+    assert warning_events["auth_refresh_failed"]["reason"] == "refresh_token_required"
     _assert_no_sensitive_fields(warning_events["auth_refresh_failed"])
 
 

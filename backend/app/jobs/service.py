@@ -10,8 +10,10 @@ import structlog
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.enrichment.embedding import EmbeddingService
 from app.jobs.models import Job
-from app.jobs.schemas import JobExportRequest, JobListParams, JobUpdate
+from app.jobs.schemas import JobExportRequest, JobListParams, JobResponse, JobUpdate
+from app.search.hybrid import HybridSearchService
 from app.shared.errors import NotFoundError
 from app.shared.pagination import PaginatedResponse
 
@@ -36,7 +38,7 @@ class JobService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def list_jobs(self, params: JobListParams, user_id: uuid.UUID) -> PaginatedResponse:
+    async def list_jobs(self, params: JobListParams, user_id: uuid.UUID) -> PaginatedResponse[Job]:
         query = select(Job).where(Job.user_id == user_id, Job.is_active.is_(True))
 
         if params.source:
@@ -106,25 +108,26 @@ class JobService:
         await self.db.commit()
 
     async def semantic_search(self, query: str, limit: int, user_id: uuid.UUID) -> list[Job]:
-        """Semantic search over jobs. Falls back to ILIKE on SQLite."""
-        # Full vector search requires PostgreSQL + pgvector.
-        # Fallback: keyword match
-        result = await self.db.scalars(
-            select(Job)
-            .where(
-                Job.user_id == user_id,
-                Job.is_active.is_(True),
-                (
-                    Job.title.ilike(f"%{query}%")
-                    | Job.company_name.ilike(f"%{query}%")
-                    | Job.description_clean.ilike(f"%{query}%")
-                    | Job.summary_ai.ilike(f"%{query}%")
-                ),
-            )
-            .order_by(Job.match_score.desc().nullslast())
-            .limit(limit)
+        """Semantic search over jobs with hybrid ranking and graceful fallback."""
+        search_service = HybridSearchService(self.db, EmbeddingService(self.db))
+        ranked_results = await search_service.search(query, user_id, limit=limit)
+        if not ranked_results:
+            return []
+
+        job_ids = [result.job_id for result in ranked_results]
+        jobs = list(
+            (
+                await self.db.scalars(
+                    select(Job).where(
+                        Job.user_id == user_id,
+                        Job.is_active.is_(True),
+                        Job.id.in_(job_ids),
+                    )
+                )
+            ).all()
         )
-        return list(result.all())
+        jobs_by_id = {job.id: job for job in jobs}
+        return [jobs_by_id[job_id] for job_id in job_ids if job_id in jobs_by_id]
 
     async def export_jobs(self, params: JobExportRequest, user_id: uuid.UUID) -> bytes:
         list_params = params.filters or JobListParams()
@@ -165,7 +168,5 @@ class JobService:
             return output.getvalue().encode()
 
         # Default JSON
-        from app.jobs.schemas import JobResponse
-
         items = [JobResponse.model_validate(j).model_dump(mode="json") for j in result.items]
         return json.dumps(items, indent=2).encode()

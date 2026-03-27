@@ -26,6 +26,7 @@ from app.auth.service import (
     get_token_version,
     log_auth_info,
     log_auth_warning,
+    normalize_auth_reason,
     register_user,
     set_auth_cookies,
 )
@@ -87,7 +88,7 @@ async def refresh(
         log_auth_warning(
             "auth_refresh_failed",
             user_id=refresh_user_id,
-            reason=str(getattr(exc, "detail", str(exc))),
+            reason=normalize_auth_reason(exc),
             auth_source=auth_source,
         )
         raise

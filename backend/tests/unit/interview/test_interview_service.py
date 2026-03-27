@@ -98,8 +98,9 @@ async def test_load_job_context_uses_company_name():
     with patch("app.interview.service._build_router", return_value=MagicMock()):
         service = InterviewService(db)
 
-    title, company, description = await service._load_job_context("job-123")
+    title, company, description, skills = await service._load_job_context("job-123")
 
     assert title == "Engineer"
     assert company == "Acme"
     assert description == "Role description"
+    assert skills == []

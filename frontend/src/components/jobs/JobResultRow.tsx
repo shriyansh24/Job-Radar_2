@@ -3,7 +3,7 @@ import type { Job } from "../../api/jobs";
 import { cn } from "../../lib/utils";
 import Badge from "../ui/Badge";
 import { Surface } from "../system/Surface";
-import { scoreLabel } from "./jobBoardUtils";
+import { freshnessLabel, freshnessVariant, scoreLabel } from "./jobBoardUtils";
 
 export function JobResultRow({
   job,
@@ -15,6 +15,7 @@ export function JobResultRow({
   onClick: () => void;
 }) {
   const match = scoreLabel(job.match_score);
+  const freshness = freshnessLabel(job.freshness_score);
 
   return (
     <Surface
@@ -50,6 +51,7 @@ export function JobResultRow({
 
         <div className="flex shrink-0 flex-col items-end gap-2">
           {match ? <Badge variant="outline">{match}</Badge> : null}
+          {freshness ? <Badge variant={freshnessVariant(job.freshness_score)}>{freshness}</Badge> : null}
           {job.is_starred ? (
             <Star size={16} weight="fill" className="text-[var(--color-accent-warning)]" />
           ) : null}

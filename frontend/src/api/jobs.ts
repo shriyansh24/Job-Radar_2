@@ -22,6 +22,7 @@ export interface Job {
   green_flags: string[];
   match_score: number | null;
   tfidf_score: number | null;
+  freshness_score?: number | null;
   salary_min: number | null;
   salary_max: number | null;
   salary_period: string | null;

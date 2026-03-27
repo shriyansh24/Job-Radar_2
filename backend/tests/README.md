@@ -22,7 +22,11 @@ backend/tests/
   security/       auth, rate limiting, and security-focused behavior
   unit/           remaining subsystem unit suites still grouped by service/module
     auto_apply/   ATS detection, adapters, form extraction, and safety behavior
+    dedup/        normalization-aware dedup behavior
+    interview/    interview question/prep/evaluation service behavior
+    search/       hybrid ranking, freshness, and normalization helpers
   workers/        background execution and scheduler behavior
+    auto_apply/   auto-apply worker process behavior
 ```
 
 ## Notes

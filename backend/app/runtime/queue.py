@@ -7,7 +7,7 @@ import structlog
 from arq.connections import ArqRedis, RedisSettings, create_pool
 
 from app.config import settings
-from app.runtime.job_registry import get_registered_job
+from app.runtime.job_registry import get_queue_names, get_registered_job
 
 logger = structlog.get_logger()
 
@@ -48,6 +48,7 @@ async def startup_queue_pool() -> ArqRedis:
                 redis_port=redis_settings.port,
                 redis_database=redis_settings.database,
                 redis_tls=redis_settings.ssl,
+                queue_names=get_queue_names(),
             )
     return _queue_pool
 
@@ -70,12 +71,18 @@ async def shutdown_queue_pool() -> None:
 async def enqueue_registered_job(job_name: str) -> str | None:
     job = get_registered_job(job_name)
     queue_pool = await get_queue_pool()
+    queue_depth_before = await queue_pool.zcard(job.queue_name)
     job_ref = await queue_pool.enqueue_job(job.name, _queue_name=job.queue_name)
     enqueued_job_id = getattr(job_ref, "job_id", None)
+    queue_depth_after = await queue_pool.zcard(job.queue_name)
     logger.info(
         "scheduler_job_enqueued",
         job_name=job.name,
         queue_name=job.queue_name,
         enqueued_job_id=enqueued_job_id,
+        queue_depth_before=queue_depth_before,
+        queue_depth_after=queue_depth_after,
+        job_max_tries=job.max_tries,
+        job_timeout_seconds=job.timeout_seconds,
     )
     return enqueued_job_id

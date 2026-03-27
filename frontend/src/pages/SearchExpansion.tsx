@@ -1,6 +1,13 @@
-import { Lightning, MagnifyingGlassPlus, Sparkle, TerminalWindow } from "@phosphor-icons/react";
+import {
+  ArrowSquareOut,
+  Lightning,
+  MagnifyingGlassPlus,
+  Sparkle,
+  TerminalWindow,
+} from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { searchExpansionApi } from "../api/phase7a";
 import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader } from "../components/system/PageHeader";
@@ -33,7 +40,7 @@ function QueryChip({
     <button
       type="button"
       onClick={() => onClick(value)}
-      className="hard-press border-2 border-border bg-[var(--color-bg-secondary)] px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary shadow-[var(--shadow-xs)] hover:bg-[var(--color-bg-tertiary)] hover:text-text-primary"
+      className="hard-press border-2 border-border bg-[var(--color-bg-secondary)] px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary hover:bg-[var(--color-bg-tertiary)] hover:text-text-primary"
     >
       {value}
     </button>
@@ -41,6 +48,7 @@ function QueryChip({
 }
 
 export default function SearchExpansion() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [history, setHistory] = useState<string[]>([]);
 
@@ -58,6 +66,12 @@ export default function SearchExpansion() {
 
   const latest = expandMutation.data ?? null;
 
+  const openSemanticSearch = (value: string) => {
+    const normalized = value.trim();
+    if (!normalized) return;
+    navigate(`/jobs?mode=semantic&q=${encodeURIComponent(normalized)}`);
+  };
+
   const metrics = useMemo(
     () => [
       {
@@ -71,7 +85,7 @@ export default function SearchExpansion() {
         key: "expanded",
         label: "Expanded terms",
         value: `${latest?.expanded_terms.length ?? 0}`,
-        hint: "Additional role variants generated from the latest run.",
+        hint: "Terms returned from the latest run.",
         icon: <Sparkle size={18} weight="fill" />,
         tone: latest?.expanded_terms.length ? ("success" as const) : ("default" as const),
       },
@@ -79,14 +93,14 @@ export default function SearchExpansion() {
         key: "synonyms",
         label: "Synonyms",
         value: `${latest?.synonyms.length ?? 0}`,
-        hint: "Parallel phrases surfaced for the active query.",
+        hint: "Alternate phrases returned.",
         icon: <MagnifyingGlassPlus size={18} weight="bold" />,
       },
       {
         key: "status",
         label: "Engine state",
         value: expandMutation.isPending ? "Running" : latest ? "Complete" : "Idle",
-        hint: "Current search-expansion pipeline state.",
+        hint: "Current endpoint state.",
         icon: <Lightning size={18} weight="bold" />,
         tone: expandMutation.isPending ? ("warning" as const) : ("default" as const),
       },
@@ -106,7 +120,7 @@ export default function SearchExpansion() {
       <PageHeader
         eyebrow="Operations"
         title="Search Expansion"
-        description="Run the live backend expansion endpoint against a role query and keep a short operational history."
+        description="Run the live expansion endpoint, review the response, and send a term into semantic search."
         actions={
           <Button
             variant="primary"
@@ -121,7 +135,7 @@ export default function SearchExpansion() {
         meta={
           <div className="flex flex-wrap gap-2">
             <Badge variant="info" size="sm">
-              Live backend contract
+              Live endpoint
             </Badge>
             <Badge variant={latest ? "success" : "default"} size="sm">
               {latest ? "Result loaded" : "Awaiting query"}
@@ -138,7 +152,7 @@ export default function SearchExpansion() {
             <Surface tone="default" padding="lg" radius="xl">
               <SectionHeader
                 title="Expansion console"
-                description="Use the same endpoint the backend exposes today. This view is intentionally concrete: one input, one response, no fake template inventory."
+                description="One query in, one response out."
               />
               <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_200px]">
                 <Input
@@ -188,7 +202,7 @@ export default function SearchExpansion() {
               <Surface tone="default" padding="lg" radius="xl">
                 <SectionHeader
                   title="Expansion result"
-                  description={latest.message || "Expanded search result returned from the backend."}
+                  description={latest.message || "Latest response returned from the backend."}
                 />
 
                 <div className="mt-6 grid gap-4 xl:grid-cols-3">
@@ -198,6 +212,16 @@ export default function SearchExpansion() {
                     </div>
                     <div className="mt-3 text-2xl font-black uppercase tracking-[-0.05em] text-text-primary">
                       {latest.original_query}
+                    </div>
+                    <div className="mt-4">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => openSemanticSearch(latest.original_query)}
+                        icon={<ArrowSquareOut size={14} weight="bold" />}
+                      >
+                        Open in jobs
+                      </Button>
                     </div>
                   </div>
 
@@ -212,9 +236,15 @@ export default function SearchExpansion() {
                       {latest.expanded_terms.length ? (
                         <div className="mt-4 flex flex-wrap gap-2">
                           {latest.expanded_terms.map((term) => (
-                            <Badge key={term} variant="info" size="md">
+                            <Button
+                              key={term}
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => openSemanticSearch(term)}
+                              icon={<ArrowSquareOut size={14} weight="bold" />}
+                            >
                               {term}
-                            </Badge>
+                            </Button>
                           ))}
                         </div>
                       ) : (
@@ -233,12 +263,14 @@ export default function SearchExpansion() {
                       {latest.synonyms.length ? (
                         <div className="mt-4 space-y-2">
                           {latest.synonyms.map((term) => (
-                            <div
+                            <button
                               key={term}
+                              type="button"
+                              onClick={() => openSemanticSearch(term)}
                               className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary"
                             >
                               {term}
-                            </div>
+                            </button>
                           ))}
                         </div>
                       ) : (
@@ -266,14 +298,14 @@ export default function SearchExpansion() {
             <StateBlock
               tone="neutral"
               icon={<TerminalWindow size={18} weight="bold" />}
-              title="Current backend reality"
-              description="The service currently returns a direct expansion response, not a stored template registry. This page now reflects that contract instead of pretending a template list exists."
+              title="Semantic handoff"
+              description="Use any returned term to jump straight into semantic search on the jobs route."
             />
             <StateBlock
               tone="warning"
               icon={<Lightning size={18} weight="bold" />}
-              title="Operational note"
-              description="If the backend has not been upgraded with LLM expansion yet, you may see empty synonym and expansion arrays with a status message explaining the current state."
+              title="Engine note"
+              description="If the backend returns empty arrays, the endpoint is reachable but there are no extra terms for that query yet."
             />
             {history.length ? (
               <Surface tone="default" padding="md" radius="xl">
@@ -286,7 +318,7 @@ export default function SearchExpansion() {
                       key={entry}
                       type="button"
                       onClick={() => runExpansion(entry)}
-                      className="hard-press flex w-full items-center justify-between border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-3 text-left shadow-[var(--shadow-xs)]"
+                      className="hard-press flex w-full items-center justify-between border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-3 text-left"
                     >
                         <span className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-text-primary">
                           {entry}

@@ -46,10 +46,8 @@ test.describe("flows/prepare-intelligence-outcomes", () => {
     await expect(page.getByText(/drag and drop a resume/i)).toBeVisible();
 
     await page.goto("/interview");
-    await expect(
-      page.getByRole("main").getByRole("heading", { name: "Interview Prep", exact: true })
-    ).toBeVisible();
     await expect(page.getByRole("button", { name: /^practice$/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^prepare$/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /^history$/i })).toBeVisible();
     await expect(page.getByText("No active session", { exact: true })).toBeVisible();
 

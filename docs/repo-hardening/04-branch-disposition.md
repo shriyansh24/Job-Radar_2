@@ -12,7 +12,7 @@ Record the evidence-based disposition for retained branches before feature recov
 |---|---|---|---|---|
 | `main` | stable backend/P2 landing line, local branch behind `origin/main` by one commit | canonical baseline for merged backend and repo-hardening work before UI overhaul | `KEEP` | this is the repository baseline and default branch |
 | `codex/ui-changes` | active branch | unique frontend overhaul, theme-family runtime, page decomposition, current UI docs/captures | `KEEP` | this is the live UI line |
-| `feat/p1-core-value` | retained feature spike | unique P0/P1 capability work: interview prep, resume tailoring/renderer/validator, hybrid search, worker/search slices, and remaining auto-apply/operator depth beyond the recovered execution path | `PORT_SELECTIVELY` | high-value capability source, but stale and not safe to merge blindly |
+| `feat/p1-core-value` | retained feature spike | unique P0/P1 capability work: resume tailoring/renderer/validator, pipeline ergonomics, worker/search follow-through, and remaining auto-apply/operator depth beyond the already recovered interview/hybrid/runtime slices | `PORT_SELECTIVELY` | high-value capability source, but stale and not safe to merge blindly |
 | `origin/feat/p2-polish-advanced` | historical remote branch | strong provenance for P2 feature intent | `DEFER_AS_HISTORY` | current tip appears converged into `main`; use for traceability, not as a direct port source |
 | `ui-overhaul-design` | local historical UI spike | early UI/docs experiments, grouped sidebar work, FilterChip, skeletons | `KEEP_AS_HISTORY` | not the chosen live UI line, but still useful as historical context until explicitly archived |
 | `codex/career-os-overhaul` | earlier UI/UX milestone | pre-reference-first UI milestone and doc refresh | `KEEP_AS_MILESTONE` | useful as a waypoint, but not the main forward branch |
@@ -31,10 +31,10 @@ Evidence branch: `feat/p1-core-value` via PR #12
 ### P1
 Evidence branch: `feat/p1-core-value` via PR #13
 - remaining auto-apply/operator depth beyond the recovered execution slice
-- interview prep
+- interview prep follow-through beyond the now-live stage-aware prep bundle
 - resume tailoring, rendering, validation
 - outcomes
-- hybrid search
+- hybrid search follow-through beyond the now-live bounded ranking slice
 - digest and embedding backfill workers
 - pipeline ergonomics
 

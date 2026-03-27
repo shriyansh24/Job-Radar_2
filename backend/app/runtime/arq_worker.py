@@ -35,6 +35,18 @@ ROLE_TO_MAX_JOBS = {
     "ops": 1,
 }
 
+ROLE_TO_QUEUE_READ_LIMIT = {
+    "scraping": 2,
+    "analysis": 4,
+    "ops": 1,
+}
+
+ROLE_TO_HEALTHCHECK_KEY = {
+    "scraping": "jobradar:worker-health:scraping",
+    "analysis": "jobradar:worker-health:analysis",
+    "ops": "jobradar:worker-health:ops",
+}
+
 
 def _ready_marker_for_role(role: str) -> Path:
     env_marker = os.getenv("JR_WORKER_READY_MARKER")
@@ -73,6 +85,11 @@ async def _on_startup(ctx: dict[str, object]) -> None:
         "arq_worker_started",
         worker_role=role,
         queue_name=queue_name,
+        job_count=ctx["job_count"],
+        job_names=ctx["job_names"],
+        max_jobs=ctx["max_jobs"],
+        queue_read_limit=ctx["queue_read_limit"],
+        health_check_key=ctx["health_check_key"],
         ready_marker=str(ready_marker),
     )
 
@@ -82,7 +99,40 @@ async def _on_shutdown(ctx: dict[str, object]) -> None:
     queue_name = str(ctx["queue_name"])
     _clear_ready(role)
     await engine.dispose()
-    logger.info("arq_worker_stopped", worker_role=role, queue_name=queue_name)
+    logger.info(
+        "arq_worker_stopped",
+        worker_role=role,
+        queue_name=queue_name,
+        health_check_key=ctx["health_check_key"],
+    )
+
+
+async def _on_job_start(ctx: dict[str, object]) -> None:
+    redis = cast(Any, ctx.get("redis"))
+    queue_name = str(ctx["queue_name"])
+    queue_depth = await redis.zcard(queue_name) if redis is not None else None
+    logger.info(
+        "arq_worker_job_starting",
+        worker_role=ctx["worker_role"],
+        queue_name=queue_name,
+        job_id=ctx["job_id"],
+        job_try=ctx["job_try"],
+        queue_depth=queue_depth,
+    )
+
+
+async def _on_job_end(ctx: dict[str, object]) -> None:
+    redis = cast(Any, ctx.get("redis"))
+    queue_name = str(ctx["queue_name"])
+    queue_depth = await redis.zcard(queue_name) if redis is not None else None
+    logger.info(
+        "arq_worker_job_finished",
+        worker_role=ctx["worker_role"],
+        queue_name=queue_name,
+        job_id=ctx["job_id"],
+        job_try=ctx["job_try"],
+        queue_depth=queue_depth,
+    )
 
 
 def build_worker(role: str) -> Worker:
@@ -105,15 +155,32 @@ def build_worker(role: str) -> Worker:
         for job in registered_jobs
     ]
 
+    max_jobs = ROLE_TO_MAX_JOBS[role]
+    queue_read_limit = ROLE_TO_QUEUE_READ_LIMIT[role]
+    health_check_key = ROLE_TO_HEALTHCHECK_KEY[role]
+
     return Worker(
         functions=functions,
         queue_name=queue_name,
         redis_settings=build_redis_settings(),
         on_startup=_on_startup,
         on_shutdown=_on_shutdown,
-        ctx={"worker_role": role, "queue_name": queue_name},
-        max_jobs=ROLE_TO_MAX_JOBS[role],
+        on_job_start=_on_job_start,
+        on_job_end=_on_job_end,
+        ctx={
+            "worker_role": role,
+            "queue_name": queue_name,
+            "job_count": len(registered_jobs),
+            "job_names": [job.name for job in registered_jobs],
+            "max_jobs": max_jobs,
+            "queue_read_limit": queue_read_limit,
+            "health_check_key": health_check_key,
+        },
+        max_jobs=max_jobs,
+        queue_read_limit=queue_read_limit,
+        health_check_key=health_check_key,
         job_completion_wait=5,
+        retry_jobs=True,
         allow_abort_jobs=False,
     )
 

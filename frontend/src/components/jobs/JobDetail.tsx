@@ -1,8 +1,17 @@
-import { Briefcase, CheckCircle, LinkSimple, MapPin, Sparkle, Warning, X } from "@phosphor-icons/react";
+import {
+  Briefcase,
+  CheckCircle,
+  LinkSimple,
+  MapPin,
+  Sparkle,
+  Warning,
+  X,
+} from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
 import type { Job } from "../../api/jobs";
 import { pipelineApi } from "../../api/pipeline";
 import { cn, getSafeExternalUrl } from "../../lib/utils";
@@ -11,6 +20,7 @@ import Badge from "../ui/Badge";
 import Button from "../ui/Button";
 import Modal from "../ui/Modal";
 import { toast } from "../ui/toastService";
+import { freshnessLabel, freshnessVariant } from "./jobBoardUtils";
 
 interface JobDetailProps {
   job: Job;
@@ -30,7 +40,7 @@ function formatSalary(job: Job) {
     return `Up to $${(job.salary_max! / 1000).toFixed(0)}k`;
   }
 
-  return "—";
+  return "-";
 }
 
 export default function JobDetail({ job, onClose }: JobDetailProps) {
@@ -54,8 +64,10 @@ export default function JobDetail({ job, onClose }: JobDetailProps) {
     onError: () => toast("error", "Failed to create application"),
   });
 
-  const matchScore = job.match_score !== null ? `${Math.round(job.match_score * 100)}%` : "—";
-  const tfidfScore = job.tfidf_score !== null ? job.tfidf_score.toFixed(3) : "—";
+  const matchScore =
+    job.match_score !== null ? `${Math.round(job.match_score * 100)}%` : "-";
+  const tfidfScore = job.tfidf_score !== null ? job.tfidf_score.toFixed(3) : "-";
+  const freshnessScore = freshnessLabel(job.freshness_score) ?? "-";
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -97,6 +109,7 @@ export default function JobDetail({ job, onClose }: JobDetailProps) {
         </div>
 
         <button
+          type="button"
           onClick={onClose}
           className="inline-flex size-10 shrink-0 items-center justify-center border-2 border-border bg-background text-text-muted transition-colors hover:bg-[var(--color-accent-primary-subtle)] hover:text-foreground lg:hidden"
           aria-label="Close detail pane"
@@ -132,6 +145,14 @@ export default function JobDetail({ job, onClose }: JobDetailProps) {
                 tone: "default",
               },
               {
+                key: "freshness",
+                label: "Freshness",
+                value: freshnessScore,
+                hint: "Recency signal from the recovered search payload.",
+                icon: <Sparkle size={18} weight="bold" />,
+                tone: freshnessVariant(job.freshness_score),
+              },
+              {
                 key: "salary",
                 label: "Salary",
                 value: formatSalary(job),
@@ -140,7 +161,7 @@ export default function JobDetail({ job, onClose }: JobDetailProps) {
                 tone: job.salary_min || job.salary_max ? "warning" : "default",
               },
             ]}
-            className="grid-cols-1 md:grid-cols-3"
+            className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
           />
 
           {job.summary_ai ? (
@@ -244,7 +265,9 @@ export default function JobDetail({ job, onClose }: JobDetailProps) {
                   "[&_a]:text-[var(--color-accent-primary)] [&_strong]:text-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground"
                 )}
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{job.description_markdown}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {job.description_markdown}
+                </ReactMarkdown>
               </div>
             </Surface>
           ) : null}
@@ -272,7 +295,12 @@ export default function JobDetail({ job, onClose }: JobDetailProps) {
         </div>
       </div>
 
-      <Modal open={showApplyModal} onClose={() => setShowApplyModal(false)} title="Create Application" size="sm">
+      <Modal
+        open={showApplyModal}
+        onClose={() => setShowApplyModal(false)}
+        title="Create Application"
+        size="sm"
+      >
         <div className="space-y-4">
           <p className="text-sm leading-6 text-muted-foreground">
             Track your application for <strong className="text-foreground">{job.title}</strong>{" "}
@@ -282,7 +310,11 @@ export default function JobDetail({ job, onClose }: JobDetailProps) {
             <Button variant="secondary" onClick={() => setShowApplyModal(false)}>
               Cancel
             </Button>
-            <Button variant="primary" loading={applyMutation.isPending} onClick={() => applyMutation.mutate()}>
+            <Button
+              variant="primary"
+              loading={applyMutation.isPending}
+              onClick={() => applyMutation.mutate()}
+            >
               Create
             </Button>
           </div>

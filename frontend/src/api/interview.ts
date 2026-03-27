@@ -22,6 +22,59 @@ export interface InterviewScore {
   score?: number | null;
 }
 
+export interface InterviewLikelyQuestion {
+  question: string;
+  category: string;
+}
+
+export interface InterviewStarStory {
+  situation: string;
+  task: string;
+  action: string;
+  result: string;
+}
+
+export interface InterviewRedFlagResponse {
+  question: string;
+  avoid: string;
+  instead: string;
+}
+
+export interface InterviewPrepRequest {
+  job_id: string;
+  resume_text: string;
+  stage?: string;
+  job_title?: string;
+  company_name?: string;
+  job_description?: string;
+  required_skills?: string[];
+}
+
+export interface InterviewCompanyResearch {
+  overview: string;
+  recent_news: string[];
+  culture_values: string[];
+  interview_style: string;
+}
+
+export interface InterviewRoleAnalysis {
+  key_requirements: string[];
+  skill_gaps: string[];
+  talking_points: string[];
+  seniority_expectations: string;
+}
+
+export interface InterviewPrepBundle {
+  likely_questions: InterviewLikelyQuestion[];
+  star_stories: InterviewStarStory[];
+  technical_topics: string[];
+  company_talking_points: string[];
+  questions_to_ask: string[];
+  red_flag_responses: InterviewRedFlagResponse[];
+  company_research?: InterviewCompanyResearch | null;
+  role_analysis?: InterviewRoleAnalysis | null;
+}
+
 export interface GenerateParams {
   job_id: string;
   count?: number;
@@ -48,6 +101,8 @@ export const interviewApi = {
     apiClient.get<InterviewSession>(`/interview/sessions/${id}`),
   generate: (data: GenerateParams) =>
     apiClient.post<InterviewSession>('/interview/generate', data),
+  prepare: (data: InterviewPrepRequest) =>
+    apiClient.post<InterviewPrepBundle>('/interview/prepare', data),
   evaluate: (data: EvaluateParams) =>
     apiClient.post<EvaluateResult>('/interview/evaluate', data),
 };

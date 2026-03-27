@@ -36,3 +36,17 @@ export function scoreLabel(score: number | null) {
   if (score === null) return null;
   return `${Math.round(score * 100)}%`;
 }
+
+export function freshnessLabel(score: number | null | undefined) {
+  if (score == null) return null;
+  return `Fresh ${Math.round(score * 100)}%`;
+}
+
+export function freshnessVariant(
+  score: number | null | undefined
+): "success" | "warning" | "danger" | "default" {
+  if (score == null) return "default";
+  if (score >= 0.75) return "success";
+  if (score >= 0.45) return "warning";
+  return "danger";
+}
