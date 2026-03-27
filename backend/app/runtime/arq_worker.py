@@ -47,12 +47,27 @@ ROLE_TO_HEALTHCHECK_KEY = {
     "ops": "jobradar:worker-health:ops",
 }
 
+DEFAULT_WORKER_HEALTH_INTERVAL_SECONDS = 15
+
 
 def _ready_marker_for_role(role: str) -> Path:
     env_marker = os.getenv("JR_WORKER_READY_MARKER")
     if env_marker:
         return Path(env_marker)
     return Path(tempfile.gettempdir()) / f"jobradar-worker-{role}.ready"
+
+
+def _healthcheck_key_for_role(role: str) -> str:
+    return os.getenv("JR_WORKER_HEALTHCHECK_KEY", ROLE_TO_HEALTHCHECK_KEY[role])
+
+
+def _healthcheck_interval_seconds() -> int:
+    return int(
+        os.getenv(
+            "JR_WORKER_HEALTHCHECK_INTERVAL_SECONDS",
+            str(DEFAULT_WORKER_HEALTH_INTERVAL_SECONDS),
+        )
+    )
 
 
 def _mark_ready(role: str) -> Path:
@@ -79,6 +94,9 @@ async def _on_startup(ctx: dict[str, object]) -> None:
     redis = cast(Any, ctx.get("redis"))
     if redis is not None:
         await redis.ping()
+        queue_depth = await redis.zcard(queue_name) if hasattr(redis, "zcard") else None
+    else:
+        queue_depth = None
 
     ready_marker = _mark_ready(role)
     logger.info(
@@ -90,6 +108,8 @@ async def _on_startup(ctx: dict[str, object]) -> None:
         max_jobs=ctx["max_jobs"],
         queue_read_limit=ctx["queue_read_limit"],
         health_check_key=ctx["health_check_key"],
+        health_check_interval_seconds=ctx["health_check_interval_seconds"],
+        queue_depth=queue_depth,
         ready_marker=str(ready_marker),
     )
 
@@ -157,7 +177,8 @@ def build_worker(role: str) -> Worker:
 
     max_jobs = ROLE_TO_MAX_JOBS[role]
     queue_read_limit = ROLE_TO_QUEUE_READ_LIMIT[role]
-    health_check_key = ROLE_TO_HEALTHCHECK_KEY[role]
+    health_check_key = _healthcheck_key_for_role(role)
+    health_check_interval_seconds = _healthcheck_interval_seconds()
 
     return Worker(
         functions=functions,
@@ -175,10 +196,12 @@ def build_worker(role: str) -> Worker:
             "max_jobs": max_jobs,
             "queue_read_limit": queue_read_limit,
             "health_check_key": health_check_key,
+            "health_check_interval_seconds": health_check_interval_seconds,
         },
         max_jobs=max_jobs,
         queue_read_limit=queue_read_limit,
         health_check_key=health_check_key,
+        health_check_interval=health_check_interval_seconds,
         job_completion_wait=5,
         retry_jobs=True,
         allow_abort_jobs=False,

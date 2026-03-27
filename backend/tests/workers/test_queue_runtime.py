@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import uuid
 from types import SimpleNamespace
 
 import pytest
-from arq.connections import RedisSettings
+from arq.connections import RedisSettings, create_pool
+from redis.exceptions import RedisError
 
 from app.runtime import queue as queue_runtime
 from app.runtime.job_registry import ANALYSIS_QUEUE, OPS_QUEUE, SCRAPING_QUEUE
@@ -87,3 +89,35 @@ def test_job_queues_cover_expected_runtime_lanes() -> None:
 
     queue_names = {job.queue_name for job in get_registered_jobs()}
     assert queue_names == {SCRAPING_QUEUE, ANALYSIS_QUEUE, OPS_QUEUE}
+
+
+@pytest.mark.asyncio
+async def test_real_redis_lane_isolation_preserves_other_queues() -> None:
+    queue_pool = None
+    try:
+        queue_pool = await create_pool(queue_runtime.build_redis_settings())
+    except RedisError as exc:
+        pytest.skip(f"Redis unavailable for lane-isolation test: {exc}")
+
+    assert queue_pool is not None
+
+    scraping_lane = f"{SCRAPING_QUEUE}:lane-isolation:{uuid.uuid4().hex}"
+    ops_lane = f"{OPS_QUEUE}:lane-isolation:{uuid.uuid4().hex}"
+
+    try:
+        await queue_pool.delete(scraping_lane, ops_lane)
+
+        await queue_pool.enqueue_job("scheduled_scrape", _queue_name=scraping_lane)
+        await queue_pool.enqueue_job("cleanup", _queue_name=ops_lane)
+
+        assert await queue_pool.zcard(scraping_lane) == 1
+        assert await queue_pool.zcard(ops_lane) == 1
+
+        popped = await queue_pool.zpopmin(ops_lane)
+
+        assert len(popped) == 1
+        assert await queue_pool.zcard(ops_lane) == 0
+        assert await queue_pool.zcard(scraping_lane) == 1
+    finally:
+        await queue_pool.delete(scraping_lane, ops_lane)
+        await queue_pool.close(close_connection_pool=True)

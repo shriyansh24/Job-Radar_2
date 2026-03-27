@@ -108,26 +108,29 @@ jobs:
           echo "Backend API did not become ready in time." >&2
           exit 1
 
-      - name: Wait for scheduler ready marker
+      - name: Wait for scheduler heartbeat
         run: |
           for attempt in $(seq 1 60); do
-            if [ -f "$JR_SCHEDULER_READY_MARKER" ]; then
+            if cd backend && uv run python -m app.runtime.healthcheck scheduler; then
               exit 0
             fi
             sleep 2
           done
-          echo "Scheduler did not emit the ready marker." >&2
+          echo "Scheduler did not report a live heartbeat in time." >&2
           exit 1
 
-      - name: Wait for worker ready markers
+      - name: Wait for worker heartbeats
         run: |
           for attempt in $(seq 1 60); do
-            if [ -f "$RUNNER_TEMP/worker-scraping.ready" ] && [ -f "$RUNNER_TEMP/worker-analysis.ready" ] && [ -f "$RUNNER_TEMP/worker-ops.ready" ]; then
+            if cd backend && \
+              uv run python -m app.runtime.healthcheck worker scraping && \
+              uv run python -m app.runtime.healthcheck worker analysis && \
+              uv run python -m app.runtime.healthcheck worker ops; then
               exit 0
             fi
             sleep 2
           done
-          echo "One or more workers did not emit the ready marker." >&2
+          echo "One or more workers did not report a live heartbeat in time." >&2
           exit 1
 
       - name: Setup Node

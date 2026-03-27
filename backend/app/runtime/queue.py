@@ -68,6 +68,15 @@ async def shutdown_queue_pool() -> None:
             logger.info("queue_pool_stopped")
 
 
+async def get_queue_depths(queue_pool: ArqRedis | None = None) -> dict[str, int]:
+    active_pool = queue_pool or await get_queue_pool()
+    queue_names = get_queue_names()
+    queue_depths = await asyncio.gather(
+        *(active_pool.zcard(queue_name) for queue_name in queue_names)
+    )
+    return dict(zip(queue_names, queue_depths, strict=True))
+
+
 async def enqueue_registered_job(job_name: str) -> str | None:
     job = get_registered_job(job_name)
     queue_pool = await get_queue_pool()

@@ -54,6 +54,24 @@ def test_build_worker_rejects_unknown_role() -> None:
         arq_worker.build_worker("not-a-real-role")
 
 
+def test_ready_marker_helper_uses_env_override(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    marker = tmp_path / "custom" / "analysis.ready"
+    monkeypatch.setenv("JR_WORKER_READY_MARKER", str(marker))
+
+    assert arq_worker._ready_marker_for_role("analysis") == marker
+
+
+def test_healthcheck_helpers_use_env_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("JR_WORKER_HEALTHCHECK_KEY", "jobradar:worker-health:test")
+    monkeypatch.setenv("JR_WORKER_HEALTHCHECK_INTERVAL_SECONDS", "27")
+
+    assert arq_worker._healthcheck_key_for_role("analysis") == "jobradar:worker-health:test"
+    assert arq_worker._healthcheck_interval_seconds() == 27
+
+
 @pytest.mark.asyncio
 async def test_worker_startup_marks_ready_and_pings_dependencies(
     monkeypatch: pytest.MonkeyPatch,
@@ -78,6 +96,10 @@ async def test_worker_startup_marks_ready_and_pings_dependencies(
         async def ping(self) -> None:
             self.ping_called = True
 
+        async def zcard(self, queue_name: str) -> int:
+            assert queue_name == ANALYSIS_QUEUE
+            return 6
+
     class _FakeLogger:
         def info(self, event: str, **fields: object) -> None:
             seen.append((event, fields))
@@ -97,6 +119,7 @@ async def test_worker_startup_marks_ready_and_pings_dependencies(
         "max_jobs": 4,
         "queue_read_limit": 4,
         "health_check_key": "jobradar:worker-health:analysis",
+        "health_check_interval_seconds": 15,
         "redis": fake_redis,
     }
 
@@ -115,6 +138,8 @@ async def test_worker_startup_marks_ready_and_pings_dependencies(
                 "max_jobs": 4,
                 "queue_read_limit": 4,
                 "health_check_key": "jobradar:worker-health:analysis",
+                "health_check_interval_seconds": 15,
+                "queue_depth": 6,
                 "ready_marker": str(tmp_path / "worker.ready"),
             },
         )
