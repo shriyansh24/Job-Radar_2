@@ -11,7 +11,7 @@ describe("Login", () => {
       </BrowserRouter>
     );
     expect(
-      screen.getByRole("heading", { name: "Sign in" })
+      screen.getByRole("heading", { name: /sign in to the workspace/i })
     ).toBeInTheDocument();
     expect(screen.getByText("Welcome back")).toBeInTheDocument();
     expect(

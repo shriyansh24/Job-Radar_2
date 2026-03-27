@@ -18,13 +18,13 @@ function SectionHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between",
+        "flex flex-col gap-4 border-b-2 border-border pb-4 sm:flex-row sm:items-end sm:justify-between",
         className
       )}
       {...props}
     >
       <div className="space-y-1">
-        <h2 className="text-xl font-black uppercase tracking-[-0.05em]">{title}</h2>
+        <h2 className="font-display text-xl font-black uppercase tracking-[-0.05em] sm:text-2xl">{title}</h2>
         {description ? (
           <p className="text-sm leading-6 text-muted-foreground">{description}</p>
         ) : null}

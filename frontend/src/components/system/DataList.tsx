@@ -18,9 +18,9 @@ function DataList({
 }: DataListProps) {
   return (
     <Surface tone="default" padding="none" radius="xl" className={className} {...props}>
-      {header ? <div className="border-b border-border/70 px-5 py-4">{header}</div> : null}
-      <div className={cn("divide-y divide-border/70", !children && "min-h-24")}>{children}</div>
-      {footer ? <div className="border-t border-border/70 px-5 py-4">{footer}</div> : null}
+      {header ? <div className="border-b-2 border-border px-5 py-4">{header}</div> : null}
+      <div className={cn("divide-y-2 divide-border", !children && "min-h-24")}>{children}</div>
+      {footer ? <div className="border-t-2 border-border px-5 py-4">{footer}</div> : null}
     </Surface>
   );
 }

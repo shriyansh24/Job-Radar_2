@@ -21,6 +21,8 @@ import {
   type ContactCreate,
   type ReferralSuggestion,
 } from "../api/networking";
+import { MetricStrip } from "../components/system/MetricStrip";
+import { PageHeader } from "../components/system/PageHeader";
 import Badge from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import EmptyState from "../components/ui/EmptyState";
@@ -32,11 +34,11 @@ import { toast } from "../components/ui/toastService";
 import { cn } from "../lib/utils";
 
 const RELATIONSHIP_OPTIONS = [
-  { value: "1", label: "1 • Cold lead" },
-  { value: "2", label: "2 • Light familiarity" },
-  { value: "3", label: "3 • Warm connection" },
-  { value: "4", label: "4 • Strong relationship" },
-  { value: "5", label: "5 • Champion" },
+  { value: "1", label: "1 - Cold lead" },
+  { value: "2", label: "2 - Light familiarity" },
+  { value: "3", label: "3 - Warm connection" },
+  { value: "4", label: "4 - Strong relationship" },
+  { value: "5", label: "5 - Champion" },
 ];
 
 const emptyContact: ContactCreate = {
@@ -59,42 +61,6 @@ const SECONDARY_BUTTON =
   "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !text-[var(--color-text-primary)] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
 const PRIMARY_BUTTON =
   "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-accent-primary)] !text-white !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
-
-function MetricCard({
-  label,
-  value,
-  description,
-  accent,
-}: {
-  label: string;
-  value: string;
-  description: string;
-  accent?: string;
-}) {
-  return (
-    <div className={`${PANEL_ALT} p-4`}>
-      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-        {label}
-      </div>
-      <div className={`mt-3 font-mono text-3xl font-bold ${accent ?? ""}`}>{value}</div>
-      <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{description}</p>
-    </div>
-  );
-}
-
-function SectionTitle({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="space-y-2">
-      <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-accent-primary)]">
-        Execute / Networking
-      </div>
-      <h1 className="text-4xl font-black uppercase tracking-tighter sm:text-5xl">{title}</h1>
-      <p className="max-w-3xl text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
-        {description}
-      </p>
-    </div>
-  );
-}
 
 function ContactRow({
   contact,
@@ -122,7 +88,7 @@ function ContactRow({
             {contact.name}
           </div>
           <div className="mt-1 truncate text-sm text-[var(--color-text-secondary)]">
-            {[contact.role, contact.company].filter(Boolean).join(" • ") || "No role or company yet"}
+            {[contact.role, contact.company].filter(Boolean).join(" - ") || "No role or company yet"}
           </div>
         </div>
         <Badge variant={contact.relationship_strength >= 4 ? "success" : "info"} className="rounded-none">
@@ -156,7 +122,7 @@ function SuggestionCard({
         <div>
           <div className="text-sm font-bold uppercase tracking-[0.08em]">{suggestion.contact.name}</div>
           <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            {[suggestion.contact.role, suggestion.contact.company].filter(Boolean).join(" • ")}
+            {[suggestion.contact.role, suggestion.contact.company].filter(Boolean).join(" - ")}
           </div>
         </div>
         <Badge variant="success" className="rounded-none">
@@ -371,7 +337,7 @@ export default function Networking() {
   const jobOptions =
     recentJobs?.items.map((job) => ({
       value: job.id,
-      label: `${job.title} • ${job.company_name ?? "Unknown company"}`,
+        label: `${job.title} - ${job.company_name ?? "Unknown company"}`,
     })) ?? [];
 
   const selectedJob = recentJobs?.items.find((job) => job.id === selectedJobId) ?? null;
@@ -399,25 +365,45 @@ export default function Networking() {
 
   return (
     <div className="space-y-6 px-4 py-4 sm:px-6 lg:px-8">
-      <div className={`${PANEL} overflow-hidden`}>
-        <div className="grid gap-5 border-b-2 border-[var(--color-text-primary)] px-5 py-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.85fr)] lg:px-6 lg:py-6">
-          <SectionTitle
-            title="Networking"
-            description="A referral CRM with harsh borders, fast scanning, and a direct path from contact to outreach draft."
-          />
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            {heroMetrics.map((metric) => (
-              <MetricCard
-                key={metric.label}
-                label={metric.label}
-                value={metric.value}
-                description={metric.description}
-                accent={metric.accent}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Execute"
+        title="Networking"
+        description="A referral CRM with harsh borders, fast scanning, and a direct path from contact to outreach draft."
+        meta={
+          <>
+            <span className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
+              {contacts?.length ?? 0} contacts
+            </span>
+            <span className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
+              {referralRequests?.length ?? 0} referral drafts
+            </span>
+            <span className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
+              {selectedJobId ? "Targeted" : "Idle"}
+            </span>
+          </>
+        }
+        actions={
+          <Button variant="secondary" className={SECONDARY_BUTTON} onClick={resetForm}>
+            <Plus size={16} weight="bold" />
+            New contact
+          </Button>
+        }
+      />
+
+      <MetricStrip
+        items={heroMetrics.map((metric) => ({
+          key: metric.label,
+          label: metric.label,
+          value: metric.value,
+          hint: metric.description,
+          tone:
+            metric.accent === "text-[var(--color-accent-success)]"
+              ? "success"
+              : metric.accent === "text-[var(--color-accent-warning)]"
+                ? "warning"
+                : "default",
+        }))}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(320px,0.95fr)_minmax(0,1.05fr)]">
         <div className={`${PANEL} overflow-hidden`}>
@@ -607,7 +593,7 @@ export default function Networking() {
                         <div>
                           <div className="text-sm font-bold uppercase tracking-[0.08em]">{contact.name}</div>
                           <div className="text-sm text-[var(--color-text-secondary)]">
-                            {[contact.role, contact.company].filter(Boolean).join(" • ")}
+                            {[contact.role, contact.company].filter(Boolean).join(" - ")}
                           </div>
                         </div>
                         <Badge variant={contact.relationship_strength >= 4 ? "success" : "info"} className="rounded-none">
@@ -715,7 +701,7 @@ export default function Networking() {
                             {requestContact?.name ?? "Unknown contact"}
                           </div>
                           <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                            Job {request.job_id.slice(0, 10)}... • {request.status}
+                            Job {request.job_id.slice(0, 10)}... - {request.status}
                           </div>
                         </div>
                         <Badge variant={request.status === "draft" ? "warning" : "info"} className="rounded-none">

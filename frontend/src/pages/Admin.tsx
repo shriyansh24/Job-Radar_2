@@ -45,7 +45,7 @@ function DiagnosticItem({
   loading: boolean;
 }) {
   return (
-    <div className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-4">
+    <div className="brutal-panel px-4 py-4">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 text-text-muted">{icon}</div>
         <div className="min-w-0 flex-1">
@@ -215,18 +215,19 @@ export default function Admin() {
   return (
     <div className="space-y-6">
       <PageHeader
+        className="hero-panel"
         eyebrow="Operations"
         title="Admin"
         description="System health, diagnostics, source telemetry, and maintenance actions for the data plane."
         meta={
           <>
-            <span className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
               API {health?.status ?? "unknown"}
             </span>
-            <span className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
               DB {dbOnline ? "online" : "offline"}
             </span>
-            <span className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
               {healthySources}/{sources?.length ?? 0} healthy
             </span>
           </>
@@ -235,7 +236,7 @@ export default function Admin() {
 
       <SplitWorkspace
         primary={
-          <Surface>
+          <Surface className="hero-panel">
             <SectionHeader
               title="System Health"
               description="Live service connectivity and environment status."
@@ -243,7 +244,7 @@ export default function Admin() {
             {loadingHealth ? (
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 {Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="border-2 border-border bg-[var(--color-bg-tertiary)] p-4">
+                  <div key={index} className="brutal-panel p-4">
                     <Skeleton variant="text" className="h-4 w-20" />
                     <Skeleton variant="text" className="mt-4 h-6 w-24" />
                   </div>
@@ -251,7 +252,7 @@ export default function Admin() {
               </div>
             ) : (
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="border-2 border-border bg-[var(--color-bg-tertiary)] p-4">
+                <div className="brutal-panel p-4">
                   <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
                     Database
                   </p>
@@ -261,7 +262,7 @@ export default function Admin() {
                     </Badge>
                   </div>
                 </div>
-                <div className="border-2 border-border bg-[var(--color-bg-tertiary)] p-4">
+                <div className="brutal-panel p-4">
                   <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
                     Redis
                   </p>
@@ -269,7 +270,7 @@ export default function Admin() {
                     <Badge variant="success">Connected</Badge>
                   </div>
                 </div>
-                <div className="border-2 border-border bg-[var(--color-bg-tertiary)] p-4">
+                <div className="brutal-panel p-4">
                   <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
                     API Status
                   </p>
@@ -284,7 +285,7 @@ export default function Admin() {
           </Surface>
         }
         secondary={
-          <Surface>
+          <Surface className="brutal-panel">
             <SectionHeader
               title="Diagnostics"
               description="Operational counters and environment details surfaced by the backend."
@@ -319,7 +320,7 @@ export default function Admin() {
         }
       />
 
-      <Surface padding="none">
+      <Surface padding="none" className="hero-panel">
         <div className="border-b-2 border-border px-5 py-5">
           <SectionHeader
             title="Source Health"
@@ -398,7 +399,7 @@ export default function Admin() {
         )}
       </Surface>
 
-      <Surface>
+      <Surface className="hero-panel">
         <SectionHeader
           title="Actions"
           description="Maintenance operations for search indexing and workspace data portability."

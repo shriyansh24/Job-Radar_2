@@ -36,7 +36,7 @@ export default function Table<T extends Record<string, unknown>>({
     <div className={cn("overflow-x-auto border-2 border-border bg-card shadow-[var(--shadow-sm)]", className)}>
       <table className="w-full">
         <thead>
-          <tr className="border-b-2 border-border bg-[var(--color-bg-tertiary)]">
+          <tr className="border-b-2 border-border bg-[var(--color-bg-secondary)]">
             {columns.map((col) => (
               <th
                 key={col.key}
@@ -70,15 +70,15 @@ export default function Table<T extends Record<string, unknown>>({
             <tr
               key={i}
               className={cn(
-                "border-b-2 border-border/20 transition-colors last:border-b-0",
-                onRowClick && "cursor-pointer hover:bg-[var(--color-bg-hover)]"
+                "border-b-2 border-border transition-colors last:border-b-0",
+                onRowClick && "cursor-pointer hover:bg-[var(--color-bg-secondary)]"
               )}
               onClick={() => onRowClick?.(row)}
             >
               {columns.map((col) => (
                 <td
                   key={col.key}
-                  className={cn("px-4 py-3 text-sm text-text-primary", col.className)}
+                  className={cn("px-4 py-3 text-sm leading-6 text-text-primary", col.className)}
                 >
                   {col.render ? col.render(row) : String(row[col.key] ?? "")}
                 </td>

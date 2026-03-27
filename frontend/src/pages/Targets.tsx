@@ -101,7 +101,7 @@ function AttemptTimeline({ attempts }: { attempts: ScrapeAttempt[] }) {
       {attempts.slice(0, 5).map((a) => (
         <div
           key={a.id}
-          className="flex items-start gap-3 border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3"
+          className="brutal-panel flex items-start gap-3 px-4 py-3"
         >
           <div className="mt-0.5">{attemptStatusIcon(a.status)}</div>
           <div className="flex-1 min-w-0">
@@ -193,7 +193,7 @@ function TargetDetail({
   return (
     <div className="flex flex-col h-full">
       {/* Detail header */}
-      <div className="flex items-center justify-between border-b-2 border-border bg-[var(--color-bg-tertiary)] px-5 py-4 shrink-0">
+      <div className="hero-panel flex items-center justify-between px-5 py-4 shrink-0">
         <div>
           <div className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
             Target Detail
@@ -304,7 +304,7 @@ function TargetDetail({
                 value: relativeTime(target.next_scheduled_at),
               },
             ].map(({ label, value }) => (
-              <div key={label} className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3">
+              <div key={label} className="brutal-panel px-4 py-3">
                 <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
                   {label}
                 </p>
@@ -797,6 +797,7 @@ export default function Targets() {
   return (
     <div className="space-y-6">
       <PageHeader
+        className="hero-panel"
         eyebrow="Operations"
         title="Scrape Targets"
         description="A responsive operator view for target ingestion, quarantine state, and batch scraper control. The list stays dense on desktop and collapses into a stacked detail flow on phone and tablet."
@@ -865,7 +866,7 @@ export default function Targets() {
         ]}
       />
 
-      <Surface tone="default" padding="lg" radius="xl">
+      <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
         <div className="grid gap-4 md:grid-cols-3">
           <Select
             value={filters.priority_class}
@@ -916,7 +917,7 @@ export default function Targets() {
       </Surface>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]">
-        <Surface tone="default" padding="none" radius="xl" className="overflow-hidden">
+        <Surface tone="default" padding="none" radius="xl" className="brutal-panel overflow-hidden">
           <div className="border-b-2 border-border px-5 py-4">
             <div className="flex items-baseline justify-between gap-3">
               <div>
@@ -995,7 +996,7 @@ export default function Targets() {
           </div>
         </Surface>
 
-        <Surface tone="default" padding="none" radius="xl" className="overflow-hidden">
+        <Surface tone="default" padding="none" radius="xl" className="hero-panel overflow-hidden">
           {selectedId ? (
             <TargetDetail targetId={selectedId} onClose={() => setSelectedId(null)} />
           ) : (

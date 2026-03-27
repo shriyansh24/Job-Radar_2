@@ -4,20 +4,20 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const surfaceVariants = cva(
-  "relative border-2 border-border text-card-foreground transition-[border-color,background-color,box-shadow,transform] duration-[var(--transition-normal)]",
+  "relative rounded-none border-2 border-border text-card-foreground transition-[border-color,background-color,box-shadow,transform] duration-[var(--transition-normal)]",
   {
     variants: {
       tone: {
         default: "bg-card shadow-[var(--shadow-sm)]",
-        subtle: "bg-[var(--color-bg-tertiary)] shadow-[var(--shadow-sm)]",
-        elevated: "bg-card shadow-[var(--shadow-lg)]",
+        subtle: "bg-[var(--color-bg-secondary)] shadow-[var(--shadow-sm)]",
+        elevated: "bg-[var(--color-bg-secondary)] shadow-[var(--shadow-lg)]",
         ghost: "border-transparent bg-transparent shadow-none",
       },
       padding: {
         none: "",
         sm: "p-4",
-        md: "p-5",
-        lg: "p-6 sm:p-7",
+        md: "p-5 sm:p-6",
+        lg: "p-6 sm:p-8",
       },
       radius: {
         md: "rounded-none",

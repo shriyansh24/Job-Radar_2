@@ -3,8 +3,6 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
-import { Surface } from "./Surface"
-
 const stateBlockVariants = cva("border-2", {
   variants: {
     tone: {
@@ -40,11 +38,12 @@ function StateBlock({
   ...props
 }: StateBlockProps) {
   return (
-    <Surface
-      tone="ghost"
-      padding="md"
-      radius="lg"
-      className={cn("shadow-[var(--shadow-sm)]", stateBlockVariants({ tone }), className)}
+    <div
+      className={cn(
+        "border-2 p-5 shadow-[var(--shadow-sm)]",
+        stateBlockVariants({ tone }),
+        className
+      )}
       {...props}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -55,7 +54,7 @@ function StateBlock({
             </div>
           ) : null}
           <div className="min-w-0 space-y-1.5">
-            <h3 className="text-sm font-black uppercase tracking-[-0.03em]">{title}</h3>
+            <h3 className="font-mono text-[11px] font-bold uppercase tracking-[0.18em]">{title}</h3>
             {description ? (
               <p className="text-sm leading-6 text-muted-foreground">
                 {description}
@@ -65,7 +64,7 @@ function StateBlock({
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
-    </Surface>
+    </div>
   )
 }
 

@@ -18,14 +18,14 @@ function SplitWorkspace({
   return (
     <div
       className={cn(
-        "grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,1fr)]",
-        tertiary && "2xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,1fr)_280px]",
+        "grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.95fr)]",
+        tertiary && "2xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_280px]",
         className
       )}
       {...props}
     >
-      <div className="min-w-0">{primary}</div>
-      {secondary ? <div className="min-w-0">{secondary}</div> : null}
+      <div className="min-w-0 space-y-6">{primary}</div>
+      {secondary ? <div className="min-w-0 space-y-4">{secondary}</div> : null}
       {tertiary ? <div className="min-w-0">{tertiary}</div> : null}
     </div>
   )

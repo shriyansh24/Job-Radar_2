@@ -35,6 +35,13 @@ import { StateBlock } from "../components/system/StateBlock";
 import { Surface } from "../components/system/Surface";
 import { toast } from "../components/ui/toastService";
 import { useAuthStore } from "../store/useAuthStore";
+import {
+  parseThemePreference,
+  serializeThemePreference,
+  type ThemeFamily,
+  type ThemeMode,
+  useUIStore,
+} from "../store/useUIStore";
 
 type SearchEditorState = {
   id: string | null;
@@ -49,10 +56,16 @@ type PasswordForm = {
   confirmPassword: string;
 };
 
-const THEME_OPTIONS = [
-  { value: "system", label: "System" },
+const THEME_MODE_OPTIONS: Array<{ value: ThemeMode; label: string }> = [
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
+];
+
+const THEME_FAMILY_OPTIONS: Array<{ value: ThemeFamily; label: string }> = [
+  { value: "default", label: "Default" },
+  { value: "terminal", label: "Terminal" },
+  { value: "blueprint", label: "Blueprint" },
+  { value: "phosphor", label: "Phosphor" },
 ];
 
 const INTEGRATION_LABELS: Record<IntegrationStatus["provider"], string> = {
@@ -71,8 +84,6 @@ const INTEGRATION_NOTES: Record<IntegrationStatus["provider"], string> = {
 
 const BRUTAL_PANEL =
   "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
-const BRUTAL_PANEL_ALT =
-  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-primary)] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
 const BRUTAL_BUTTON =
   "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !text-[var(--color-text-primary)] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
 const BRUTAL_PRIMARY_BUTTON =
@@ -82,9 +93,17 @@ const BRUTAL_FIELD =
 
 function initialAppSettings(): AppSettings {
   return {
-    theme: "system",
+    theme: "dark",
     notifications_enabled: true,
     auto_apply_enabled: false,
+  };
+}
+
+function normalizeAppSettings(settings: AppSettings): AppSettings {
+  const { mode, themeFamily } = parseThemePreference(settings.theme);
+  return {
+    ...settings,
+    theme: serializeThemePreference(themeFamily, mode),
   };
 }
 
@@ -154,6 +173,9 @@ function parseFilters(text: string): Record<string, unknown> {
 export default function Settings() {
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
+  const mode = useUIStore((state) => state.mode);
+  const themeFamily = useUIStore((state) => state.themeFamily);
+  const setThemePreference = useUIStore((state) => state.setThemePreference);
   const [appForm, setAppForm] = useState<AppSettings>(initialAppSettings());
   const [passwordForm, setPasswordForm] = useState<PasswordForm>({
     currentPassword: "",
@@ -183,9 +205,13 @@ export default function Settings() {
 
   useEffect(() => {
     if (settings) {
-      setAppForm(settings);
+      const normalized = normalizeAppSettings(settings);
+      setAppForm({
+        ...normalized,
+        theme: serializeThemePreference(themeFamily, mode),
+      });
     }
-  }, [settings]);
+  }, [mode, settings, themeFamily]);
 
   useEffect(() => {
     if (!integrations) return;
@@ -233,10 +259,23 @@ export default function Settings() {
     [alertEnabledCount, connectedCount, searches?.length, user?.email]
   );
 
+  function updateThemeSelection(next: Partial<{ mode: ThemeMode; themeFamily: ThemeFamily }>) {
+    const resolvedMode = next.mode ?? mode;
+    const resolvedThemeFamily = next.themeFamily ?? themeFamily;
+    setThemePreference(resolvedThemeFamily, resolvedMode);
+    setAppForm((current) => ({
+      ...current,
+      theme: serializeThemePreference(resolvedThemeFamily, resolvedMode),
+    }));
+  }
+
   const saveAppMutation = useMutation({
     mutationFn: (data: AppSettings) => settingsApi.updateSettings(data),
     onSuccess: (response) => {
-      setAppForm(response.data);
+      const normalized = normalizeAppSettings(response.data);
+      setAppForm(normalized);
+      const nextTheme = parseThemePreference(normalized.theme);
+      setThemePreference(nextTheme.themeFamily, nextTheme.mode);
       toast("success", "Workspace settings saved");
       queryClient.invalidateQueries({ queryKey: ["settings", "app"] });
     },
@@ -374,13 +413,13 @@ export default function Settings() {
 
   return (
     <div className="space-y-6 px-4 py-4 sm:px-6 lg:px-8">
-      <div className={`${BRUTAL_PANEL_ALT} overflow-hidden`}>
+      <Surface tone="default" padding="none" radius="xl" className="overflow-hidden">
         <div className="grid gap-5 border-b-2 border-[var(--color-text-primary)] px-5 py-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.8fr)] lg:px-6 lg:py-6">
           <div className="space-y-3">
             <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-accent-primary)]">
               Operations / Settings
             </div>
-            <h1 className="text-4xl font-black uppercase tracking-tighter sm:text-5xl">
+            <h1 className="font-display text-[clamp(2.6rem,6vw,4.5rem)] font-black uppercase tracking-[-0.08em]">
               Settings console
             </h1>
             <p className="max-w-3xl text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
@@ -405,7 +444,7 @@ export default function Settings() {
             </div>
           </div>
         </div>
-      </div>
+      </Surface>
 
       <PageHeader
         eyebrow="Configuration"
@@ -444,15 +483,30 @@ export default function Settings() {
           <div className="space-y-6">
             <SettingsSection
               title="Workspace defaults"
-              description="Theme, notifications, and auto-apply controls are stored with the app settings record."
+              description="Theme family, color mode, notifications, and auto-apply controls are stored with the app settings record."
               className={BRUTAL_PANEL}
             >
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-4">
                 <Select
-                  label="Theme"
-                  value={appForm.theme}
-                  onChange={(event) => setAppForm((current) => ({ ...current, theme: event.target.value }))}
-                  options={THEME_OPTIONS}
+                  label="Theme family"
+                  value={themeFamily}
+                  onChange={(event) =>
+                    updateThemeSelection({
+                      themeFamily: event.target.value as ThemeFamily,
+                    })
+                  }
+                  options={THEME_FAMILY_OPTIONS}
+                  className={BRUTAL_FIELD}
+                />
+                <Select
+                  label="Mode"
+                  value={mode}
+                  onChange={(event) =>
+                    updateThemeSelection({
+                      mode: event.target.value as ThemeMode,
+                    })
+                  }
+                  options={THEME_MODE_OPTIONS}
                   className={BRUTAL_FIELD}
                 />
                 <Select

@@ -16,7 +16,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={textareaId}
-            className="mb-2 block font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted"
+            className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted"
           >
             {label}
           </label>
@@ -25,13 +25,14 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={textareaId}
           className={cn(
-            'min-h-[80px] w-full resize-y border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-3 text-sm text-text-primary placeholder:text-text-muted outline-none transition-[border-color,box-shadow,background-color] duration-[var(--transition-fast)] focus:border-border-focus focus:shadow-[var(--shadow-blue)]',
+            'min-h-[96px] w-full resize-y border-2 border-border bg-[var(--color-bg-secondary)] px-3 py-3 text-sm text-text-primary placeholder:text-text-muted outline-none transition-[border-color,box-shadow,background-color,color] duration-[var(--transition-fast)] focus:border-border-focus focus:bg-[var(--color-bg-elevated)] focus:shadow-[var(--shadow-blue)] aria-invalid:border-[var(--color-accent-danger)] aria-invalid:shadow-none',
             error && 'border-accent-danger focus:border-accent-danger focus:shadow-none',
             className
           )}
+          aria-invalid={error ? true : props["aria-invalid"]}
           {...props}
         />
-        {error && <p className="mt-1 text-xs text-accent-danger">{error}</p>}
+        {error && <p className="mt-1 text-[11px] font-medium text-accent-danger">{error}</p>}
       </div>
     );
   }

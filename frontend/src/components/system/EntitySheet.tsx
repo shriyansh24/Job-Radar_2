@@ -24,9 +24,9 @@ function EntitySheet({
       className={cn("overflow-hidden", className)}
       {...props}
     >
-      {header ? <div className="border-b border-border/70 px-5 py-4">{header}</div> : null}
+      {header ? <div className="border-b-2 border-border px-5 py-4">{header}</div> : null}
       <div className="px-5 py-5">{children}</div>
-      {footer ? <div className="border-t border-border/70 px-5 py-4">{footer}</div> : null}
+      {footer ? <div className="border-t-2 border-border px-5 py-4">{footer}</div> : null}
     </Surface>
   );
 }

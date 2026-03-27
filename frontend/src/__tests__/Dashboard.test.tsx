@@ -55,7 +55,7 @@ describe("Dashboard", () => {
     expect(screen.getByText("Interviews")).toBeInTheDocument();
     expect(screen.getByText("Offers")).toBeInTheDocument();
     expect(await screen.findByText("42")).toBeInTheDocument();
-    expect(await screen.findByText("12 jobs scraped today")).toBeInTheDocument();
+    expect(await screen.findByText("12 scraped today")).toBeInTheDocument();
   });
 
   it("shows quick action buttons", async () => {

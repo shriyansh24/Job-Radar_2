@@ -36,7 +36,7 @@ function Button({
     <motion.button
       className={cn(buttonVariants({ variant, size }), className)}
       disabled={disabled || loading}
-      whileTap={{ scale: 0.99 }}
+      whileTap={{ scale: 0.985 }}
       {...props}
     >
       {loading ? (
@@ -44,7 +44,7 @@ function Button({
       ) : (
         icon
       )}
-      {children}
+      {children ? <span className="truncate">{children}</span> : null}
     </motion.button>
   );
 }

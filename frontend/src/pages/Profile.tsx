@@ -355,13 +355,13 @@ export default function Profile() {
 
   return (
     <div className="space-y-6 px-4 py-4 sm:px-6 lg:px-8">
-      <div className={`${BRUTAL_PANEL_ALT} overflow-hidden`}>
+      <Surface tone="default" padding="none" radius="xl" className="overflow-hidden">
         <div className="grid gap-5 border-b-2 border-[var(--color-text-primary)] px-5 py-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.8fr)] lg:px-6 lg:py-6">
           <div className="space-y-3">
             <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-accent-primary)]">
               Prepare / Profile
             </div>
-            <h1 className="text-4xl font-black uppercase tracking-tighter sm:text-5xl">
+            <h1 className="font-display text-[clamp(2.6rem,6vw,4.5rem)] font-black uppercase tracking-[-0.08em]">
               Profile ledger
             </h1>
             <p className="max-w-3xl text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
@@ -386,7 +386,7 @@ export default function Profile() {
             </div>
           </div>
         </div>
-      </div>
+      </Surface>
 
       <PageHeader
         eyebrow="Prepare"

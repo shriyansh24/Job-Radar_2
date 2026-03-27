@@ -11,20 +11,20 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { jobsApi, type Job, type JobListParams } from "../api/jobs";
 import JobDetail from "../components/jobs/JobDetail";
+import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
+import {
+  MetricStrip,
+  PageHeader,
+  SplitWorkspace,
+  StateBlock,
+  Surface,
+} from "../components/system";
 import { cn } from "../lib/utils";
 import { useDebounce } from "../hooks/useDebounce";
 import { useJobStore } from "../store/useJobStore";
-import { motion } from "framer-motion";
-
-const HERO_PANEL =
-  "border-2 border-[var(--color-text-primary)] bg-bg-secondary shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
-const CHIP =
-  "inline-flex items-center gap-1 border-2 border-[var(--color-text-primary)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]";
-const BUTTON_BASE =
-  "!rounded-none !border-2 !border-[var(--color-text-primary)] !uppercase !tracking-[0.18em] !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
 
 const sourceOptions = [
   { value: "", label: "All sources" },
@@ -77,71 +77,50 @@ function JobRow({
   const match = scoreLabel(job.match_score);
 
   return (
-    <button
-      type="button"
+    <Surface
+      tone="subtle"
+      padding="md"
+      interactive
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      }}
       className={cn(
-        "group w-full border-2 border-[var(--color-text-primary)] p-4 text-left shadow-[4px_4px_0px_0px_var(--color-text-primary)] transition-transform duration-150 hover:-translate-x-1 hover:-translate-y-1",
-        selected ? "bg-accent-primary/8" : "bg-bg-secondary"
+        "group transition-transform duration-150 hover:-translate-y-1 hover:-translate-x-1",
+        selected && "border-[var(--color-accent-primary)] bg-[var(--color-accent-primary-subtle)]"
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
             {job.source ?? "source"}
           </div>
-          <h3 className="mt-2 truncate text-lg font-semibold tracking-[-0.05em] text-text-primary">
+          <h3 className="mt-2 truncate font-display text-xl font-black uppercase tracking-[-0.05em] text-foreground">
             {job.title}
           </h3>
-          <p className="mt-1 truncate text-sm text-text-secondary">
+          <p className="mt-1 truncate text-sm text-muted-foreground">
             {job.company_name ?? "Unknown company"}
           </p>
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-2">
-          {match ? (
-            <span className={CHIP}>{match}</span>
-          ) : null}
-          {job.is_starred ? (
-            <Star size={16} weight="fill" className="text-accent-warning" />
-          ) : null}
+          {match ? <Badge variant="outline">{match}</Badge> : null}
+          {job.is_starred ? <Star size={16} weight="fill" className="text-[var(--color-accent-warning)]" /> : null}
         </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {job.location ? <span className={CHIP}>{job.location}</span> : null}
-        {job.remote_type ? <span className={CHIP}>{job.remote_type}</span> : null}
-        {job.job_type ? <span className={CHIP}>{job.job_type}</span> : null}
-        {job.experience_level ? <span className={CHIP}>{job.experience_level}</span> : null}
+        {job.location ? <Badge variant="secondary">{job.location}</Badge> : null}
+        {job.remote_type ? <Badge variant="secondary">{job.remote_type}</Badge> : null}
+        {job.job_type ? <Badge variant="secondary">{job.job_type}</Badge> : null}
+        {job.experience_level ? <Badge variant="secondary">{job.experience_level}</Badge> : null}
       </div>
-    </button>
-  );
-}
-
-function StatChip({
-  label,
-  value,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  tone?: "default" | "primary" | "success";
-}) {
-  const toneClass = {
-    default: "bg-bg-secondary",
-    primary: "bg-accent-primary/8",
-    success: "bg-accent-success/8",
-  }[tone];
-
-  return (
-    <div className={cn("border-2 border-[var(--color-text-primary)] p-4", toneClass)}>
-      <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-        {label}
-      </div>
-      <div className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-text-primary">
-        {value}
-      </div>
-    </div>
+    </Surface>
   );
 }
 
@@ -201,86 +180,84 @@ export default function JobBoard() {
 
   return (
     <div className="space-y-6 px-4 py-4 sm:px-6 sm:py-6">
-      <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className={cn(HERO_PANEL, "overflow-hidden")}
-      >
-        <div className="grid gap-0 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.8fr)]">
-          <div className="p-5 sm:p-6 lg:p-8">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={CHIP}>Discover</span>
-              <span className={CHIP}>{total.toLocaleString()} results</span>
-              <span className={CHIP}>{activeFilterCount} active filters</span>
-            </div>
-            <h1 className="mt-4 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl lg:text-6xl">
-              Jobs
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-text-secondary sm:text-base">
-              Search the feed with exact filters or semantic matching, then inspect the selected
-              role in a live detail pane that stays usable on tablet and phone.
-            </p>
+      <PageHeader
+        eyebrow="Discover"
+        title="Jobs"
+        description="Search the feed with exact filters or semantic matching, then inspect the selected role in a live detail pane."
+        meta={
+          <>
+            <Badge variant="info">{total.toLocaleString()} results</Badge>
+            <Badge variant="secondary">{activeFilterCount} active filters</Badge>
+          </>
+        }
+        actions={
+          <>
+            <Button
+              variant={searchMode === "exact" ? "primary" : "secondary"}
+              onClick={() => setSearchMode("exact")}
+              icon={<MagnifyingGlass size={16} weight="bold" />}
+            >
+              Exact
+            </Button>
+            <Button
+              variant={searchMode === "semantic" ? "primary" : "secondary"}
+              onClick={() => setSearchMode("semantic")}
+              icon={<Sparkle size={16} weight="bold" />}
+            >
+              Semantic
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setShowFilters((current) => !current)}
+              icon={<Funnel size={16} weight="bold" />}
+            >
+              Filters
+            </Button>
+          </>
+        }
+      />
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button
-                variant={searchMode === "exact" ? "primary" : "secondary"}
-                onClick={() => setSearchMode("exact")}
-                icon={<MagnifyingGlass size={16} weight="bold" />}
-                className={cn(
-                  BUTTON_BASE,
-                  searchMode === "exact"
-                    ? "bg-accent-primary text-white"
-                    : "bg-bg-secondary text-text-primary"
-                )}
-              >
-                Exact
-              </Button>
-              <Button
-                variant={searchMode === "semantic" ? "primary" : "secondary"}
-                onClick={() => setSearchMode("semantic")}
-                icon={<Sparkle size={16} weight="bold" />}
-                className={cn(
-                  BUTTON_BASE,
-                  searchMode === "semantic"
-                    ? "bg-accent-primary text-white"
-                    : "bg-bg-secondary text-text-primary"
-                )}
-              >
-                Semantic
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => setShowFilters((current) => !current)}
-                icon={<Funnel size={16} weight="bold" />}
-                className={cn(BUTTON_BASE, "bg-bg-secondary text-text-primary")}
-              >
-                Filters
-              </Button>
-            </div>
-          </div>
+      <MetricStrip
+        items={[
+          {
+            key: "mode",
+            label: "Mode",
+            value: searchMode === "semantic" ? "Semantic" : "Exact",
+            icon: searchMode === "semantic" ? <Sparkle size={18} weight="bold" /> : <MagnifyingGlass size={18} weight="bold" />,
+            tone: searchMode === "semantic" ? "warning" : "default",
+            hint:
+              searchMode === "semantic"
+                ? "Best-match ranking without pagination."
+                : "Filter-accurate results with page controls.",
+          },
+          {
+            key: "results",
+            label: "Results",
+            value: total.toLocaleString(),
+            icon: <Briefcase size={18} weight="bold" />,
+            tone: "default",
+            hint: "Current matches in the feed.",
+          },
+          {
+            key: "page",
+            label: "Page",
+            value: searchMode === "semantic" ? "1" : `${currentPage}`,
+            icon: <CaretRight size={18} weight="bold" />,
+            tone: "default",
+            hint: searchMode === "semantic" ? "Semantic search is unpaged." : "Exact search respects page state.",
+          },
+          {
+            key: "filters",
+            label: "Filters",
+            value: activeFilterCount.toString(),
+            icon: <Funnel size={18} weight="bold" />,
+            tone: activeFilterCount > 0 ? "warning" : "default",
+            hint: "Active refinements in the current query.",
+          },
+        ]}
+      />
 
-          <div className="border-t-2 border-[var(--color-text-primary)] bg-bg-tertiary p-5 sm:p-6 xl:border-l-2 xl:border-t-0">
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <StatChip
-                label="Mode"
-                value={searchMode === "semantic" ? "Semantic" : "Exact"}
-                tone="primary"
-              />
-              <StatChip
-                label="Page"
-                value={searchMode === "semantic" ? "1" : `${currentPage}`}
-              />
-            </div>
-            <p className="mt-4 text-sm leading-6 text-text-secondary">
-              Semantic search ranks the best matches and ignores pagination. Exact mode honors the
-              current filters and page state.
-            </p>
-          </div>
-        </div>
-      </motion.section>
-
-      <div className={cn(HERO_PANEL, "p-5 sm:p-6")}>
+      <Surface tone="default" padding="md">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_repeat(3,minmax(160px,1fr))]">
           <Input
             placeholder={searchMode === "semantic" ? "Describe the role you want..." : "Search jobs..."}
@@ -309,7 +286,7 @@ export default function JobBoard() {
         </div>
 
         {showFilters ? (
-          <div className="mt-4 flex flex-wrap items-center gap-3 border-t-2 border-[var(--color-text-primary)] pt-4">
+          <div className="mt-4 flex flex-wrap items-center gap-3 border-t-2 border-border pt-4">
             <div className="min-w-[180px]">
               <Select
                 options={sortOptions}
@@ -332,142 +309,139 @@ export default function JobBoard() {
                 setSearchInput("");
                 setSearchMode("exact");
               }}
-              className={cn(BUTTON_BASE, "bg-bg-secondary text-text-primary")}
             >
               Clear filters
             </Button>
             {searchMode === "semantic" ? (
-              <span className="text-xs text-text-muted">
-                Semantic search ignores pagination and ranks the best matches first.
-              </span>
+              <Badge variant="secondary">Pagination disabled in semantic mode</Badge>
             ) : null}
           </div>
         ) : null}
-      </div>
+      </Surface>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
-        <div className={cn(HERO_PANEL, "overflow-hidden")}>
-          <div className="flex items-center justify-between gap-3 border-b-2 border-[var(--color-text-primary)] bg-bg-tertiary px-5 py-4 sm:px-6">
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                Results
+      <SplitWorkspace
+        primary={
+          <Surface tone="default" padding="none" className="overflow-hidden">
+            <div className="flex items-center justify-between gap-3 border-b-2 border-border bg-[var(--color-bg-tertiary)] px-5 py-4 sm:px-6">
+              <div>
+                <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                  Results
+                </div>
+                <div className="mt-1 font-display text-xl font-black uppercase tracking-[-0.05em] text-foreground">
+                  {searchMode === "semantic" ? "Semantic matches" : "Job list"}
+                </div>
               </div>
-              <div className="mt-1 text-sm font-semibold uppercase tracking-[-0.04em] text-text-primary">
-                {searchMode === "semantic" ? "Semantic matches" : "Job list"}
+              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                {total.toLocaleString()} total
               </div>
             </div>
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {total.toLocaleString()} total
+
+            <div className="max-h-[72vh] overflow-auto p-3 sm:p-4">
+              {isError ? (
+                <StateBlock
+                  tone="danger"
+                  title="Failed to load jobs"
+                  description="Try again in a moment."
+                />
+              ) : isLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 8 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-24 animate-pulse border-2 border-border bg-[var(--color-bg-tertiary)]"
+                    />
+                  ))}
+                </div>
+              ) : jobs.length === 0 ? (
+                <StateBlock
+                  tone="muted"
+                  title={searchMode === "semantic" ? "No semantic matches yet" : "No jobs found"}
+                  description={
+                    searchMode === "semantic"
+                      ? "Try a broader description of the role, company, or stack."
+                      : "Adjust the filters or search query to widen the feed."
+                  }
+                />
+              ) : (
+                <div className="space-y-3">
+                  {jobs.map((job) => (
+                    <JobRow
+                      key={job.id}
+                      job={job}
+                      selected={job.id === selectedJobId}
+                      onClick={() => setSelectedJob(job.id)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
 
-          <div className="max-h-[72vh] overflow-auto p-3 sm:p-4">
-            {isError ? (
-              <div className="border-2 border-[var(--color-text-primary)] bg-[var(--color-accent-danger)]/10 p-5">
-                <div className="text-sm font-semibold uppercase tracking-[0.18em] text-accent-danger">
-                  Failed to load jobs
+            {!searchMode || searchMode === "exact" ? (
+              totalPages > 1 ? (
+                <div className="flex items-center justify-between border-t-2 border-border px-5 py-4 sm:px-6">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                    Page <span className="text-foreground">{currentPage}</span> /{" "}
+                    <span className="text-foreground">{totalPages}</span>
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={currentPage <= 1}
+                      onClick={() => setFilters({ page: currentPage - 1 })}
+                      icon={<CaretLeft size={14} weight="bold" />}
+                    >
+                      Prev
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setFilters({ page: currentPage + 1 })}
+                      icon={<CaretRight size={14} weight="bold" />}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
-                <p className="mt-2 text-sm leading-6 text-text-secondary">
-                  Try again in a moment.
-                </p>
-              </div>
-            ) : isLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 8 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-24 animate-pulse border-2 border-[var(--color-text-primary)] bg-bg-tertiary"
-                  />
-                ))}
-              </div>
-            ) : jobs.length === 0 ? (
-              <div className="border-2 border-[var(--color-text-primary)] bg-bg-tertiary p-5">
-                <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-text-muted">
-                  <Briefcase size={16} weight="bold" />
-                  {searchMode === "semantic" ? "No semantic matches yet" : "No jobs found"}
-                </div>
-                <p className="mt-3 text-sm leading-6 text-text-secondary">
-                  {searchMode === "semantic"
-                    ? "Try a broader description of the role, company, or stack."
-                    : "Adjust the filters or search query to widen the feed."}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {jobs.map((job) => (
-                  <JobRow
-                    key={job.id}
-                    job={job}
-                    selected={job.id === selectedJobId}
-                    onClick={() => setSelectedJob(job.id)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {!searchMode || searchMode === "exact" ? (
-            totalPages > 1 ? (
-              <div className="flex items-center justify-between border-t-2 border-[var(--color-text-primary)] px-5 py-4 sm:px-6">
-                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                  Page <span className="text-text-primary">{currentPage}</span> /{" "}
-                  <span className="text-text-primary">{totalPages}</span>
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={currentPage <= 1}
-                    onClick={() => setFilters({ page: currentPage - 1 })}
-                    icon={<CaretLeft size={14} weight="bold" />}
-                    className={cn(BUTTON_BASE, "bg-bg-secondary text-text-primary")}
-                  >
-                    Prev
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setFilters({ page: currentPage + 1 })}
-                    icon={<CaretRight size={14} weight="bold" />}
-                    className={cn(BUTTON_BASE, "bg-bg-secondary text-text-primary")}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            ) : null
-          ) : null}
-        </div>
-
-        <div className="xl:sticky xl:top-6">
-          <div className={cn(HERO_PANEL, "overflow-hidden")}>
+              ) : null
+            ) : null}
+          </Surface>
+        }
+        secondary={
+          <Surface tone="default" padding="none" className="overflow-hidden xl:sticky xl:top-6">
             {selectedJobId ? (
               isLoadingDetail ? (
                 <div className="space-y-4 p-5 sm:p-6">
-                  <div className="h-10 animate-pulse border-2 border-[var(--color-text-primary)] bg-bg-tertiary" />
-                  <div className="h-4 animate-pulse border-2 border-[var(--color-text-primary)] bg-bg-tertiary" />
-                  <div className="h-40 animate-pulse border-2 border-[var(--color-text-primary)] bg-bg-tertiary" />
+                  <div className="h-10 animate-pulse border-2 border-border bg-[var(--color-bg-tertiary)]" />
+                  <div className="h-4 animate-pulse border-2 border-border bg-[var(--color-bg-tertiary)]" />
+                  <div className="h-40 animate-pulse border-2 border-border bg-[var(--color-bg-tertiary)]" />
                 </div>
               ) : selectedJob ? (
                 <JobDetail job={selectedJob} onClose={() => setSelectedJob(null)} />
-              ) : null
+              ) : (
+                <div className="p-5 sm:p-6">
+                  <StateBlock
+                    tone="muted"
+                    title="Select a role"
+                    description="Open a result to inspect the posting, score, and application entry point."
+                    icon={<Briefcase size={16} weight="bold" />}
+                  />
+                </div>
+              )
             ) : (
               <div className="p-5 sm:p-6">
-                <div className="border-2 border-[var(--color-text-primary)] bg-bg-tertiary p-5">
-                  <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    <Briefcase size={16} weight="bold" />
-                    Select a role
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-text-secondary">
-                    Open a result to inspect the posting, score, and application entry point.
-                  </p>
-                </div>
+                <StateBlock
+                  tone="muted"
+                  title="Select a role"
+                  description="Open a result to inspect the posting, score, and application entry point."
+                  icon={<Briefcase size={16} weight="bold" />}
+                />
               </div>
             )}
-          </div>
-        </div>
-      </section>
+          </Surface>
+        }
+      />
     </div>
   );
 }

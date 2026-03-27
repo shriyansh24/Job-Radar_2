@@ -21,8 +21,14 @@ const sectionTitles: Record<string, string> = {
 
 export default function Sidebar() {
   const collapsed = useUIStore((state) => state.sidebarCollapsed);
+  const mode = useUIStore((state) => state.mode);
+  const themeFamily = useUIStore((state) => state.themeFamily);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const themeLabel =
+    themeFamily === "default"
+      ? "Default"
+      : `${themeFamily.charAt(0).toUpperCase()}${themeFamily.slice(1)}`;
 
   return (
     <aside
@@ -33,18 +39,23 @@ export default function Sidebar() {
     >
       <div className="border-b-2 border-border px-4 py-5">
         <div className="flex items-start gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center border-2 border-border bg-foreground text-background shadow-[var(--shadow-sm)]">
+          <div className="flex size-11 shrink-0 items-center justify-center border-2 border-border bg-foreground text-background shadow-hard-sm">
             <TerminalWindow size={18} weight="bold" />
           </div>
           {!collapsed ? (
-            <div className="min-w-0">
-              <p className="command-label">Command</p>
-              <h2 className="mt-2 text-xl font-black uppercase tracking-[-0.08em] text-foreground">
-                JobRadar V2
+            <div className="min-w-0 space-y-1">
+              <p className="command-label">Command rail</p>
+              <h2 className="font-display text-2xl font-black uppercase tracking-[-0.08em] text-foreground">
+                JobRadar
               </h2>
-              <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
-                v2.0.4
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="border-2 border-border bg-primary px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-primary-foreground shadow-hard-sm">
+                  v2.0.4
+                </span>
+                <span className="border-2 border-border bg-background px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary">
+                  {themeLabel} / {mode}
+                </span>
+              </div>
             </div>
           ) : (
             <span className="sr-only">JobRadar command center navigation</span>
@@ -55,7 +66,9 @@ export default function Sidebar() {
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
         {workspaceSections.map((section) => (
           <div key={section.label} className="space-y-2">
-            {!collapsed ? <div className="label px-2">{sectionTitles[section.label] ?? section.label}</div> : null}
+            {!collapsed ? (
+              <div className="label px-2">{sectionTitles[section.label] ?? section.label}</div>
+            ) : null}
             <div className="space-y-1">
               {section.items.map(({ path, icon: Icon, label }) => (
                 <NavLink
@@ -97,7 +110,7 @@ export default function Sidebar() {
           type="button"
           onClick={() => navigate("/jobs")}
           className={cn(
-            "hard-press inline-flex w-full items-center justify-center gap-2 border-2 border-border bg-[var(--color-accent-success)] px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-[var(--shadow-sm)]",
+            "hard-press inline-flex w-full items-center justify-center gap-2 border-2 border-border bg-[var(--color-accent-success)] px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-hard-sm",
             collapsed && "px-0"
           )}
         >
@@ -106,13 +119,23 @@ export default function Sidebar() {
         </button>
 
         {!collapsed ? (
-          <div className="space-y-1">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
-              System status
-            </p>
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-success">
-              Optimal
-            </p>
+          <div className="space-y-3 border-2 border-border bg-card p-3 shadow-hard-sm">
+            <div className="space-y-1">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
+                System status
+              </p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-success">
+                Optimal
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
+                Theme matrix
+              </p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                {themeLabel} / {mode}
+              </p>
+            </div>
           </div>
         ) : null}
       </div>
