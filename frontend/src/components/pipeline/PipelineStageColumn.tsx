@@ -1,3 +1,4 @@
+import { useDroppable } from "@dnd-kit/core";
 import type { Application } from "../../api/pipeline";
 import Badge from "../ui/Badge";
 import { SkeletonCard } from "../ui/Skeleton";
@@ -14,6 +15,8 @@ const STAGE_TONES: Record<string, string> = {
   interviewing: "bg-[var(--color-accent-warning)]",
   offer: "bg-[var(--color-accent-success)]",
   accepted: "bg-[var(--color-accent-success)]",
+  rejected: "bg-[var(--color-accent-danger)]",
+  withdrawn: "bg-[var(--color-text-muted)]",
 };
 
 export function PipelineStageColumn({
@@ -36,9 +39,18 @@ export function PipelineStageColumn({
   loading: boolean;
 }) {
   const tone = STAGE_TONES[keyName] ?? "bg-[var(--color-accent-primary)]";
+  const { isOver, setNodeRef } = useDroppable({ id: keyName });
 
   return (
-    <Surface tone="default" padding="none" className="xl:min-w-[18rem] xl:flex-[0_0_18rem]">
+    <div ref={setNodeRef}>
+      <Surface
+        tone="default"
+        padding="none"
+        className={cn(
+          "xl:min-w-[18rem] xl:flex-[0_0_18rem] transition-[border-color,box-shadow] duration-200",
+          isOver && "border-[var(--color-accent-primary)] shadow-[0_0_0_2px_var(--color-accent-primary)]"
+        )}
+      >
       <div className={cn("h-2 border-b-2 border-border", tone)} />
       <div className="p-4">
         <div className="flex items-center justify-between gap-3">
@@ -55,7 +67,13 @@ export function PipelineStageColumn({
           {loading ? (
             Array.from({ length: 2 }).map((_, index) => <SkeletonCard key={index} />)
           ) : applications.length === 0 ? (
-            <StateBlock tone="muted" title="No applications" description="No records are in this stage." />
+            <StateBlock
+              tone={isOver ? "warning" : "muted"}
+              title={isOver ? "Drop here" : "No applications"}
+              description={
+                isOver ? "Release to move the application into this stage." : "No records are in this stage."
+              }
+            />
           ) : (
             applications.map((application) => (
               <PipelineStageCard
@@ -71,6 +89,7 @@ export function PipelineStageColumn({
           )}
         </div>
       </div>
-    </Surface>
+      </Surface>
+    </div>
   );
 }

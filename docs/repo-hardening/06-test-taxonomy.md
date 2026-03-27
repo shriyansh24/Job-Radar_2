@@ -14,7 +14,10 @@ Define and track the purpose-driven test layout used by the repository.
 - Frontend browser/e2e coverage now includes auth/shell smoke, shell navigation, responsive shell behavior, recovered interview/search flows, route-family outcomes, route-family prepare/intelligence/outcomes coverage, route-family operations/admin/data coverage, route-family profile/settings/auth coverage, and representative route/theme matrix checks.
 - Backend runtime, migration, security, contract, and worker-lifecycle suites now have dedicated directories under `backend/tests/`.
 - Backend auto-apply extractor, adapter, and safety coverage now has explicit unit suites under `backend/tests/unit/auto_apply/`.
+- Backend auto-apply operator integration coverage now has an explicit API suite under `backend/tests/integration/auto_apply/`.
 - Backend interview, search, dedup, and auto-apply worker coverage now has explicit subsystem buckets under `backend/tests/unit/{interview,search,dedup}/` and `backend/tests/workers/auto_apply/`.
+- Backend ATS identity and scrape-target identity lineage now have explicit migration and integration coverage under `backend/tests/migrations/` and `backend/tests/integration/scraping/`.
+- Backend digest-worker follow-through now has a dedicated worker suite under `backend/tests/workers/`.
 - Several older service/model suites still remain in broad backend `unit/` buckets, and some frontend page/component files still cover multiple behaviors inside one suite.
 
 ## Live Taxonomy
@@ -99,18 +102,26 @@ backend/tests/
   - `backend/tests/workers/scraping/test_target_batch_worker.py`
   - `backend/tests/workers/scraping/test_scrape_scheduler.py`
   - `backend/tests/workers/auto_apply/test_auto_apply_worker.py`
+  - `backend/tests/workers/test_digest_worker.py`
 - Auto-apply capability recovery suites added:
   - `backend/tests/unit/auto_apply/test_form_extractor.py`
   - `backend/tests/unit/auto_apply/test_greenhouse_adapter.py`
   - `backend/tests/unit/auto_apply/test_lever_adapter.py`
   - `backend/tests/unit/auto_apply/test_safety_layer.py`
+- Auto-apply operator/API suites added:
+  - `backend/tests/integration/auto_apply/test_auto_apply_api.py`
 - Interview/search/dedup suites moved into subsystem buckets:
   - `backend/tests/unit/interview/test_interview_service.py`
   - `backend/tests/unit/interview/test_interview_contextual_service.py`
   - `backend/tests/unit/search/test_hybrid_search.py`
   - `backend/tests/unit/search/test_freshness.py`
   - `backend/tests/unit/search/test_normalization.py`
+  - `backend/tests/unit/search/test_ats_composite_key.py`
   - `backend/tests/unit/dedup/test_deduplication.py`
+- ATS identity lineage suites added:
+  - `backend/tests/integration/scraping/test_scraping_identity.py`
+  - `backend/tests/migrations/test_job_ats_identity_migration.py`
+  - `backend/tests/migrations/test_scrape_target_identity_migrations.py`
 
 ## Remaining Rename / Split Candidates
 

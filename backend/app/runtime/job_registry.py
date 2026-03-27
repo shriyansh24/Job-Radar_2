@@ -8,6 +8,7 @@ import structlog
 
 from app.workers.alert_worker import check_saved_search_alerts
 from app.workers.auto_apply_worker import run_auto_apply_batch
+from app.workers.digest_worker import run_daily_digest
 from app.workers.enrichment_worker import (
     run_embedding_batch,
     run_enrichment_batch,
@@ -217,6 +218,15 @@ async def _run_followup_reminders(ctx: dict[str, Any]) -> None:
     )
 
 
+async def _run_daily_digest(ctx: dict[str, Any]) -> None:
+    await _run_with_lifecycle(
+        job_name="daily_digest",
+        queue_name=OPS_QUEUE,
+        ctx=ctx,
+        callback=lambda: run_daily_digest(ctx=ctx),
+    )
+
+
 REGISTERED_JOBS: dict[str, RegisteredJob] = {
     "scheduled_scrape": RegisteredJob(
         name="scheduled_scrape",
@@ -314,6 +324,13 @@ REGISTERED_JOBS: dict[str, RegisteredJob] = {
         queue_name=OPS_QUEUE,
         runner=_run_followup_reminders,
         timeout_seconds=900,
+        max_tries=2,
+    ),
+    "daily_digest": RegisteredJob(
+        name="daily_digest",
+        queue_name=OPS_QUEUE,
+        runner=_run_daily_digest,
+        timeout_seconds=1800,
         max_tries=2,
     ),
 }

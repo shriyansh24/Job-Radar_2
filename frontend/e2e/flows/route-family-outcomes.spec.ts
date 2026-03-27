@@ -37,7 +37,7 @@ test.describe("flows/route-family-outcomes", () => {
     await expect(page.getByText("No jobs found", { exact: true })).toBeVisible();
 
     await page.getByRole("button", { name: /^semantic$/i }).click();
-    await expect(page.getByText("No semantic matches", { exact: true })).toBeVisible();
+    await expect(page.getByText("Enter a semantic query", { exact: true })).toBeVisible();
 
     await page.goto("/");
     await page.getByRole("button", { name: /^add application$/i }).click();

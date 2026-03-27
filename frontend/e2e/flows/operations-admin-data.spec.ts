@@ -59,5 +59,13 @@ test.describe("flows/operations-admin-data", () => {
     await expect(page.getByPlaceholder("senior frontend engineer")).toBeVisible();
     await expect(page.getByRole("button", { name: /^expand query$/i }).first()).toBeVisible();
     await expect(page.getByText("No expansion run yet", { exact: true })).toBeVisible();
+
+    await page.goto("/auto-apply");
+    await expect(
+      page.getByRole("main").getByRole("heading", { name: "Auto Apply", exact: true })
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /^run now$/i }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /^pause$/i }).first()).toBeVisible();
+    await expect(page.getByText("Operator controls", { exact: true })).toBeVisible();
   });
 });

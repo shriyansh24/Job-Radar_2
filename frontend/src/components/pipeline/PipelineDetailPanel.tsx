@@ -3,21 +3,25 @@ import type { Application } from "../../api/pipeline";
 import Button from "../ui/Button";
 import { StateBlock } from "../system/StateBlock";
 import { Surface } from "../system/Surface";
-import { NEXT_STAGE } from "./pipelineWorkflow";
+import { NEXT_STAGE, STAGE_LABELS, getAllowedTransitions } from "./pipelineWorkflow";
 
 export function PipelineDetailPanel({
   selectedApplication,
   firstApplicationId,
   advancingId,
-  onAdvance,
+  onTransition,
   onSelectFirst,
 }: {
   selectedApplication: Application | null;
   firstApplicationId: string | null;
   advancingId: string | null;
-  onAdvance: (application: Application) => void;
+  onTransition: (application: Application, nextStatus: string) => void;
   onSelectFirst: () => void;
 }) {
+  const allowedTransitions = selectedApplication
+    ? getAllowedTransitions(selectedApplication.status)
+    : [];
+
   return (
     <Surface tone="default" padding="none" className="overflow-hidden xl:sticky xl:top-6">
       <div className="border-b-2 border-border bg-[var(--color-bg-tertiary)] px-5 py-4 sm:px-6">
@@ -58,12 +62,24 @@ export function PipelineDetailPanel({
               <Button
                 variant="primary"
                 loading={advancingId === selectedApplication.id}
-                onClick={() => onAdvance(selectedApplication)}
+                onClick={() => onTransition(selectedApplication, NEXT_STAGE[selectedApplication.status]!)}
                 icon={<ArrowRight size={16} weight="bold" />}
               >
                 Advance
               </Button>
             ) : null}
+            {allowedTransitions
+              .filter((status) => status !== NEXT_STAGE[selectedApplication.status])
+              .map((status) => (
+                <Button
+                  key={status}
+                  variant="secondary"
+                  loading={advancingId === selectedApplication.id}
+                  onClick={() => onTransition(selectedApplication, status)}
+                >
+                  Move to {STAGE_LABELS[status] ?? status}
+                </Button>
+              ))}
             {firstApplicationId ? <Button variant="secondary" onClick={onSelectFirst}>First record</Button> : null}
           </div>
         </div>

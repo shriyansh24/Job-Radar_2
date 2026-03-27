@@ -7,13 +7,16 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from decimal import Decimal
+from typing import Any, cast
 from urllib.parse import urlparse
 
 import structlog
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Settings
-from app.scraping.deduplication import DeduplicationService
+from app.scraping.deduplication import DeduplicationService, derive_ats_identity
 from app.scraping.port import ScrapedJob, ScraperPort
 from app.scraping.rate_limiter import CircuitBreaker, TokenBucketLimiter
 from app.scraping.scrapers.apify import ApifyScraper
@@ -26,6 +29,7 @@ from app.scraping.scrapers.serpapi import SerpAPIScraper
 from app.scraping.scrapers.theirstack import TheirStackScraper
 
 logger = structlog.get_logger()
+EventCallback = Callable[[dict[str, object]], Any]
 
 
 @dataclass
@@ -57,7 +61,7 @@ class ScrapingService:
 
     def _init_scrapers(self) -> None:
         """Initialize all available scrapers based on configured API keys."""
-        scraper_classes: list[type[ScraperPort]] = [
+        scraper_classes: list[type[Any]] = [
             SerpAPIScraper,
             GreenhouseScraper,
             LeverScraper,
@@ -68,7 +72,7 @@ class ScrapingService:
             CareerPageScraper,
         ]
         for cls in scraper_classes:
-            scraper = cls(self.settings)  # type: ignore[call-arg]
+            scraper = cast(ScraperPort, cls(self.settings))
             name = scraper.source_name
             self._scrapers[name] = scraper
             self._rate_limiters[name] = TokenBucketLimiter(rate=1.0, burst=5)
@@ -84,7 +88,7 @@ class ScrapingService:
         query: str = "",
         location: str | None = None,
         user_id: uuid.UUID | None = None,
-        event_callback: Callable | None = None,
+        event_callback: EventCallback | None = None,
     ) -> ScraperRunResult:
         """Run scrapers, dedup results, save to DB, broadcast events."""
         start = time.monotonic()
@@ -185,7 +189,7 @@ class ScrapingService:
             )
             self.db.add(run)
             await self.db.flush()
-            return run.id  # type: ignore[return-value]
+            return run.id
         except Exception as exc:
             logger.debug("scraper_run_record_unavailable", error=str(exc))
             await self.db.rollback()
@@ -210,7 +214,7 @@ class ScrapingService:
                 run.jobs_updated = result.jobs_updated
                 run.error_message = "; ".join(result.errors) if result.errors else None
                 run.completed_at = datetime.now(UTC)
-                run.duration_seconds = round(elapsed, 2)
+                run.duration_seconds = Decimal(str(round(elapsed, 2)))
             await self.db.commit()
         except Exception as exc:
             logger.warning("scraper_run_record_update_failed", error=str(exc))
@@ -231,14 +235,28 @@ class ScrapingService:
 
         for scraped in jobs:
             job_id = self._compute_job_id(scraped)
-            existing = await self.db.get(Job, job_id)
+            scraped_fields = self._scraped_to_dict(scraped)
+            ats_composite_key = scraped_fields.get("ats_composite_key")
+            existing = None
+            if ats_composite_key:
+                existing = await self.db.scalar(
+                    select(Job).where(Job.ats_composite_key == ats_composite_key)
+                )
+            if existing is None:
+                existing = await self.db.get(Job, job_id)
+
             if existing:
+                for field_name, value in scraped_fields.items():
+                    if field_name == "scraped_at":
+                        continue
+                    setattr(existing, field_name, value)
+                existing.scraped_at = datetime.now(UTC)
                 updated_count += 1
             else:
                 job = Job(
                     id=job_id,
                     user_id=user_id,
-                    **self._scraped_to_dict(scraped),
+                    **scraped_fields,
                 )
                 self.db.add(job)
                 new_count += 1
@@ -258,8 +276,9 @@ class ScrapingService:
         return hashlib.sha256(content.encode()).hexdigest()[:64]
 
     @staticmethod
-    def _scraped_to_dict(job: ScrapedJob) -> dict:
+    def _scraped_to_dict(job: ScrapedJob) -> dict[str, Any]:
         """Convert ScrapedJob to dict for Job ORM model."""
+        ats_identity = derive_ats_identity(job)
         return {
             "source": job.source,
             "source_url": job.source_url,
@@ -277,16 +296,19 @@ class ScrapingService:
             "experience_level": job.experience_level,
             "job_type": job.job_type,
             "posted_at": job.posted_at,
+            "ats_job_id": ats_identity["ats_job_id"],
+            "ats_provider": ats_identity["ats_provider"],
+            "ats_composite_key": ats_identity["ats_composite_key"],
             "scraped_at": datetime.now(UTC),
         }
 
     async def run_target_batch(
         self,
-        targets: list,
-        run_id,
-        adapter_registry,
-        browser_pool,
-    ) -> dict:
+        targets: list[Any],
+        run_id: uuid.UUID,
+        adapter_registry: Any,
+        browser_pool: Any,
+    ) -> dict[str, Any]:
         """Execute scraping for a batch of targets using the tier-based pipeline.
 
         This is the new entry point for Mode 1 (career page) and Mode 3 (watchlist)
@@ -304,9 +326,9 @@ class ScrapingService:
         from app.scraping.execution.page_crawler import PageCrawler
         from app.scraping.models import ScrapeAttempt
 
-        succeeded_target_ids: set = set()
+        succeeded_target_ids: set[uuid.UUID] = set()
 
-        results: dict = {
+        results: dict[str, Any] = {
             "jobs_found": 0,
             "targets_attempted": 0,
             "targets_succeeded": 0,
@@ -315,7 +337,7 @@ class ScrapingService:
             "succeeded_target_ids": succeeded_target_ids,
         }
 
-        async def process_target(target) -> None:
+        async def process_target(target: Any) -> None:
             plan = TierRouter.route(target)
             steps = [plan.primary_step] + list(plan.fallback_chain)
 
@@ -382,19 +404,19 @@ class ScrapingService:
                     #   - ats_vendor is not set (custom HTML, not Greenhouse etc.)
                     source_kind = getattr(target, "source_kind", None)
                     ats_vendor = getattr(target, "ats_vendor", None)
-                    paginated_jobs: list[dict] = []
+                    paginated_jobs: list[dict[str, Any]] = []
 
                     if source_kind == "career_page" and not ats_vendor:
                         # Build a simple fetch callable that re-uses the same
                         # adapter method used for the first page fetch.
                         async def _fetch_page(url: str) -> str:
                             page_result = await method(url, timeout_s=step.timeout_s)
-                            return page_result.html
+                            return cast(str, page_result.html)
 
                         # No-op parser — job extraction is owned by the
                         # downstream parser pipeline, not the crawler.
                         # The crawler returns raw dicts; callers merge them.
-                        def _parse_page(html: str, url: str) -> list[dict]:
+                        def _parse_page(html: str, url: str) -> list[dict[str, Any]]:
                             return []  # extraction handled separately
 
                         crawler = PageCrawler()

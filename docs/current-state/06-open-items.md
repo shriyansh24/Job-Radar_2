@@ -13,7 +13,7 @@
 ## Remaining Frontend Gaps
 - Route-by-route copy cleanup and page decomposition are still worth continuing on the largest remaining surfaces, but the main frontend sweep is now integrated and validated.
 - Semantic search now uses the live hybrid backend path and can be launched from Search Expansion, but the ranking model is still intentionally conservative and can be made richer.
-- Auto-apply backend now includes recovered form extraction, Greenhouse/Lever adapters, a pre-flight safety layer, live manual/batch service wiring, and worker-level batch execution, but broader operator tooling and end-to-end coverage are still partial.
+- Auto-apply backend now includes recovered form extraction, Greenhouse/Lever adapters, a pre-flight safety layer, live manual/batch service wiring, worker-level batch execution, and operator-facing run/pause/list/stats coverage, but broader operator tooling and deeper browser coverage are still partial.
 - Saved-search alerts UI and scheduler UX remain a follow-up enhancement.
 - Resume upload parsing, tailoring, ATS validation, and renderer/template coverage are live, but richer preview/export flows and additional operator polish remain the largest resume-family gap.
 - Interview prep now returns richer company/role context in the live branch, but deeper persistence/history packaging from `feat/p1-core-value` is still not promoted.
@@ -21,7 +21,7 @@
 ## Non-Blocking Residuals
 - No blocking residual is currently tied to the frontend sweep; additional browser captures are incremental QA rather than a missing validation gate.
 - Migration replay now has a dedicated GitHub workflow and a canonical migration-ops runbook, but only one downgrade path is explicitly exercised in tests.
-- Scheduler isolation is now queue-backed through ARQ, and queue telemetry now includes depth / retry metadata, but alerting and broader worker-lane coverage still need hardening.
+- Scheduler isolation is now queue-backed through ARQ, and queue telemetry now includes depth / retry metadata, but alerting, retry-exhaustion handling, and broader worker-lane coverage still need hardening.
 - Auth lifecycle logging now carries request correlation and normalized reason codes through the main app log stream, but a separate audit-focused sink remains deferred.
 
 ## Coverage TODOs
@@ -37,6 +37,7 @@
 - Saved-search alerts UI and related UX
 - Further parser tuning for difficult JS-heavy career pages
 - Broader end-to-end Playwright coverage beyond the current smoke, shell, recovered interview/search, route-family, prepare/intelligence/outcomes, operations/admin/data, profile/settings/auth, and theme-matrix passes
+- Queue alerting, lane-isolation proof, and digest scheduling/monitoring beyond the current ARQ runtime topology
 - Longer-term vendoring or repackaging decisions for scraper dependencies
 
 ## Historical Planning Material

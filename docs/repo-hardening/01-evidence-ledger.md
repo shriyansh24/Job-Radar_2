@@ -91,7 +91,7 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 
 | Status | Branch | Evidence | Finding |
 |---|---|---|---|
-| `DOCUMENTED` | `feat/p1-core-value` | local tip `cc907ec`; PR #13 metadata plus selective recovery on `codex/ui-changes` | Still contains unique P0/P1 capability work not in `main` or fully on `codex/ui-changes`, especially resume tailoring/rendering, remaining operator depth, pipeline ergonomics, and worker/search follow-through beyond the recovered interview/hybrid/auto-apply slices |
+| `DOCUMENTED` | `feat/p1-core-value` | local tip `cc907ec`; PR #13 metadata plus selective recovery on `codex/ui-changes` | Still contains unique P0/P1 capability work not in `main` or fully on `codex/ui-changes`, but ATS identity persistence, hybrid search, interview prep, the auto-apply execution path, digest-worker follow-through, and some pipeline ergonomics are no longer branch-only |
 | `DOCUMENTED` | `origin/feat/p2-polish-advanced` | PR #17 metadata and current branch topology | Useful as provenance for P2 capability history, but current tip appears converged into `main`; not a unique live-code branch anymore |
 | `DOCUMENTED` | `codex/ui-changes` | live branch history from `3ae5eac` through `5ef1c0a` | This is the unique UI overhaul and hardening line with theme-family runtime, shell/page decomposition, runtime split, CSRF hardening, and committed browser coverage |
 | `DOCUMENTED` | `ui-overhaul-design` | branch-only commits visible in local history | Historical UI spike with unique docs/components, but not the selected live UI line |
@@ -108,7 +108,7 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 | Branch/phase truth | `git` history + GitHub PR metadata | Must be proven file-by-file before integration decisions |
 
 ## Immediate Risks
-- `feat/p1-core-value` still contains meaningful capability work that can be lost by neglect, even after the backend auto-apply execution slice was partially recovered.
+- `feat/p1-core-value` still contains meaningful capability work that can be lost by neglect, even after ATS identity persistence, digest-worker follow-through, pipeline state exposure, and the backend auto-apply execution slice were partially recovered.
 - The committed Playwright/browser lane now exists, but route-family and eight-mode coverage are still thin.
 - Several historical/system-inventory documents still read like live status unless explicitly archived or demoted.
 - Scheduler readiness is now less false-green than before, but worker/job failure semantics still need more explicit observability.

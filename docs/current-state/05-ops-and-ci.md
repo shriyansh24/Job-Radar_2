@@ -32,6 +32,7 @@
 - `cd backend && uv run pytest tests/integration/test_auth_api.py tests/integration/test_settings_api.py tests/integration/test_admin_api.py tests/integration/test_vault_api.py`
 - `cd backend && uv run pytest tests/infra/test_runtime_config.py tests/infra/test_queue_runtime_compose.py tests/workers/test_queue_runtime.py tests/workers/test_arq_worker_runtime.py tests/workers/test_job_registry_runtime.py tests/workers/test_scheduler_runtime.py tests/workers/scraping/test_scrape_scheduler.py`
 - `cd backend && uv run pytest tests/workers/test_worker_runtime.py`
+- `cd backend && uv run pytest tests/integration/auto_apply/test_auto_apply_api.py tests/integration/scraping/test_scraping_identity.py tests/workers/test_digest_worker.py tests/migrations/test_job_ats_identity_migration.py tests/migrations/test_scrape_target_identity_migrations.py`
 
 ### Frontend
 - `cd frontend && npm run lint`
@@ -78,6 +79,7 @@
 - `frontend-e2e.yml` also runs weekly as a drift-detection lane in addition to PR, `main` push, and manual runs.
 - `docs-validation.yml` runs repo-local path/reference validation for live docs and workflow-linked files.
 - `migration-safety.yml` replays Alembic on clean Postgres and runs `backend/tests/migrations/test_alembic_revisions.py`.
+- `migration-safety.yml` now runs the full `backend/tests/migrations/` lane and uploads `alembic history --verbose` output on failure for replay debugging.
 - `codeql.yml` and `dependency-review.yml` remain enabled.
 
 ## Branch Protection Assumptions
@@ -92,4 +94,4 @@
 - Local browser QA now depends on a migrated schema; make sure the backend DB is at Alembic `head` before validating settings, integrations, and other current-schema surfaces.
 - Compose-first local runtime is the repo default; older manual `jobradar-postgres` flows are now treated as legacy local overrides.
 - Scheduler readiness now proves startup, DB reachability, and Redis/queue reachability; queue enqueue/dequeue logs also emit queue depth and retry metadata, but health is still not a substitute for sustained throughput monitoring.
-- Worker isolation is queue-backed and compose-visible; the remaining runtime work is broader worker-lane coverage and alerting around queue depth / retry pressure rather than basic queue ownership.
+- Worker isolation is queue-backed and compose-visible; the remaining runtime work is broader worker-lane coverage, honest retry semantics, and alerting around queue depth / retry pressure rather than basic queue ownership.
