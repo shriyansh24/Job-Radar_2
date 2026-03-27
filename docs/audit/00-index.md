@@ -8,7 +8,7 @@
 
 ## Latest Validation Snapshot
 
-- Full validation and stale-item recheck on `2026-03-24`:
+- Full validation and stale-item recheck on `2026-03-24`, followed by a refreshed frontend/browser verification pass on `2026-03-27`:
   - `cd backend && uv run pytest tests/integration/test_auth_api.py tests/integration/test_settings_api.py tests/integration/test_admin_api.py tests/integration/test_vault_api.py`
   - `cd backend && uv run alembic current`
   - `cd backend && uv run alembic upgrade head`
@@ -18,9 +18,9 @@
   - authenticated browser sweeps across desktop, tablet, and phone
 - Local results from this pass:
   - backend targeted auth/settings/admin/vault integration slice passed: `26 passed`
-  - frontend full suite passed: `24` test files, `39` tests
-  - browser sweeps passed across all 21 authenticated routes on tablet light and phone dark
-  - representative browser screenshots were written to `output/playwright/`
+  - frontend full suite passed: `25` test files, `42` tests
+  - browser sweeps passed across all 22 authenticated routes in the latest integrated frontend pass
+  - representative browser screenshots were written to `.claude/ui-captures/`
   - local Postgres schema was upgraded from `005` to `head` during QA so the current settings/integration schema exists
 
 ## How to Use This Index

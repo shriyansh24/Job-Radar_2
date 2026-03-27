@@ -10,10 +10,7 @@ describe("Login", () => {
         <Login />
       </BrowserRouter>
     );
-    expect(
-      screen.getByRole("heading", { name: /sign in to the workspace/i })
-    ).toBeInTheDocument();
-    expect(screen.getByText("Welcome back")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^sign in$/i })).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("you@example.com")
     ).toBeInTheDocument();

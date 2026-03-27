@@ -22,7 +22,7 @@ function PageHeader({
   return (
     <div
       className={cn(
-        "border-2 border-border bg-secondary px-5 py-5 shadow-[var(--shadow-lg)] sm:px-6 sm:py-7",
+        "border-2 border-border bg-secondary px-5 py-5 shadow-none sm:px-6 sm:py-7",
         className
       )}
       {...props}

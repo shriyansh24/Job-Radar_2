@@ -53,7 +53,7 @@ function MetricStrip({ className, items, ...props }: MetricStripProps) {
   return (
     <div
       className={cn(
-        "grid overflow-hidden border-2 border-border bg-card shadow-[var(--shadow-sm)] md:grid-cols-2 xl:grid-cols-4",
+        "grid overflow-hidden border-2 border-border bg-card shadow-none md:grid-cols-2 xl:grid-cols-4",
         className
       )}
       {...props}
@@ -86,7 +86,7 @@ function MetricStrip({ className, items, ...props }: MetricStripProps) {
               ) : null}
             </div>
             {item.icon ? (
-              <div className="flex size-11 shrink-0 items-center justify-center border-2 border-border bg-background text-muted-foreground shadow-[var(--shadow-xs)]">
+              <div className="flex size-11 shrink-0 items-center justify-center border-2 border-border bg-background text-muted-foreground">
                 {item.icon}
               </div>
             ) : null}

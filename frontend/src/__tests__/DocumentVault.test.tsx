@@ -93,7 +93,7 @@ describe("DocumentVault", () => {
     await user.click(screen.getAllByRole("button", { name: "Edit" })[0]);
     await user.clear(screen.getByLabelText("Resume label"));
     await user.type(screen.getByLabelText("Resume label"), "Senior Resume");
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
       expect(updateResume).toHaveBeenCalledWith("resume-1", "Senior Resume");
@@ -110,7 +110,7 @@ describe("DocumentVault", () => {
     await user.click(screen.getByRole("button", { name: "Edit" }));
     await user.clear(screen.getByLabelText("Cover letter content"));
     await user.type(screen.getByLabelText("Cover letter content"), "Updated cover letter body");
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
       expect(updateCoverLetter).toHaveBeenCalledWith("letter-1", "Updated cover letter body");

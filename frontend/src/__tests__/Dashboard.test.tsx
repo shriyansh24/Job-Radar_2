@@ -53,7 +53,7 @@ describe("Dashboard", () => {
     expect(screen.getByText("Total jobs")).toBeInTheDocument();
     expect(screen.getByText("Applications")).toBeInTheDocument();
     expect(screen.getByText("Interviews")).toBeInTheDocument();
-    expect(screen.getByText("Offers")).toBeInTheDocument();
+    expect(screen.getAllByText("Offers").length).toBeGreaterThan(0);
     expect(await screen.findByText("42")).toBeInTheDocument();
     expect(await screen.findByText("12 scraped today")).toBeInTheDocument();
   });
@@ -62,6 +62,5 @@ describe("Dashboard", () => {
     renderWithProviders(<Dashboard />);
     expect(await screen.findByRole("button", { name: "Browse jobs" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add application" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Open copilot" })).toBeInTheDocument();
   });
 });

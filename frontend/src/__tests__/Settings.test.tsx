@@ -1,4 +1,5 @@
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "./testUtils";
 
@@ -103,20 +104,24 @@ describe("Settings page", () => {
   });
 
   it("renders the redesigned settings workspace with saved searches and integrations", async () => {
+    const user = userEvent.setup();
     renderWithProviders(<Settings />);
 
     expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
-    expect(screen.getByText("Workspace defaults")).toBeInTheDocument();
-    expect(screen.getByText("Security and data")).toBeInTheDocument();
-    expect(screen.getAllByText("Saved searches").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: /save workspace/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /new search/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^export$/i })).toBeInTheDocument();
-
-    expect(await screen.findByText("Remote React")).toBeInTheDocument();
-    expect(screen.getByText(/q: react/i)).toBeInTheDocument();
-    expect(screen.getByText("OpenRouter")).toBeInTheDocument();
-    expect(screen.getByText(/sk-or-v1/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^workspace$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^security$/i })).toBeInTheDocument();
     expect(screen.getAllByText("owner@jobradar.dev").length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole("button", { name: /^searches$/i }));
+    expect(await screen.findByText("Remote React")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /new search/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^integrations$/i }));
+    expect(await screen.findByText("OpenRouter")).toBeInTheDocument();
+    expect(screen.getByText(/sk-or-v1/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^data$/i }));
+    expect(await screen.findByRole("button", { name: /export data/i })).toBeInTheDocument();
   });
 });

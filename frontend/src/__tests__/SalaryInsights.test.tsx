@@ -51,15 +51,15 @@ describe("SalaryInsights page", () => {
     expect(screen.getByPlaceholderText("Senior Frontend Engineer")).toBeInTheDocument();
 
     await user.type(screen.getByPlaceholderText("Senior Frontend Engineer"), "Staff Engineer");
-    await user.click(screen.getByRole("button", { name: /research salary/i }));
+    await user.click(screen.getByRole("button", { name: /^research$/i }));
 
     expect(await screen.findByText("Range view")).toBeInTheDocument();
-    expect(screen.getByText(/Backend market percentiles returned in USD/i)).toBeInTheDocument();
+    expect(screen.getByText(/Backend percentiles returned in USD/i)).toBeInTheDocument();
     expect(screen.getAllByText("$180k").length).toBeGreaterThan(0);
     expect(screen.getAllByText("General market snapshot").length).toBeGreaterThan(0);
 
     await user.type(screen.getByPlaceholderText("150000"), "195000");
-    await user.click(screen.getByRole("button", { name: /evaluate offer/i }));
+    await user.click(screen.getByRole("button", { name: /^evaluate$/i }));
 
     expect(await screen.findByText("Negotiation guidance")).toBeInTheDocument();
     expect(screen.getAllByText("$205k").length).toBeGreaterThan(0);

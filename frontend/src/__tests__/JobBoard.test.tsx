@@ -40,8 +40,8 @@ describe("JobBoard", () => {
     expect(await screen.findByRole("heading", { name: "Jobs" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /exact/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /semantic/i })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Search jobs...")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Search jobs")).toBeInTheDocument();
     expect(await screen.findByText("No jobs found")).toBeInTheDocument();
-    expect(screen.getByText("Adjust the filters or search query to widen the feed.")).toBeInTheDocument();
+    expect(screen.getByText("Adjust the filters or search query.")).toBeInTheDocument();
   });
 });

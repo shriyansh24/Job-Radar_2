@@ -1,27 +1,15 @@
-import {
-  Briefcase,
-  CheckCircle,
-  LinkSimple,
-  MapPin,
-  Sparkle,
-  Warning,
-  X,
-} from "@phosphor-icons/react";
+import { Briefcase, CheckCircle, LinkSimple, MapPin, Sparkle, Warning, X } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Job } from "../../api/jobs";
 import { pipelineApi } from "../../api/pipeline";
 import { cn, getSafeExternalUrl } from "../../lib/utils";
+import { MetricStrip, StateBlock, Surface } from "../system";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
 import Modal from "../ui/Modal";
-import {
-  MetricStrip,
-  StateBlock,
-  Surface,
-} from "../system";
 import { toast } from "../ui/toastService";
 
 interface JobDetailProps {
@@ -97,7 +85,7 @@ export default function JobDetail({ job, onClose }: JobDetailProps) {
               {job.company_name ? <span>{job.company_name}</span> : null}
               {job.location ? (
                 <>
-                  <span className="text-text-muted">•</span>
+                  <span className="text-text-muted">-</span>
                   <span className="flex items-center gap-1">
                     <MapPin size={12} weight="bold" />
                     {job.location}

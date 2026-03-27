@@ -1,20 +1,7 @@
-import {
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle,
-  CurrencyDollar,
-  Key,
-  MagnifyingGlass,
-  MapPin,
-  Plus,
-  RocketLaunch,
-  Sparkle,
-  UserCircle,
-  X,
-} from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Key, MagnifyingGlass, UserCircle } from "@phosphor-icons/react";
 import { profileApi } from "../api/profile";
 import { settingsApi } from "../api/settings";
 import { MetricStrip } from "../components/system/MetricStrip";
@@ -23,32 +10,17 @@ import { SectionHeader } from "../components/system/SectionHeader";
 import { SplitWorkspace } from "../components/system/SplitWorkspace";
 import { StateBlock } from "../components/system/StateBlock";
 import { Surface } from "../components/system/Surface";
-import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
-import Select from "../components/ui/Select";
 import { toast } from "../components/ui/toastService";
-import { cn } from "../lib/utils";
+import { OnboardingHeroPanel } from "../components/onboarding/OnboardingHeroPanel";
+import { OnboardingIntegrationsStep } from "../components/onboarding/OnboardingIntegrationsStep";
+import { OnboardingProfileStep } from "../components/onboarding/OnboardingProfileStep";
+import { OnboardingSearchStep } from "../components/onboarding/OnboardingSearchStep";
+import { OnboardingSummaryRail } from "../components/onboarding/OnboardingSummaryRail";
 
 type StepId = 0 | 1 | 2 | 3;
 
 const STEP_LABELS = ["Welcome", "Profile", "Search", "Integrations"] as const;
-const CHIP =
-  "inline-flex items-center gap-1 border-2 border-[var(--color-text-primary)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]";
-
-const JOB_TYPE_OPTIONS = [
-  { value: "full_time", label: "Full-time" },
-  { value: "part_time", label: "Part-time" },
-  { value: "contract", label: "Contract" },
-  { value: "freelance", label: "Freelance" },
-  { value: "internship", label: "Internship" },
-];
-
-const REMOTE_OPTIONS = [
-  { value: "remote", label: "Remote" },
-  { value: "hybrid", label: "Hybrid" },
-  { value: "onsite", label: "On-site" },
-];
 
 const STEP_GUIDANCE = [
   {
@@ -76,24 +48,6 @@ const STEP_GUIDANCE = [
     callout: "Leave keys blank if you do not have them yet.",
   },
 ] as const;
-
-const INTEGRATIONS = [
-  {
-    provider: "openrouter" as const,
-    label: "OpenRouter",
-    description: "AI drafting, summarization, and interview prep.",
-  },
-  {
-    provider: "serpapi" as const,
-    label: "SerpAPI",
-    description: "Broader search coverage for discovery.",
-  },
-];
-
-const INTEGRATION_FIELDS = {
-  openrouter: "openrouterKey",
-  serpapi: "serpapiKey",
-} as const;
 
 function emptyState() {
   return {
@@ -235,27 +189,25 @@ export default function Onboarding() {
       <PageHeader
         eyebrow="First-run setup"
         title="Onboarding"
-        description="Seed identity, search handles, and integrations so the new workspace starts with enough context to discover roles and draft useful material."
+        description="Seed identity, search handles, and integrations so the workspace starts with enough context."
         meta={
           <>
             {STEP_LABELS.map((label, index) => (
-              <Badge
+              <span
                 key={label}
-                variant={index <= step ? "info" : "secondary"}
-                size="sm"
-                className={cn("rounded-none", index <= step ? "" : "text-text-muted")}
+                className={`border-2 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] ${
+                  index <= step
+                    ? "border-[var(--color-text-primary)] bg-accent-primary text-white"
+                    : "border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] text-text-muted"
+                }`}
               >
                 {label}
-              </Badge>
+              </span>
             ))}
           </>
         }
         actions={
-          <Button
-            onClick={() => saveMutation.mutate()}
-            loading={saveMutation.isPending}
-            icon={<CheckCircle size={16} weight="bold" />}
-          >
+          <Button onClick={() => saveMutation.mutate()} loading={saveMutation.isPending}>
             Finish setup
           </Button>
         }
@@ -266,67 +218,22 @@ export default function Onboarding() {
       <SplitWorkspace
         primary={
           <div className="space-y-6">
-            <section className="overflow-hidden border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] shadow-[var(--shadow-lg)]">
-              <div className="grid gap-0 lg:grid-cols-[minmax(0,1.5fr)_minmax(260px,0.85fr)]">
-                <div className="p-5 sm:p-6 lg:p-8">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={CHIP}>Step {step + 1}</span>
-                    <span className={CHIP}>{STEP_LABELS[step]}</span>
-                  </div>
-                  <div className="mt-5 flex items-start gap-4">
-                    <div className="flex size-14 shrink-0 items-center justify-center border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)]">
-                      <RocketLaunch size={28} weight="bold" />
-                    </div>
-                    <div className="space-y-3">
-                      <h2 className="font-display text-[clamp(2rem,4vw,3.6rem)] font-black uppercase tracking-[-0.07em] text-text-primary">
-                        {activeStep.title}
-                      </h2>
-                      <p className="max-w-2xl text-sm leading-6 text-text-secondary sm:text-base">
-                        {activeStep.description}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] p-5 sm:p-6 lg:border-l-2 lg:border-t-0">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    Step signal
-                  </div>
-                  <div className="mt-3 h-4 border-2 border-[var(--color-text-primary)] bg-background">
-                    <div
-                      className="h-full bg-accent-primary transition-[width] duration-[var(--transition-normal)]"
-                      style={{ width: `${((step + 1) / STEP_LABELS.length) * 100}%` }}
-                    />
-                  </div>
-                  <p className="mt-4 text-sm leading-6 text-text-secondary">{activeStep.callout}</p>
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                    <StateBlock
-                      tone="muted"
-                      icon={<UserCircle size={18} weight="bold" />}
-                      title="Identity"
-                      description={form.fullName || "No name captured yet."}
-                    />
-                    <StateBlock
-                      tone="warning"
-                      icon={<MagnifyingGlass size={18} weight="bold" />}
-                      title="Discovery"
-                      description={
-                        form.searchQueries.length
-                          ? `${form.searchQueries.length} title seeds queued.`
-                          : "Add titles and companies next."
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
+            <OnboardingHeroPanel
+              step={step}
+              stepLabels={STEP_LABELS}
+              title={activeStep.title}
+              description={activeStep.description}
+              callout={activeStep.callout}
+              profileName={form.fullName}
+              searchCount={form.searchQueries.length}
+            />
 
             <Surface padding="lg" radius="xl">
               {step === 0 ? (
                 <div className="space-y-6">
                   <SectionHeader
                     title="What gets configured"
-                    description="The system only needs a few high-value fields to start operating correctly across discovery, prep, and follow-up."
+                    description="A few high-value fields are enough to start discovery, prep, and follow-up."
                   />
                   <div className="grid gap-4 md:grid-cols-3">
                     <StateBlock
@@ -352,157 +259,34 @@ export default function Onboarding() {
               ) : null}
 
               {step === 1 ? (
-                <div className="space-y-6">
-                  <SectionHeader
-                    title="Profile"
-                    description="Tell the workspace who you are, which roles you want, and the compensation band that defines a serious opportunity."
-                  />
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Input
-                      label="Full name"
-                      value={form.fullName}
-                      onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
-                      placeholder="Jane Doe"
-                      icon={<UserCircle size={16} weight="bold" />}
-                    />
-                    <Input
-                      label="Location"
-                      value={form.location}
-                      onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
-                      placeholder="New York, NY"
-                      icon={<MapPin size={16} weight="bold" />}
-                    />
-                    <Select
-                      label="Preferred job types"
-                      value={form.preferredJobTypes[0] ?? ""}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          preferredJobTypes: event.target.value ? [event.target.value] : [],
-                        }))
-                      }
-                      options={JOB_TYPE_OPTIONS}
-                      placeholder="Select a primary job type"
-                    />
-                    <Select
-                      label="Preferred remote type"
-                      value={form.preferredRemoteTypes[0] ?? ""}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          preferredRemoteTypes: event.target.value ? [event.target.value] : [],
-                        }))
-                      }
-                      options={REMOTE_OPTIONS}
-                      placeholder="Select a primary remote type"
-                    />
-                    <Input
-                      label="Salary minimum"
-                      type="number"
-                      value={form.salaryMin}
-                      onChange={(event) => setForm((current) => ({ ...current, salaryMin: event.target.value }))}
-                      icon={<CurrencyDollar size={16} weight="bold" />}
-                    />
-                    <Input
-                      label="Salary maximum"
-                      type="number"
-                      value={form.salaryMax}
-                      onChange={(event) => setForm((current) => ({ ...current, salaryMax: event.target.value }))}
-                      icon={<CurrencyDollar size={16} weight="bold" />}
-                    />
-                  </div>
-                </div>
+                <OnboardingProfileStep
+                  fullName={form.fullName}
+                  location={form.location}
+                  salaryMin={form.salaryMin}
+                  salaryMax={form.salaryMax}
+                  preferredJobTypes={form.preferredJobTypes}
+                  preferredRemoteTypes={form.preferredRemoteTypes}
+                  onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
+                />
               ) : null}
 
               {step === 2 ? (
-                <div className="space-y-6">
-                  <SectionHeader
-                    title="Search seeds"
-                    description="Feed the discover surface with compact handles rather than long descriptions. The system can expand from there."
-                  />
-                  <div className="space-y-5">
-                    <TagRow
-                      label="Job titles"
-                      placeholder="Software Engineer"
-                      items={form.searchQueries}
-                      onAdd={(value) => addItem("searchQueries", value)}
-                      onRemove={(index) => removeItem("searchQueries", index)}
-                    />
-                    <TagRow
-                      label="Locations"
-                      placeholder="Remote"
-                      items={form.searchLocations}
-                      onAdd={(value) => addItem("searchLocations", value)}
-                      onRemove={(index) => removeItem("searchLocations", index)}
-                    />
-                    <TagRow
-                      label="Watchlist companies"
-                      placeholder="Stripe"
-                      items={form.watchlistCompanies}
-                      onAdd={(value) => addItem("watchlistCompanies", value)}
-                      onRemove={(index) => removeItem("watchlistCompanies", index)}
-                    />
-                  </div>
-                </div>
+                <OnboardingSearchStep
+                  searchQueries={form.searchQueries}
+                  searchLocations={form.searchLocations}
+                  watchlistCompanies={form.watchlistCompanies}
+                  onAdd={addItem}
+                  onRemove={removeItem}
+                />
               ) : null}
 
               {step === 3 ? (
-                <div className="space-y-6">
-                  <SectionHeader
-                    title="Integrations"
-                    description="Optional keys unlock broader search coverage and stronger drafting. Leave them blank if you want to finish setup first."
-                  />
-                  <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
-                    <input
-                      type="text"
-                      name="integration-username"
-                      autoComplete="username"
-                      value={form.fullName || "onboarding"}
-                      readOnly
-                      tabIndex={-1}
-                      aria-hidden="true"
-                      className="sr-only"
-                    />
-                    {INTEGRATIONS.map((integration) => {
-                      const fieldKey = INTEGRATION_FIELDS[integration.provider];
-                      const connected = Boolean(form[fieldKey]);
-
-                      return (
-                        <div className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] p-4 shadow-[4px_4px_0px_0px_var(--color-text-primary)] sm:p-5">
-                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <span className={CHIP}>{integration.label}</span>
-                                <Badge variant={connected ? "success" : "default"} size="sm">
-                                  {connected ? "Ready" : "Optional"}
-                                </Badge>
-                              </div>
-                              <p className="text-sm leading-6 text-text-secondary">
-                                {integration.description}
-                              </p>
-                            </div>
-                            <div className="min-w-0 flex-1 lg:max-w-md">
-                              <Input
-                                label={`${integration.label} API key`}
-                                type="password"
-                                autoComplete="off"
-                                name={`${integration.provider}-api-key`}
-                                value={form[fieldKey]}
-                                onChange={(event) =>
-                                  setForm((current) => ({
-                                    ...current,
-                                    [fieldKey]: event.target.value,
-                                  }))
-                                }
-                                placeholder={`Enter ${integration.label} key`}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </form>
-                </div>
+                <OnboardingIntegrationsStep
+                  fullName={form.fullName}
+                  openrouterKey={form.openrouterKey}
+                  serpapiKey={form.serpapiKey}
+                  onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
+                />
               ) : null}
             </Surface>
 
@@ -513,7 +297,6 @@ export default function Onboarding() {
                   variant="secondary"
                   onClick={() => setStep((current) => Math.max(0, current - 1) as StepId)}
                   disabled={step === 0}
-                  icon={<ArrowLeft size={16} weight="bold" />}
                 >
                   Back
                 </Button>
@@ -522,20 +305,11 @@ export default function Onboarding() {
                     Skip for now
                   </Button>
                   {step < 3 ? (
-                    <Button
-                      type="button"
-                      onClick={() => setStep((current) => (current + 1) as StepId)}
-                      icon={<ArrowRight size={16} weight="bold" />}
-                    >
+                    <Button type="button" onClick={() => setStep((current) => (current + 1) as StepId)}>
                       Next
                     </Button>
                   ) : (
-                    <Button
-                      type="button"
-                      onClick={() => saveMutation.mutate()}
-                      loading={saveMutation.isPending}
-                      icon={<CheckCircle size={16} weight="bold" />}
-                    >
+                    <Button type="button" onClick={() => saveMutation.mutate()} loading={saveMutation.isPending}>
                       Finish
                     </Button>
                   )}
@@ -545,116 +319,9 @@ export default function Onboarding() {
           </div>
         }
         secondary={
-          <div className="space-y-4">
-            {summaryItems.map((item) => (
-              <StateBlock
-                key={item.key}
-                tone="neutral"
-                title={item.label}
-                description={`${item.value} - ${item.hint}`}
-              />
-            ))}
-            <Surface padding="lg" radius="xl">
-              <SectionHeader
-                title="Current move"
-                description={`You are on ${STEP_LABELS[step]}. Finish with what you know now and tune later from Settings.`}
-              />
-              <div className="mt-4 space-y-3">
-                <StateBlock
-                  tone="warning"
-                  icon={<Sparkle size={18} weight="bold" />}
-                  title="Guidance"
-                  description={activeStep.callout}
-                />
-                <StateBlock
-                  tone="success"
-                  icon={<RocketLaunch size={18} weight="bold" />}
-                  title="Outcome"
-                  description="A completed setup immediately unlocks job discovery, saved filters, and better prep surfaces."
-                />
-              </div>
-            </Surface>
-          </div>
+          <OnboardingSummaryRail summaryItems={summaryItems} stepLabel={STEP_LABELS[step]} callout={activeStep.callout} />
         }
       />
-    </div>
-  );
-}
-
-function TagRow({
-  label,
-  placeholder,
-  items,
-  onAdd,
-  onRemove,
-}: {
-  label: string;
-  placeholder: string;
-  items: string[];
-  onAdd: (value: string) => void;
-  onRemove: (index: number) => void;
-}) {
-  const [value, setValue] = useState("");
-
-  function commitValue() {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return;
-    }
-
-    onAdd(trimmed);
-    setValue("");
-  }
-
-  return (
-    <div className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] p-4 shadow-[4px_4px_0px_0px_var(--color-text-primary)] sm:p-5">
-      <div className="flex flex-col gap-4">
-        <div className="space-y-1">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">{label}</div>
-          <p className="text-sm leading-6 text-text-secondary">
-            Add concise handles. One strong seed is better than a paragraph.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Input
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            placeholder={placeholder}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                commitValue();
-              }
-            }}
-          />
-          <Button type="button" variant="secondary" icon={<Plus size={14} weight="bold" />} onClick={commitValue}>
-            Add
-          </Button>
-        </div>
-
-        {items.length ? (
-          <div className="flex flex-wrap gap-2">
-            {items.map((item, index) => (
-              <span key={`${item}-${index}`} className={cn(CHIP, "bg-bg-secondary text-text-primary")}>
-                {item}
-                <button
-                  type="button"
-                  onClick={() => onRemove(index)}
-                  className="inline-flex size-4 items-center justify-center border-l-2 border-[var(--color-text-primary)] pl-1 text-text-muted transition-colors hover:text-accent-danger"
-                  aria-label={`Remove ${item}`}
-                >
-                  <X size={10} weight="bold" />
-                </button>
-              </span>
-            ))}
-          </div>
-        ) : (
-          <div className="border-2 border-dashed border-[var(--color-text-primary)] bg-background px-4 py-5 text-sm text-text-muted">
-            No entries yet.
-          </div>
-        )}
-      </div>
     </div>
   );
 }
