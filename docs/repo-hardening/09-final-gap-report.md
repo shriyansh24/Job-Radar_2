@@ -16,7 +16,7 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `docs/repo-hardening/04-branch-disposition.md`
   - `docs/repo-hardening/05-implementation-traceability-matrix.md`
 - Why it matters:
-  - the backend auto-apply extractor, adapter, and safety slice has now been recovered, but `feat/p1-core-value` still contains deeper auto-apply wiring, resume tooling, interview-prep internals, hybrid search, and worker follow-through that the current branch does not ship.
+  - the backend auto-apply execution slice has now been partially recovered, but `feat/p1-core-value` still contains resume tooling, interview-prep internals, hybrid search, and worker/search follow-through that the current branch does not ship.
 - Remaining risk:
   - if this branch is ignored, valuable partially implemented capability may be lost
   - if it is merged blindly, stale code and architectural drift will be reintroduced
@@ -52,20 +52,22 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `docs/current-state/05-ops-and-ci.md`
   - `.claude/ui-captures/`
 - Why it matters:
-  - a committed low-noise browser lane now exists, but it only protects a small authenticated shell/theme slice.
+  - a committed low-noise browser lane now exists, including shell, theme persistence, dashboard/jobs/pipeline, and settings/targets flows, but it still covers only part of the routed app.
 - Remaining risk:
   - regressions deeper in route families, richer page workflows, and cross-route state transitions can still slip past the committed suite
 
-### 5. Auth lifecycle logging is still not explicit
-- Status: `PARTIAL`
+### 5. Auth lifecycle logging is explicit, but still not a full audit stream
+- Status: `PARTIAL_PROGRESS`
 - Evidence:
-  - `SECURITY.md`
-  - `docs/current-state/06-open-items.md`
+  - `backend/app/auth/service.py`
+  - `backend/app/auth/router.py`
+  - `backend/tests/integration/test_auth_api.py`
+  - `backend/tests/unit/test_auth_service.py`
   - `docs/repo-hardening/07-observability-and-failure-map.md`
 - Why it matters:
-  - cookie-based auth now has CSRF and trusted-host protection, but login/refresh/logout/account-deletion events still do not emit a consistent structured audit trail.
+  - login/refresh/logout/password-change/account-delete/session-clear events now emit structured logs without token or credential payloads, but they still share the main app log stream and do not carry request-correlation fields.
 - Remaining risk:
-  - auth failures and session transitions are harder to diagnose than request-level failures because the lifecycle is protected but not richly logged
+  - auth diagnosis is materially better, but not yet at the level of a distinct audit trail
 
 ### 6. Dedicated scheduler runtime exists, but worker/process isolation is still partial
 - Status: `DOCUMENTED`
@@ -73,9 +75,9 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `docs/repo-hardening/03-runtime-truth-matrix.md`
   - `docs/repo-hardening/07-observability-and-failure-map.md`
 - Why it matters:
-  - the scheduler now has its own runtime entrypoint, but the repo still does not have a broader dedicated worker-process set or strong multi-process operational guidance.
+  - the scheduler now has its own runtime entrypoint and dispatches per-job worker subprocesses, but the repo still does not have a broader dedicated worker-process set or strong multi-process operational guidance.
 - Remaining risk:
-  - background execution semantics are clearer than before, but scaling and isolation boundaries are still only partially explicit
+  - background execution semantics are clearer than before, but scaling, retries, and isolation boundaries are still only partially explicit
 
 ### 7. Migration replay has a gate now, but rollback/backfill guidance is still thin
 - Status: `PARTIAL`
@@ -100,5 +102,5 @@ Record the major unresolved risks and deferred work that remain after the curren
 1. Continue selective P1 recovery beyond the recovered backend auto-apply slice.
 2. Complete the second test-taxonomy pass for the broad `unit/` and umbrella page/component suites.
 3. Expand the committed browser/e2e lane by route family and core outcomes.
-4. Add explicit auth lifecycle logging so the protected cookie-auth flow is also operationally observable.
+4. Add request-correlation and stronger audit-stream discipline to the new auth lifecycle logs.
 5. Strengthen migration docs with rollback/backfill expectations where the risk is non-trivial.

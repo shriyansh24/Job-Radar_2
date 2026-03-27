@@ -6,6 +6,7 @@ from typing import cast
 
 import bcrypt
 import jwt
+import structlog
 from fastapi import Response
 from jwt import InvalidTokenError
 from sqlalchemy import select
@@ -17,6 +18,43 @@ from app.config import settings
 from app.shared.errors import AuthError, ValidationError
 
 type TokenPayload = dict[str, object]
+
+logger = structlog.get_logger()
+
+
+def _build_auth_log_fields(
+    *,
+    user: User | None = None,
+    user_id: str | None = None,
+    token_version: int | None = None,
+    reason: str | None = None,
+    auth_source: str | None = None,
+    cleared_cookie_names: list[str] | None = None,
+) -> dict[str, object]:
+    fields: dict[str, object] = {}
+    resolved_user_id = user_id or (str(user.id) if user is not None else None)
+    if resolved_user_id is not None:
+        fields["user_id"] = resolved_user_id
+    resolved_token_version = token_version if token_version is not None else (
+        get_token_version(user) if user is not None else None
+    )
+    if resolved_token_version is not None:
+        fields["token_version"] = resolved_token_version
+    if reason is not None:
+        fields["reason"] = reason
+    if auth_source is not None:
+        fields["auth_source"] = auth_source
+    if cleared_cookie_names is not None:
+        fields["cleared_cookie_names"] = cleared_cookie_names
+    return fields
+
+
+def log_auth_info(event: str, **kwargs: object) -> None:
+    logger.info(event, **kwargs)
+
+
+def log_auth_warning(event: str, **kwargs: object) -> None:
+    logger.warning(event, **kwargs)
 
 
 def hash_password(password: str) -> str:
@@ -127,7 +165,18 @@ def set_auth_cookies(response: Response, tokens: TokenResponse) -> None:
     )
 
 
-def clear_auth_cookies(response: Response) -> None:
+def clear_auth_cookies(
+    response: Response,
+    *,
+    reason: str | None = None,
+    user: User | None = None,
+    user_id: str | None = None,
+) -> None:
+    cleared_cookie_names = [
+        settings.access_cookie_name,
+        settings.refresh_cookie_name,
+        settings.csrf_cookie_name,
+    ]
     response.delete_cookie(
         key=settings.access_cookie_name,
         httponly=True,
@@ -141,6 +190,15 @@ def clear_auth_cookies(response: Response) -> None:
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite,
         path="/",
+    )
+    log_auth_info(
+        "auth_session_cleared",
+        **_build_auth_log_fields(
+            user=user,
+            user_id=user_id,
+            reason=reason,
+            cleared_cookie_names=cleared_cookie_names,
+        ),
     )
     response.delete_cookie(
         key=settings.csrf_cookie_name,
@@ -170,8 +228,13 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> User
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
     if user is None or not verify_password(password, user.password_hash):
+        log_auth_warning("auth_login_failed", reason="invalid_credentials")
         raise AuthError("Invalid email or password")
     if not user.is_active:
+        log_auth_warning(
+            "auth_login_failed",
+            **_build_auth_log_fields(user=user, reason="inactive_user"),
+        )
         raise AuthError("User is inactive")
     return user
 
@@ -183,11 +246,20 @@ async def change_password(
     new_password: str,
 ) -> User:
     if not verify_password(current_password, user.password_hash):
+        log_auth_warning(
+            "auth_password_change_failed",
+            **_build_auth_log_fields(user=user, reason="invalid_current_password"),
+        )
         raise AuthError("Current password is incorrect")
     if current_password == new_password:
+        log_auth_warning(
+            "auth_password_change_failed",
+            **_build_auth_log_fields(user=user, reason="password_reuse"),
+        )
         raise ValidationError("New password must be different from current password")
     user.password_hash = hash_password(new_password)
     user.token_version = get_token_version(user) + 1
     await db.commit()
     await db.refresh(user)
+    log_auth_info("auth_password_changed", **_build_auth_log_fields(user=user))
     return user

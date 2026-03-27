@@ -23,12 +23,14 @@
 - `docker compose -f docker-compose.yml -f docker-compose.dev.yml up backend scheduler frontend` is the bind-mounted dev overlay for Uvicorn, the dedicated scheduler process, and Vite on top of the base compose services
 - The dev overlay now publishes only `5173:5173`, health-checks `http://127.0.0.1:5173/`, and sets `VITE_API_PROXY_TARGET=http://backend:8000` so the frontend container can proxy `/api` traffic to the backend container instead of incorrectly looping back to itself.
 - Redis is still provisioned in the compose baseline, but the API and dedicated scheduler do not currently depend on Redis to reach their ready state.
+- The dedicated scheduler now dispatches each scheduled job through `backend/app/runtime/worker.py`, so APScheduler coordinates per-job worker subprocesses instead of running job bodies inline.
 
 ## Validation Commands
 
 ### Backend
 - `cd backend && uv run pytest tests/integration/test_auth_api.py tests/integration/test_settings_api.py tests/integration/test_admin_api.py tests/integration/test_vault_api.py`
 - `cd backend && uv run pytest tests/infra/test_runtime_config.py tests/workers/test_scheduler_runtime.py tests/workers/scraping/test_scrape_scheduler.py`
+- `cd backend && uv run pytest tests/workers/test_worker_runtime.py`
 
 ### Frontend
 - `cd frontend && npm run lint`
@@ -43,6 +45,7 @@
 - Sweep the routed app on desktop, tablet, and phone.
 - Write screenshots to `.claude/ui-captures/`.
 - The latest authenticated sweep is current for the integrated frontend cleanup pass; treat further runs as incremental regression checks.
+- The committed browser lane now covers shell/auth smoke, a combined route-family outcomes flow for dashboard/jobs/pipeline/settings/targets, and theme persistence/matrix assertions.
 
 ## GitHub Actions
 - `ci.yml` uses:
@@ -68,6 +71,7 @@
   - `npm run test -- --run --coverage --coverage.thresholds.statements=40`
   - `npm run build`
 - Browser/e2e coverage now has a committed Playwright tree under `frontend/e2e/`; CI wiring for that lane should be kept separate from the fast PR lint/unit/build gates.
+- Route-family browser coverage now includes `frontend/e2e/flows/route-family-outcomes.spec.ts`.
 - `frontend-e2e.yml` emits one required check:
   - `Frontend E2E Smoke / frontend-e2e-smoke`
 - `frontend-e2e.yml` also runs weekly as a drift-detection lane in addition to PR, `main` push, and manual runs.
@@ -87,3 +91,4 @@
 - Local browser QA now depends on a migrated schema; make sure the backend DB is at Alembic `head` before validating settings, integrations, and other current-schema surfaces.
 - Compose-first local runtime is the repo default; older manual `jobradar-postgres` flows are now treated as legacy local overrides.
 - Scheduler readiness now proves startup plus DB reachability, but it is still a file-based health boundary rather than a full worker/job liveness signal.
+- Worker isolation is better than the earlier inline scheduler model, but the repo still does not have a queue-backed worker pool or richer job-level back-pressure semantics.

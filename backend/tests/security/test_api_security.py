@@ -170,7 +170,9 @@ async def test_cors_preflight_allows_configured_origin(client: AsyncClient) -> N
         headers={
             "Origin": "http://localhost:5173",
             "Access-Control-Request-Method": "GET",
-            "Access-Control-Request-Headers": "Authorization,Content-Type,X-CSRF-Token,X-Request-ID",
+            "Access-Control-Request-Headers": (
+                "Authorization,Content-Type,X-CSRF-Token,X-Request-ID"
+            ),
         },
     )
 

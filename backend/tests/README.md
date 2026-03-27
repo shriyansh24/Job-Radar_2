@@ -12,7 +12,7 @@ Document the backend test layout so runtime, migration, contract, worker, and se
 ```text
 backend/tests/
   contracts/      schema and adapter contract assertions
-  edge_cases/     unusual cross-cutting API behaviors still awaiting split
+  edge_cases/     route-owned API edge cases and unusual input-path coverage
   fixtures/       shared test fixtures and factories
   infra/          config, database bootstrap, and operational CLI behavior
   integration/    API and cross-module integration coverage
@@ -24,8 +24,9 @@ backend/tests/
 
 ## Notes
 - `unit/` is still being normalized; new tests should prefer the more specific role-based directories when possible.
+- `edge_cases/` should be split by route or subsystem, not collected into one umbrella suite.
 - `migrations/` is the canonical home for schema replay safety checks.
 - `workers/` should cover lifecycle and retry semantics, not just helper functions.
-- Scheduler runtime entrypoint coverage belongs under `workers/` when it protects the dedicated scheduler process rather than pure selection logic.
+- Scheduler and worker runtime entrypoint coverage belongs under `workers/` when it protects the dedicated process topology rather than pure selection logic.
 - Contract suites are now split between provider adapters and model/schema assertions.
 - `infra/` is the home for runtime/bootstrap/CLI checks; `database` bootstrap fits there rather than generic `unit/`.
