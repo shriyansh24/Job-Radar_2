@@ -21,6 +21,7 @@ JobRadar V2 is a full-stack job-search and career-operations workspace. It combi
 - Backend: FastAPI, SQLAlchemy async, PostgreSQL, Alembic, `uv`
 - Runtime: compose-first local stack with Postgres, Redis, one-shot migrations, API, dedicated scheduler, queue-specific ARQ workers (`scraping`, `analysis`, `ops`), and frontend
 - Browser validation: committed Playwright coverage under `frontend/e2e/` plus broader screenshot sweeps under `.claude/ui-captures/`
+- Selective P1 recovery already live on this branch: queue-backed worker runtime, recovered auto-apply execution foundations, richer interview prep bundles, and bounded hybrid semantic search
 
 ## Current Branch Strategy
 - `main` is the baseline/default branch.
@@ -74,6 +75,7 @@ uv run python -m app.runtime.arq_worker ops
 ```
 
 The scheduler now enqueues named jobs onto ARQ queues `scraping`, `analysis`, and `ops`. Queue-specific worker services consume those queues directly instead of the scheduler spawning one-shot worker subprocesses. Treat [05-ops-and-ci.md](D:/jobradar-v2/docs/current-state/05-ops-and-ci.md) as the authoritative runtime-status page for current worker ownership, health markers, and validation commands.
+Migration replay, rollback stance, and backfill guidance for the current tree are documented in [10-migration-ops.md](D:/jobradar-v2/docs/repo-hardening/10-migration-ops.md).
 
 ### Host-Local Frontend
 ```bash
@@ -107,7 +109,7 @@ npm run build
 ### Browser QA
 - Keep broader screenshot captures in `.claude/ui-captures/`
 - Keep committed browser coverage in `frontend/e2e/`
-- The committed browser lane currently covers auth/shell smoke, responsive shell behavior, route-family outcomes for `dashboard/jobs/pipeline/settings/targets`, prepare/intelligence surfaces, operations/admin/data surfaces, profile/settings/auth roundtrips, and representative 8-mode route-theme checks.
+- The committed browser lane currently covers auth/shell smoke, responsive shell behavior, route-family outcomes for `dashboard/jobs/pipeline/settings/targets`, prepare/intelligence surfaces, operations/admin/data surfaces, the recovered interview/search flow, profile/settings/auth roundtrips, and representative 8-mode route-theme checks.
 - Treat `docs/current-state/05-ops-and-ci.md` as the authoritative validation and CI reference
 
 ## Test Taxonomy

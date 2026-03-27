@@ -15,6 +15,18 @@ Prepare this candidate for their interview.
 
 Return ONLY valid JSON:
 {{
+  "company_research": {{
+    "overview": "Brief company description and mission",
+    "recent_news": ["Recent relevant news or releases"],
+    "culture_values": ["Key cultural values"],
+    "interview_style": "Likely interview style for this company"
+  }},
+  "role_analysis": {{
+    "key_requirements": ["Top job requirements"],
+    "skill_gaps": ["Areas to address carefully"],
+    "talking_points": ["Resume-to-role selling points"],
+    "seniority_expectations": "Expected level and scope"
+  }},
   "likely_questions": [
     {{"question": "...", "category": "behavioral|technical|situational"}}
   ],
@@ -30,11 +42,14 @@ Return ONLY valid JSON:
 }}
 
 RULES:
+- Tailor the prep to the interview stage: {stage}
 - Generate 5-8 likely questions mixing behavioral and technical
 - Create 2-3 STAR stories from the resume experience
 - List 3-5 technical topics to brush up on based on job requirements
 - Suggest 3-5 smart questions to ask the interviewer
 - Flag 2-3 common interview pitfalls with better alternatives
+- Keep company research grounded in the supplied job and company context
+- Use role analysis to explain where the candidate is strong and where they need framing
 
 RESUME:
 {resume_text}

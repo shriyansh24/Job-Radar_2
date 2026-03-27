@@ -1,7 +1,17 @@
-import { Brain, CheckCircle, ClockCounterClockwise, Sparkle } from "@phosphor-icons/react";
+import {
+  Brain,
+  CheckCircle,
+  ClipboardText,
+  ClockCounterClockwise,
+  Sparkle,
+} from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { interviewApi, type InterviewSession } from "../api/interview";
+import {
+  interviewApi,
+  type InterviewPrepBundle,
+  type InterviewSession,
+} from "../api/interview";
 import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader } from "../components/system/PageHeader";
 import { SectionHeader } from "../components/system/SectionHeader";
@@ -17,9 +27,11 @@ import {
   InterviewSessionHistoryCard,
   InterviewSessionNotes,
 } from "../components/interview/InterviewPanels";
+import { InterviewPreparePanel } from "../components/interview/InterviewPreparePanel";
 
 const tabs = [
   { id: "practice", label: "Practice", icon: <Brain size={14} weight="bold" /> },
+  { id: "prepare", label: "Prepare", icon: <ClipboardText size={14} weight="bold" /> },
   { id: "history", label: "History", icon: <ClockCounterClockwise size={14} weight="bold" /> },
 ] as const;
 
@@ -27,6 +39,7 @@ export default function InterviewPrep() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("practice");
   const [activeSession, setActiveSession] = useState<InterviewSession | null>(null);
+  const [activePrep, setActivePrep] = useState<InterviewPrepBundle | null>(null);
 
   const { data: sessions, isLoading: loadingSessions } = useQuery({
     queryKey: ["interview-sessions"],
@@ -51,6 +64,15 @@ export default function InterviewPrep() {
       setActiveTab("practice");
     },
     onError: () => toast("error", "Failed to load session"),
+  });
+
+  const prepareMutation = useMutation({
+    mutationFn: interviewApi.prepare,
+    onSuccess: (response) => {
+      setActivePrep(response.data);
+      toast("success", "Interview prep bundle ready");
+    },
+    onError: () => toast("error", "Interview prep failed"),
   });
 
   const metrics = useMemo(
@@ -79,14 +101,27 @@ export default function InterviewPrep() {
         icon: <CheckCircle size={18} weight="bold" />,
       },
       {
+        key: "bundle",
+        label: "Prep bundle",
+        value: activePrep ? `${activePrep.likely_questions.length}` : "0",
+        hint: activePrep ? "Likely questions returned." : "No prep bundle loaded.",
+        icon: <ClipboardText size={18} weight="bold" />,
+        tone: activePrep ? ("success" as const) : ("default" as const),
+      },
+      {
         key: "mode",
         label: "Mode",
-        value: activeTab === "practice" ? "Practice" : "History",
+        value:
+          activeTab === "practice"
+            ? "Practice"
+            : activeTab === "prepare"
+              ? "Prepare"
+              : "History",
         hint: "Current view.",
         icon: <Sparkle size={18} weight="bold" />,
       },
     ],
-    [activeSession, activeTab, sessions]
+    [activePrep, activeSession, activeTab, sessions]
   );
 
   return (
@@ -137,6 +172,64 @@ export default function InterviewPrep() {
             </div>
           }
           secondary={<InterviewSessionNotes activeTab={activeTab} />}
+        />
+      ) : null}
+
+      {activeTab === "prepare" ? (
+        <SplitWorkspace
+          primary={
+            <InterviewPreparePanel
+              bundle={activePrep}
+              isPending={prepareMutation.isPending}
+              onPrepare={(params) => prepareMutation.mutate(params)}
+            />
+          }
+          secondary={
+            <div className="space-y-4">
+              <InterviewSessionNotes activeTab={activeTab} />
+              {activePrep ? (
+                <Surface tone="default" padding="md" radius="xl" className="brutal-panel">
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                    Bundle counts
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="border-2 border-border bg-[var(--color-bg-tertiary)] p-3 text-sm text-text-secondary">
+                      <span className="font-semibold text-text-primary">
+                        {activePrep.likely_questions.length}
+                      </span>{" "}
+                      likely questions
+                    </div>
+                    <div className="border-2 border-border bg-[var(--color-bg-tertiary)] p-3 text-sm text-text-secondary">
+                      <span className="font-semibold text-text-primary">
+                        {activePrep.star_stories.length}
+                      </span>{" "}
+                      STAR stories
+                    </div>
+                    <div className="border-2 border-border bg-[var(--color-bg-tertiary)] p-3 text-sm text-text-secondary">
+                      <span className="font-semibold text-text-primary">
+                        {activePrep.technical_topics.length}
+                      </span>{" "}
+                      technical topics
+                    </div>
+                    <div className="border-2 border-border bg-[var(--color-bg-tertiary)] p-3 text-sm text-text-secondary">
+                      <span className="font-semibold text-text-primary">
+                        {activePrep.questions_to_ask.length}
+                      </span>{" "}
+                      questions to ask
+                    </div>
+                  </div>
+                </Surface>
+              ) : (
+                <Surface tone="default" padding="lg" radius="xl">
+                  <EmptyState
+                    icon={<ClipboardText size={40} weight="bold" />}
+                    title="No prep bundle"
+                    description="Paste resume text and select a job to generate a full interview pack."
+                  />
+                </Surface>
+              )}
+            </div>
+          }
         />
       ) : null}
 

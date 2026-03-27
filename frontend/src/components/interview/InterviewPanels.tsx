@@ -285,16 +285,22 @@ export function InterviewSessionHistoryCard({
 }
 
 export function InterviewSessionNotes({ activeTab }: { activeTab: string }) {
+  const title = activeTab === "history" ? "History" : activeTab === "prepare" ? "Prepare" : "Practice";
+  const description =
+    activeTab === "history"
+      ? "Load a prior session when you want to revisit a mix or compare scores."
+      : activeTab === "prepare"
+        ? "Generate a full prep bundle from a target job and the plain-text version of your resume."
+        : "Generate a set, answer in-line, and keep the scores visible for later review.";
+
   return (
     <div className="space-y-4">
       <Surface tone="default" padding="md" radius="xl" className="brutal-panel">
         <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em]">
           <Sparkle size={16} weight="bold" className="text-[var(--color-accent-primary)]" />
-          {activeTab === "practice" ? "Practice" : "History"}
+          {title}
         </div>
-        <p className="mt-2 text-sm leading-6 text-text-secondary">
-          Generate a set, answer in-line, and keep the scores visible for later review.
-        </p>
+        <p className="mt-2 text-sm leading-6 text-text-secondary">{description}</p>
       </Surface>
       <Surface tone="default" padding="md" radius="xl" className="brutal-panel">
         <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em]">

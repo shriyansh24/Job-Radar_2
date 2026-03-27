@@ -35,8 +35,17 @@ async def test_enqueue_registered_job_uses_registered_queue(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     seen: list[tuple[str, str | None]] = []
+    info_calls: list[tuple[str, dict[str, object]]] = []
 
     class _FakePool:
+        def __init__(self) -> None:
+            self.depth_by_queue = {SCRAPING_QUEUE: 3}
+
+        async def zcard(self, queue_name: str) -> int:
+            depth = self.depth_by_queue[queue_name]
+            self.depth_by_queue[queue_name] = depth + 1
+            return depth
+
         async def enqueue_job(
             self,
             job_name: str,
@@ -46,12 +55,31 @@ async def test_enqueue_registered_job_uses_registered_queue(
             seen.append((job_name, _queue_name))
             return SimpleNamespace(job_id="queued-123")
 
+    class _FakeLogger:
+        def info(self, event: str, **fields: object) -> None:
+            info_calls.append((event, fields))
+
     monkeypatch.setattr(queue_runtime, "_queue_pool", _FakePool())
+    monkeypatch.setattr(queue_runtime, "logger", _FakeLogger())
 
     job_id = await queue_runtime.enqueue_registered_job("scheduled_scrape")
 
     assert job_id == "queued-123"
     assert seen == [("scheduled_scrape", SCRAPING_QUEUE)]
+    assert info_calls == [
+        (
+            "scheduler_job_enqueued",
+            {
+                "job_name": "scheduled_scrape",
+                "queue_name": SCRAPING_QUEUE,
+                "enqueued_job_id": "queued-123",
+                "queue_depth_before": 3,
+                "queue_depth_after": 4,
+                "job_max_tries": 2,
+                "job_timeout_seconds": 1800,
+            },
+        )
+    ]
 
 
 def test_job_queues_cover_expected_runtime_lanes() -> None:

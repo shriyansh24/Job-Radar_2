@@ -7,6 +7,7 @@ const interviewMocks = vi.hoisted(() => ({
   listSessions: vi.fn(),
   generate: vi.fn(),
   getSession: vi.fn(),
+  prepare: vi.fn(),
   evaluate: vi.fn(),
 }));
 
@@ -57,6 +58,33 @@ describe("InterviewPrep page", () => {
     });
     interviewMocks.generate.mockResolvedValue({ data: null });
     interviewMocks.getSession.mockResolvedValue({ data: null });
+    interviewMocks.prepare.mockResolvedValue({
+      data: {
+        likely_questions: [
+          {
+            question: "How would you stabilize a noisy ingestion pipeline?",
+            category: "technical",
+          },
+        ],
+        star_stories: [],
+        technical_topics: ["Observability"],
+        company_talking_points: [],
+        questions_to_ask: [],
+        red_flag_responses: [],
+        company_research: {
+          overview: "Acme builds workflow software.",
+          recent_news: ["Shipped a new platform"],
+          culture_values: ["Ownership"],
+          interview_style: "Structured loop",
+        },
+        role_analysis: {
+          key_requirements: ["Python"],
+          skill_gaps: ["None"],
+          talking_points: ["Scaled systems"],
+          seniority_expectations: "Senior IC",
+        },
+      },
+    });
     interviewMocks.evaluate.mockResolvedValue({ data: null });
   });
 
@@ -75,5 +103,33 @@ describe("InterviewPrep page", () => {
     expect(await screen.findByText(/Session abcdefgh/i)).toBeInTheDocument();
     expect(screen.getByText("1 questions")).toBeInTheDocument();
     expect(screen.getByText("behavioral")).toBeInTheDocument();
+  });
+
+  it("generates a prep bundle from the prepare tab", async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<InterviewPrep />);
+
+    expect(await screen.findByRole("heading", { name: /Interview Prep/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Prepare/i }));
+    await user.selectOptions(screen.getByLabelText("Target job"), "job-1");
+    await user.selectOptions(screen.getByLabelText("Interview stage"), "technical");
+    await user.type(
+      screen.getByLabelText("Resume text"),
+      "Experienced backend engineer with Python, FastAPI, PostgreSQL, and observability work across scraping and workflow systems."
+    );
+    await user.click(screen.getByRole("button", { name: /Generate bundle/i }));
+
+    expect(interviewMocks.prepare).toHaveBeenCalledWith(
+      expect.objectContaining({
+        job_id: "job-1",
+        stage: "technical",
+      }),
+      expect.anything()
+    );
+    expect(await screen.findByText("Company research")).toBeInTheDocument();
+    expect(screen.getByText(/Acme builds workflow software/i)).toBeInTheDocument();
+    expect(screen.getByText(/How would you stabilize a noisy ingestion pipeline/i)).toBeInTheDocument();
   });
 });

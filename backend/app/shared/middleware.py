@@ -18,11 +18,16 @@ SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        structlog.contextvars.clear_contextvars()
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        request.state.request_id = request_id
         structlog.contextvars.bind_contextvars(request_id=request_id)
-        response = await call_next(request)
-        response.headers["X-Request-ID"] = request_id
-        return response
+        try:
+            response = await call_next(request)
+            response.headers["X-Request-ID"] = request_id
+            return response
+        finally:
+            structlog.contextvars.clear_contextvars()
 
 
 class TimingMiddleware(BaseHTTPMiddleware):
@@ -123,6 +128,7 @@ class CsrfProtectionMiddleware(BaseHTTPMiddleware):
         if not csrf_cookie or csrf_cookie != csrf_header:
             logger.warning(
                 "csrf_validation_failed",
+                reason="missing_or_invalid_token",
                 method=request.method,
                 path=request.url.path,
                 has_cookie=bool(csrf_cookie),

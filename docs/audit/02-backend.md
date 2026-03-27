@@ -27,7 +27,7 @@
 ## BE-05 - HIGH: Placeholder Questions on LLM Failure
 - **File:** `backend/app/interview/service.py`
 - **Detail:** Fixed. Question generation now raises a `502` `AppError` on model failure instead of persisting fake placeholder interview questions.
-- **Evidence:** `backend/tests/unit/test_interview_service.py`
+- **Evidence:** `backend/tests/unit/interview/test_interview_service.py`
 - **Status:** FIXED
 
 ## BE-06 - HIGH: No Timeout on `run_scrape()`
@@ -67,11 +67,11 @@
 - **Status:** FIXED
 
 ## BE-F03 - FIXED: Interview Generation / Prep Reject Empty Model Payloads
-- **Files:** `backend/app/interview/service.py`, `backend/app/nlp/model_router.py`, `backend/tests/unit/test_interview_service.py`, `backend/tests/unit/test_model_router.py`
+- **Files:** `backend/app/interview/service.py`, `backend/app/nlp/model_router.py`, `backend/tests/unit/interview/test_interview_service.py`, `backend/tests/unit/test_model_router.py`
 - **Detail:** Empty JSON results now raise out of the model router, question generation no longer persists empty sessions, and interview prep now surfaces empty model payloads as `502` failures.
 - **Status:** FIXED
 
 ## BE-F04 - FIXED: Interview Job Context Uses `company_name`
-- **Files:** `backend/app/interview/service.py`, `backend/tests/unit/test_interview_service.py`
+- **Files:** `backend/app/interview/service.py`, `backend/tests/unit/interview/test_interview_service.py`
 - **Detail:** The interview service now loads company context from `jobs.company_name` instead of the non-existent `jobs.company` attribute.
 - **Status:** FIXED

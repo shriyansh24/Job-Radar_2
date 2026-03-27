@@ -43,6 +43,15 @@ class TestContentHash:
         result = svc.deduplicate(jobs)
         assert len(result) == 1
 
+    def test_normalized_company_and_title_aliases_deduped(self):
+        svc = DeduplicationService()
+        jobs = [
+            _job(title="Sr. ML Eng", company="Meta Platforms, Inc."),
+            _job(title="Senior Machine Learning Engineer III", company="Meta"),
+        ]
+        result = svc.deduplicate(jobs)
+        assert len(result) == 1
+
 
 class TestURLDedup:
     """Layer 2: URL dedup."""

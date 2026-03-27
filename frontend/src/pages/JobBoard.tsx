@@ -1,6 +1,7 @@
 import { Briefcase, Funnel, MagnifyingGlass, Sparkle } from "@phosphor-icons/react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { jobsApi, type JobListParams } from "../api/jobs";
 import { useDebounce } from "../hooks/useDebounce";
 import { MetricStrip, PageHeader, SplitWorkspace } from "../components/system";
@@ -15,10 +16,28 @@ import { Surface } from "../components/system/Surface";
 
 export default function JobBoard() {
   const { selectedJobId, filters, setSelectedJob, setFilters } = useJobStore();
-  const [searchInput, setSearchInput] = useState(filters.q || "");
+  const [searchParams] = useSearchParams();
+  const routeQuery = searchParams.get("q") ?? "";
+  const routeMode: SearchMode = searchParams.get("mode") === "semantic" ? "semantic" : "exact";
+  const hasRouteSearch = searchParams.has("q") || searchParams.has("mode");
+  const [searchInput, setSearchInput] = useState(routeQuery || filters.q || "");
   const [showFilters, setShowFilters] = useState(true);
-  const [searchMode, setSearchMode] = useState<SearchMode>("exact");
+  const [searchMode, setSearchMode] = useState<SearchMode>(routeMode);
   const debouncedSearch = useDebounce(searchInput, 250);
+  const semanticReady = debouncedSearch.trim().length > 1;
+
+  useEffect(() => {
+    if (!hasRouteSearch) return;
+
+    setSearchInput(routeQuery);
+    setSearchMode(routeMode);
+
+    if (routeMode === "exact") {
+      setFilters({ q: routeQuery || undefined, page: 1 });
+    } else {
+      setFilters({ q: undefined, page: 1 });
+    }
+  }, [hasRouteSearch, routeMode, routeQuery, setFilters]);
 
   const activeFilters: JobListParams = {
     ...filters,
@@ -35,7 +54,7 @@ export default function JobBoard() {
   const semanticQuery = useQuery({
     queryKey: ["jobs", "semantic", debouncedSearch],
     queryFn: () => jobsApi.semanticSearch(debouncedSearch, 20).then((r) => r.data),
-    enabled: searchMode === "semantic" && debouncedSearch.trim().length > 1,
+    enabled: searchMode === "semantic" && semanticReady,
   });
 
   const jobs = searchMode === "semantic" ? semanticQuery.data ?? [] : exactQuery.data?.items ?? [];
@@ -182,6 +201,7 @@ export default function JobBoard() {
             total={total}
             isLoading={isLoading}
             isError={isError}
+            semanticReady={semanticReady}
             selectedJobId={selectedJobId}
             onSelectJob={(jobId) => setSelectedJob(jobId)}
             currentPage={currentPage}

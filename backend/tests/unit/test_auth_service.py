@@ -16,6 +16,7 @@ from app.auth.service import (
     decode_refresh_token,
     decode_token_payload,
     hash_password,
+    normalize_auth_reason,
     verify_password,
 )
 from app.shared.errors import AuthError
@@ -46,6 +47,15 @@ def test_create_and_decode_refresh_token():
     assert decoded_id == user_id
     payload = decode_token_payload(token, expected_type="refresh")
     assert payload["ver"] == 1
+
+
+def test_normalize_auth_reason_prefers_known_aliases() -> None:
+    assert normalize_auth_reason("Invalid token type") == "invalid_token_type"
+    assert normalize_auth_reason("Refresh token required") == "refresh_token_required"
+
+
+def test_normalize_auth_reason_falls_back_to_slugified_code() -> None:
+    assert normalize_auth_reason("Token issuer drift detected") == "token_issuer_drift_detected"
 
 
 def test_decode_invalid_refresh_token():

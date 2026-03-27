@@ -30,7 +30,7 @@
 
 ### Backend
 - `cd backend && uv run pytest tests/integration/test_auth_api.py tests/integration/test_settings_api.py tests/integration/test_admin_api.py tests/integration/test_vault_api.py`
-- `cd backend && uv run pytest tests/infra/test_runtime_config.py tests/workers/test_queue_runtime.py tests/workers/test_arq_worker_runtime.py tests/workers/test_scheduler_runtime.py tests/workers/scraping/test_scrape_scheduler.py`
+- `cd backend && uv run pytest tests/infra/test_runtime_config.py tests/infra/test_queue_runtime_compose.py tests/workers/test_queue_runtime.py tests/workers/test_arq_worker_runtime.py tests/workers/test_job_registry_runtime.py tests/workers/test_scheduler_runtime.py tests/workers/scraping/test_scrape_scheduler.py`
 - `cd backend && uv run pytest tests/workers/test_worker_runtime.py`
 
 ### Frontend
@@ -46,7 +46,7 @@
 - Sweep the routed app on desktop, tablet, and phone.
 - Write screenshots to `.claude/ui-captures/`.
 - The latest authenticated sweep is current for the integrated frontend cleanup pass; treat further runs as incremental regression checks.
-- The committed browser lane now covers shell/auth smoke, responsive shell behavior, a combined route-family outcomes flow for dashboard/jobs/pipeline/settings/targets, prepare/intelligence flows, operations/admin/data flows, profile/settings/auth roundtrips, and representative theme persistence/route-matrix assertions across all 8 theme combinations.
+- The committed browser lane now covers shell/auth smoke, shell navigation, responsive shell behavior, a combined route-family outcomes flow for dashboard/jobs/pipeline/settings/targets, prepare/intelligence/outcomes flows, operations/admin/data flows, profile/settings/auth roundtrips, the recovered interview/search flow, and representative theme persistence/route-matrix assertions across all 8 theme combinations.
 
 ## GitHub Actions
 - `ci.yml` uses:
@@ -72,7 +72,7 @@
   - `npm run test -- --run --coverage --coverage.thresholds.statements=40`
   - `npm run build`
 - Browser/e2e coverage now has a committed Playwright tree under `frontend/e2e/`; CI wiring for that lane should be kept separate from the fast PR lint/unit/build gates.
-- Route-family browser coverage now includes `frontend/e2e/flows/route-family-outcomes.spec.ts`, `frontend/e2e/flows/prepare-intelligence-outcomes.spec.ts`, `frontend/e2e/flows/operations-admin-data.spec.ts`, `frontend/e2e/flows/profile-settings-auth.spec.ts`, `frontend/e2e/flows/shell-responsive.spec.ts`, and `frontend/e2e/theme-matrix/route-theme-matrix.spec.ts`.
+- Route-family browser coverage now includes `frontend/e2e/smoke/auth-shell.spec.ts`, `frontend/e2e/flows/route-shell-navigation.spec.ts`, `frontend/e2e/flows/route-family-outcomes.spec.ts`, `frontend/e2e/flows/prepare-intelligence-outcomes.spec.ts`, `frontend/e2e/flows/operations-admin-data.spec.ts`, `frontend/e2e/flows/profile-settings-auth.spec.ts`, `frontend/e2e/flows/interview-search-recovered.spec.ts`, `frontend/e2e/flows/shell-responsive.spec.ts`, `frontend/e2e/theme-matrix/theme-persistence.spec.ts`, and `frontend/e2e/theme-matrix/route-theme-matrix.spec.ts`.
 - `frontend-e2e.yml` emits one required check:
   - `Frontend E2E Smoke / frontend-e2e-smoke`
 - `frontend-e2e.yml` also runs weekly as a drift-detection lane in addition to PR, `main` push, and manual runs.
@@ -91,5 +91,5 @@
 - Frontend tests now live under `frontend/src/tests/`, browser suites live under `frontend/e2e/`, and backend tests use role-based directories under `backend/tests/`.
 - Local browser QA now depends on a migrated schema; make sure the backend DB is at Alembic `head` before validating settings, integrations, and other current-schema surfaces.
 - Compose-first local runtime is the repo default; older manual `jobradar-postgres` flows are now treated as legacy local overrides.
-- Scheduler readiness now proves startup, DB reachability, and Redis/queue reachability, but it is still a file-based health boundary rather than a full job-throughput signal.
-- Worker isolation is queue-backed and compose-visible; the remaining runtime work is retry/back-pressure validation and broader worker-lane coverage.
+- Scheduler readiness now proves startup, DB reachability, and Redis/queue reachability; queue enqueue/dequeue logs also emit queue depth and retry metadata, but health is still not a substitute for sustained throughput monitoring.
+- Worker isolation is queue-backed and compose-visible; the remaining runtime work is broader worker-lane coverage and alerting around queue depth / retry pressure rather than basic queue ownership.

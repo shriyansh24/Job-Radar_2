@@ -27,4 +27,4 @@
 
 ## Current Assessment
 - No known blocking scraper or database bugs remain after the latest verified pass.
-- The remaining runtime gaps are queue retry/back-pressure validation and broader worker coverage, not scraper topology ownership.
+- The remaining runtime gaps are queue alerting / sustained-pressure visibility and broader worker coverage, not scraper topology ownership.

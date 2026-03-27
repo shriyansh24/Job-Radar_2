@@ -46,10 +46,17 @@ class RegisteredJob:
 
 
 def _job_log_fields(ctx: dict[str, Any], *, queue_name: str) -> dict[str, Any]:
+    job_try = int(ctx.get("job_try") or 1)
+    registered_job = REGISTERED_JOBS.get(str(ctx.get("job_name", "")))
+    max_tries = registered_job.max_tries if registered_job is not None else None
+    retry_remaining = max(max_tries - job_try, 0) if max_tries is not None else None
     return {
         "job_id": ctx.get("job_id"),
-        "job_try": ctx.get("job_try"),
+        "job_try": job_try,
         "queue_name": queue_name,
+        "job_max_tries": max_tries,
+        "job_retryable": (max_tries or 0) > 1,
+        "job_retry_remaining": retry_remaining,
     }
 
 
@@ -60,13 +67,18 @@ async def _run_with_lifecycle(
     ctx: dict[str, Any] | None,
     callback: Callable[[], Awaitable[None]],
 ) -> None:
-    context = dict(ctx or {})
+    context = {"job_name": job_name, **dict(ctx or {})}
     log_fields = _job_log_fields(context, queue_name=queue_name)
     logger.info("queue_job_started", job_name=job_name, **log_fields)
     try:
         await callback()
     except Exception:
-        logger.exception("queue_job_failed", job_name=job_name, **log_fields)
+        logger.exception(
+            "queue_job_failed",
+            job_name=job_name,
+            will_retry=(log_fields["job_retry_remaining"] or 0) > 0,
+            **log_fields,
+        )
         raise
     logger.info("queue_job_completed", job_name=job_name, **log_fields)
 

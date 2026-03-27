@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import cast
@@ -21,6 +22,34 @@ type TokenPayload = dict[str, object]
 
 logger = structlog.get_logger()
 
+_AUTH_REASON_ALIASES = {
+    "Invalid email or password": "invalid_credentials",
+    "User is inactive": "inactive_user",
+    "Refresh token required": "refresh_token_required",
+    "Invalid token": "invalid_token",
+    "Invalid token type": "invalid_token_type",
+    "Invalid refresh token": "invalid_refresh_token",
+    "Token revoked": "token_revoked",
+    "User not found or inactive": "user_not_found_or_inactive",
+    "Current password is incorrect": "invalid_current_password",
+    "New password must be different from current password": "password_reuse",
+}
+
+
+def normalize_auth_reason(reason: object | None, *, fallback: str = "auth_error") -> str:
+    if reason is None:
+        return fallback
+
+    raw_reason = getattr(reason, "detail", reason)
+    text = str(raw_reason).strip()
+    if not text:
+        return fallback
+    if text in _AUTH_REASON_ALIASES:
+        return _AUTH_REASON_ALIASES[text]
+
+    normalized = re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+    return normalized or fallback
+
 
 def _build_auth_log_fields(
     *,
@@ -41,7 +70,7 @@ def _build_auth_log_fields(
     if resolved_token_version is not None:
         fields["token_version"] = resolved_token_version
     if reason is not None:
-        fields["reason"] = reason
+        fields["reason"] = normalize_auth_reason(reason)
     if auth_source is not None:
         fields["auth_source"] = auth_source
     if cleared_cookie_names is not None:

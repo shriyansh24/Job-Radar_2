@@ -16,7 +16,7 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `docs/repo-hardening/04-branch-disposition.md`
   - `docs/repo-hardening/05-implementation-traceability-matrix.md`
 - Why it matters:
-  - the backend auto-apply execution slice has now been partially recovered, but `feat/p1-core-value` still contains resume tooling, interview-prep internals, hybrid search, and worker/search follow-through that the current branch does not ship.
+  - the backend auto-apply execution slice is live, and interview/hybrid-search/normalization/freshness plus the current tailoring/rendering family are now partially recovered, but `feat/p1-core-value` still contains deeper operator/pipeline ergonomics and additional worker/search follow-through that the current branch does not ship.
 - Remaining risk:
   - if this branch is ignored, valuable partially implemented capability may be lost
   - if it is merged blindly, stale code and architectural drift will be reintroduced
@@ -29,7 +29,7 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `CLAUDE.md`
   - `.env.example`
 - Why it matters:
-  - the compose-first baseline is now documented, and the repo now runs through the live ARQ queue topology, but worker-lane coverage and queue telemetry are still not comprehensive.
+  - the compose-first baseline is now documented, and the repo now runs through the live ARQ queue topology with queue depth and retry metadata, but worker-lane coverage and alerting are still not comprehensive.
 - Remaining risk:
   - engineers can still under-test queue behavior if they treat readiness markers as full proof of throughput, retries, and back-pressure health
 
@@ -40,19 +40,19 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `frontend/src/tests/README.md`
   - `backend/tests/README.md`
 - Why it matters:
-  - the first filesystem move is complete, but several backend `unit/` and frontend umbrella suites still need second-pass splitting by behavior.
+  - the first filesystem move is complete, and the current interview/search/dedup slices are now bucketed by subsystem, but several backend `unit/` and frontend umbrella suites still need second-pass splitting by behavior.
 - Remaining risk:
   - role-based discoverability is improved, not complete
 
 ### 4. Browser/e2e coverage is committed, but still shallow
-- Status: `DEFERRED`
+- Status: `PARTIAL_PROGRESS`
 - Evidence:
   - `frontend/playwright.config.ts`
   - `frontend/e2e/README.md`
   - `docs/current-state/05-ops-and-ci.md`
   - `.claude/ui-captures/`
 - Why it matters:
-  - a committed low-noise browser lane now exists, including auth/shell smoke, responsive shell behavior, route-family outcomes for dashboard/jobs/pipeline/settings/targets, and representative 8-mode route-theme checks, but it still covers only part of the routed app.
+  - a committed low-noise browser lane now exists, including auth/shell smoke, shell navigation, responsive shell behavior, route-family outcomes for dashboard/jobs/pipeline/settings/targets, prepare/intelligence/outcomes and operations/admin/data slices, recovered interview/search flow coverage, profile/settings/auth roundtrips, and representative 8-mode route-theme checks, but it still covers only part of the routed app.
 - Remaining risk:
   - regressions deeper in route families, richer page workflows, and cross-route state transitions can still slip past the committed suite
 
@@ -65,7 +65,7 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `backend/tests/unit/test_auth_service.py`
   - `docs/repo-hardening/07-observability-and-failure-map.md`
 - Why it matters:
-  - login/refresh/logout/password-change/account-delete/session-clear events now emit structured logs without token or credential payloads, but they still share the main app log stream and do not carry request-correlation fields.
+  - login/refresh/logout/password-change/account-delete/session-clear events now emit structured logs without token or credential payloads and inherit request correlation, but they still share the main app log stream instead of a dedicated audit sink.
 - Remaining risk:
   - auth diagnosis is materially better, but not yet at the level of a distinct audit trail
 
@@ -77,15 +77,16 @@ Record the major unresolved risks and deferred work that remain after the curren
 - Why it matters:
   - the scheduler now has its own runtime entrypoint and the live topology is scheduler -> ARQ queues (`scraping`, `analysis`, `ops`) -> queue-specific worker services.
 - Remaining risk:
-  - background execution ownership is explicit, but retries, queue depth, and back-pressure are still only partially validated end to end
+  - background execution ownership is explicit and queue telemetry is richer, but retries, alerting, and queue pressure are still only partially validated end to end
 
 ### 7. Migration replay has a gate now, but rollback/backfill guidance is still thin
 - Status: `PARTIAL`
 - Evidence:
   - `.github/workflows/migration-safety.yml`
   - `docs/repo-hardening/03-runtime-truth-matrix.md`
+  - `docs/repo-hardening/10-migration-ops.md`
 - Why it matters:
-  - replay to `head` is now checked, but not every migration includes strong rollback or data-backfill guidance.
+  - replay to `head` is now checked and there is now a canonical migration-ops runbook, but not every migration includes strong rollback or data-backfill guidance in-file.
 - Remaining risk:
   - operational confidence is improved for clean upgrades, not for all recovery scenarios
 
@@ -99,9 +100,9 @@ Record the major unresolved risks and deferred work that remain after the curren
   - failure diagnosis is clearer on paper than it is uniformly in code
 
 ## What Would Count As The Next Credible Finish Line
-1. Continue selective P1 recovery beyond the recovered backend auto-apply slice.
+1. Continue selective P1 recovery beyond the recovered backend auto-apply, interview prep, hybrid-search, freshness, and normalization slices.
 2. Complete the second test-taxonomy pass for the broad `unit/` and umbrella page/component suites.
-3. Extend queue validation to cover retries, back-pressure, and richer worker-lane behavior.
+3. Extend queue validation to cover alerting, back-pressure, and richer worker-lane behavior beyond the current queue-depth and retry metadata probes.
 4. Expand the committed browser/e2e lane by route family and deeper workflow outcomes.
-5. Add request-correlation and stronger audit-stream discipline to the new auth lifecycle logs.
-6. Strengthen migration docs with rollback/backfill expectations where the risk is non-trivial.
+5. Add a dedicated audit-stream strategy for the auth lifecycle logs.
+6. Strengthen in-file migration docs with rollback/backfill expectations where the risk is non-trivial.

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { buildTestUser, loginThroughUi, registerTestUser } from "../support/auth";
+import { buildTestUser, registerTestUser } from "../support/auth";
 import { THEME_FAMILIES, normalizeThemeSnapshot, seedThemePreference } from "../support/theme";
 
 const MODES = ["light", "dark"] as const;
@@ -17,7 +17,7 @@ const REPRESENTATIVE_ROUTES = [
   {
     path: "/jobs",
     locator: (page: Page) =>
-      page.getByRole("main").getByRole("heading", { name: "Jobs", exact: true }),
+      page.getByRole("button", { name: /^exact$/i }),
     assertion: async (page: Page) => {
       await expect(page.getByRole("button", { name: /^exact$/i })).toBeVisible();
       await expect(page.getByRole("button", { name: /^semantic$/i })).toBeVisible();
@@ -36,10 +36,20 @@ const REPRESENTATIVE_ROUTES = [
   {
     path: "/resume",
     locator: (page: Page) =>
-      page.getByRole("main").getByRole("heading", { name: "Resume Builder", exact: true }),
+      page.getByRole("button", { name: /^upload$/i }),
     assertion: async (page: Page) => {
       await expect(page.getByRole("button", { name: /^upload$/i })).toBeVisible();
       await expect(page.getByText(/drag and drop a resume/i)).toBeVisible();
+    },
+  },
+  {
+    path: "/interview",
+    locator: (page: Page) =>
+      page.getByRole("button", { name: /^practice$/i }),
+    assertion: async (page: Page) => {
+      await expect(page.getByRole("button", { name: /^practice$/i })).toBeVisible();
+      await expect(page.getByRole("button", { name: /^prepare$/i })).toBeVisible();
+      await expect(page.getByRole("button", { name: /^history$/i })).toBeVisible();
     },
   },
   {
@@ -52,15 +62,40 @@ const REPRESENTATIVE_ROUTES = [
     },
   },
   {
+    path: "/search-expansion",
+    locator: (page: Page) =>
+      page.getByRole("button", { name: /^expand query$/i }).first(),
+    assertion: async (page: Page) => {
+      await expect(page.getByPlaceholder("senior frontend engineer")).toBeVisible();
+      await expect(page.getByRole("button", { name: /^expand query$/i }).first()).toBeVisible();
+    },
+  },
+  {
     path: "/settings",
     locator: (page: Page) =>
-      page.getByRole("main").getByRole("heading", { name: "Settings", exact: true }),
+      page.getByRole("button", { name: /^appearance$/i }),
     assertion: async (page: Page) => {
       await expect(page.getByRole("button", { name: /^appearance$/i })).toBeVisible();
       await expect(page.getByRole("button", { name: /^integrations$/i })).toBeVisible();
     },
   },
 ] as const;
+
+async function loginWithStableSubmit(
+  page: Page,
+  user: { email: string; password: string }
+) {
+  const response = await page.request.post("/api/v1/auth/login", {
+    data: {
+      email: user.email,
+      password: user.password,
+    },
+  });
+
+  expect(response.ok(), `login status ${response.status()}`).toBeTruthy();
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/$/);
+}
 
 function expectedThemeState(
   family: (typeof THEME_FAMILIES)[number],
@@ -94,7 +129,7 @@ for (const family of THEME_FAMILIES) {
       const user = buildTestUser(`route-theme-${family}-${mode}`);
 
       await registerTestUser(request, user);
-      await loginThroughUi(page, user);
+      await loginWithStableSubmit(page, user);
 
       for (const route of REPRESENTATIVE_ROUTES) {
         await seedThemePreference(page, family, mode);

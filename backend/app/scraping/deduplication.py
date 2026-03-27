@@ -5,6 +5,7 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import structlog
 
+from app.scraping.normalization import CompanyNormalizer, TitleNormalizerStripped
 from app.scraping.port import ScrapedJob
 
 logger = structlog.get_logger()
@@ -24,6 +25,8 @@ class DeduplicationService:
         # Feedback overrides are populated by the feedback pipeline and
         # consulted by higher-level orchestration during pair review.
         self._feedback_overrides = feedback_overrides or {}
+        self._company_normalizer = CompanyNormalizer()
+        self._title_normalizer = TitleNormalizerStripped()
 
     def deduplicate(self, jobs: list[ScrapedJob]) -> list[ScrapedJob]:
         seen_hashes: set[str] = set()
@@ -63,7 +66,9 @@ class DeduplicationService:
 
     def _content_hash(self, job: ScrapedJob) -> str:
         """MD5 of normalized title + company."""
-        content = f"{job.title.lower().strip()}|{job.company_name.lower().strip()}"
+        normalized_title = self._title_normalizer.normalize(job.title)
+        normalized_company = self._company_normalizer.normalize(job.company_name)
+        content = f"{normalized_title}|{normalized_company}"
         return hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()
 
     def _normalize_url(self, url: str) -> str:

@@ -11,6 +11,7 @@ export function JobResultsPanel({
   total,
   isLoading,
   isError,
+  semanticReady,
   selectedJobId,
   onSelectJob,
   currentPage,
@@ -23,6 +24,7 @@ export function JobResultsPanel({
   total: number;
   isLoading: boolean;
   isError: boolean;
+  semanticReady: boolean;
   selectedJobId: string | null;
   onSelectJob: (jobId: string) => void;
   currentPage: number;
@@ -58,6 +60,12 @@ export function JobResultsPanel({
               />
             ))}
           </div>
+        ) : searchMode === "semantic" && !semanticReady ? (
+          <StateBlock
+            tone="muted"
+            title="Enter a semantic query"
+            description="Use at least 2 characters to run semantic search."
+          />
         ) : jobs.length === 0 ? (
           <StateBlock
             tone="muted"

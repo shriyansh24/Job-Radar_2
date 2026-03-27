@@ -27,6 +27,7 @@ class InterviewPrepRequest(BaseModel):
 
     job_id: str
     resume_text: str = Field(..., min_length=50, description="Plain-text resume content")
+    stage: str = "general"
     job_title: str = ""
     company_name: str = ""
     job_description: str = ""
@@ -51,6 +52,20 @@ class RedFlagResponse(BaseModel):
     instead: str
 
 
+class CompanyResearch(BaseModel):
+    overview: str = ""
+    recent_news: list[str] = []
+    culture_values: list[str] = []
+    interview_style: str = ""
+
+
+class RoleAnalysis(BaseModel):
+    key_requirements: list[str] = []
+    skill_gaps: list[str] = []
+    talking_points: list[str] = []
+    seniority_expectations: str = ""
+
+
 class InterviewPrepResponse(BaseModel):
     """Full interview-preparation bundle returned by the LLM."""
 
@@ -60,6 +75,8 @@ class InterviewPrepResponse(BaseModel):
     company_talking_points: list[str] = []
     questions_to_ask: list[str] = []
     red_flag_responses: list[RedFlagResponse] = []
+    company_research: CompanyResearch | None = None
+    role_analysis: RoleAnalysis | None = None
 
 
 # ---------------------------------------------------------------------------

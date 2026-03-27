@@ -36,10 +36,13 @@ export default defineConfig(({ mode }) => {
 
             if (
               normalized.includes("/react/") ||
-              normalized.includes("/react-dom/") ||
-              normalized.includes("/react-router-dom/")
+              normalized.includes("/react-dom/")
             ) {
               return "vendor-react";
+            }
+
+            if (normalized.includes("/react-router-dom/")) {
+              return "vendor-router";
             }
 
             if (normalized.includes("/@tanstack/react-query/")) {

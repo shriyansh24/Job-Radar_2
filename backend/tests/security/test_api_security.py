@@ -201,6 +201,25 @@ async def test_cors_preflight_rejects_disallowed_origin(client: AsyncClient) -> 
 
 
 @pytest.mark.asyncio
+async def test_request_id_echoes_client_header(client: AsyncClient) -> None:
+    response = await client.get(
+        "/api/v1/admin/health",
+        headers={"X-Request-ID": "req-auth-123"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["X-Request-ID"] == "req-auth-123"
+
+
+@pytest.mark.asyncio
+async def test_request_id_is_generated_when_missing(client: AsyncClient) -> None:
+    response = await client.get("/api/v1/admin/health")
+
+    assert response.status_code == 200
+    assert uuid.UUID(response.headers["X-Request-ID"])
+
+
+@pytest.mark.asyncio
 async def test_trusted_host_rejects_disallowed_host_header(client: AsyncClient) -> None:
     response = await client.get(
         "/api/v1/admin/health",

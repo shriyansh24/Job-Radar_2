@@ -91,7 +91,7 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 
 | Status | Branch | Evidence | Finding |
 |---|---|---|---|
-| `DOCUMENTED` | `feat/p1-core-value` | local tip `cc907ec`; PR #13 metadata plus selective recovery on `codex/ui-changes` | Still contains unique P0/P1 capability work not in `main` or fully on `codex/ui-changes`, especially interview prep, resume tailoring, hybrid search, and worker/search slices beyond the recovered auto-apply execution path |
+| `DOCUMENTED` | `feat/p1-core-value` | local tip `cc907ec`; PR #13 metadata plus selective recovery on `codex/ui-changes` | Still contains unique P0/P1 capability work not in `main` or fully on `codex/ui-changes`, especially resume tailoring/rendering, remaining operator depth, pipeline ergonomics, and worker/search follow-through beyond the recovered interview/hybrid/auto-apply slices |
 | `DOCUMENTED` | `origin/feat/p2-polish-advanced` | PR #17 metadata and current branch topology | Useful as provenance for P2 capability history, but current tip appears converged into `main`; not a unique live-code branch anymore |
 | `DOCUMENTED` | `codex/ui-changes` | live branch history from `3ae5eac` through `5ef1c0a` | This is the unique UI overhaul and hardening line with theme-family runtime, shell/page decomposition, runtime split, CSRF hardening, and committed browser coverage |
 | `DOCUMENTED` | `ui-overhaul-design` | branch-only commits visible in local history | Historical UI spike with unique docs/components, but not the selected live UI line |
