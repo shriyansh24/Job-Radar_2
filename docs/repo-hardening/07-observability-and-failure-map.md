@@ -6,7 +6,7 @@ Document where the major runtime flows log today, where failures surface, and wh
 ## Source-Of-Truth Status
 - Status: `DOCUMENTED_WORKING_SET`
 - Scope: backend/runtime observability, failure handling, and blind spots
-- Last validation basis: direct inspection of backend startup, middleware, worker scheduler, auth, and current CI/runtime docs on `2026-03-27`
+- Last validation basis: direct inspection of backend startup, middleware, worker scheduler, auth, frontend API client behavior, and current CI/runtime docs on `2026-03-27`
 
 ## Runtime Flow Map
 
@@ -14,13 +14,11 @@ Document where the major runtime flows log today, where failures surface, and wh
 - Entry: `backend/app/main.py`
 - Logging:
   - `starting_up`
-  - `scheduler_started`
-  - `scheduler_stopped`
   - `shutting_down`
 - Failure behavior:
   - `validate_runtime_settings(settings)` fails fast before the app fully serves requests
 - Current gap:
-  - scheduler startup is logged, but individual scheduled job registration and job execution outcomes are not
+  - API startup now logs only API lifecycle; request-scoped failures still do not identify authenticated user context
 
 ### HTTP request lifecycle
 - Files:
@@ -40,12 +38,15 @@ Document where the major runtime flows log today, where failures surface, and wh
 - Files:
   - `backend/app/auth/service.py`
   - `backend/app/auth/router.py`
+  - `backend/app/shared/middleware.py`
+  - `frontend/src/api/client.ts`
 - Signals:
   - explicit token creation and cookie issuance
+  - readable CSRF cookie issuance and deletion
   - token version rotation on password change
 - Current gap:
   - no explicit auth event logging for login success/failure, refresh, logout, or account deletion
-  - cookie-based auth is used with `withCredentials` frontend calls, but there is no dedicated CSRF token flow today
+  - cookie-auth now has CSRF enforcement, but auth event logging is still absent
 
 ### Migration lifecycle
 - Files:
@@ -59,21 +60,25 @@ Document where the major runtime flows log today, where failures surface, and wh
 
 ### Scheduler and worker lifecycle
 - Files:
+  - `backend/app/runtime/scheduler.py`
   - `backend/app/workers/scheduler.py`
   - worker modules referenced there
 - Signals:
-  - scheduler start/stop logs at app lifecycle level
+  - `scheduler_starting`
+  - `scheduler_configured`
+  - `scheduler_started`
+  - `scheduler_ready`
+  - `scheduler_shutdown_requested`
+  - `scheduler_stopped`
 - Current gap:
   - no centralized worker heartbeat/completion/failure logging standard
-  - scheduler remains coupled to the API process
+  - scheduler is now a dedicated process, but individual scheduled job execution success/failure is still not surfaced consistently
   - several workers are inferred by schedule registration, but their execution success/failure is not surfaced here
 
 ## Current Blind Spots
-- No committed browser/e2e signal even though browser QA is operationally important.
-- No dedicated CSRF protection flow for cookie-authenticated state-changing requests.
-- No explicit trusted-host boundary in the FastAPI middleware stack.
-- No workflow that proves clean Alembic replay on every migration-affecting change.
+- Browser/e2e now exists, but route-family coverage is still shallow.
 - Scheduler job execution semantics are not described or monitored in one place.
+- Auth success/failure, refresh, logout, and account-deletion events still do not emit structured auth lifecycle logs.
 
 ## Existing Positive Controls
 - `request_completed` structured logs exist.
@@ -83,7 +88,6 @@ Document where the major runtime flows log today, where failures surface, and wh
 - CodeQL and dependency review are already enabled.
 
 ## Hardening Direction
-1. Add migration replay automation in GitHub Actions.
-2. Add docs/path validation in GitHub Actions.
-3. Treat CSRF and trusted-host posture as explicit hardening decisions, not implied protections.
-4. Add job-level worker logging only where it improves diagnosis without flooding logs.
+1. Add job-level worker logging only where it improves diagnosis without flooding logs.
+2. Keep scheduler process health separate from API readiness in docs, compose, and CI.
+3. Add explicit auth lifecycle logging before claiming the auth surface is fully observable.

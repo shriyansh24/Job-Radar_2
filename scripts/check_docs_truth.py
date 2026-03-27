@@ -14,7 +14,10 @@ DOC_FILES = [
     ROOT / "DECISIONS.md",
     ROOT / "SECURITY.md",
 ]
-DOC_FILES.extend(sorted((ROOT / "docs" / "current-state").glob("*.md")))
+DOC_FILES.extend(sorted((ROOT / "docs").rglob("*.md")))
+DOC_FILES.extend(sorted((ROOT / "docs").rglob("*.txt")))
+DOC_FILES.extend(sorted((ROOT / ".claude").rglob("*.md")))
+DOC_FILES = list(dict.fromkeys(DOC_FILES))
 
 LINK_RE = re.compile(r"\[[^\]]+]\(([^)]+)\)")
 CODE_RE = re.compile(r"`([^`\n]+)`")

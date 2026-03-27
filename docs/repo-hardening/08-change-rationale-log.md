@@ -28,6 +28,47 @@ Record why major repo-hardening decisions were made, what alternatives were reje
 - Remaining risk:
   - developers who still use the legacy manual container path need it documented as an override, not removed from their heads
 
+### Dedicated scheduler runtime split
+- Status: `IMPLEMENTING`
+- Changed because:
+  - `backend/app/main.py` previously owned the APScheduler lifecycle, which made API readiness and scheduler readiness indistinguishable
+  - the completion plan requires an explicit process topology rather than scheduler work hiding inside the web process
+- Alternatives considered:
+  - keep the scheduler in the API process and only document the coupling
+- Why rejected:
+  - that would preserve the exact ambiguity and operational coupling the hardening pass is supposed to remove
+- Files touched:
+  - `backend/app/main.py`
+  - `backend/app/runtime/scheduler.py`
+  - `backend/app/workers/scheduler.py`
+  - `backend/Dockerfile`
+  - `docker-compose.yml`
+  - `docker-compose.dev.yml`
+  - `backend/tests/workers/test_scheduler_runtime.py`
+  - `backend/tests/infra/test_runtime_config.py`
+- Remaining risk:
+  - there is still no separate long-running worker-process set beyond the dedicated scheduler, so worker execution semantics remain only partially explicit
+
+### Committed browser/e2e lane
+- Status: `IMPLEMENTING`
+- Changed because:
+  - manual screenshots alone were not enough to prove auth/bootstrap and theme persistence behavior
+  - the completion plan requires committed browser coverage with visible ownership
+- Alternatives considered:
+  - keep browser validation purely manual in `.claude/ui-captures/`
+- Why rejected:
+  - manual screenshots cannot catch route boot regressions or theme persistence drift early in CI
+- Files touched:
+  - `frontend/package.json`
+  - `frontend/playwright.config.ts`
+  - `frontend/e2e/**`
+  - `frontend/e2e/README.md`
+  - `frontend/src/tests/README.md`
+  - `docs/current-state/05-ops-and-ci.md`
+  - `docs/repo-hardening/06-test-taxonomy.md`
+- Remaining risk:
+  - the committed Playwright coverage is still shallow and should expand by route family without turning into a flaky screenshot suite
+
 ### Historical inventory demotion
 - Status: `FIXED`
 - Changed because:

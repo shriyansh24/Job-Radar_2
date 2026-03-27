@@ -8,6 +8,8 @@ build/
 .coverage
 htmlcov/
 frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
 *.egg-info/
 pgdata/
 .ruff_cache/

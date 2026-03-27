@@ -68,6 +68,10 @@ def create_tokens(user_id: str, token_version: int = 0) -> TokenResponse:
     )
 
 
+def create_csrf_token() -> str:
+    return uuid.uuid4().hex
+
+
 def decode_token_payload(token: str, expected_type: str | None = None) -> TokenPayload:
     try:
         payload = cast(
@@ -93,6 +97,7 @@ def decode_refresh_token(token: str) -> str:
 
 
 def set_auth_cookies(response: Response, tokens: TokenResponse) -> None:
+    csrf_token = create_csrf_token()
     response.set_cookie(
         key=settings.access_cookie_name,
         value=tokens.access_token,
@@ -111,6 +116,15 @@ def set_auth_cookies(response: Response, tokens: TokenResponse) -> None:
         max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
         path="/",
     )
+    response.set_cookie(
+        key=settings.csrf_cookie_name,
+        value=csrf_token,
+        httponly=False,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+        path="/",
+    )
 
 
 def clear_auth_cookies(response: Response) -> None:
@@ -124,6 +138,12 @@ def clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(
         key=settings.refresh_cookie_name,
         httponly=True,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+        path="/",
+    )
+    response.delete_cookie(
+        key=settings.csrf_cookie_name,
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite,
         path="/",

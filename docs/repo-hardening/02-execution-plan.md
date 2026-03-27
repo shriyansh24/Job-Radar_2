@@ -63,7 +63,8 @@ Scope:
 
 Primary files:
 - `backend/tests/**`
-- `frontend/src/**/__tests__/**`
+- `frontend/src/tests/**`
+- `frontend/e2e/**`
 - `frontend/vitest.config.ts`
 - `.github/workflows/ci.yml`
 - `.claude/agents/14-test.md`
@@ -142,7 +143,7 @@ Risks:
 - `docs/system-inventory/*` or their index notes if kept as historical inventory
 - `.github/workflows/*`
 - `.github/dependabot.yml`
-- test files and directories under `backend/tests/` and `frontend/src/**/__tests__`
+- test files and directories under `backend/tests/`, `frontend/src/tests/`, and `frontend/e2e/`
 - supporting docs under `.claude/` if they describe the old layout or QA flow
 
 ## Test Migration Strategy
@@ -174,6 +175,6 @@ Risks:
 ## Done-When Gates For Phase 1
 - a single runtime truth can be stated without contradiction
 - current-state, README, AGENTS, and CLAUDE tell the same local startup story
-- stale `docs/superpowers/` references are removed or explicitly marked historical
+- stale references to the removed superpowers doc set are removed or explicitly marked historical
 - backend validation counts are reconciled
 - system-inventory contradictions are either updated or explicitly marked as historical inventory

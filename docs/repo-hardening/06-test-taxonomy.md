@@ -10,9 +10,9 @@ Define and track the purpose-driven test layout used by the repository.
 
 ## Current State
 - Frontend support files, page suites, hook suites, component suites, and API client suites now live under `frontend/src/tests/`.
+- Frontend browser/e2e coverage now has a committed home under `frontend/e2e/`.
 - Backend runtime, migration, security, contract, and worker-lifecycle suites now have dedicated directories under `backend/tests/`.
 - Several older service/model suites still remain in broad backend `unit/` buckets, and some frontend page/component files still cover multiple behaviors inside one suite.
-- There is still no committed browser/e2e test tree.
 
 ## Live Taxonomy
 
@@ -26,7 +26,11 @@ frontend/src/tests/
   pages/       route-level page behavior
   support/     setup/bootstrap and render helpers
 
-frontend/e2e/  (planned)
+frontend/e2e/
+  flows/       critical authenticated workflows
+  smoke/       boot/login/shell health checks
+  support/     Playwright helpers
+  theme-matrix/ theme family and mode persistence coverage
 ```
 
 ### Backend
@@ -55,18 +59,22 @@ backend/tests/
 - API client suites moved into `frontend/src/tests/api/`
 - Hook suites moved into `frontend/src/tests/hooks/`
 - Component suites moved into `frontend/src/tests/components/`
-- The misleading phase-based suite now lives at:
-  - `frontend/src/tests/pages/OperationsPages.contract.test.tsx`
+- The former phase-based ops coverage is now split across route-owned suites:
+  - `frontend/src/tests/pages/Admin.page.test.tsx`
+  - `frontend/src/tests/pages/Companies.page.test.tsx`
+  - `frontend/src/tests/pages/SearchExpansion.page.test.tsx`
+  - `frontend/src/tests/pages/Sources.page.test.tsx`
+  - `frontend/src/tests/pages/Targets.page.test.tsx`
 
 ### Backend
 - Migration regression suite moved:
   - `backend/tests/migrations/test_alembic_revisions.py`
 - Infra/runtime suites moved:
   - `backend/tests/infra/test_runtime_config.py`
-  - `backend/tests/infra/test_database_bootstrap.py`
+  - `backend/tests/infra/test_database.py`
   - `backend/tests/infra/cli/test_scraping_ops_cli.py`
 - Contract/security suites moved:
-  - `backend/tests/contracts/test_sqlalchemy_models.py`
+  - `backend/tests/contracts/test_sqlalchemy_model_contracts.py`
   - `backend/tests/security/test_rate_limiter.py`
 - Worker lifecycle suites moved:
   - `backend/tests/workers/scraping/test_scrape_run_worker.py`
@@ -77,8 +85,9 @@ backend/tests/
 
 ### Frontend
 - `frontend/src/tests/pages/*.page.test.tsx` still communicate route ownership better than behavior; some should later be narrowed into more behavior-specific suites when the page APIs stabilize.
-- `frontend/src/tests/components/UiPrimitives.rendering.test.tsx` still protects multiple primitives in one file and should eventually be split by component.
+- UI primitive coverage is now split across `frontend/src/tests/components/ui/Card.test.tsx`, `frontend/src/tests/components/ui/Dropdown.test.tsx`, and `frontend/src/tests/components/ui/StatCard.test.tsx`; buttons, inputs, tables, and toggles still need first-class suites.
 - Several page suites still define inline `renderWithProviders` helpers and should converge on `support/test-utils.tsx`.
+- `frontend/e2e/flows/` currently protects only a narrow authenticated shell-navigation slice and still needs broader route-level outcomes.
 
 ### Backend
 - `backend/tests/unit/` still contains broad service/model suites that should eventually be regrouped by subsystem ownership.
@@ -97,7 +106,7 @@ backend/tests/
 1. Keep the new support directories stable and update runners/docs in the same batch as moves.
 2. Split mixed frontend component/page suites only after the destination taxonomy is stable.
 3. Continue draining broad backend `unit/` and `edge_cases/` suites into role-based directories.
-4. Add the first committed browser/e2e lane only when selectors and boot flow are stable enough to stay low-noise.
+4. Expand the committed Playwright tree by route family without duplicating the manual screenshot lane.
 
 ## Non-Goals For This Batch
 - No weak snapshot theater.

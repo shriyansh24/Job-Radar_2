@@ -44,35 +44,38 @@ Record the major unresolved risks and deferred work that remain after the curren
 - Remaining risk:
   - role-based discoverability is improved, not complete
 
-### 4. Browser/e2e coverage is still mostly manual
+### 4. Browser/e2e coverage is committed, but still shallow
 - Status: `DEFERRED`
 - Evidence:
+  - `frontend/playwright.config.ts`
+  - `frontend/e2e/README.md`
   - `docs/current-state/05-ops-and-ci.md`
   - `.claude/ui-captures/`
 - Why it matters:
-  - route sweeps and screenshots exist, but committed low-noise browser coverage is still missing.
+  - a committed low-noise browser lane now exists, but it only protects a small authenticated shell/theme slice.
 - Remaining risk:
-  - regressions in auth boot, theme switching, and route wiring can still slip past the committed suite
+  - regressions deeper in route families, richer page workflows, and cross-route state transitions can still slip past the committed suite
 
-### 5. CSRF and trusted-host hardening are documented gaps, not fixed gaps
-- Status: `DOCUMENTED`
+### 5. Auth lifecycle logging is still not explicit
+- Status: `PARTIAL`
 - Evidence:
   - `SECURITY.md`
   - `docs/current-state/06-open-items.md`
-- Why it matters:
-  - cookie-based auth is live, but there is still no dedicated CSRF token flow and trusted-host enforcement is not explicit.
-- Remaining risk:
-  - the repo is safer because the gap is explicit, not because the protection exists yet
-
-### 6. Scheduler / API coupling remains
-- Status: `DOCUMENTED`
-- Evidence:
-  - `docs/system-inventory/14-implementation-readiness.txt`
   - `docs/repo-hardening/07-observability-and-failure-map.md`
 - Why it matters:
-  - the scheduler still runs inside the API process, which complicates scaling and operational isolation.
+  - cookie-based auth now has CSRF and trusted-host protection, but login/refresh/logout/account-deletion events still do not emit a consistent structured audit trail.
 - Remaining risk:
-  - worker or scheduler faults can still share failure domains with the API process
+  - auth failures and session transitions are harder to diagnose than request-level failures because the lifecycle is protected but not richly logged
+
+### 6. Dedicated scheduler runtime exists, but worker/process isolation is still partial
+- Status: `DOCUMENTED`
+- Evidence:
+  - `docs/repo-hardening/03-runtime-truth-matrix.md`
+  - `docs/repo-hardening/07-observability-and-failure-map.md`
+- Why it matters:
+  - the scheduler now has its own runtime entrypoint, but the repo still does not have a broader dedicated worker-process set or strong multi-process operational guidance.
+- Remaining risk:
+  - background execution semantics are clearer than before, but scaling and isolation boundaries are still only partially explicit
 
 ### 7. Migration replay has a gate now, but rollback/backfill guidance is still thin
 - Status: `PARTIAL`
@@ -96,6 +99,6 @@ Record the major unresolved risks and deferred work that remain after the curren
 ## What Would Count As The Next Credible Finish Line
 1. Decide which `feat/p1-core-value` capabilities are being ported versus deferred.
 2. Complete the second test-taxonomy pass for the broad `unit/` and umbrella page/component suites.
-3. Add the first committed low-noise browser/e2e lane.
-4. Either implement or explicitly defer CSRF/trusted-host hardening in the code, not just the docs.
+3. Expand the committed browser/e2e lane by route family and core outcomes.
+4. Add explicit auth lifecycle logging so the protected cookie-auth flow is also operationally observable.
 5. Strengthen migration docs with rollback/backfill expectations where the risk is non-trivial.

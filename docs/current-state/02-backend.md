@@ -9,12 +9,13 @@
 - `uv` for dependency and command execution
 
 ## Key Runtime Areas
-- Auth: cookie-based access and refresh flow with revocation and rate limiting
+- Auth: cookie-based access and refresh flow with revocation, CSRF protection on unsafe cookie-auth requests, trusted-host enforcement, and rate limiting
 - Jobs: SHA-256 string IDs, enrichment fields, lifecycle tracking, application relationship via `selectin`
 - Enrichment: HTML cleaning, markdown conversion, LLM extraction, salary/experience enrichment
 - Interview: question generation, prep bundles, answer evaluation, persisted interview sessions
 - Scraping: ATS registry, scheduler, tier routing, page crawling, adapter registry, browser pool
-- Workers: scraping, enrichment, follow-up/notification support, scheduler wiring
+- Runtime topology: API process via `backend/app/main.py`, dedicated scheduler process via `backend/app/runtime/scheduler.py`, and compose-managed Postgres/Redis
+- Workers: scraping, enrichment, follow-up/notification support, and scheduled job registration
 
 ## Runtime Invariants
 - Runtime `DateTime` columns should be timezone-aware.
@@ -43,6 +44,7 @@
 
 ## Entry Points
 - App bootstrap: `backend/app/main.py`
+- Scheduler bootstrap: `backend/app/runtime/scheduler.py`
 - DB config: `backend/app/database.py`
 - Settings: `backend/app/config.py`
 - Auth routes: `backend/app/auth/router.py`
@@ -54,3 +56,4 @@
 - No known blocking backend or DB bugs remain after the latest verified pass.
 - Bandit, pip-audit, pip check, backend Ruff, and the targeted backend mypy gate are green in the current branch.
 - The revalidated backend slice covers auth, settings, admin, and vault contract changes used by the reference-first frontend migration.
+- Cookie-authenticated unsafe requests now require the readable `jr_csrf_token` cookie to be echoed via `X-CSRF-Token`, and `TrustedHostMiddleware` is part of the live middleware stack.

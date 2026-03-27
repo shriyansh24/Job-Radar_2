@@ -36,12 +36,12 @@ The repo is well-instrumented enough to begin refactoring, but not yet safe for 
 
 ### Test First Before Frontend Migration
 
-1. `frontend/src/__tests__/App.test.tsx`
-2. `frontend/src/__tests__/JobBoard.test.tsx`
-3. `frontend/src/__tests__/Pipeline.test.tsx`
-4. `frontend/src/__tests__/Settings.test.tsx`
-5. `frontend/src/__tests__/Targets.test.tsx`
-6. `frontend/src/__tests__/Phase7aPages.test.tsx`
+1. `frontend/src/tests/app/App.auth-boundary.test.tsx`
+2. `frontend/src/tests/pages/JobBoard.page.test.tsx`
+3. `frontend/src/tests/pages/Pipeline.page.test.tsx`
+4. `frontend/src/tests/pages/Settings.page.test.tsx`
+5. `frontend/src/tests/pages/Targets.page.test.tsx`
+6. Ops route suites under `frontend/src/tests/pages/`, especially `Admin.page.test.tsx`, `Companies.page.test.tsx`, `SearchExpansion.page.test.tsx`, and `Sources.page.test.tsx`
 
 ### Frontend Blockers
 
@@ -74,12 +74,12 @@ The repo is well-instrumented enough to begin refactoring, but not yet safe for 
 4. `backend/tests/integration/test_settings_api.py`
 5. `backend/tests/integration/test_scraping_service.py`
 6. `backend/tests/unit/test_job_model.py`
-7. `backend/tests/unit/test_model_contracts.py`
+7. `backend/tests/contracts/test_sqlalchemy_model_contracts.py`
 8. `backend/tests/security/test_api_security.py`
 
 ### Backend Blockers
 
-1. Scheduler and API are not separated
+1. Dedicated scheduler runtime exists in the current worktree, but broader worker/process isolation is still partial
 2. Scraping/auto-apply/browser automation are high-side-effect subsystems
 3. Vault router/service mismatch is an active correctness problem
 4. Some frontend wrappers rely on backend response shapes that are not currently true
@@ -106,9 +106,9 @@ The repo is well-instrumented enough to begin refactoring, but not yet safe for 
 ### Test First Before DB Migration
 
 1. Full Alembic replay on clean Postgres
-2. `backend/tests/unit/test_migrations.py`
-3. `backend/tests/unit/test_database.py`
-4. `backend/tests/unit/test_model_contracts.py`
+2. `backend/tests/migrations/test_alembic_revisions.py`
+3. `backend/tests/infra/test_database.py`
+4. `backend/tests/contracts/test_sqlalchemy_model_contracts.py`
 5. `backend/tests/unit/test_job_model.py`
 6. Scraping model tests under `backend/tests/unit/scraping`
 
@@ -159,7 +159,7 @@ The repo is well-instrumented enough to begin refactoring, but not yet safe for 
 ## What Blocks Major Backend Migrations
 
 1. Unverified clean migration replay
-2. Scheduler/process coupling
+2. Dedicated scheduler runtime reduces API coupling, but broader worker/process isolation is still incomplete
 3. Scraping and auto-apply operational complexity
 4. SQLite-heavy tests for a Postgres-first runtime
 

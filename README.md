@@ -26,11 +26,14 @@ AI-powered job hunting assistant with direct-job scraping, enrichment, pipeline 
 
 ### Infrastructure
 
+Canonical full-stack local runtime:
+
 ```bash
-docker compose up -d postgres redis
+docker compose up -d
 ```
 
-This compose flow is the canonical local runtime baseline for the repo.
+This base compose flow now starts Postgres, Redis, one-shot migrations, the API, the dedicated scheduler, and the frontend.
+Host-local frontend/backend development is still supported, but it is an override on top of the compose infrastructure baseline rather than the canonical repo story.
 If you already have a separate manual `jobradar-postgres` container, treat it as a legacy local override rather than the documented default.
 
 ### Backend
@@ -40,6 +43,14 @@ cd backend
 uv sync --frozen
 uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
+```
+
+Dedicated scheduler process:
+
+```bash
+cd backend
+uv sync --frozen
+uv run python -m app.runtime.scheduler
 ```
 
 ### Frontend
@@ -78,14 +89,28 @@ npm run build
 - Authenticate through `/login`.
 - Sweep the routed app in desktop, tablet, and phone layouts.
 - Store screenshots and other QA artifacts in `.claude/ui-captures/`.
+- Committed browser/e2e coverage now lives under `frontend/e2e/`.
 
 ## Repo Protections
 - GitHub Actions currently cover repository validation, CodeQL, dependency review, docs/path validation, and migration replay safety.
+- A dedicated `Frontend E2E Smoke / frontend-e2e-smoke` check now exercises the live login, authenticated shell navigation, and theme persistence flows against the real backend.
 - Dependabot is enabled for GitHub Actions, frontend npm dependencies, and backend Python dependencies.
 - Healthy branch-protection assumptions for this repo:
   - treat `main` as PR-only
-  - require repository validation, docs validation, migration safety, dependency review, and CodeQL before merge
+  - require:
+    - `Repository Validation / Backend quality and security checks`
+    - `Repository Validation / Backend test suite`
+    - `Repository Validation / Frontend audit and lint`
+    - `Repository Validation / Frontend tests and build`
+    - `Docs Validation / Docs truth and path validation`
+    - `Migration Safety / Alembic replay on clean Postgres`
+    - `Dependency Review / Dependency review`
+    - `CodeQL / CodeQL (python)`
+    - `CodeQL / CodeQL (javascript-typescript)`
+    - `Frontend E2E Smoke / frontend-e2e-smoke`
+    before merge
   - keep docs, tests, and runtime-truth updates in the same batch as behavior changes
+  - do not turn the required browser workflow into a matrix or a path-filtered PR workflow, because the emitted check name must stay stable and always present
 
 ## Current Verification Snapshot (2026-03-27)
 - Frontend lint passed.
@@ -107,6 +132,7 @@ jobradar-v2/
 |-- frontend/
 |   |-- src/            # React 19 application
 |   |   `-- tests/      # Vitest suites grouped by app/api/components/hooks/pages/support
+|   |-- e2e/            # Playwright smoke/flows/theme-matrix coverage
 |   `-- system.md       # Frontend design-system source of truth
 |-- docs/
 |   |-- audit/          # Bug ledger (39 FIXED / 1 VERIFIED_CLEAN / 4 STALE)
@@ -128,6 +154,8 @@ jobradar-v2/
 - The live frontend is a reference-first command-center UI while preserving the app's routed behavior and backend contracts.
 - Buttons are intentionally shadowless; elevation is reserved for panels and structural surfaces.
 - Test taxonomy now lives alongside the code: `frontend/src/tests/README.md` and `backend/tests/README.md`.
+- Browser test taxonomy now lives in `frontend/e2e/README.md`.
 - The current live product state is documented under `docs/current-state/`.
 - `docs/repo-hardening/` is the active normalization trail while the repository hardening pass is in progress.
 - `docs/research/` contains future-planning material, not current requirements.
+- Cookie-authenticated unsafe requests are protected by the readable `jr_csrf_token` cookie plus the `X-CSRF-Token` header; FastAPI trusted hosts are enforced through `JR_TRUSTED_HOSTS`.

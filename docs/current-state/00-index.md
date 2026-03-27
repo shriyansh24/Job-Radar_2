@@ -32,6 +32,7 @@
 ### Frontend
 - `cd frontend && npm run lint`
 - `cd frontend && npm run test -- --run`
+- `cd frontend && npm run e2e`
 - `cd frontend && npm run build`
 - Latest local result: lint, full test suite, and production build pass after the current frontend decomposition and copy cleanup pass.
 
@@ -40,6 +41,7 @@
 - Authenticate through `/login`.
 - Sweep every authenticated route on desktop, tablet, and phone.
 - Capture representative screenshots into `.claude/ui-captures/`.
+- Committed browser/e2e coverage now lives under `frontend/e2e/`; the screenshot sweep is still useful as a broader operator QA lane, not the only browser signal.
 
 ## Documentation Map
 

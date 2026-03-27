@@ -19,9 +19,8 @@
 
 ## Non-Blocking Residuals
 - No blocking residual is currently tied to the frontend sweep; additional browser captures are incremental QA rather than a missing validation gate.
-- Cookie-authenticated state-changing requests still do not have a dedicated CSRF token flow.
-- Trusted-host enforcement is still not explicit in the FastAPI middleware stack.
 - Migration replay now has a dedicated GitHub workflow, but rollback and backfill guidance remain a follow-up hardening task.
+- Auth lifecycle logging is still thinner than the rest of the middleware stack; login/refresh/logout/account-deletion events do not yet emit dedicated structured audit logs.
 
 ## Coverage TODOs
 - `backend/app/auto_apply/ats_detector.py`, `backend/app/auto_apply/ats_filler.py`, `backend/app/auto_apply/orchestrator.py`, `backend/app/auto_apply/portal_config.py`, `backend/app/auto_apply/question_engine.py`, `backend/app/auto_apply/service.py`, `backend/app/auto_apply/validator.py`, and `backend/app/auto_apply/workday_filler.py` remain below `50%` coverage.
@@ -35,7 +34,7 @@
 - Resume PDF generation and additional template flows
 - Saved-search alerts UI and related UX
 - Further parser tuning for difficult JS-heavy career pages
-- Broader end-to-end Playwright coverage beyond the current smoke pass
+- Broader end-to-end Playwright coverage beyond the current smoke/route-shell/theme-matrix pass
 - Longer-term vendoring or repackaging decisions for scraper dependencies
 
 ## Historical Planning Material

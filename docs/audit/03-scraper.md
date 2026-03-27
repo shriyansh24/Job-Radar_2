@@ -70,8 +70,8 @@
 - **Status:** FIXED
 
 ## SC-13 - LOW: Dead Code - ScrapingBee
-- **Files:** `backend/app/scraping/scrapers/scrapingbee.py`, `backend/app/config.py`
-- **Detail:** Fixed. The dead scraper was removed and the unused ScrapingBee config surface was dropped with it.
+- **Files:** legacy ScrapingBee scraper implementation, `backend/app/config.py`
+- **Detail:** Fixed. The dead ScrapingBee scraper implementation was removed, and the unused config surface was dropped with it.
 - **Status:** FIXED
 
 ## SC-14 - LOW: Dead Code - Apify

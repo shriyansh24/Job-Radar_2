@@ -5,9 +5,20 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./backend:/app
-    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     environment:
       JR_DEBUG: "true"
+
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+    command: ["python", "-m", "app.runtime.scheduler"]
+    environment:
+      JR_DEBUG: "true"
+      JR_SCHEDULER_READY_MARKER: /tmp/jobradar-scheduler.ready
 
   frontend:
     build:
@@ -18,6 +29,6 @@ services:
       - ./frontend:/app
       - /app/node_modules
     ports: ["5173:5173"]
-    command: npm run dev -- --host 0.0.0.0
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
     environment:
       VITE_API_PROXY_TARGET: http://backend:8000

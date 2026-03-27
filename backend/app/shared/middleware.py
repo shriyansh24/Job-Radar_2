@@ -13,6 +13,7 @@ from starlette.responses import JSONResponse, Response
 from app.config import settings
 
 logger = structlog.get_logger()
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
@@ -102,6 +103,37 @@ class ApiRateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["X-RateLimit-Limit"] = str(limit)
         response.headers["X-RateLimit-Remaining"] = str(meta)
         return response
+
+
+class CsrfProtectionMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        if not request.url.path.startswith(settings.api_prefix) or request.method in SAFE_METHODS:
+            return await call_next(request)
+
+        bearer_authorization = bool(request.headers.get("Authorization"))
+        cookie_auth_present = bool(
+            request.cookies.get(settings.access_cookie_name)
+            or request.cookies.get(settings.refresh_cookie_name)
+        )
+        if not cookie_auth_present or bearer_authorization:
+            return await call_next(request)
+
+        csrf_cookie = request.cookies.get(settings.csrf_cookie_name)
+        csrf_header = request.headers.get(settings.csrf_header_name)
+        if not csrf_cookie or csrf_cookie != csrf_header:
+            logger.warning(
+                "csrf_validation_failed",
+                method=request.method,
+                path=request.url.path,
+                has_cookie=bool(csrf_cookie),
+                has_header=bool(csrf_header),
+            )
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "CSRF token missing or invalid"},
+            )
+
+        return await call_next(request)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

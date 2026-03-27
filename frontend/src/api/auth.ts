@@ -31,7 +31,7 @@ export async function getMeApi(): Promise<User> {
 }
 
 export async function refreshApi(): Promise<TokenResponse> {
-  const { data } = await apiClient.post<TokenResponse>("/auth/refresh", {});
+  const { data } = await apiClient.post<TokenResponse>("/auth/refresh");
   return data;
 }
 

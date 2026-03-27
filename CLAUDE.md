@@ -17,7 +17,7 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Scraping: ATS registry, target-based scheduler, browser pool, tier router, page crawler
 - CI: dependency checks, backend lint/tests, frontend audit/lint/tests/build
 - Current UI: reference-first command-center shell with shared primitives under `frontend/src/components/system`, a `frontend/system.md` design source of truth, shadowless buttons, and routed workspace groupings for `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, and `Operations`
-- Test layout: frontend Vitest suites live under `frontend/src/tests/`; backend pytest suites are moving toward explicit `contracts/`, `infra/`, `migrations/`, `security/`, and `workers/` lanes
+- Test layout: frontend Vitest suites live under `frontend/src/tests/`, browser suites live under `frontend/e2e/`, and backend pytest suites are moving toward explicit `contracts/`, `infra/`, `migrations/`, `security/`, and `workers/` lanes
 
 ## Canonical Working Commands
 
@@ -36,6 +36,7 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Install: `cd frontend && npm ci`
 - Lint: `cd frontend && npm run lint`
 - Tests: `cd frontend && npm run test -- --run`
+- Frontend e2e: `cd frontend && npm run e2e`
 - Build: `cd frontend && npm run build`
 - Dependency audit: `cd frontend && npm audit --audit-level high`
 - Dev server: `cd frontend && npm run dev`
@@ -66,10 +67,12 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Keep `frontend/system.md` aligned with any new visual or layout rule.
 
 ## Infrastructure
-- Canonical local runtime: `docker compose up -d postgres redis`
+- Canonical local runtime: `docker compose up -d`
+- Base compose now runs Postgres, Redis, one-shot migrations, the API, a dedicated scheduler, and the frontend.
+- Dedicated scheduler entrypoint: `cd backend && uv run python -m app.runtime.scheduler`
 - Canonical compose DB: `postgresql+asyncpg://jobradar:jobradar@localhost:5432/jobradar`
 - Canonical compose Redis: `redis://:jobradar-redis@localhost:6379/0`
-- `docker-compose.dev.yml` is an overlay for bind-mounted frontend/backend dev on top of the base compose services, and it sets `VITE_API_PROXY_TARGET=http://backend:8000` so Vite can reach the backend from inside the frontend container.
+- `docker-compose.dev.yml` is an overlay for bind-mounted frontend/backend/scheduler dev on top of the base compose services, and it sets `VITE_API_PROXY_TARGET=http://backend:8000` so Vite can reach the backend from inside the frontend container.
 - Legacy/manual local container setups on `5433` are workspace-specific overrides and should not be treated as the repo default.
 
 ## GitHub Guardrails

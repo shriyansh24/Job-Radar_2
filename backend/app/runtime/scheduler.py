@@ -1,0 +1,82 @@
+from __future__ import annotations
+
+import asyncio
+import os
+import signal
+import tempfile
+from pathlib import Path
+
+import structlog
+
+from app.config import settings, validate_runtime_settings
+from app.shared.logging import setup_logging
+from app.workers.scheduler import create_scheduler
+
+logger = structlog.get_logger()
+READY_MARKER = Path(
+    os.getenv(
+        "JR_SCHEDULER_READY_MARKER",
+        str(Path(tempfile.gettempdir()) / "jobradar-scheduler.ready"),
+    )
+)
+
+
+def _mark_ready() -> None:
+    READY_MARKER.parent.mkdir(parents=True, exist_ok=True)
+    READY_MARKER.write_text("ready\n", encoding="utf-8")
+
+
+def _clear_ready() -> None:
+    READY_MARKER.unlink(missing_ok=True)
+
+
+def _install_signal_handlers(stop_event: asyncio.Event) -> None:
+    def _request_shutdown(signum: int, _frame: object) -> None:
+        logger.info("scheduler_shutdown_requested", signal=signal.Signals(signum).name)
+        stop_event.set()
+
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, _request_shutdown)
+
+
+async def run() -> int:
+    setup_logging(debug=settings.debug)
+    validate_runtime_settings(settings)
+    logger.info("scheduler_starting", app=settings.app_name)
+
+    scheduler = create_scheduler()
+
+    try:
+        scheduler.start()
+    except Exception:
+        logger.exception("scheduler_startup_failed")
+        return 1
+
+    job_ids = [job.id for job in scheduler.get_jobs()]
+    logger.info("scheduler_started", job_count=len(job_ids), job_ids=job_ids)
+    _mark_ready()
+    logger.info("scheduler_ready", marker=str(READY_MARKER))
+
+    stop_event = asyncio.Event()
+    _install_signal_handlers(stop_event)
+
+    try:
+        await stop_event.wait()
+    finally:
+        _clear_ready()
+        scheduler.shutdown(wait=False)
+        logger.info("scheduler_stopped")
+
+    return 0
+
+
+def main() -> int:
+    try:
+        return asyncio.run(run())
+    except KeyboardInterrupt:
+        logger.info("scheduler_interrupted")
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
