@@ -12,6 +12,7 @@ Define and track the purpose-driven test layout used by the repository.
 - Frontend support files, page suites, hook suites, component suites, and API client suites now live under `frontend/src/tests/`.
 - Frontend browser/e2e coverage now has a committed home under `frontend/e2e/`.
 - Backend runtime, migration, security, contract, and worker-lifecycle suites now have dedicated directories under `backend/tests/`.
+- Backend auto-apply extractor, adapter, and safety coverage now has explicit unit suites under `backend/tests/unit/`.
 - Several older service/model suites still remain in broad backend `unit/` buckets, and some frontend page/component files still cover multiple behaviors inside one suite.
 
 ## Live Taxonomy
@@ -83,6 +84,11 @@ backend/tests/
   - `backend/tests/workers/scraping/test_scrape_run_worker.py`
   - `backend/tests/workers/scraping/test_target_batch_worker.py`
   - `backend/tests/workers/scraping/test_scrape_scheduler.py`
+- Auto-apply capability recovery suites added:
+  - `backend/tests/unit/test_form_extractor.py`
+  - `backend/tests/unit/test_greenhouse_adapter.py`
+  - `backend/tests/unit/test_lever_adapter.py`
+  - `backend/tests/unit/test_safety_layer.py`
 
 ## Remaining Rename / Split Candidates
 
@@ -101,7 +107,7 @@ backend/tests/
 - Browser e2e route breadth across more route families and all 8 theme combinations
 - Migration replay and rollback safety beyond the current targeted replay suite
 - Worker lifecycle and scheduler execution behavior for non-scraping jobs
-- Auto-apply adapters and form extraction
+- Auto-apply orchestration, service wiring, and browser/integration coverage beyond the new unit-level extractor/adapter/safety tests
 - Scraper failure handling and conditional request behavior
 - Frontend critical flows that currently rely on manual browser QA artifacts rather than committed tests
 

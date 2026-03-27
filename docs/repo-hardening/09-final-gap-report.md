@@ -11,12 +11,12 @@ Record the major unresolved risks and deferred work that remain after the curren
 ## Still Unresolved
 
 ### 1. Selective P1 feature recovery is not done
-- Status: `DEFERRED_FOR_DECISION`
+- Status: `PARTIAL_PROGRESS`
 - Evidence:
   - `docs/repo-hardening/04-branch-disposition.md`
   - `docs/repo-hardening/05-implementation-traceability-matrix.md`
 - Why it matters:
-  - `feat/p1-core-value` still contains concrete capability work that the current branch does not ship, especially auto-apply form extraction, ATS adapters, deeper resume tooling, and interview-prep internals.
+  - the backend auto-apply extractor, adapter, and safety slice has now been recovered, but `feat/p1-core-value` still contains deeper auto-apply wiring, resume tooling, interview-prep internals, hybrid search, and worker follow-through that the current branch does not ship.
 - Remaining risk:
   - if this branch is ignored, valuable partially implemented capability may be lost
   - if it is merged blindly, stale code and architectural drift will be reintroduced
@@ -97,7 +97,7 @@ Record the major unresolved risks and deferred work that remain after the curren
   - failure diagnosis is clearer on paper than it is uniformly in code
 
 ## What Would Count As The Next Credible Finish Line
-1. Decide which `feat/p1-core-value` capabilities are being ported versus deferred.
+1. Continue selective P1 recovery beyond the recovered backend auto-apply slice.
 2. Complete the second test-taxonomy pass for the broad `unit/` and umbrella page/component suites.
 3. Expand the committed browser/e2e lane by route family and core outcomes.
 4. Add explicit auth lifecycle logging so the protected cookie-auth flow is also operationally observable.

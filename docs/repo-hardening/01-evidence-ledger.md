@@ -91,7 +91,7 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 
 | Status | Branch | Evidence | Finding |
 |---|---|---|---|
-| `DOCUMENTED` | `feat/p1-core-value` | local tip `cc907ec`; PR #13 metadata | Still contains unique P0/P1 capability work not in `main` or `codex/ui-changes`, especially auto-apply adapters, interview prep, resume tailoring, outcomes, hybrid search, and worker slices |
+| `DOCUMENTED` | `feat/p1-core-value` | local tip `cc907ec`; PR #13 metadata plus selective recovery on `codex/ui-changes` | Still contains unique P0/P1 capability work not in `main` or fully on `codex/ui-changes`, especially deeper auto-apply wiring, interview prep, resume tailoring, hybrid search, and worker slices |
 | `DOCUMENTED` | `origin/feat/p2-polish-advanced` | PR #17 metadata and current branch topology | Useful as provenance for P2 capability history, but current tip appears converged into `main`; not a unique live-code branch anymore |
 | `DOCUMENTED` | `codex/ui-changes` | live branch history from `3ae5eac` through `5ef1c0a` | This is the unique UI overhaul and hardening line with theme-family runtime, shell/page decomposition, runtime split, CSRF hardening, and committed browser coverage |
 | `DOCUMENTED` | `ui-overhaul-design` | branch-only commits visible in local history | Historical UI spike with unique docs/components, but not the selected live UI line |
@@ -108,7 +108,7 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 | Branch/phase truth | `git` history + GitHub PR metadata | Must be proven file-by-file before integration decisions |
 
 ## Immediate Risks
-- `feat/p1-core-value` contains meaningful capability work that can be lost by neglect, but it is too stale to merge blindly.
+- `feat/p1-core-value` still contains meaningful capability work that can be lost by neglect, even after the backend auto-apply extractor/adapter/safety slice was recovered.
 - The committed Playwright/browser lane now exists, but route-family and eight-mode coverage are still thin.
 - Several historical/system-inventory documents still read like live status unless explicitly archived or demoted.
 - Scheduler readiness is now less false-green than before, but worker/job failure semantics still need more explicit observability.
@@ -116,5 +116,5 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 ## What This Ledger Does Not Yet Prove
 - Whether all current-state claims about frontend/backend contract alignment hold under a fresh full backend validation run
 - Whether Alembic replay from clean state is fully safe beyond the current upgrade check
-- Which exact P1 slices should be ported first and which should be rejected
+- Which exact remaining P1 slices should be ported next and which should be rejected
 - Whether all non-default theme families are route-complete across the full frontend

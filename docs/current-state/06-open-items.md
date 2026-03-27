@@ -13,7 +13,7 @@
 ## Remaining Frontend Gaps
 - Route-by-route copy cleanup and page decomposition are still worth continuing on the largest remaining surfaces, but the main frontend sweep is now integrated and validated.
 - Semantic search can still be made richer inside the Job Board beyond the current exact/semantic mode toggle.
-- Auto-apply still has room for broader operator tooling and coverage beyond the current route surface.
+- Auto-apply backend now includes recovered form extraction, Greenhouse/Lever adapters, and a pre-flight safety layer, but route/service execution and broader operator tooling are still partial.
 - Saved-search alerts UI and scheduler UX remain a follow-up enhancement.
 - Resume PDF generation and additional template flows remain deferred.
 
