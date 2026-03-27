@@ -1,7 +1,8 @@
-import { Buildings, CheckCircle, Globe, TrendUp } from "@phosphor-icons/react";
+import { Buildings, Globe } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { companiesApi, type Company } from "../api/phase7a";
+import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader, SectionHeader, Surface } from "../components/system";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
@@ -28,6 +29,8 @@ const FILTER_OPTIONS = [
   { value: "invalid", label: "invalid" },
 ];
 
+const CompanyMetricStrip = MetricStrip;
+
 export default function Companies() {
   const [filter, setFilter] = useState("");
 
@@ -42,6 +45,29 @@ export default function Companies() {
   );
 
   const verifiedCount = companies.filter((company) => company.validation_state === "verified").length;
+  const metricItems = [
+    {
+      key: "registry",
+      label: "Registry Size",
+      value: isLoading ? "..." : companies.length.toLocaleString(),
+      hint: "Canonical company records in the active registry.",
+      tone: "default" as const,
+    },
+    {
+      key: "verified",
+      label: "Verified",
+      value: isLoading ? "..." : verifiedCount.toLocaleString(),
+      hint: "Companies with accepted validation.",
+      tone: "success" as const,
+    },
+    {
+      key: "visible",
+      label: "Visible Now",
+      value: isLoading ? "..." : filtered.length.toLocaleString(),
+      hint: "Rows matching the active validation filter.",
+      tone: "warning" as const,
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -80,47 +106,12 @@ export default function Companies() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Surface tone="subtle" padding="md">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
-                Registry Size
-              </p>
-              <p className="mt-3 text-3xl font-black uppercase tracking-[-0.05em] text-text-primary">
-                {isLoading ? "..." : companies.length.toLocaleString()}
-              </p>
-            </div>
-            <Buildings size={24} weight="bold" className="text-text-muted" />
-          </div>
-        </Surface>
-        <Surface tone="subtle" padding="md">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
-                Verified
-              </p>
-              <p className="mt-3 text-3xl font-black uppercase tracking-[-0.05em] text-text-primary">
-                {isLoading ? "..." : verifiedCount.toLocaleString()}
-              </p>
-            </div>
-            <CheckCircle size={24} weight="fill" className="text-accent-secondary" />
-          </div>
-        </Surface>
-        <Surface tone="subtle" padding="md">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
-                Visible Now
-              </p>
-              <p className="mt-3 text-3xl font-black uppercase tracking-[-0.05em] text-text-primary">
-                {isLoading ? "..." : filtered.length.toLocaleString()}
-              </p>
-            </div>
-            <TrendUp size={24} weight="bold" className="text-accent-primary" />
-          </div>
-        </Surface>
-      </div>
+      <CompanyMetricStrip
+        items={metricItems.map((item) => ({
+          ...item,
+          hint: item.hint,
+        }))}
+      />
 
       {isLoading ? (
         <Surface padding="none">

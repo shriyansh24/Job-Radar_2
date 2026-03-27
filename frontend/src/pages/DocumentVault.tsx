@@ -50,9 +50,9 @@ function ResumeCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
-    <Surface tone="default" padding="lg" radius="xl" className="space-y-4">
+    <Surface tone="default" padding="lg" radius="xl" className="brutal-panel space-y-4">
       <div className="flex items-start gap-3">
-        <div className="flex size-12 shrink-0 items-center justify-center border-2 border-border bg-[var(--color-bg-tertiary)] shadow-[var(--shadow-xs)]">
+        <div className="hero-panel flex size-12 shrink-0 items-center justify-center">
           <FileText size={22} weight="bold" />
         </div>
         <div className="min-w-0 flex-1">
@@ -109,7 +109,7 @@ function CoverLetterCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
-    <Surface tone="default" padding="lg" radius="xl" className="space-y-4">
+    <Surface tone="default" padding="lg" radius="xl" className="brutal-panel space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="info">{letter.style ?? "Cover Letter"}</Badge>
@@ -311,6 +311,7 @@ export default function DocumentVault() {
   return (
     <div className="space-y-6">
       <PageHeader
+        className="hero-panel"
         eyebrow="Prepare"
         title="Document Vault"
         description="Keep source documents, cover letters, and resume variants in one place for easy reuse."
@@ -324,7 +325,7 @@ export default function DocumentVault() {
         <SplitWorkspace
           primary={
             <div className="space-y-6">
-              <Surface tone="default" padding="lg" radius="xl">
+              <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
                 <SectionHeader
                   title="Resume intake"
                   description="A drop surface for current source documents before they move into tailoring, review, and outbound application work."
@@ -332,7 +333,7 @@ export default function DocumentVault() {
                 <button
                   type="button"
                   {...getRootProps()}
-                  className="mt-5 flex w-full flex-col items-center justify-center border-2 border-dashed border-border bg-[var(--color-bg-tertiary)] px-6 py-12 text-center transition-colors hover:bg-card"
+                className="hero-panel mt-5 flex w-full flex-col items-center justify-center border-2 border-dashed border-border px-6 py-12 text-center transition-colors"
                 >
                   <input {...getInputProps()} />
                   <UploadSimple size={34} weight="bold" />
@@ -351,7 +352,7 @@ export default function DocumentVault() {
                   ))}
                 </div>
               ) : !resumes || resumes.length === 0 ? (
-                <Surface tone="default" padding="lg" radius="xl">
+                <Surface tone="default" padding="lg" radius="xl" className="brutal-panel">
                   <EmptyState
                     icon={<FileText size={40} weight="bold" />}
                     title="No resumes yet"
@@ -396,7 +397,7 @@ export default function DocumentVault() {
                 ))}
               </div>
             ) : !coverLetters || coverLetters.length === 0 ? (
-              <Surface tone="default" padding="lg" radius="xl">
+              <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
                 <EmptyState
                   icon={<Scroll size={40} weight="bold" />}
                   title="No cover letters yet"

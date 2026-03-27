@@ -11,6 +11,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { useDeferredValue, useEffect, useState } from "react";
 import { emailApi, type EmailWebhookPayload, type EmailWebhookResponse } from "../api/email";
+import { MetricStrip } from "../components/system/MetricStrip";
+import { PageHeader } from "../components/system/PageHeader";
 import Badge from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import EmptyState from "../components/ui/EmptyState";
@@ -46,39 +48,6 @@ const FIELD =
   "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !text-[var(--color-text-primary)] placeholder:!text-[var(--color-text-muted)] !shadow-none focus:!border-[var(--color-accent-primary)] focus:!ring-0";
 const PRIMARY_BUTTON =
   "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-accent-primary)] !text-white !shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
-
-function MetricCard({
-  label,
-  value,
-  hint,
-  accent,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  accent?: string;
-}) {
-  return (
-    <div className={`${PANEL_ALT} p-4`}>
-      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-        {label}
-      </div>
-      <div className={`mt-3 font-mono text-3xl font-bold ${accent ?? ""}`}>{value}</div>
-      <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{hint}</p>
-    </div>
-  );
-}
-
-function HeroPill({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={`${PANEL_ALT} px-3 py-2`}>
-      <div className="text-[9px] font-bold uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
-        {label}
-      </div>
-      <div className="mt-1 font-mono text-sm font-bold">{value}</div>
-    </div>
-  );
-}
 
 export default function Email() {
   const queryClient = useQueryClient();
@@ -172,38 +141,45 @@ export default function Email() {
 
   return (
     <div className="space-y-6 px-4 py-4 sm:px-6 lg:px-8">
-      <div className={`${PANEL} overflow-hidden`}>
-        <div className="grid gap-5 border-b-2 border-[var(--color-text-primary)] px-5 py-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)] lg:px-6 lg:py-6">
-          <div className="space-y-3">
-            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--color-accent-primary)]">
-              Execute / Signals
-            </div>
-            <h1 className="text-4xl font-black uppercase tracking-tighter sm:text-5xl">
-              Email Signals
-            </h1>
-            <p className="max-w-3xl text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
-              A signal desk for recruiter and hiring-team communication. The page treats the inbox as an
-              operational feed, not a mail client.
-            </p>
-            <div className="flex flex-wrap gap-2 pt-1">
-              <HeroPill label="Status" value="Optimal" />
-              <HeroPill label="Window" value="Recent 100" />
-              <HeroPill label="Desk" value="Signal feed" />
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            {heroMetrics.map((metric) => (
-              <MetricCard
-                key={metric.label}
-                label={metric.label}
-                value={metric.value}
-                hint={metric.hint}
-                accent={metric.accent}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Execute"
+        title="Email Signals"
+        description="A signal desk for recruiter and hiring-team communication. The page treats the inbox as an operational feed, not a mail client."
+        meta={
+          <>
+            <span className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
+              {logs?.length ?? 0} processed
+            </span>
+            <span className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
+              {actionableLogs.length} actionable
+            </span>
+            <span className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
+              {avgConfidence}
+            </span>
+          </>
+        }
+        actions={
+          <Button variant="default" className={PRIMARY_BUTTON} onClick={submitReplay} disabled={replayMutation.isPending}>
+            <ArrowClockwise size={16} weight="bold" />
+            Process signal
+          </Button>
+        }
+      />
+
+      <MetricStrip
+        items={heroMetrics.map((metric) => ({
+          key: metric.label,
+          label: metric.label,
+          value: metric.value,
+          hint: metric.hint,
+          tone:
+            metric.accent === "text-[var(--color-accent-success)]"
+              ? "success"
+              : metric.accent === "text-[var(--color-accent-warning)]"
+                ? "warning"
+                : "default",
+        }))}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(340px,0.95fr)_minmax(0,1.05fr)]">
         <div className={`${PANEL} overflow-hidden`}>

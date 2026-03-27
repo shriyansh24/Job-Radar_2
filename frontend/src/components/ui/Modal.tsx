@@ -41,7 +41,7 @@ export default function Modal({ open, onClose, title, children, size = 'md', cla
       {open ? (
         <motion.div
           ref={overlayRef}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(9,9,11,0.72)] p-4 backdrop-blur-[2px]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -52,7 +52,7 @@ export default function Modal({ open, onClose, title, children, size = 'md', cla
         >
           <motion.div
             className={cn(
-              "flex max-h-[85vh] w-full flex-col border-2 border-border bg-card shadow-[var(--shadow-lg)]",
+              "flex max-h-[85vh] w-full flex-col rounded-none border-2 border-border bg-card shadow-[var(--shadow-lg)]",
               sizes[size],
               className
             )}
@@ -63,9 +63,14 @@ export default function Modal({ open, onClose, title, children, size = 'md', cla
           >
             {title && (
               <div className="flex items-center justify-between border-b-2 border-border px-5 py-4">
-                <h2 className="text-lg font-black uppercase tracking-[-0.05em] text-text-primary">
-                  {title}
-                </h2>
+                <div className="space-y-1">
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                    Overlay
+                  </div>
+                  <h2 className="font-display text-xl font-black uppercase tracking-[-0.05em] text-text-primary">
+                    {title}
+                  </h2>
+                </div>
                 <button
                   onClick={onClose}
                   className="hard-press border-2 border-border bg-background p-2 text-text-muted shadow-[var(--shadow-xs)] hover:text-text-primary"

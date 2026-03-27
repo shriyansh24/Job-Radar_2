@@ -33,7 +33,7 @@ function QueryChip({
     <button
       type="button"
       onClick={() => onClick(value)}
-      className="hard-press border-2 border-border bg-card px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary shadow-[var(--shadow-xs)] hover:text-text-primary"
+      className="hard-press border-2 border-border bg-[var(--color-bg-secondary)] px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary shadow-[var(--shadow-xs)] hover:bg-[var(--color-bg-tertiary)] hover:text-text-primary"
     >
       {value}
     </button>
@@ -106,7 +106,7 @@ export default function SearchExpansion() {
       <PageHeader
         eyebrow="Operations"
         title="Search Expansion"
-        description="Run the live backend expansion endpoint against a role query, inspect the returned synonyms and related terms, and keep a short operational history without inventing a stale template system."
+        description="Run the live backend expansion endpoint against a role query and keep a short operational history."
         actions={
           <Button
             variant="primary"
@@ -192,7 +192,7 @@ export default function SearchExpansion() {
                 />
 
                 <div className="mt-6 grid gap-4 xl:grid-cols-3">
-                  <div className="border-2 border-border bg-[var(--color-bg-tertiary)] p-4 shadow-[var(--shadow-xs)] xl:col-span-3">
+                  <div className="border-2 border-border bg-[var(--color-bg-secondary)] p-4 shadow-[var(--shadow-xs)] xl:col-span-3">
                     <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                       Original query
                     </div>
@@ -202,7 +202,7 @@ export default function SearchExpansion() {
                   </div>
 
                   <div className="xl:col-span-2">
-                    <div className="border-2 border-border bg-card p-4 shadow-[var(--shadow-xs)]">
+                    <div className="border-2 border-border bg-[var(--color-bg-secondary)] p-4 shadow-[var(--shadow-xs)]">
                       <div className="flex items-center gap-2">
                         <Sparkle size={16} weight="fill" className="text-accent-primary" />
                         <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
@@ -226,7 +226,7 @@ export default function SearchExpansion() {
                   </div>
 
                   <div>
-                    <div className="border-2 border-border bg-card p-4 shadow-[var(--shadow-xs)]">
+                    <div className="border-2 border-border bg-[var(--color-bg-secondary)] p-4 shadow-[var(--shadow-xs)]">
                       <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                         Synonyms
                       </div>
@@ -288,11 +288,11 @@ export default function SearchExpansion() {
                       onClick={() => runExpansion(entry)}
                       className="hard-press flex w-full items-center justify-between border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-3 text-left shadow-[var(--shadow-xs)]"
                     >
-                      <span className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-text-primary">
-                        {entry}
-                      </span>
-                      <Sparkle size={14} weight="fill" className="text-accent-primary" />
-                    </button>
+                        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-text-primary">
+                          {entry}
+                        </span>
+                        <Sparkle size={14} weight="fill" className="text-accent-primary" />
+                      </button>
                   ))}
                 </div>
               </Surface>

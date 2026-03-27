@@ -8,26 +8,28 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense } from "react";
 import type { ReactNode } from "react";
-import { analyticsApi } from "../api/analytics";
-import Skeleton from "../components/ui/Skeleton";
-import { cn } from "../lib/utils";
 import { motion } from "framer-motion";
+import { analyticsApi } from "../api/analytics";
+import Badge from "../components/ui/Badge";
+import Button from "../components/ui/Button";
+import EmptyState from "../components/ui/EmptyState";
+import Skeleton from "../components/ui/Skeleton";
+import { MetricStrip } from "../components/system/MetricStrip";
+import { PageHeader } from "../components/system/PageHeader";
+import { SectionHeader } from "../components/system/SectionHeader";
+import { SplitWorkspace } from "../components/system/SplitWorkspace";
+import { StateBlock } from "../components/system/StateBlock";
+import { Surface } from "../components/system/Surface";
+import { cn } from "../lib/utils";
 
 const Charts = lazy(() => import("../components/analytics/AnalyticsCharts"));
 const ANALYTICS_STALE_TIME = 10 * 60 * 1000;
-
-const HERO_PANEL =
-  "border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
-const INSET_PANEL =
-  "border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
-const CHIP =
-  "inline-flex items-center gap-1 border-2 border-[var(--color-text-primary)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]";
 
 function ChartsSkeleton() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className={cn(HERO_PANEL, "p-4")}>
+        <div key={index} className="border-2 border-border bg-card p-4 shadow-[var(--shadow-sm)]">
           <Skeleton variant="text" className="mb-4 h-4 w-1/3" />
           <Skeleton variant="rect" className="h-64 w-full" />
         </div>
@@ -36,36 +38,42 @@ function ChartsSkeleton() {
   );
 }
 
-function MetricTile({
+function SideStat({
   label,
   value,
   hint,
   icon,
-  tone,
+  tone = "default",
 }: {
   label: string;
   value: string;
   hint: string;
   icon: ReactNode;
-  tone: string;
+  tone?: "default" | "success" | "warning";
 }) {
+  const toneClass = {
+    default: "bg-card",
+    success: "bg-[var(--color-accent-secondary-subtle)]",
+    warning: "bg-[var(--color-accent-warning-subtle)]",
+  }[tone];
+
   return (
-    <div className={cn("border-2 border-[var(--color-text-primary)] p-4 shadow-[4px_4px_0px_0px_var(--color-text-primary)]", tone)}>
+    <Surface tone="default" padding="md" radius="xl" className={cn("h-full", toneClass)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
             {label}
           </div>
-          <div className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-text-primary">
+          <div className="mt-3 text-3xl font-black tracking-[-0.05em] text-text-primary">
             {value}
           </div>
           <p className="mt-2 text-sm leading-6 text-text-secondary">{hint}</p>
         </div>
-        <div className="flex size-10 shrink-0 items-center justify-center border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)]">
+        <div className="flex size-10 shrink-0 items-center justify-center border-2 border-border bg-background">
           {icon}
         </div>
       </div>
-    </div>
+    </Surface>
   );
 }
 
@@ -116,7 +124,6 @@ export default function Analytics() {
       value: loadingOverview ? "..." : summary.total_jobs.toLocaleString(),
       hint: "Known opportunities in the workspace.",
       icon: <Briefcase size={18} weight="bold" />,
-    tone: "bg-bg-secondary",
     },
     {
       key: "applications",
@@ -124,7 +131,6 @@ export default function Analytics() {
       value: loadingOverview ? "..." : summary.total_applications.toLocaleString(),
       hint: "Applications tracked from search to outcome.",
       icon: <PaperPlaneTilt size={18} weight="bold" />,
-      tone: "bg-accent-primary/8",
     },
     {
       key: "responses",
@@ -132,7 +138,7 @@ export default function Analytics() {
       value: loadingOverview ? "..." : `${Math.round(summary.response_rate * 100)}%`,
       hint: "How often the market answers back.",
       icon: <TrendUp size={18} weight="bold" />,
-      tone: "bg-accent-success/8",
+      tone: "success" as const,
     },
     {
       key: "latency",
@@ -140,197 +146,176 @@ export default function Analytics() {
       value: loadingOverview ? "..." : summary.avg_days_to_response.toFixed(1),
       hint: "Average time from application to a meaningful reply.",
       icon: <Clock size={18} weight="bold" />,
-      tone: "bg-accent-warning/8",
+      tone: "warning" as const,
     },
   ];
 
   return (
     <div className="space-y-6 px-4 py-4 sm:px-6 sm:py-6">
-      <motion.section
+      <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className={cn(HERO_PANEL, "overflow-hidden")}
+        className="space-y-6"
       >
-        <div className="grid gap-0 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
-          <div className="p-5 sm:p-6 lg:p-8">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={CHIP}>Intelligence</span>
-              <span className={CHIP}>Last 30 days</span>
-            </div>
-            <h1 className="mt-4 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl lg:text-6xl">
-              Analytics
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-text-secondary sm:text-base">
-              A dense, readable control surface for understanding discovery volume, applications,
-              response quality, and source health.
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-                <button className={cn(CHIP, "bg-bg-secondary text-text-primary")}>
-                Last 30 Days
-              </button>
-                <button className={cn(CHIP, "bg-accent-success/10 text-text-primary")}>
-                <DownloadSimple size={12} weight="bold" />
+        <PageHeader
+          eyebrow="Intelligence"
+          title="Analytics"
+          description="A compact control surface for discovery volume, application outcomes, response quality, and source health."
+          actions={
+            <>
+              <Button variant="secondary" size="sm" icon={<Clock size={14} weight="bold" />}>
+                Last 30 days
+              </Button>
+              <Button variant="primary" size="sm" icon={<DownloadSimple size={14} weight="bold" />}>
                 Export PDF
-              </button>
-            </div>
-          </div>
+              </Button>
+            </>
+          }
+          meta={
+            <>
+              <Badge variant="info" size="sm">
+                Live charts
+              </Badge>
+              <Badge variant="success" size="sm">
+                Source feed
+              </Badge>
+            </>
+          }
+        />
 
-          <div className="border-t-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] p-5 sm:p-6 xl:border-l-2 xl:border-t-0">
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <MetricTile
+        <MetricStrip items={metrics} />
+      </motion.div>
+
+      <SplitWorkspace
+        primary={
+          <div className="space-y-4">
+            <Surface tone="default" padding="lg" radius="xl">
+              <SectionHeader
+                title="Trend slab"
+                description="History, response rate, and source mix share one surface so the signal stays easy to compare."
+                action={<Badge variant="info">Lazy loaded</Badge>}
+              />
+              <div className="mt-5">
+                <Suspense fallback={<ChartsSkeleton />}>
+                  <Charts daily={daily} funnel={funnel} sources={sources} skills={skills} />
+                </Suspense>
+              </div>
+            </Surface>
+
+            <Surface tone="subtle" padding="lg" radius="xl">
+              <SectionHeader
+                title="Skills pulse"
+                description="The most frequent skill signals coming back from recent jobs."
+                action={<Badge variant={skills?.length ? "success" : "default"}>{skills?.length ?? 0}</Badge>}
+              />
+              <div className="mt-4 flex flex-wrap gap-2">
+                {skills?.length ? (
+                  skills.slice(0, 8).map((skill) => (
+                    <span
+                      key={skill.skill}
+                      className="brutal-chip bg-[var(--color-bg-secondary)] text-text-primary"
+                    >
+                      {skill.skill}
+                    </span>
+                  ))
+                ) : (
+                  <EmptyState
+                    icon={<Briefcase size={32} weight="bold" />}
+                    title="No skill data yet"
+                    description="Once scrapers and saved searches have data, the skill pulse will appear here."
+                  />
+                )}
+              </div>
+            </Surface>
+          </div>
+        }
+        secondary={
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+              <SideStat
                 label="Interviews"
                 value={loadingOverview ? "..." : summary.total_interviews.toLocaleString()}
                 hint="Conversations already moving beyond first response."
-                icon={<TrendUp size={18} weight="bold" />}
-                tone="bg-accent-success/8"
+                icon={<TrendUp size={18} weight="bold" className="text-accent-success" />}
+                tone="success"
               />
-              <MetricTile
+              <SideStat
                 label="Offers"
                 value={loadingOverview ? "..." : summary.total_offers.toLocaleString()}
                 hint="Late-stage outcomes currently on the board."
-                icon={<DownloadSimple size={18} weight="bold" />}
-                tone="bg-accent-warning/8"
+                icon={<DownloadSimple size={18} weight="bold" className="text-accent-warning" />}
+                tone="warning"
               />
             </div>
-          </div>
-        </div>
-      </motion.section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {metrics.map((metric) => (
-          <MetricTile
-            key={metric.key}
-            label={metric.label}
-            value={metric.value}
-            hint={metric.hint}
-            icon={metric.icon}
-            tone={metric.tone}
-          />
-        ))}
-      </section>
+            <Surface tone="default" padding="lg" radius="xl">
+              <SectionHeader
+                title="Source quality"
+                description="Live source quality and matching ratios for connected feeds."
+              />
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.8fr)]">
-        <div className="space-y-4">
-          <div className={cn(HERO_PANEL, "overflow-hidden")}>
-            <div className="border-b-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] px-5 py-4 sm:px-6">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    Trend and funnel views
-                  </div>
-                  <h2 className="mt-1 text-xl font-semibold uppercase tracking-[-0.04em] sm:text-2xl">
-                    Chart slab
-                  </h2>
+              {sources && sources.length ? (
+                <div className="mt-4 overflow-x-auto">
+                  <table className="min-w-full border-separate border-spacing-0">
+                    <thead>
+                      <tr className="text-left text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                        <th className="border-b-2 border-border py-3 pr-3">Source</th>
+                        <th className="border-b-2 border-border px-3 py-3 text-right">Jobs</th>
+                        <th className="border-b-2 border-border px-3 py-3 text-right">Quality</th>
+                        <th className="border-b-2 border-border pl-3 py-3 text-right">Match</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sources.map((source) => (
+                        <tr key={source.source} className="align-top">
+                          <td className="border-b-2 border-border py-4 pr-3 text-sm font-bold uppercase tracking-[-0.03em] text-text-primary">
+                            {source.source}
+                          </td>
+                          <td className="border-b-2 border-border px-3 py-4 text-right font-mono text-sm text-text-primary">
+                            {source.total_jobs}
+                          </td>
+                          <td className="border-b-2 border-border px-3 py-4 text-right font-mono text-sm">
+                            <span
+                              className={cn(
+                                source.quality_score >= 0.8
+                                  ? "text-accent-success"
+                                  : source.quality_score >= 0.5
+                                    ? "text-accent-warning"
+                                    : "text-accent-danger"
+                              )}
+                            >
+                              {(source.quality_score * 100).toFixed(0)}%
+                            </span>
+                          </td>
+                          <td className="border-b-2 border-border pl-3 py-4 text-right font-mono text-sm text-text-primary">
+                            {source.avg_match_score ? `${(source.avg_match_score * 100).toFixed(0)}%` : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <span className={CHIP}>Lazy loaded</span>
-              </div>
-            </div>
-
-            <div className="p-4 sm:p-5">
-              <Suspense fallback={<ChartsSkeleton />}>
-                <Charts daily={daily} funnel={funnel} sources={sources} skills={skills} />
-              </Suspense>
-            </div>
-          </div>
-
-          <div className={cn(INSET_PANEL, "p-5 sm:p-6")}>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                  Top skills requested
-                </div>
-                <h3 className="mt-1 text-lg font-semibold uppercase tracking-[-0.04em]">
-                  Skills pulse
-                </h3>
-              </div>
-              <span className={CHIP}>{skills?.length ?? 0}</span>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {skills?.length ? (
-                skills.slice(0, 8).map((skill) => (
-                  <span
-                    key={skill.skill}
-                    className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
-                  >
-                    {skill.skill}
-                  </span>
-                ))
               ) : (
-                <span className="text-sm text-text-secondary">
-                  No skill data yet.
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className={cn(HERO_PANEL, "overflow-hidden")}>
-          <div className="border-b-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] px-5 py-4 sm:px-6">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-              Source quality
-            </div>
-            <h2 className="mt-1 text-xl font-semibold uppercase tracking-[-0.04em] sm:text-2xl">
-              Live feed
-            </h2>
-          </div>
-
-          {sources && sources.length ? (
-            <div className="overflow-x-auto p-4 sm:p-5">
-              <table className="min-w-full border-separate border-spacing-0">
-                <thead>
-                  <tr className="text-left text-[10px] uppercase tracking-[0.18em] text-text-muted">
-                    <th className="border-b-2 border-[var(--color-text-primary)] py-3 pr-3">Source</th>
-                    <th className="border-b-2 border-[var(--color-text-primary)] px-3 py-3 text-right">Jobs</th>
-                    <th className="border-b-2 border-[var(--color-text-primary)] px-3 py-3 text-right">Quality</th>
-                    <th className="border-b-2 border-[var(--color-text-primary)] pl-3 py-3 text-right">Match</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sources.map((source) => (
-                    <tr key={source.source} className="align-top">
-                      <td className="border-b-2 border-[var(--color-text-primary)] py-4 pr-3 text-sm font-semibold uppercase tracking-[-0.03em] text-text-primary">
-                        {source.source}
-                      </td>
-                      <td className="border-b-2 border-[var(--color-text-primary)] px-3 py-4 text-right font-mono text-sm text-text-primary">
-                        {source.total_jobs}
-                      </td>
-                      <td className="border-b-2 border-[var(--color-text-primary)] px-3 py-4 text-right font-mono text-sm">
-                        <span
-                          className={cn(
-                            source.quality_score >= 0.8
-                          ? "text-accent-success"
-                          : source.quality_score >= 0.5
-                                ? "text-accent-warning"
-                                : "text-accent-danger"
-                          )}
-                        >
-                          {(source.quality_score * 100).toFixed(0)}%
-                        </span>
-                      </td>
-                      <td className="border-b-2 border-[var(--color-text-primary)] pl-3 py-4 text-right font-mono text-sm text-text-primary">
-                        {source.avg_match_score ? `${(source.avg_match_score * 100).toFixed(0)}%` : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="p-5 sm:p-6">
-              <div className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] p-5">
-                <div className="text-sm font-semibold uppercase tracking-[0.18em] text-text-muted">
-                  No source quality yet
+                <div className="mt-4">
+                  <EmptyState
+                    icon={<Briefcase size={34} weight="bold" />}
+                    title="No source quality yet"
+                    description="Once scrapers and saved searches have data, the quality table will appear here."
+                  />
                 </div>
-                <p className="mt-3 text-sm leading-6 text-text-secondary">
-                  Once scrapers and saved searches have data, the quality table will appear here.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
+              )}
+            </Surface>
+
+            <StateBlock
+              tone="neutral"
+              icon={<TrendUp size={18} weight="bold" />}
+              title="Live feed"
+              description="This page stays coupled to the live analytics contract so charts and feed quality remain accurate."
+            />
+          </div>
+        }
+      />
     </div>
   );
 }

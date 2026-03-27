@@ -60,7 +60,7 @@ function SalaryRangeBar({ research }: { research: SalaryResearch }) {
 
   return (
     <div className="space-y-5">
-      <div className="relative h-12 border-2 border-border bg-[var(--color-bg-tertiary)] px-4">
+      <div className="hero-panel relative h-12 px-4">
         <div className="absolute left-4 right-4 top-1/2 h-2 -translate-y-1/2 bg-border" />
         <div
           className="absolute top-1/2 h-4 -translate-y-1/2 border-2 border-border bg-accent-primary/20"
@@ -120,7 +120,7 @@ function VerdictDisplay({ evaluation }: { evaluation: OfferEvaluation }) {
         ) : null}
       </div>
 
-      <div className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-4 text-sm leading-6 text-text-secondary shadow-[var(--shadow-xs)]">
+      <div className="brutal-panel px-4 py-4 text-sm leading-6 text-text-secondary">
         {evaluation.assessment}
       </div>
 
@@ -133,7 +133,7 @@ function VerdictDisplay({ evaluation }: { evaluation: OfferEvaluation }) {
             {evaluation.talking_points.map((tip, index) => (
               <div
                 key={`${tip}-${index}`}
-                className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3 text-sm leading-6 text-text-secondary shadow-[var(--shadow-xs)]"
+                className="brutal-panel px-4 py-3 text-sm leading-6 text-text-secondary"
               >
                 {tip}
               </div>
@@ -245,6 +245,7 @@ export default function SalaryInsights() {
   return (
     <div className="space-y-6">
       <PageHeader
+        className="hero-panel"
         eyebrow="Prepare"
         title="Salary Insights"
         description="Research the market, pressure-test offers, and keep a negotiation log that works cleanly on desktop, tablet, and phone."
@@ -265,7 +266,7 @@ export default function SalaryInsights() {
       <SplitWorkspace
         primary={
           <div className="space-y-6">
-            <Surface tone="default" padding="lg" radius="xl">
+            <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
               <SectionHeader
                 title="Salary research"
                 description="Pull a market range for the exact role, company, and location under consideration."
@@ -307,7 +308,7 @@ export default function SalaryInsights() {
             </Surface>
 
             {researchMutation.isPending ? (
-              <Surface tone="default" padding="lg" radius="xl">
+              <Surface tone="default" padding="lg" radius="xl" className="brutal-panel">
                 <Skeleton variant="text" className="h-5 w-1/3" />
                 <Skeleton variant="rect" className="mt-6 h-32 w-full" />
               </Surface>
@@ -318,7 +319,7 @@ export default function SalaryInsights() {
                   description={`Backend market percentiles returned in ${latestResearch.currency}${latestResearch.cached ? " from cache" : ""}.`}
                 />
                 <div className="mt-6 space-y-6">
-                  <Surface tone="subtle" padding="md" radius="xl">
+                  <Surface tone="subtle" padding="md" radius="xl" className="hero-panel">
                     <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                       Active query
                     </div>
@@ -347,7 +348,7 @@ export default function SalaryInsights() {
                   {latestResearch.yoe_brackets.length ? (
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                       {latestResearch.yoe_brackets.map((entry) => (
-                        <div key={entry.years} className="border-2 border-border bg-card px-4 py-4 shadow-[var(--shadow-xs)]">
+                        <div key={entry.years} className="brutal-panel px-4 py-4">
                           <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                             {entry.years}
                           </div>
@@ -369,7 +370,7 @@ export default function SalaryInsights() {
               />
             )}
 
-            <Surface tone="default" padding="lg" radius="xl">
+            <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
               <SectionHeader
                 title="Offer evaluation"
                 description="Compare a concrete offer against the latest market context."
@@ -410,7 +411,7 @@ export default function SalaryInsights() {
           <div className="space-y-4">
             {savedResearches.length ? (
               savedResearches.map((saved) => (
-                <Surface key={saved.id} tone="default" padding="md" radius="xl" interactive>
+                <Surface key={saved.id} tone="default" padding="md" radius="xl" interactive className="brutal-panel">
                   <button
                     type="button"
                     className="block w-full text-left"

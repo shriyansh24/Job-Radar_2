@@ -33,9 +33,6 @@ import { cn } from "../lib/utils";
 type StepId = 0 | 1 | 2 | 3;
 
 const STEP_LABELS = ["Welcome", "Profile", "Search", "Integrations"] as const;
-const PANEL = "border-2 border-[var(--color-text-primary)] bg-bg-secondary shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
-const PANEL_SUBTLE =
-  "border-2 border-[var(--color-text-primary)] bg-bg-tertiary shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
 const CHIP =
   "inline-flex items-center gap-1 border-2 border-[var(--color-text-primary)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]";
 
@@ -242,15 +239,14 @@ export default function Onboarding() {
         meta={
           <>
             {STEP_LABELS.map((label, index) => (
-              <span
+              <Badge
                 key={label}
-                className={cn(
-                  CHIP,
-                  index <= step ? "bg-accent-primary text-white" : "bg-bg-secondary text-text-muted"
-                )}
+                variant={index <= step ? "info" : "secondary"}
+                size="sm"
+                className={cn("rounded-none", index <= step ? "" : "text-text-muted")}
               >
                 {label}
-              </span>
+              </Badge>
             ))}
           </>
         }
@@ -270,7 +266,7 @@ export default function Onboarding() {
       <SplitWorkspace
         primary={
           <div className="space-y-6">
-            <section className={cn(PANEL, "overflow-hidden")}>
+            <section className="overflow-hidden border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] shadow-[var(--shadow-lg)]">
               <div className="grid gap-0 lg:grid-cols-[minmax(0,1.5fr)_minmax(260px,0.85fr)]">
                 <div className="p-5 sm:p-6 lg:p-8">
                   <div className="flex flex-wrap items-center gap-2">
@@ -278,11 +274,11 @@ export default function Onboarding() {
                     <span className={CHIP}>{STEP_LABELS[step]}</span>
                   </div>
                   <div className="mt-5 flex items-start gap-4">
-                    <div className="flex size-14 shrink-0 items-center justify-center border-2 border-[var(--color-text-primary)] bg-bg-tertiary">
+                    <div className="flex size-14 shrink-0 items-center justify-center border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)]">
                       <RocketLaunch size={28} weight="bold" />
                     </div>
                     <div className="space-y-3">
-                      <h2 className="text-3xl font-semibold tracking-[-0.06em] text-text-primary sm:text-4xl">
+                      <h2 className="font-display text-[clamp(2rem,4vw,3.6rem)] font-black uppercase tracking-[-0.07em] text-text-primary">
                         {activeStep.title}
                       </h2>
                       <p className="max-w-2xl text-sm leading-6 text-text-secondary sm:text-base">
@@ -292,7 +288,7 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                <div className="border-t-2 border-[var(--color-text-primary)] bg-bg-tertiary p-5 sm:p-6 lg:border-l-2 lg:border-t-0">
+                <div className="border-t-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] p-5 sm:p-6 lg:border-l-2 lg:border-t-0">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
                     Step signal
                   </div>
@@ -472,7 +468,7 @@ export default function Onboarding() {
                       const connected = Boolean(form[fieldKey]);
 
                       return (
-                        <div key={integration.provider} className={cn(PANEL_SUBTLE, "p-4 sm:p-5")}>
+                        <div className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] p-4 shadow-[4px_4px_0px_0px_var(--color-text-primary)] sm:p-5">
                           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div className="space-y-2">
                               <div className="flex items-center gap-2">
@@ -611,7 +607,7 @@ function TagRow({
   }
 
   return (
-    <div className={cn(PANEL_SUBTLE, "p-4 sm:p-5")}>
+    <div className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] p-4 shadow-[4px_4px_0px_0px_var(--color-text-primary)] sm:p-5">
       <div className="flex flex-col gap-4">
         <div className="space-y-1">
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">{label}</div>

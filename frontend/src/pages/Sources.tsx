@@ -32,15 +32,16 @@ export default function Sources() {
   return (
     <div className="space-y-6">
       <PageHeader
+        className="hero-panel"
         eyebrow="Operations"
         title="Source Health"
         description="Scraper source status, quality, and failure telemetry across the ingestion layer."
         meta={
           <>
-            <span className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
               {sources.length} sources
             </span>
-            <span className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
               {healthyCount} healthy
             </span>
           </>
@@ -48,7 +49,7 @@ export default function Sources() {
       />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Surface tone="subtle" padding="md">
+        <Surface tone="subtle" padding="md" className="hero-panel">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
@@ -61,7 +62,7 @@ export default function Sources() {
             <Heartbeat size={24} weight="bold" className="text-text-muted" />
           </div>
         </Surface>
-        <Surface tone="subtle" padding="md">
+        <Surface tone="subtle" padding="md" className="hero-panel">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
@@ -74,7 +75,7 @@ export default function Sources() {
             <ShieldCheck size={24} weight="fill" className="text-accent-secondary" />
           </div>
         </Surface>
-        <Surface tone="subtle" padding="md">
+        <Surface tone="subtle" padding="md" className="hero-panel">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
@@ -92,7 +93,7 @@ export default function Sources() {
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <Surface key={index}>
+            <Surface key={index} className="brutal-panel">
               <Skeleton variant="text" className="h-4 w-28" />
               <Skeleton variant="text" className="mt-6 h-8 w-16" />
               <div className="mt-6 space-y-3">
@@ -112,7 +113,7 @@ export default function Sources() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {sources.map((source: SourceHealth) => (
-            <Surface key={source.id} className="h-full">
+            <Surface key={source.id} className="brutal-panel h-full">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-lg font-black uppercase tracking-[-0.05em] text-text-primary">
@@ -126,7 +127,7 @@ export default function Sources() {
               </div>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                <div className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3">
+                <div className="brutal-panel px-4 py-3">
                   <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
                     Quality
                   </p>
@@ -134,7 +135,7 @@ export default function Sources() {
                     {(source.quality_score * 100).toFixed(0)}%
                   </p>
                 </div>
-                <div className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3">
+                <div className="brutal-panel px-4 py-3">
                   <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
                     Jobs found
                   </p>

@@ -50,7 +50,7 @@ function VersionCard({
       radius="xl"
       interactive
       onClick={onPreview}
-      className="space-y-4"
+      className="brutal-panel space-y-4"
     >
       <div className="flex items-start gap-3">
         <div className="flex size-12 shrink-0 items-center justify-center border-2 border-border bg-[var(--color-bg-tertiary)] shadow-[var(--shadow-xs)]">
@@ -84,14 +84,14 @@ function VersionCard({
 
 function TailorResultPanel({ result }: { result: ResumeTailorResponse }) {
   return (
-    <Surface tone="default" padding="lg" radius="xl">
+    <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
       <SectionHeader
         title="Tailored resume"
         description="Preview the scoring delta, rewritten content, and the requirement gaps identified by the backend tailoring pipeline."
       />
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        <div className="border-2 border-border bg-[var(--color-bg-tertiary)] p-5 shadow-[var(--shadow-xs)]">
+        <div className="brutal-panel p-5">
           <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
             Tailoring summary
           </div>
@@ -100,7 +100,7 @@ function TailorResultPanel({ result }: { result: ResumeTailorResponse }) {
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="border-2 border-border bg-card p-4 shadow-[var(--shadow-xs)]">
+          <div className="brutal-panel p-4">
             <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               ATS score before
             </div>
@@ -108,7 +108,7 @@ function TailorResultPanel({ result }: { result: ResumeTailorResponse }) {
               {result.ats_score_before}
             </div>
           </div>
-          <div className="border-2 border-border bg-accent-primary/8 p-4 shadow-[var(--shadow-xs)]">
+          <div className="brutal-panel p-4">
             <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
               ATS score after
             </div>
@@ -128,7 +128,7 @@ function TailorResultPanel({ result }: { result: ResumeTailorResponse }) {
             {result.enhanced_bullets.map((bullet, index) => (
               <div
                 key={`${bullet.original}-${index}`}
-                className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3 text-sm text-text-secondary"
+                className="brutal-panel px-4 py-3 text-sm text-text-secondary"
               >
                 <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   Original
@@ -151,7 +151,7 @@ function TailorResultPanel({ result }: { result: ResumeTailorResponse }) {
           </div>
           <div className="grid gap-3 lg:grid-cols-2">
             {result.reordered_experience.map((entry) => (
-              <div key={entry.company} className="border-2 border-border bg-card p-4 shadow-[var(--shadow-xs)]">
+              <div key={entry.company} className="brutal-panel p-4">
                 <div className="text-sm font-semibold uppercase tracking-[-0.03em] text-text-primary">
                   {entry.company}
                 </div>
@@ -289,6 +289,7 @@ export default function ResumeBuilder() {
   return (
     <div className="space-y-6">
       <PageHeader
+        className="hero-panel"
         eyebrow="Prepare"
         title="Resume Builder"
         description="Upload resumes, manage versions, tailor a draft to a job, and run the AI council without leaving the workspace."
@@ -309,7 +310,7 @@ export default function ResumeBuilder() {
               <button
                 type="button"
                 {...getRootProps()}
-                className="mt-5 flex w-full flex-col items-center justify-center border-2 border-dashed border-border bg-[var(--color-bg-tertiary)] px-6 py-14 text-center transition-colors hover:bg-card"
+                className="hero-panel mt-5 flex w-full flex-col items-center justify-center border-2 border-dashed border-border px-6 py-14 text-center transition-colors"
               >
                 <input {...getInputProps()} />
                 <UploadSimple size={40} weight="bold" className="text-text-primary" />
@@ -490,7 +491,7 @@ export default function ResumeBuilder() {
 
               {councilMutation.data ? (
                 <div className="mt-6 space-y-4">
-                  <div className="border-2 border-border bg-[var(--color-bg-tertiary)] p-5 text-center">
+                  <div className="hero-panel p-5 text-center">
                     <div className="mono-num text-5xl font-bold text-text-primary">
                       {(councilMutation.data.data.overall_score ?? 0).toFixed(1)}
                     </div>

@@ -47,8 +47,6 @@ const TABS = [
   { id: "stats", label: "Statistics", icon: <ChartBar size={14} weight="bold" /> },
 ] as const;
 
-const PANEL_SUBTLE =
-  "border-2 border-[var(--color-text-primary)] bg-bg-tertiary shadow-[4px_4px_0px_0px_var(--color-text-primary)]";
 const CHIP =
   "inline-flex items-center gap-1 border-2 border-[var(--color-text-primary)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]";
 
@@ -87,7 +85,7 @@ function statusVariant(status: string): "success" | "danger" | "warning" | "info
 
 function ProfileCard({ profile }: { profile: AutoApplyProfile }) {
   return (
-    <div className={cn(PANEL_SUBTLE, "p-4 sm:p-5")}>
+    <Surface tone="subtle" padding="md" className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -119,7 +117,7 @@ function ProfileCard({ profile }: { profile: AutoApplyProfile }) {
           <span className={cn(CHIP, "bg-accent-warning/10 text-text-primary")}>Template</span>
         ) : null}
       </div>
-    </div>
+    </Surface>
   );
 }
 
@@ -131,7 +129,7 @@ function RuleCard({
   onToggleActive: () => void;
 }) {
   return (
-    <div className={cn(PANEL_SUBTLE, "p-4 sm:p-5")}>
+    <Surface tone="subtle" padding="md" className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -182,7 +180,7 @@ function RuleCard({
           {rule.is_active ? "Deactivate" : "Activate"}
         </Button>
       </div>
-    </div>
+    </Surface>
   );
 }
 
@@ -807,7 +805,7 @@ export default function AutoApply() {
                     icon: <Clock size={18} weight="bold" />,
                   },
                 ].map((item) => (
-                  <div key={item.label} className={cn(PANEL_SUBTLE, "p-4 sm:p-5")}>
+                  <Surface key={item.label} tone="subtle" padding="md">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
@@ -822,7 +820,7 @@ export default function AutoApply() {
                         {item.icon}
                       </div>
                     </div>
-                  </div>
+                  </Surface>
                 ))}
               </div>
             ) : (

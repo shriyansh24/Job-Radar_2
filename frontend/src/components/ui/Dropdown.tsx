@@ -36,7 +36,7 @@ export default function Dropdown({ trigger, items, onSelect, align = 'left', cla
       {open && (
         <div
           className={cn(
-            'absolute z-40 mt-1 min-w-[160px] bg-bg-secondary border border-border rounded-[var(--radius-md)] shadow-[var(--shadow-lg)] py-1',
+            'absolute z-40 mt-2 min-w-[180px] border-2 border-border bg-card py-1 shadow-[var(--shadow-lg)]',
             align === 'right' ? 'right-0' : 'left-0'
           )}
         >
@@ -44,7 +44,7 @@ export default function Dropdown({ trigger, items, onSelect, align = 'left', cla
             <button
               key={item.value}
               className={cn(
-                'w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-bg-tertiary',
+                'w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] font-mono font-bold uppercase tracking-[0.16em] transition-colors hover:bg-[var(--color-bg-secondary)]',
                 item.danger ? 'text-accent-danger' : 'text-text-primary'
               )}
               onClick={() => {

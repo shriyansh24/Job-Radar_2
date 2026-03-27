@@ -2,8 +2,6 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-import { Surface } from "./Surface";
-
 type MetricItem = {
   key: string;
   label: React.ReactNode;
@@ -54,16 +52,24 @@ function metricValueClass(value: React.ReactNode): string {
 function MetricStrip({ className, items, ...props }: MetricStripProps) {
   return (
     <div
-      className={cn("grid gap-4 md:grid-cols-2 xl:grid-cols-4", className)}
+      className={cn(
+        "grid overflow-hidden border-2 border-border bg-card shadow-[var(--shadow-sm)] md:grid-cols-2 xl:grid-cols-4",
+        className
+      )}
       {...props}
     >
-      {items.map((item) => (
-        <Surface
+      {items.map((item, index) => (
+        <div
           key={item.key}
-          tone="default"
-          padding="lg"
-          radius="xl"
-          className={cn("min-w-0", accentClasses[item.tone ?? "default"])}
+          className={cn(
+            "min-w-0 border-border p-4 sm:p-5",
+            accentClasses[item.tone ?? "default"],
+            index > 0 && "border-t-2",
+            index < 2 ? "md:border-t-0" : "md:border-t-2",
+            index % 2 === 1 ? "md:border-l-2" : "md:border-l-0",
+            "xl:border-t-0",
+            index > 0 ? "xl:border-l-2" : "xl:border-l-0"
+          )}
         >
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
@@ -85,7 +91,7 @@ function MetricStrip({ className, items, ...props }: MetricStripProps) {
               </div>
             ) : null}
           </div>
-        </Surface>
+        </div>
       ))}
     </div>
   );

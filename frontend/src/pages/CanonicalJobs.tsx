@@ -34,6 +34,7 @@ export default function CanonicalJobs() {
   return (
     <div className="space-y-6">
       <PageHeader
+        className="hero-panel"
         eyebrow="Operations"
         title="Canonical Jobs"
         description="Merged job entities, source consolidation, and stale record cleanup for the canonical registry."
@@ -54,13 +55,13 @@ export default function CanonicalJobs() {
         }
         meta={
           <>
-            <span className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
               {jobs.length} loaded
             </span>
-            <span className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
               {openCount} open
             </span>
-            <span className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
               {staleCount} stale
             </span>
           </>
@@ -70,7 +71,7 @@ export default function CanonicalJobs() {
       {isLoading ? (
         <div className="space-y-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Surface key={index}>
+            <Surface key={index} className="brutal-panel">
               <Skeleton variant="text" className="h-5 w-40" />
               <Skeleton variant="text" className="mt-4 h-4 w-56" />
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -88,7 +89,7 @@ export default function CanonicalJobs() {
           description="The canonical queue will appear here once source jobs are merged."
         />
       ) : (
-        <Surface padding="none">
+        <Surface padding="none" className="hero-panel">
           <div className="border-b-2 border-border px-5 py-5">
             <SectionHeader
               title="Canonical Queue"
@@ -121,26 +122,26 @@ export default function CanonicalJobs() {
                     </p>
 
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-text-secondary">
+                      <span className="brutal-panel px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-text-secondary">
                         {job.source_count} source(s)
                       </span>
-                      <span className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-text-secondary">
+                      <span className="brutal-panel px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-text-secondary">
                         First seen {new Date(job.first_seen_at).toLocaleDateString()}
                       </span>
-                      <span className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-text-secondary">
+                      <span className="brutal-panel px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-text-secondary">
                         Refreshed {new Date(job.last_refreshed_at).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                    <div className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3">
+                    <div className="brutal-panel px-4 py-3">
                       <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
                         Company
                       </p>
                       <p className="mt-3 text-sm text-text-primary">{job.company_name}</p>
                     </div>
-                    <div className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3">
+                    <div className="brutal-panel px-4 py-3">
                       <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
                         Domain
                       </p>

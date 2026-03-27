@@ -283,7 +283,12 @@ export default function Copilot() {
                 />
               </div>
 
-              <div className="mt-6 space-y-4">
+              <div className="mt-6">
+                <SectionHeader
+                  title="Transcript"
+                  description="The assistant keeps context compact so the session stays readable."
+                />
+                <div className="mt-4 space-y-4">
                 {transcript.length === 0 ? (
                   <EmptyState
                     icon={<Sparkle size={34} weight="bold" />}
@@ -300,8 +305,8 @@ export default function Copilot() {
                       className={cn(
                         "border-2 px-4 py-4 shadow-[var(--shadow-xs)]",
                         entry.role === "assistant"
-                          ? "border-border bg-[var(--color-bg-tertiary)]"
-                          : "ml-auto border-border bg-accent-primary/10"
+                          ? "max-w-[48rem] border-border bg-[var(--color-bg-secondary)]"
+                          : "ml-auto max-w-[48rem] border-border bg-[var(--color-accent-primary-subtle)]"
                       )}
                     >
                       <div className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
@@ -318,6 +323,7 @@ export default function Copilot() {
                     <Skeleton variant="text" className="mt-2 h-4 w-5/6" />
                   </div>
                 ) : null}
+                </div>
               </div>
 
               <div className="mt-6 space-y-4 border-t-2 border-border pt-6">
@@ -327,7 +333,7 @@ export default function Copilot() {
                       key={prompt}
                       type="button"
                       onClick={() => sendChat(prompt)}
-                      className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary transition-colors hover:bg-card hover:text-foreground"
+                      className="border-2 border-border bg-[var(--color-bg-secondary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary transition-colors hover:bg-[var(--color-bg-tertiary)] hover:text-text-primary"
                     >
                       {prompt}
                     </button>
@@ -354,16 +360,6 @@ export default function Copilot() {
           }
           secondary={
             <div className="space-y-4">
-              <StateBlock
-                tone="neutral"
-                icon={<Briefcase size={18} weight="bold" />}
-                title="Active job context"
-                description={
-                  selectedJob
-                    ? `${selectedJob.title} at ${selectedJob.company_name ?? "Unknown company"}`
-                    : "Choose a job above to ground the drafting context."
-                }
-              />
               {selectedJob ? (
                 <Surface tone="default" padding="md" radius="xl">
                   <SectionHeader title="Job snapshot" />
@@ -377,7 +373,14 @@ export default function Copilot() {
                     <p>{selectedJob.summary_ai ?? "No AI summary yet. The assistant will rely on core job metadata."}</p>
                   </div>
                 </Surface>
-              ) : null}
+              ) : (
+                <StateBlock
+                  tone="neutral"
+                  icon={<Briefcase size={18} weight="bold" />}
+                  title="Active job context"
+                  description="Choose a job above to ground the drafting context."
+                />
+              )}
             </div>
           }
         />
@@ -438,7 +441,7 @@ export default function Copilot() {
                       key={prompt}
                       type="button"
                       onClick={() => runHistoryQuestion(prompt)}
-                      className="w-full border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-3 text-left text-sm leading-6 text-text-secondary transition-colors hover:bg-card hover:text-foreground"
+                      className="w-full border-2 border-border bg-[var(--color-bg-secondary)] px-4 py-3 text-left text-sm leading-6 text-text-secondary transition-colors hover:bg-[var(--color-bg-tertiary)] hover:text-text-primary"
                     >
                       {prompt}
                     </button>
@@ -506,9 +509,9 @@ export default function Copilot() {
                     <Skeleton variant="text" className="h-4 w-5/6" />
                   </div>
                 ) : coverLetter ? (
-                  <div className="border-2 border-border bg-[var(--color-bg-tertiary)] px-4 py-4 text-sm leading-6 text-text-secondary shadow-[var(--shadow-xs)]">
-                    {coverLetter.content}
-                  </div>
+                  <Surface tone="subtle" padding="md" radius="xl">
+                    <div className="text-sm leading-6 text-text-secondary">{coverLetter.content}</div>
+                  </Surface>
                 ) : (
                   <EmptyState
                     icon={<FileText size={32} weight="bold" />}

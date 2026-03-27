@@ -2,9 +2,9 @@
 
 ## Visual Thesis
 - Build JobRadar as a reference-first neo-brutalist command center.
-- Preserve the current app's routes, auth, and backend behavior, but use the reference repo's typography, color system, shell posture, and interaction language as the live visual authority.
+- Preserve the current app's routes, auth, and backend behavior, but use Figma Make as the live authority for theme families, typography, shell posture, and interaction language.
 - Light mode stays bright, neutral, and technical. Dark mode stays jet black, high-contrast, and crisp.
-- The live type system is `Inter` for interface copy and `JetBrains Mono` for labels, metrics, tabs, and system readouts.
+- The live type system is `Inter` for interface copy, `Space Grotesk` for display and section headlines, and `JetBrains Mono` for labels, metrics, tabs, and system readouts.
 
 ## Theme Tokens
 The frontend source of truth is `src/index.css`.
@@ -39,6 +39,16 @@ The frontend source of truth is `src/index.css`.
 }
 ```
 
+- Runtime theme state is now `theme family + mode`, not only `light/dark`.
+- Supported families at the token level:
+  - `default`
+  - `terminal`
+  - `blueprint`
+  - `phosphor`
+- Production-ready default:
+  - `default/light`
+  - `default/dark`
+- The other 3 families are wired into the token/runtime layer but should be treated as rollout candidates until the remaining page-level port and QA work is complete.
 - Semantic colors are theme-specific, not fixed across light and dark.
 - `success`, `warning`, `danger`, and `info` all use separate light/dark token values and subtle surface fills.
 - Chart grids, axes, legends, tooltips, and series colors must consume chart tokens instead of hardcoded hex values.
@@ -46,6 +56,7 @@ The frontend source of truth is `src/index.css`.
 ## Typography
 - Page title: `30px`, semibold, tracking `-0.02em`, normal case.
 - Section title: `20px`, bold, uppercase.
+- Display/headline face: `Space Grotesk`.
 - Eyebrow label: `11px`, medium, uppercase, tracking `0.18em`.
 - Body copy: `14px`, regular, dense but readable.
 - Metrics and operational values: `JetBrains Mono`.
@@ -77,13 +88,16 @@ The frontend source of truth is `src/index.css`.
   - auth/setup forms
 
 ## Component Rules
-- Buttons: uppercase mono or bold sans, hard shadow, strong border, press feedback.
-- Inputs/selects/textareas: `2px` border, neutral inset surface, blue hard-shadow focus state.
-- Surfaces: square corners, strong stroke, hard shadow, optional lift on hover.
-- Badges: sharp mono labels with restrained semantic fills.
-- Tabs: dense bordered strips instead of soft pills.
-- Modals: structural panels, no glass treatment.
-- Empty/loading/error states: structural slabs, not airy placeholder cards.
+- Buttons: uppercase mono labels, `2px` border, hard shadow, and hard-press translation. Primary CTAs use the accent-blue hard shadow; secondary actions stay monochrome.
+- Cards and surfaces: square corners, `2px` structural borders, hard offset shadows, and optional hover lift. Card subcomponents should use structural header/content/footer sections instead of nested ad hoc wrappers.
+- Page headers: hero panels, not simple title rows. Use a mono eyebrow, optional meta-chip rail, loud `Space Grotesk` title, and an action cluster on the right.
+- Metric strips: one shared slab with internal dividers, not separate card mosaics.
+- Inputs/selects/textareas: label-aware wrappers, `2px` borders, neutral inset surfaces, and blue hard-shadow focus states. Error states stay red without adding soft glow.
+- Badges: sharp mono labels with restrained semantic fills. Semantic badges are `success`, `warning`, `danger`, and `info`; avoid decorative pill treatments.
+- Tabs: bordered segmented strips instead of soft pills.
+- Modals: structural overlays with bordered headers, loud titles, and no glass styling.
+- Empty/loading/error states: structural slabs and inset panels, not airy placeholder cards.
+- State blocks: inset alert panels with mono titles and optional action affordances.
 
 ## Responsive Rules
 - Phone and tablet layouts keep the same information model as desktop.
@@ -94,4 +108,6 @@ The frontend source of truth is `src/index.css`.
 ## Implementation Notes
 - Shared shell and layout primitives live in `src/components/layout` and `src/components/system`.
 - Shared UI primitives live in `src/components/ui`.
-- Reference visual authority came from `D:/jobradar-v2-ui-ref`; current app routes and data contracts remain authoritative in this repo.
+- Figma Make is the primary visual authority for theme families and shell/page composition.
+- `origin/feature/ui/figma/neo-brutalist-themes` is a secondary code donor only, not a merge target.
+- Current app routes, auth, stores, and data contracts remain authoritative in this repo.
