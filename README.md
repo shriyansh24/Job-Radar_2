@@ -35,6 +35,7 @@ docker compose up -d
 This base compose flow now starts Postgres, Redis, one-shot migrations, the API, the dedicated scheduler, and the frontend.
 Host-local frontend/backend development is still supported, but it is an override on top of the compose infrastructure baseline rather than the canonical repo story.
 If you already have a separate manual `jobradar-postgres` container, treat it as a legacy local override rather than the documented default.
+Redis is still provisioned in the compose stack, but the current API and dedicated scheduler do not depend on it to reach their ready state.
 
 ### Backend
 
@@ -94,6 +95,7 @@ npm run build
 ## Repo Protections
 - GitHub Actions currently cover repository validation, CodeQL, dependency review, docs/path validation, and migration replay safety.
 - A dedicated `Frontend E2E Smoke / frontend-e2e-smoke` check now exercises the live login, authenticated shell navigation, and theme persistence flows against the real backend.
+- The browser lane also runs weekly as a low-noise drift check for the dedicated scheduler/bootstrap/login path.
 - Dependabot is enabled for GitHub Actions, frontend npm dependencies, and backend Python dependencies.
 - Healthy branch-protection assumptions for this repo:
   - treat `main` as PR-only

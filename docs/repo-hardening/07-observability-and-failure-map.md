@@ -66,14 +66,18 @@ Document where the major runtime flows log today, where failures surface, and wh
 - Signals:
   - `scheduler_starting`
   - `scheduler_configured`
+  - `scheduler_dependencies_ready`
   - `scheduler_started`
   - `scheduler_ready`
   - `scheduler_shutdown_requested`
   - `scheduler_stopped`
+  - `scheduler_job_completed`
+  - `scheduler_job_failed`
+  - `scheduler_job_missed`
 - Current gap:
   - no centralized worker heartbeat/completion/failure logging standard
-  - scheduler is now a dedicated process, but individual scheduled job execution success/failure is still not surfaced consistently
-  - several workers are inferred by schedule registration, but their execution success/failure is not surfaced here
+  - scheduler readiness is still represented by a sentinel file after startup + DB reachability; downstream dependency or per-job health can still drift after the marker is written
+  - several workers are inferred by schedule registration, but they still do not emit a uniform completion/failure envelope beyond scheduler-level event hooks
 
 ## Current Blind Spots
 - Browser/e2e now exists, but route-family coverage is still shallow.

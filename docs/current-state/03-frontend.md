@@ -12,7 +12,8 @@
 
 ## UI/State Facts
 - Theme state is persisted through `useUIStore`.
-- Light mode and jet-black dark mode are first-class themes.
+- Theme family plus mode is persisted through `useUIStore`.
+- Light mode and near-black default dark mode are first-class themes; alternate theme families may push darker than the default token set.
 - The root theme toggle applies a `.dark` class to the HTML element.
 - Design tokens live in `frontend/src/index.css`.
 - `@phosphor-icons/react` is the active icon set.

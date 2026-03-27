@@ -65,6 +65,9 @@ backend/tests/
   - `frontend/src/tests/pages/SearchExpansion.page.test.tsx`
   - `frontend/src/tests/pages/Sources.page.test.tsx`
   - `frontend/src/tests/pages/Targets.page.test.tsx`
+- Focused operator exposure coverage is now in:
+  - `frontend/src/tests/components/layout/AppShell.scraper-operator.test.tsx`
+  - `frontend/src/tests/pages/Targets.operator-exposure.page.test.tsx`
 
 ### Backend
 - Migration regression suite moved:
@@ -95,7 +98,7 @@ backend/tests/
 - Non-scraping workers from deferred or retained branches still have no dedicated `backend/tests/workers/` coverage.
 
 ## Coverage Gaps That Need First-Class Homes
-- Browser e2e route smoke and theme coverage
+- Browser e2e route breadth across more route families and all 8 theme combinations
 - Migration replay and rollback safety beyond the current targeted replay suite
 - Worker lifecycle and scheduler execution behavior for non-scraping jobs
 - Auto-apply adapters and form extraction

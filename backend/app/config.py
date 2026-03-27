@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -61,7 +62,7 @@ class Settings(BaseSettings):
         "X-CSRF-Token",
         "X-Request-ID",
     ]
-    trusted_hosts: list[str] = ["localhost", "127.0.0.1", "test"]
+    trusted_hosts: list[str] = ["localhost", "127.0.0.1", "backend", "test"]
 
     # Intel GPU acceleration (optional - requires openvino or ipex)
     intel_gpu_enabled: bool = False
@@ -73,6 +74,8 @@ class Settings(BaseSettings):
 
 
 def validate_runtime_settings(settings: Settings) -> None:
+    normalized_origins = [origin.strip() for origin in settings.cors_origins if origin.strip()]
+
     if settings.secret_key == DEFAULT_SECRET_KEY and not settings.debug:
         raise RuntimeError(
             "JR_SECRET_KEY is using the default value. Set a secure secret key "
@@ -80,8 +83,18 @@ def validate_runtime_settings(settings: Settings) -> None:
         )
     if not settings.database_url:
         raise RuntimeError("JR_DATABASE_URL must be set.")
-    if not settings.redis_url:
-        raise RuntimeError("JR_REDIS_URL must be set.")
+    if not normalized_origins:
+        raise RuntimeError("JR_CORS_ORIGINS must include at least one explicit origin.")
+    if "*" in normalized_origins:
+        raise RuntimeError(
+            "JR_CORS_ORIGINS cannot include '*' when credentialed cookie auth is enabled."
+        )
+    for origin in normalized_origins:
+        parsed = urlparse(origin)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise RuntimeError(
+                f"JR_CORS_ORIGINS contains an invalid origin: {origin!r}. Use full http(s) origins."
+            )
     if settings.cookie_samesite == "none" and not settings.cookie_secure:
         raise RuntimeError(
             "JR_COOKIE_SECURE must be enabled when JR_COOKIE_SAMESITE is set to 'none'."

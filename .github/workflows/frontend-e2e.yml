@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    - cron: "0 11 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -47,7 +49,7 @@ jobs:
       JR_REDIS_URL: redis://127.0.0.1:6379/0
       JR_CORS_ORIGINS: '["http://127.0.0.1:5173","http://localhost:5173"]'
       JR_TRUSTED_HOSTS: '["127.0.0.1","localhost","test"]'
-      JR_SCHEDULER_READY_FILE: /tmp/jobradar-scheduler.ready
+      JR_SCHEDULER_READY_MARKER: /tmp/jobradar-scheduler.ready
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:5173
 
     steps:
@@ -93,7 +95,7 @@ jobs:
       - name: Wait for scheduler ready marker
         run: |
           for attempt in $(seq 1 60); do
-            if [ -f "$JR_SCHEDULER_READY_FILE" ]; then
+            if [ -f "$JR_SCHEDULER_READY_MARKER" ]; then
               exit 0
             fi
             sleep 2

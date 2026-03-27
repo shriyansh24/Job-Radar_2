@@ -97,7 +97,6 @@
 | DEF-01 | Resume PDF generation + templates | Phase D | backend |
 | DEF-03 | Targets add/edit/delete career page UI | Phase B | frontend |
 | DEF-04 | Saved Search Alerts UI + scheduler trigger | Phase B | frontend |
-| DEF-05 | E2E Playwright tests | Phase C | infra |
 | DEF-06 | Conditional requests (ETag/If-Modified-Since) | Phase 3 | scraper |
 | DEF-07 | robots.txt checking via Protego | Phase 3 | scraper |
 | DEF-08 | Protego library wired into execution loop | Phase 3 | scraper |

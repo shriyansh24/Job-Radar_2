@@ -29,7 +29,7 @@ Record why major repo-hardening decisions were made, what alternatives were reje
   - developers who still use the legacy manual container path need it documented as an override, not removed from their heads
 
 ### Dedicated scheduler runtime split
-- Status: `IMPLEMENTING`
+- Status: `FIXED`
 - Changed because:
   - `backend/app/main.py` previously owned the APScheduler lifecycle, which made API readiness and scheduler readiness indistinguishable
   - the completion plan requires an explicit process topology rather than scheduler work hiding inside the web process
@@ -50,7 +50,7 @@ Record why major repo-hardening decisions were made, what alternatives were reje
   - there is still no separate long-running worker-process set beyond the dedicated scheduler, so worker execution semantics remain only partially explicit
 
 ### Committed browser/e2e lane
-- Status: `IMPLEMENTING`
+- Status: `FIXED`
 - Changed because:
   - manual screenshots alone were not enough to prove auth/bootstrap and theme persistence behavior
   - the completion plan requires committed browser coverage with visible ownership
@@ -84,7 +84,7 @@ Record why major repo-hardening decisions were made, what alternatives were reje
   - the historical inventory still contains stale detail until it is either refreshed or explicitly archived
 
 ### Docs/path validation automation
-- Status: `IMPLEMENTING`
+- Status: `FIXED`
 - Changed because:
   - the repo already shipped real doc drift around missing paths and stale artifact references
 - Alternatives considered:
@@ -98,7 +98,7 @@ Record why major repo-hardening decisions were made, what alternatives were reje
   - the validator only checks repo-local path references and obvious links; it does not prove commands are executable
 
 ### Migration replay workflow
-- Status: `IMPLEMENTING`
+- Status: `FIXED`
 - Changed because:
   - the repo explicitly carries migration replay uncertainty in the docs, but CI had no clean-replay gate
 - Alternatives considered:
@@ -111,7 +111,7 @@ Record why major repo-hardening decisions were made, what alternatives were reje
   - replay still needs broader rollback/backfill documentation beyond the basic upgrade check
 
 ### Purpose-driven test taxonomy
-- Status: `IMPLEMENTING`
+- Status: `PARTIALLY_IMPLEMENTED`
 - Changed because:
   - frontend tests were split across `__tests__` pockets with little ownership signal
   - backend migration, infra, security, and worker suites were still living under generic `unit/` buckets
