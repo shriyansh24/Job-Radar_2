@@ -31,7 +31,10 @@ def test_base_compose_defines_queue_worker_services() -> None:
         assert "postgres:" in body
         assert "service_healthy" in body
         assert "redis:" in body
-        assert f'test: ["CMD-SHELL", "test -f /tmp/jobradar-worker-{role}.ready"]' in body
+        assert (
+            f'test: ["CMD", "python", "-m", "app.runtime.healthcheck", "worker", "{role}"]'
+            in body
+        )
         assert "restart: unless-stopped" in body
 
 
@@ -45,6 +48,9 @@ def test_dev_overlay_defines_bind_mounted_queue_worker_services() -> None:
         assert "- ./backend:/app" in body
         assert f'command: ["python", "-m", "app.runtime.arq_worker", "{role}"]' in body
         assert 'JR_DEBUG: "true"' in body
-        assert 'JR_TRUSTED_HOSTS: \'["localhost","127.0.0.1","backend","test"]\'' in body
+        assert (
+            'JR_TRUSTED_HOSTS: \'["localhost","127.0.0.1","backend","test"]\''
+            in body
+        )
         assert f"JR_WORKER_ROLE: {role}" in body
         assert f"JR_WORKER_READY_MARKER: /tmp/jobradar-worker-{role}.ready" in body

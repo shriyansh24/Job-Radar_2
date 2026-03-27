@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { Route, Routes, MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Targets from "../../../pages/Targets";
-import { createTestQueryClient } from "../../support/test-utils";
+import { createTestQueryClient } from "../../support/renderWithProviders";
 
 const authMocks = vi.hoisted(() => ({
   state: {

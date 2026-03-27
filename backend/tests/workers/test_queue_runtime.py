@@ -32,30 +32,178 @@ def test_build_redis_settings_parses_password_database_and_tls(
     assert redis_settings.ssl is True
 
 
+def test_classify_queue_pressure_uses_lane_thresholds() -> None:
+    assert queue_runtime.classify_queue_pressure(SCRAPING_QUEUE, 0) == "nominal"
+    assert queue_runtime.classify_queue_pressure(SCRAPING_QUEUE, 10) == "elevated"
+    assert queue_runtime.classify_queue_pressure(SCRAPING_QUEUE, 25) == "saturated"
+    assert queue_runtime.classify_queue_pressure(OPS_QUEUE, 5) == "elevated"
+    assert queue_runtime.classify_queue_pressure(ANALYSIS_QUEUE, 50) == "saturated"
+
+
+def test_classify_queue_alert_uses_pressure_and_oldest_age() -> None:
+    assert (
+        queue_runtime.classify_queue_alert(
+            SCRAPING_QUEUE,
+            pressure="nominal",
+            oldest_job_age_seconds=0,
+        )
+        == "clear"
+    )
+    assert (
+        queue_runtime.classify_queue_alert(
+            SCRAPING_QUEUE,
+            pressure="elevated",
+            oldest_job_age_seconds=0,
+        )
+        == "watch"
+    )
+    assert (
+        queue_runtime.classify_queue_alert(
+            OPS_QUEUE,
+            pressure="saturated",
+            oldest_job_age_seconds=0,
+        )
+        == "backlog"
+    )
+    assert (
+        queue_runtime.classify_queue_alert(
+            ANALYSIS_QUEUE,
+            pressure="nominal",
+            oldest_job_age_seconds=900,
+        )
+        == "stalled"
+    )
+
+
+def test_derive_overall_pressure_uses_highest_lane_pressure() -> None:
+    assert (
+        queue_runtime.derive_overall_pressure(
+            {
+                SCRAPING_QUEUE: "nominal",
+                ANALYSIS_QUEUE: "elevated",
+                OPS_QUEUE: "nominal",
+            }
+        )
+        == "elevated"
+    )
+    assert (
+        queue_runtime.derive_overall_pressure(
+            {
+                SCRAPING_QUEUE: "nominal",
+                ANALYSIS_QUEUE: "nominal",
+                OPS_QUEUE: "saturated",
+            }
+        )
+        == "saturated"
+    )
+
+
+def test_derive_overall_alert_uses_highest_lane_alert() -> None:
+    assert (
+        queue_runtime.derive_overall_alert(
+            {
+                SCRAPING_QUEUE: "clear",
+                ANALYSIS_QUEUE: "watch",
+                OPS_QUEUE: "clear",
+            }
+        )
+        == "watch"
+    )
+    assert (
+        queue_runtime.derive_overall_alert(
+            {
+                SCRAPING_QUEUE: "clear",
+                ANALYSIS_QUEUE: "backlog",
+                OPS_QUEUE: "watch",
+            }
+        )
+        == "backlog"
+    )
+    assert (
+        queue_runtime.derive_overall_alert(
+            {
+                SCRAPING_QUEUE: "clear",
+                ANALYSIS_QUEUE: "watch",
+                OPS_QUEUE: "stalled",
+            }
+        )
+        == "stalled"
+    )
+
+
+@pytest.mark.asyncio
+async def test_capture_queue_snapshot_reports_oldest_age_and_alert(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakePool:
+        async def zcard(self, queue_name: str) -> int:
+            assert queue_name == OPS_QUEUE
+            return 6
+
+        async def zrange(
+            self,
+            queue_name: str,
+            _start: int,
+            _stop: int,
+            *,
+            withscores: bool = False,
+        ) -> list[tuple[str, int]]:
+            assert queue_name == OPS_QUEUE
+            assert withscores is True
+            return [("job-1", 1_000)]
+
+    monkeypatch.setattr(queue_runtime, "_current_unix_ms", lambda: 601_000)
+
+    snapshot = await queue_runtime.capture_queue_snapshot(OPS_QUEUE, _FakePool())
+
+    assert snapshot == queue_runtime.QueueSnapshot(
+        queue_name=OPS_QUEUE,
+        queue_depth=6,
+        queue_pressure="elevated",
+        oldest_job_age_seconds=600,
+        queue_alert="stalled",
+    )
+
+
 @pytest.mark.asyncio
 async def test_enqueue_registered_job_uses_registered_queue(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    seen: list[tuple[str, str | None]] = []
+    seen: list[tuple[str, str | None, str | None]] = []
     info_calls: list[tuple[str, dict[str, object]]] = []
 
     class _FakePool:
         def __init__(self) -> None:
             self.depth_by_queue = {SCRAPING_QUEUE: 3}
+            self.oldest_score_by_queue = {SCRAPING_QUEUE: 298_000}
 
         async def zcard(self, queue_name: str) -> int:
             depth = self.depth_by_queue[queue_name]
             self.depth_by_queue[queue_name] = depth + 1
             return depth
 
+        async def zrange(
+            self,
+            queue_name: str,
+            _start: int,
+            _stop: int,
+            *,
+            withscores: bool = False,
+        ) -> list[tuple[str, int]]:
+            assert withscores is True
+            score = self.oldest_score_by_queue[queue_name]
+            self.oldest_score_by_queue[queue_name] = score - 2_000
+            return [("job-1", score)]
+
         async def enqueue_job(
             self,
             job_name: str,
             *,
+            _job_id: str | None = None,
             _queue_name: str | None = None,
         ) -> SimpleNamespace:
-            seen.append((job_name, _queue_name))
-            return SimpleNamespace(job_id="queued-123")
+            seen.append((job_name, _queue_name, _job_id))
+            return SimpleNamespace(job_id=_job_id)
 
     class _FakeLogger:
         def info(self, event: str, **fields: object) -> None:
@@ -63,25 +211,92 @@ async def test_enqueue_registered_job_uses_registered_queue(
 
     monkeypatch.setattr(queue_runtime, "_queue_pool", _FakePool())
     monkeypatch.setattr(queue_runtime, "logger", _FakeLogger())
+    monkeypatch.setattr(queue_runtime, "_current_unix_ms", lambda: 300_000)
 
-    job_id = await queue_runtime.enqueue_registered_job("scheduled_scrape")
+    result = await queue_runtime.enqueue_registered_job("scheduled_scrape")
 
-    assert job_id == "queued-123"
-    assert seen == [("scheduled_scrape", SCRAPING_QUEUE)]
+    assert isinstance(result, queue_runtime.QueueDispatchResult)
+    assert result.job_name == "scheduled_scrape"
+    assert result.queue_name == SCRAPING_QUEUE
+    assert result.enqueued_job_id is not None
+    assert result.enqueued_job_id.startswith("scheduled_scrape-")
+    assert result.queue_depth_before == 3
+    assert result.queue_depth_after == 4
+    assert result.queue_pressure_before == "nominal"
+    assert result.queue_pressure_after == "nominal"
+    assert result.queue_job_id == result.enqueued_job_id
+    assert result.queue_correlation_id == result.enqueued_job_id
+    assert result.oldest_job_age_seconds_before == 2
+    assert result.oldest_job_age_seconds_after == 4
+    assert result.queue_alert_before == "clear"
+    assert result.queue_alert_after == "clear"
+    assert seen == [("scheduled_scrape", SCRAPING_QUEUE, result.enqueued_job_id)]
     assert info_calls == [
         (
             "scheduler_job_enqueued",
             {
                 "job_name": "scheduled_scrape",
                 "queue_name": SCRAPING_QUEUE,
-                "enqueued_job_id": "queued-123",
+                "enqueued_job_id": result.enqueued_job_id,
+                "queue_job_id": result.enqueued_job_id,
+                "queue_correlation_id": result.enqueued_job_id,
                 "queue_depth_before": 3,
                 "queue_depth_after": 4,
+                "queue_pressure_before": "nominal",
+                "queue_pressure_after": "nominal",
+                "oldest_job_age_seconds_before": 2,
+                "oldest_job_age_seconds_after": 4,
+                "queue_alert_before": "clear",
+                "queue_alert_after": "clear",
                 "job_max_tries": 2,
                 "job_timeout_seconds": 1800,
             },
         )
     ]
+
+
+@pytest.mark.asyncio
+async def test_enqueue_registered_job_uses_provided_correlation_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: list[tuple[str, str | None, str | None]] = []
+
+    class _FakePool:
+        async def zcard(self, _queue_name: str) -> int:
+            return 1
+
+        async def zrange(
+            self,
+            _queue_name: str,
+            _start: int,
+            _stop: int,
+            *,
+            withscores: bool = False,
+        ) -> list[tuple[str, int]]:
+            assert withscores is True
+            return []
+
+        async def enqueue_job(
+            self,
+            job_name: str,
+            *,
+            _job_id: str | None = None,
+            _queue_name: str | None = None,
+        ) -> SimpleNamespace:
+            seen.append((job_name, _queue_name, _job_id))
+            return SimpleNamespace(job_id=_job_id)
+
+    monkeypatch.setattr(queue_runtime, "_queue_pool", _FakePool())
+
+    result = await queue_runtime.enqueue_registered_job(
+        "enrichment_batch",
+        correlation_id="request-123",
+    )
+
+    assert result.enqueued_job_id == "request-123"
+    assert result.queue_job_id == "request-123"
+    assert result.queue_correlation_id == "request-123"
+    assert seen == [("enrichment_batch", ANALYSIS_QUEUE, "request-123")]
 
 
 def test_job_queues_cover_expected_runtime_lanes() -> None:

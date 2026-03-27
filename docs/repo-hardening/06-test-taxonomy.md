@@ -4,21 +4,21 @@
 Define and track the purpose-driven test layout used by the repository.
 
 ## Source-Of-Truth Status
-- Status: `PARTIALLY_IMPLEMENTED`
+- Status: `IMPLEMENTED`
 - Scope: test naming, location, and protection-goal taxonomy
 - Last validation basis: taxonomy moves plus targeted runner validation on `2026-03-27`
 
 ## Current State
 - Frontend support files, page suites, hook suites, component suites, and API client suites now live under `frontend/src/tests/`.
 - Frontend browser/e2e coverage now has a committed home under `frontend/e2e/`.
-- Frontend browser/e2e coverage now includes auth/shell smoke, shell navigation, responsive shell behavior, recovered interview/search flows, route-family outcomes, route-family prepare/intelligence/outcomes coverage, route-family operations/admin/data coverage, route-family profile/settings/auth coverage, and representative route/theme matrix checks.
+- Frontend browser/e2e coverage now includes auth/shell smoke, shell navigation, responsive shell behavior, recovered interview/search flows, route-family outcomes, route-family communications/setup coverage, route-family prepare/intelligence/outcomes coverage, route-family operations/admin/data coverage, route-family profile/settings/auth coverage, the resume preview/export flow, live analytics pattern surfaces through the intelligence route family, and route-family theme matrix checks across all 8 theme combinations.
 - Backend runtime, migration, security, contract, and worker-lifecycle suites now have dedicated directories under `backend/tests/`.
 - Backend auto-apply extractor, adapter, and safety coverage now has explicit unit suites under `backend/tests/unit/auto_apply/`.
 - Backend auto-apply operator integration coverage now has an explicit API suite under `backend/tests/integration/auto_apply/`.
 - Backend interview, search, dedup, and auto-apply worker coverage now has explicit subsystem buckets under `backend/tests/unit/{interview,search,dedup}/` and `backend/tests/workers/auto_apply/`.
 - Backend ATS identity and scrape-target identity lineage now have explicit migration and integration coverage under `backend/tests/migrations/` and `backend/tests/integration/scraping/`.
 - Backend digest-worker follow-through now has a dedicated worker suite under `backend/tests/workers/`.
-- Several older service/model suites still remain in broad backend `unit/` buckets, and some frontend page/component files still cover multiple behaviors inside one suite.
+- Backend contract suites are now split between `backend/tests/contracts/providers/` and `backend/tests/contracts/models/`, and `backend/tests/unit/` no longer leaves subsystem suites flat at the filesystem root.
 
 ## Live Taxonomy
 
@@ -57,8 +57,8 @@ backend/tests/
 
 ### Frontend
 - Support files moved:
-  - `frontend/src/tests/support/setup.ts`
-  - `frontend/src/tests/support/test-utils.tsx`
+  - `frontend/src/tests/support/setupTests.ts`
+  - `frontend/src/tests/support/renderWithProviders.tsx`
 - App boundary suite renamed:
   - `frontend/src/tests/app/App.auth-boundary.test.tsx`
 - Route suites moved into `frontend/src/tests/pages/`
@@ -78,10 +78,12 @@ backend/tests/
   - `frontend/e2e/smoke/auth-shell.spec.ts`
   - `frontend/e2e/flows/route-shell-navigation.spec.ts`
   - `frontend/e2e/flows/route-family-outcomes.spec.ts`
+  - `frontend/e2e/flows/communications-setup.spec.ts`
   - `frontend/e2e/flows/interview-search-recovered.spec.ts`
   - `frontend/e2e/flows/prepare-intelligence-outcomes.spec.ts`
   - `frontend/e2e/flows/operations-admin-data.spec.ts`
   - `frontend/e2e/flows/profile-settings-auth.spec.ts`
+  - `frontend/e2e/flows/resume-template-preview.spec.ts`
   - `frontend/e2e/flows/shell-responsive.spec.ts`
   - `frontend/e2e/theme-matrix/theme-persistence.spec.ts`
   - `frontend/e2e/theme-matrix/route-theme-matrix.spec.ts`
@@ -95,8 +97,12 @@ backend/tests/
   - `backend/tests/infra/test_queue_runtime_compose.py`
   - `backend/tests/infra/cli/test_scraping_ops_cli.py`
 - Contract/security suites moved:
-  - `backend/tests/contracts/test_sqlalchemy_model_contracts.py`
+  - `backend/tests/contracts/models/test_sqlalchemy_model_contracts.py`
   - `backend/tests/security/test_rate_limiter.py`
+- Provider contract suites moved:
+  - `backend/tests/contracts/providers/test_greenhouse_contract.py`
+  - `backend/tests/contracts/providers/test_lever_contract.py`
+  - `backend/tests/contracts/providers/test_workday_contract.py`
 - Worker lifecycle suites moved:
   - `backend/tests/workers/scraping/test_scrape_run_worker.py`
   - `backend/tests/workers/scraping/test_target_batch_worker.py`
@@ -123,18 +129,17 @@ backend/tests/
   - `backend/tests/migrations/test_job_ats_identity_migration.py`
   - `backend/tests/migrations/test_scrape_target_identity_migrations.py`
 
-## Remaining Rename / Split Candidates
+## Optional Further Refinement
 
 ### Frontend
 - `frontend/src/tests/pages/*.page.test.tsx` still communicate route ownership better than behavior; some should later be narrowed into more behavior-specific suites when the page APIs stabilize.
 - UI primitive coverage is now split across `frontend/src/tests/components/ui/Card.test.tsx`, `frontend/src/tests/components/ui/Dropdown.test.tsx`, and `frontend/src/tests/components/ui/StatCard.test.tsx`; buttons, inputs, tables, and toggles still need first-class suites.
-- Several page suites still define inline `renderWithProviders` helpers and should converge on `support/test-utils.tsx`.
-- `frontend/e2e/flows/` now protects shell/auth, recovered interview/search, route-family outcomes, prepare/intelligence/outcomes, operations/admin/data, and profile/settings/auth slices, but it still needs deeper task-level workflows and failure-state coverage.
-- `frontend/e2e/theme-matrix/` now covers representative 8-mode route checks, but it does not yet prove every routed family across all theme combinations.
+- Several page suites still define inline `renderWithProviders` helpers and should converge on `support/renderWithProviders.tsx`.
+- `frontend/e2e/flows/` now protects shell/auth, recovered interview/search, route-family outcomes, prepare/intelligence/outcomes, operations/admin/data, profile/settings/auth, resume preview/export, and the current analytics-pattern route family, but it still needs deeper task-level workflows and failure-state coverage.
+- `frontend/e2e/theme-matrix/` now covers route-family 8-mode assertions across home, communications, setup, prepare, intelligence, operations, search, and settings surfaces. Keep deeper task-level failure-state coverage in `flows/`, not in theme-matrix assertions.
 
 ### Backend
-- `backend/tests/unit/` still contains broad service/model suites that should eventually be regrouped by subsystem ownership.
-- `backend/tests/edge_cases/` is now split by route family, but additional subsystem-owned API edge suites are still likely as more broad tests are drained out of `unit/` and `integration/`.
+- `backend/tests/edge_cases/` is now split by route family. Further splits should happen only when a subsystem gains a clear ownership boundary rather than out of style pressure.
 - Non-scraping workers from deferred or retained branches still have no dedicated `backend/tests/workers/` coverage.
 
 ## Coverage Gaps That Need First-Class Homes
@@ -143,12 +148,12 @@ backend/tests/
 - Worker lifecycle and queue-owned execution behavior beyond the current enqueue/runtime coverage and role-lane probes
 - Auto-apply orchestration, service wiring, and browser/integration coverage beyond the current unit plus worker-level extractor/adapter/safety tests
 - Scraper failure handling and conditional request behavior
-- Frontend critical flows that still rely on manual browser QA artifacts beyond the committed Playwright route-family suites
+- Provider-backed ATS flows, destructive admin actions, and seeded-data-heavy PDF/layout checks still rely on targeted/manual validation outside the committed Playwright tree
 
 ## Safe Execution Order
 1. Keep the new support directories stable and update runners/docs in the same batch as moves.
 2. Split mixed frontend component/page suites only after the destination taxonomy is stable.
-3. Continue draining broad backend `unit/` and `edge_cases/` suites into role-based directories.
+3. Keep backend subsystem buckets stable and split them only when ownership becomes meaningfully clearer than the current filesystem.
 4. Expand the committed Playwright tree by route family without duplicating the manual screenshot lane.
 
 ## Non-Goals For This Batch

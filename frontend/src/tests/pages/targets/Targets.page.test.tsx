@@ -1,7 +1,7 @@
 import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { renderWithProviders } from "../../support/test-utils";
+import { renderWithProviders } from "../../support/renderWithProviders";
 
 const scraperMocks = vi.hoisted(() => ({
   listTargets: vi.fn(),

@@ -10,6 +10,8 @@
 - Queue-backed ARQ worker services are now live for `scraping`, `analysis`, and `ops`
 - ATS identity persistence is now live on scraped jobs with migration coverage
 - Auto Apply now exposes run/pause/refresh operator controls and has API integration coverage
+- Resume Studio now supports live template preview and PDF export against the backend API
+- Analytics now includes live application-pattern surfaces on top of the overview and chart stack
 - Interview prep now returns richer company/role context, and Job Board semantic mode now runs through the live hybrid-search backend path
 - Pipeline now renders `rejected` and `withdrawn` stages and supports bounded drag/drop transitions
 - Frontend test taxonomy lives under `frontend/src/tests/`
@@ -25,12 +27,10 @@
 - `feat/p1-core-value` remains a selective recovery source rather than a merge target.
 
 ## What Is Not Finished
-- Selective P1 recovery is still in progress and must stay evidence-based.
 - Repo-wide backend mypy is still narrower than a full-program strict pass.
-- Browser/e2e coverage now protects auth/shell smoke, responsive shell behavior, route-family outcomes for `dashboard/jobs/pipeline/settings/targets`, and representative 8-mode route checks, but it is still shallower than full route-family coverage.
-- Queue-backed runtime is live, but retry/back-pressure policy validation and worker-lane coverage still need hardening.
-- Digest worker is now registered on the live ops lane, but it is not yet scheduled or monitored as a full operational signal.
-- Migration rollback/backfill guidance still needs hardening.
+- Browser/e2e coverage is representative rather than exhaustive; destructive provider-backed flows and seeded-data-heavy workflows still rely on targeted or manual validation.
+- Queue-backed runtime is live with queue pressure, alert state, oldest-job age, and request/job correlation on queue-triggered operator paths. Long-window alert routing and dashboards still depend on deployment infrastructure outside the repo.
+- Migration replay, targeted rollback coverage, and the migration-ops runbook are live; full production restore strategy remains an operator concern outside the codebase.
 
 ## Read Order
 1. `docs/current-state/00-index.md`
@@ -48,13 +48,9 @@
 ## Current Hardening Posture
 - Runtime/doc truth is materially reconciled around the compose-first baseline.
 - Current docs now distinguish the live queue-backed runtime from the remaining migration/coverage hardening work instead of treating ARQ as a future-only target.
-- GitHub protections now include repo validation, docs validation, migration safety, dependency review, CodeQL, and a dedicated frontend browser smoke lane.
-- Test taxonomy is improved but still not fully normalized.
+- GitHub protections now include `Repository Validation`, `Docs Validation`, `Migration Safety`, `Dependency Review`, `CodeQL`, and `Frontend E2E Smoke / frontend-e2e-smoke`.
+- Remaining branch-era `feat/p1-core-value` variants are now treated as explicit adopt-or-archive decisions rather than open-ended live-scope ambiguity.
 
-## Deferred Work
-- Resume PDF generation and related template flows
-- Saved-search alerts UI and scheduler UX
-- Additional parser tuning for difficult JS-heavy career pages
-- Broader route-family browser coverage beyond the current smoke/responsive/theme/dashboard-jobs-pipeline/settings-targets baseline
-- Remaining second-pass frontend decomposition and copy cleanup on larger surfaces
-- Queue depth alerting, worker-lane isolation proof, and retry-exhaustion telemetry beyond the current ARQ lifecycle logs
+## Intentional Non-Goals In Live Scope
+- Branch-era `feat/p1-core-value` variants that were not promoted are now historical/archive material, not active committed work.
+- Provider-backed ATS submission flows, destructive admin actions, and seeded-data-heavy PDF fidelity remain environment-specific validation concerns rather than missing repo-local implementation.

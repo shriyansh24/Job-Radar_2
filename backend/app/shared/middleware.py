@@ -36,10 +36,14 @@ class TimingMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         duration_ms = (time.perf_counter() - start) * 1000
         response.headers["X-Response-Time"] = f"{duration_ms:.1f}ms"
+        route = request.scope.get("route")
         logger.info(
             "request_completed",
             method=request.method,
             path=request.url.path,
+            route_name=getattr(route, "name", None),
+            route_path=getattr(route, "path", None),
+            auth_user_id=getattr(request.state, "auth_user_id", None),
             status=response.status_code,
             duration_ms=round(duration_ms, 1),
         )

@@ -18,7 +18,8 @@ from app.runtime.job_registry import (
     SCRAPING_QUEUE,
     get_registered_jobs,
 )
-from app.runtime.queue import build_redis_settings
+from app.runtime.queue import build_redis_settings, capture_queue_snapshot
+from app.runtime.worker_metrics import sync_worker_queue_metrics
 from app.shared.logging import setup_logging
 
 logger = structlog.get_logger()
@@ -94,9 +95,15 @@ async def _on_startup(ctx: dict[str, object]) -> None:
     redis = cast(Any, ctx.get("redis"))
     if redis is not None:
         await redis.ping()
-        queue_depth = await redis.zcard(queue_name) if hasattr(redis, "zcard") else None
+        queue_snapshot = await capture_queue_snapshot(queue_name, redis)
+        await sync_worker_queue_metrics(
+            redis,
+            role=role,
+            snapshot=queue_snapshot,
+            health_interval_seconds=int(cast(int | str, ctx["health_check_interval_seconds"])),
+        )
     else:
-        queue_depth = None
+        queue_snapshot = None
 
     ready_marker = _mark_ready(role)
     logger.info(
@@ -109,7 +116,12 @@ async def _on_startup(ctx: dict[str, object]) -> None:
         queue_read_limit=ctx["queue_read_limit"],
         health_check_key=ctx["health_check_key"],
         health_check_interval_seconds=ctx["health_check_interval_seconds"],
-        queue_depth=queue_depth,
+        queue_depth=queue_snapshot.queue_depth if queue_snapshot is not None else None,
+        queue_pressure=queue_snapshot.queue_pressure if queue_snapshot is not None else None,
+        oldest_job_age_seconds=(
+            queue_snapshot.oldest_job_age_seconds if queue_snapshot is not None else None
+        ),
+        queue_alert=queue_snapshot.queue_alert if queue_snapshot is not None else None,
         ready_marker=str(ready_marker),
     )
 
@@ -130,28 +142,58 @@ async def _on_shutdown(ctx: dict[str, object]) -> None:
 async def _on_job_start(ctx: dict[str, object]) -> None:
     redis = cast(Any, ctx.get("redis"))
     queue_name = str(ctx["queue_name"])
-    queue_depth = await redis.zcard(queue_name) if redis is not None else None
+    queue_snapshot = await capture_queue_snapshot(queue_name, redis) if redis is not None else None
+    if queue_snapshot is not None:
+        await sync_worker_queue_metrics(
+            redis,
+            role=str(ctx["worker_role"]),
+            snapshot=queue_snapshot,
+            health_interval_seconds=int(cast(int | str, ctx["health_check_interval_seconds"])),
+        )
+    queue_job_id = ctx["job_id"]
     logger.info(
         "arq_worker_job_starting",
         worker_role=ctx["worker_role"],
         queue_name=queue_name,
-        job_id=ctx["job_id"],
+        job_id=queue_job_id,
+        queue_job_id=queue_job_id,
+        queue_correlation_id=queue_job_id,
         job_try=ctx["job_try"],
-        queue_depth=queue_depth,
+        queue_depth=queue_snapshot.queue_depth if queue_snapshot is not None else None,
+        queue_pressure=queue_snapshot.queue_pressure if queue_snapshot is not None else None,
+        oldest_job_age_seconds=(
+            queue_snapshot.oldest_job_age_seconds if queue_snapshot is not None else None
+        ),
+        queue_alert=queue_snapshot.queue_alert if queue_snapshot is not None else None,
     )
 
 
 async def _on_job_end(ctx: dict[str, object]) -> None:
     redis = cast(Any, ctx.get("redis"))
     queue_name = str(ctx["queue_name"])
-    queue_depth = await redis.zcard(queue_name) if redis is not None else None
+    queue_snapshot = await capture_queue_snapshot(queue_name, redis) if redis is not None else None
+    if queue_snapshot is not None:
+        await sync_worker_queue_metrics(
+            redis,
+            role=str(ctx["worker_role"]),
+            snapshot=queue_snapshot,
+            health_interval_seconds=int(cast(int | str, ctx["health_check_interval_seconds"])),
+        )
+    queue_job_id = ctx["job_id"]
     logger.info(
         "arq_worker_job_finished",
         worker_role=ctx["worker_role"],
         queue_name=queue_name,
-        job_id=ctx["job_id"],
+        job_id=queue_job_id,
+        queue_job_id=queue_job_id,
+        queue_correlation_id=queue_job_id,
         job_try=ctx["job_try"],
-        queue_depth=queue_depth,
+        queue_depth=queue_snapshot.queue_depth if queue_snapshot is not None else None,
+        queue_pressure=queue_snapshot.queue_pressure if queue_snapshot is not None else None,
+        oldest_job_age_seconds=(
+            queue_snapshot.oldest_job_age_seconds if queue_snapshot is not None else None
+        ),
+        queue_alert=queue_snapshot.queue_alert if queue_snapshot is not None else None,
     )
 
 

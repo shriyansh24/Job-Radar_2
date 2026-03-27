@@ -30,8 +30,9 @@
 - `AutoApply` now exposes real operator controls for refresh, pause, and run-now instead of a passive status-only surface.
 - `Pipeline` now renders `rejected` and `withdrawn` stages and supports bounded drag/drop transitions that respect the workflow transition map.
 - `SearchExpansion` now uses the live backend expansion endpoint instead of a fake template inventory.
-- `Resume Studio` consumes the backend `ResumeTailorResponse` contract directly.
+- `Resume Studio` consumes the backend `ResumeTailorResponse` contract directly and now exposes live template preview plus PDF export through the resume API.
 - `Compensation` uses the backend salary percentile and offer-evaluation contract directly.
+- `Analytics` now consumes the live analytics patterns endpoint alongside the overview, funnel, source, and skill datasets.
 - `Settings` persists workspace settings, saved searches, integrations, password changes, account deletion, and data clear actions against real backend endpoints.
 - `DocumentVault` edit flows are wired through the live PATCH endpoints.
 - `Admin` and source-health surfaces now read the current backend status and diagnostics shape instead of stale frontend assumptions.
@@ -42,7 +43,7 @@
 - `cd frontend && npm run test -- --run`
 - `cd frontend && npm run build`
 - Authenticated browser QA was rerun after the decomposition/copy-cleanup pass, covering the routed app with representative captures in `.claude/ui-captures/`.
-- The current validated route-family browser pass also covers Auto Apply operator controls and the updated pipeline board flow.
+- The current validated route-family browser pass also covers Auto Apply operator controls, the updated pipeline board flow, live analytics patterns, and the resume preview/export flow.
 - Frontend test suites now live under `frontend/src/tests/` with `app/`, `api/`, `components/`, `hooks/`, `pages/`, and `support/` lanes.
 
 ## Non-Blocking Residual

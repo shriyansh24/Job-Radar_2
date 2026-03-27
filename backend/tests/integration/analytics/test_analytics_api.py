@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
@@ -103,3 +104,55 @@ async def test_analytics_overview_daily_and_funnel(
     funnel_counts = {item["stage"]: item["count"] for item in funnel.json()}
     assert funnel_counts["Applied"] == 1
     assert funnel_counts["Screening"] == 1
+
+
+@pytest.mark.asyncio
+async def test_analytics_patterns_returns_pattern_contract(
+    client: AsyncClient,
+) -> None:
+    token, user_id = await _register_and_login(client)
+    payload = {
+        "callback_rate_by_company_size": [
+            {
+                "size_bucket": "small",
+                "total_applications": 3,
+                "callbacks": 2,
+                "callback_rate": 66.7,
+            }
+        ],
+        "conversion_funnel": [{"stage": "applied", "count": 3}],
+        "response_time_patterns": [
+            {
+                "avg_days_to_response": 2.5,
+                "sample_size": 3,
+                "warning": None,
+            }
+        ],
+        "best_application_timing": [
+            {
+                "day_of_week": "Tuesday",
+                "total_applications": 3,
+                "callbacks": 2,
+                "callback_rate": 66.7,
+            }
+        ],
+        "company_ghosting_rate": [
+            {
+                "company": "Acme",
+                "total_applications": 3,
+                "ghosted": 1,
+                "ghosting_rate": 33.3,
+            }
+        ],
+        "skill_gap_detection": [{"skill": "GraphQL", "demand_count": 4}],
+    }
+
+    with patch(
+        "app.analytics.service.PatternDetector.get_all_patterns",
+        new=AsyncMock(return_value=payload),
+    ) as mocked_get_all_patterns:
+        response = await client.get("/api/v1/analytics/patterns", headers=_auth(token))
+
+    assert response.status_code == 200
+    assert response.json() == payload
+    mocked_get_all_patterns.assert_awaited_once_with(uuid.UUID(user_id))

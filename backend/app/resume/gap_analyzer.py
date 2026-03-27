@@ -81,7 +81,10 @@ def _normalize(text: str) -> str:
     return text.lower().strip()
 
 
-def _skill_set(resume: dict, job_data: dict) -> tuple[frozenset[str], frozenset[str]]:
+def _skill_set(
+    resume: dict[str, Any],
+    job_data: dict[str, Any],
+) -> tuple[frozenset[str], frozenset[str]]:
     """Return (resume_skills_lower, job_skills_lower)."""
     resume_skills: set[str] = {_normalize(s) for s in resume.get("skills", []) if s}
     job_skills: set[str] = set()
@@ -92,8 +95,11 @@ def _skill_set(resume: dict, job_data: dict) -> tuple[frozenset[str], frozenset[
     return frozenset(resume_skills), frozenset(job_skills)
 
 
-def _find_transferable(resume_skills: frozenset[str], missing: list[str]) -> list[dict]:
-    results: list[dict] = []
+def _find_transferable(
+    resume_skills: frozenset[str],
+    missing: list[str],
+) -> list[dict[str, str | float]]:
+    results: list[dict[str, str | float]] = []
     for needed in missing:
         needed_lower = _normalize(needed)
         for cluster in TRANSFERABLE_CLUSTERS:
@@ -127,7 +133,10 @@ def _experience_fit(resume_text: str, jd_text: str) -> float:
     return max(0.0, 1.0 - abs(_dominant(jd_text) - _dominant(resume_text)) * 2)
 
 
-def _score_bullets(sections: dict, jd_text: str) -> tuple[list[str], list[str]]:
+def _score_bullets(
+    sections: dict[str, str],
+    jd_text: str,
+) -> tuple[list[str], list[str]]:
     if not sections or not jd_text.strip():
         return [], []
 
@@ -188,7 +197,10 @@ def _ats_suggestions(missing_skills: list[str], jd_text: str, resume_text: str) 
 # ---------------------------------------------------------------------------
 
 
-def run_gap_analysis(resume_parsed: dict, job_data: dict) -> dict[str, Any]:
+def run_gap_analysis(
+    resume_parsed: dict[str, Any],
+    job_data: dict[str, Any],
+) -> dict[str, Any]:
     """Pure-Python gap analysis (no LLM).
 
     Parameters
@@ -203,7 +215,7 @@ def run_gap_analysis(resume_parsed: dict, job_data: dict) -> dict[str, Any]:
     Returns a dict matching ``GapAnalysisResponse`` fields.
     """
     resume_text: str = resume_parsed.get("text", "") or ""
-    sections: dict = resume_parsed.get("sections", {}) or {}
+    sections: dict[str, str] = resume_parsed.get("sections", {}) or {}
     jd_text: str = (
         (job_data.get("description_clean", "") or "") + " " + (job_data.get("title", "") or "")
     )
@@ -212,7 +224,9 @@ def run_gap_analysis(resume_parsed: dict, job_data: dict) -> dict[str, Any]:
 
     # Matched skills
     matched_raw = resume_skills & job_skills
-    matched: list[dict] = [{"skill": s, "confidence": 1.0} for s in sorted(matched_raw)]
+    matched: list[dict[str, str | float]] = [
+        {"skill": s, "confidence": 1.0} for s in sorted(matched_raw)
+    ]
 
     # Substring matches in resume text (partial confidence)
     resume_lower = resume_text.lower()

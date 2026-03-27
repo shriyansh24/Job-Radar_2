@@ -1,0 +1,16 @@
+{
+  "reviewed_exceptions": [
+    {
+      "id": "CVE-2026-4539",
+      "package": "pygments",
+      "reviewed_on": "2026-03-27",
+      "reason": "Upstream advisory has no fixed release yet; the repo keeps the exception explicit until a patched pygments version exists."
+    },
+    {
+      "id": "CVE-2026-25645",
+      "package": "requests",
+      "reviewed_on": "2026-03-27",
+      "reason": "The backend dependency tree still resolves requests 2.32.5 through seleniumbase-related transitive constraints; keep the exception explicit until the tree resolves to >=2.33.0."
+    }
+  ]
+}

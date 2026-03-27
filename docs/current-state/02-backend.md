@@ -9,11 +9,11 @@
 - `uv` for dependency and command execution
 
 ## Key Runtime Areas
-- Auth: cookie-based access and refresh flow with revocation, CSRF protection on unsafe cookie-auth requests, trusted-host enforcement, rate limiting, request-correlated lifecycle logs, and normalized reason codes for login/refresh/logout/password-change/session-clear/account-delete paths
+- Auth: cookie-based access and refresh flow with revocation, CSRF protection on unsafe cookie-auth requests, trusted-host enforcement, rate limiting, request-correlated lifecycle logs, route-aware request completion logs, and normalized reason codes for register/login/refresh/logout/password-change/session-clear/account-delete paths
 - Auto-apply: field learning, Workday adapter, recovered form extraction, Greenhouse/Lever adapters, a pre-flight safety layer, live batch/single service wiring, worker-level batch execution, and operator-facing run/pause/list/stats API coverage; broader end-to-end tooling still remains partial
-- Resume: upload parsing supports `.pdf`, `.docx`, `.tex`, and `.txt` into persisted structured IR payloads; tailoring, ATS validation, council review, cover-letter generation, and HTML/PDF rendering modules are live on the branch, with preview/export/operator depth still the main remaining gap
+- Resume: upload parsing supports `.pdf`, `.docx`, `.tex`, and `.txt` into persisted structured IR payloads; tailoring, ATS validation, council review, cover-letter generation, HTML/PDF rendering, template preview, and PDF export are live on the branch
 - Jobs: SHA-256 string IDs, enrichment fields, lifecycle tracking, application relationship via `selectin`
-- Enrichment: HTML cleaning, markdown conversion, LLM extraction, salary/experience enrichment
+- Enrichment: HTML cleaning, markdown conversion, LLM extraction, salary/experience enrichment, a live single-job enrichment API path, and a queue-backed batch trigger on the analysis lane
 - Interview: question generation, stage-aware prep bundles, company research / role analysis, answer evaluation, persisted interview sessions
 - Search and dedup: hybrid semantic ranking via `backend/app/search/hybrid.py`, freshness scoring via `backend/app/enrichment/freshness.py`, normalization-aware dedup via `backend/app/scraping/normalization.py` + `deduplication.py`, and ATS identity persistence on `jobs` via `ats_job_id`, `ats_provider`, and `ats_composite_key`
 - Scraping: ATS registry, scheduler, tier routing, page crawling, adapter registry, browser pool
@@ -37,7 +37,8 @@
 ## Validation
 - `cd backend && uv run python -m pip check`
 - `cd backend && uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
-- `cd backend && uv tool run pip-audit -r .ci-requirements.txt`
+- `cd backend && uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
+- `cd backend && python ../scripts/run_backend_dependency_audit.py --requirements .ci-requirements.txt`
 - `cd backend && uv tool run bandit -r app/ -c pyproject.toml --severity-level medium`
 - `cd backend && uv run ruff check .`
 - `cd backend && uv run mypy app/auth/service.py app/config.py app/shared/middleware.py app/scraping/deduplication.py app/scraping/port.py --ignore-missing-imports`
@@ -60,11 +61,11 @@
 ## Current Assessment
 - Backend is locally green for the targeted contract slice that was revalidated in this workspace.
 - No known blocking backend or DB bugs remain after the latest verified pass.
-- Bandit, pip-audit, pip check, backend Ruff, and the targeted backend mypy gate are green in the current branch.
+- Bandit, pip-audit with the checked-in reviewed exception policy, pip check, backend Ruff, and the targeted backend mypy gate are green in the current branch.
 - The revalidated backend slice covers auth, settings, admin, and vault contract changes used by the reference-first frontend migration.
 - Auto-apply backend foundations are broader than `main`, and the live API/service execution path now includes recovered form extraction, Greenhouse/Lever adapters, safety gating, worker-triggered batch execution, and operator-facing API coverage, but broader UI/operator and browser coverage are still not end to end.
-- Resume capability is broader than `main`: structured IR extraction, tailoring, ATS validation, council review, and renderer/template coverage are live on `codex/ui-changes`, but richer preview/export/operator follow-through is still not end to end.
+- Resume capability is broader than `main`: structured IR extraction, tailoring, ATS validation, council review, renderer/template coverage, backend-backed preview, and PDF export are live on `codex/ui-changes`. The branch-era proposal/session model is not part of the committed live flow.
 - Cookie-authenticated unsafe requests now require the readable `jr_csrf_token` cookie to be echoed via `X-CSRF-Token`, and `TrustedHostMiddleware` is part of the live middleware stack.
 - Scheduler isolation is now queue-backed: APScheduler enqueues named jobs, worker services consume queue-owned jobs directly, and Redis is part of the active background-execution critical path.
 - Interview prep and semantic job search are broader than `main`: prep bundles now return company research and role analysis, and semantic search now uses the live hybrid ranking path rather than branch-only scaffolding.
-- Hybrid search, freshness scoring, normalization, and ATS identity persistence are no longer branch-only research slices: they now exist on `codex/ui-changes` as backend ranking and dedup foundations, but they still need broader product follow-through and tuning.
+- Hybrid search, freshness scoring, normalization, and ATS identity persistence are no longer branch-only research slices: they now exist on `codex/ui-changes` as backend ranking and dedup foundations.

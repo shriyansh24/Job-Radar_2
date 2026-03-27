@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -112,3 +113,57 @@ async def test_analytics_service_aggregates_jobs_and_applications(
     assert skills[0].skill == "Python"
     assert skills[0].count == 2
     assert {item.stage: item.count for item in funnel}["Screening"] == 1
+
+
+@pytest.mark.asyncio
+async def test_analytics_service_get_patterns_delegates_to_detector(
+    db_session: AsyncSession,
+) -> None:
+    user = await _create_user(db_session, "analytics-patterns@example.com")
+    payload = {
+        "callback_rate_by_company_size": [
+            {
+                "size_bucket": "small",
+                "total_applications": 3,
+                "callbacks": 2,
+                "callback_rate": 66.7,
+            }
+        ],
+        "conversion_funnel": [{"stage": "applied", "count": 3}],
+        "response_time_patterns": [
+            {
+                "avg_days_to_response": 2.5,
+                "sample_size": 3,
+                "warning": None,
+            }
+        ],
+        "best_application_timing": [
+            {
+                "day_of_week": "Tuesday",
+                "total_applications": 3,
+                "callbacks": 2,
+                "callback_rate": 66.7,
+            }
+        ],
+        "company_ghosting_rate": [
+            {
+                "company": "Acme",
+                "total_applications": 3,
+                "ghosted": 1,
+                "ghosting_rate": 33.3,
+            }
+        ],
+        "skill_gap_detection": [{"skill": "GraphQL", "demand_count": 4}],
+    }
+
+    with patch(
+        "app.analytics.service.PatternDetector.get_all_patterns",
+        new=AsyncMock(return_value=payload),
+    ) as mocked_get_all_patterns:
+        service = AnalyticsService(db_session)
+        patterns = await service.get_patterns(user.id)
+
+    mocked_get_all_patterns.assert_awaited_once_with(user.id)
+    assert patterns.callback_rate_by_company_size[0].size_bucket == "small"
+    assert patterns.response_time_patterns[0].avg_days_to_response == 2.5
+    assert patterns.skill_gap_detection[0].skill == "GraphQL"

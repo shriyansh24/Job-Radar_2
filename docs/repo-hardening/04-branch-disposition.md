@@ -12,7 +12,7 @@ Record the evidence-based disposition for retained branches before feature recov
 |---|---|---|---|---|
 | `main` | stable backend/P2 landing line, local branch behind `origin/main` by one commit | canonical baseline for merged backend and repo-hardening work before UI overhaul | `KEEP` | this is the repository baseline and default branch |
 | `codex/ui-changes` | active branch | unique frontend overhaul, theme-family runtime, page decomposition, current UI docs/captures | `KEEP` | this is the live UI line |
-| `feat/p1-core-value` | retained feature spike | unique P0/P1 capability work: remaining resume tailoring/renderer/export depth, worker/search follow-through, and remaining auto-apply/operator depth beyond the already recovered ATS identity, interview, hybrid-search, runtime, digest-worker, and initial pipeline ergonomics slices | `PORT_SELECTIVELY` | high-value capability source, but stale and not safe to merge blindly |
+| `feat/p1-core-value` | retained feature spike | provenance for the recovered ATS identity, auto-apply, interview/search, analytics-pattern, resume preview/export, and runtime slices, plus a few branch-era variants that are now explicitly archived as historical alternatives | `KEEP_AS_SELECTIVE_PROVENANCE` | high-value traceability source, but stale and not safe to merge blindly; remaining non-promoted variants are tracked as archive decisions rather than open live-scope work |
 | `origin/feat/p2-polish-advanced` | historical remote branch | strong provenance for P2 feature intent | `DEFER_AS_HISTORY` | current tip appears converged into `main`; use for traceability, not as a direct port source |
 | `ui-overhaul-design` | local historical UI spike | early UI/docs experiments, grouped sidebar work, FilterChip, skeletons | `KEEP_AS_HISTORY` | not the chosen live UI line, but still useful as historical context until explicitly archived |
 | `codex/career-os-overhaul` | earlier UI/UX milestone | pre-reference-first UI milestone and doc refresh | `KEEP_AS_MILESTONE` | useful as a waypoint, but not the main forward branch |
@@ -25,7 +25,7 @@ Evidence branch: `feat/p1-core-value` via PR #12
 - normalization
 - resume IR/parser
 - SQL pattern detector
-- hybrid/local-first router foundations
+- branch-era local-first router foundations now archived as historical research, not live committed scope
 - freshness scoring
 
 ### P1
@@ -50,4 +50,4 @@ Evidence branch: `main` with historical provenance in `origin/feat/p2-polish-adv
 - GPU acceleration
 
 ## Next Step
-- Continue matrix-driven P1 recovery decisions without treating `feat/p1-core-value` as a merge candidate.
+- Use `feat/p1-core-value` as provenance only: already-adopted slices stay on `codex/ui-changes`, and non-promoted variants stay archived in `docs/research/` plus the traceability matrix.

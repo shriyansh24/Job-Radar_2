@@ -28,7 +28,7 @@ test.describe("flows/operations-admin-data", () => {
       page.getByRole("main").getByRole("heading", { name: "Admin", exact: true })
     ).toBeVisible();
     await expect(page.getByRole("button", { name: /^reindex fts$/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^reindex search$/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^clear data$/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /^export data$/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /^import data$/i })).toBeVisible();
     await expect(page.getByText("Source health", { exact: true })).toBeVisible();

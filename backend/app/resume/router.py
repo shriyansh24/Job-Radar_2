@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, Depends, Query, Response, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
@@ -20,8 +20,10 @@ from app.resume.schemas import (
     CoverLetterGenerateResponse,
     GapAnalysisRequest,
     GapAnalysisResponse,
+    ResumePreviewResponse,
     ResumeTailorRequest,
     ResumeTailorResponse,
+    ResumeTemplateResponse,
     ResumeVersionResponse,
 )
 from app.resume.service import ResumeService
@@ -60,6 +62,42 @@ async def upload_resume(
     svc = ResumeService(db)
     r = await svc.upload_resume(file.filename or "upload.txt", content, user.id)
     return ResumeVersionResponse.model_validate(r)
+
+
+@router.get("/templates", response_model=list[ResumeTemplateResponse])
+async def list_templates(
+    user: User = Depends(get_current_user),  # noqa: ARG001
+    db: AsyncSession = Depends(get_db),
+) -> list[ResumeTemplateResponse]:
+    svc = ResumeService(db)
+    return [ResumeTemplateResponse(**template) for template in await svc.list_templates()]
+
+
+@router.get("/versions/{resume_id}/preview", response_model=ResumePreviewResponse)
+async def preview_version(
+    resume_id: uuid.UUID,
+    template_id: str = Query("professional"),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ResumePreviewResponse:
+    svc = ResumeService(db)
+    return ResumePreviewResponse(**(await svc.render_preview(resume_id, user.id, template_id)))
+
+
+@router.get("/versions/{resume_id}/export")
+async def export_version_pdf(
+    resume_id: uuid.UUID,
+    template_id: str = Query("professional"),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    svc = ResumeService(db)
+    pdf_bytes, filename = await svc.export_pdf(resume_id, user.id, template_id)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.patch("/versions/{resume_id}", response_model=ResumeVersionResponse)

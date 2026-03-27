@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 
@@ -75,7 +75,7 @@ class EmbeddingService:
         """Generate 384-dim embedding for text."""
         if self.model is None:
             return None
-        return self.model.encode(text).tolist()
+        return cast(list[float], self.model.encode(text).tolist())
 
     async def embed_jobs_batch(self, user_id: uuid.UUID | None = None, limit: int = 100) -> int:
         """Generate embeddings for jobs without them."""

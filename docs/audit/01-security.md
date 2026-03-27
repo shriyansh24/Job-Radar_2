@@ -33,7 +33,7 @@
 ## SEC-06 - MEDIUM: No Token Revocation
 - **Files:** `backend/app/auth/models.py`, `backend/app/auth/service.py`, `backend/app/auth/router.py`, `backend/app/dependencies.py`
 - **Detail:** Fixed. Tokens now carry a version claim, users store `token_version`, logout increments that version, and auth checks reject revoked bearer or cookie tokens.
-- **Evidence:** `backend/tests/integration/test_auth_api.py`, `backend/tests/unit/test_auth_service.py`
+- **Evidence:** `backend/tests/integration/test_auth_api.py`, `backend/tests/unit/auth/test_auth_service.py`
 - **Status:** FIXED
 
 ## SEC-07 - MEDIUM: No API Rate Limiting

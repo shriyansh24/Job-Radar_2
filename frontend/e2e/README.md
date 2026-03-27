@@ -21,9 +21,12 @@ frontend/e2e/
 - `smoke/` should fail fast on auth/bootstrap or shell regressions.
 - `flows/` should protect real route transitions and user-visible outcomes, not pixel snapshots.
 - `flows/route-family-outcomes.spec.ts` is the current route-family baseline for dashboard/jobs/pipeline/settings/targets outcomes and persisted theme changes.
+- `flows/communications-setup.spec.ts` covers the remaining fresh-account communication and setup routes: networking, email, and onboarding.
+- `flows/resume-template-preview.spec.ts` is the mocked contract check for resume template listing, HTML preview, and PDF export without depending on a seeded resume corpus.
 - `flows/prepare-intelligence-outcomes.spec.ts` protects the prepare and intelligence route family on a fresh account.
 - `flows/operations-admin-data.spec.ts` protects admin and operations data surfaces that should stay safe to load without destructive actions.
 - `flows/profile-settings-auth.spec.ts` protects the profile/settings/auth roundtrip without relying on external providers.
 - `theme-matrix/` is the canonical home for 8-mode coverage as it expands.
-- `theme-matrix/route-theme-matrix.spec.ts` is the desktop representative-route check for all 8 theme combinations across home, discover, execute, prepare, intelligence, and operations.
+- `theme-matrix/route-theme-matrix.spec.ts` is the desktop route-family check for all 8 theme combinations across home, communications, setup, prepare, intelligence, operations, search, and settings.
 - `flows/shell-responsive.spec.ts` is the shell behavior check for desktop, tablet, and phone chrome without screenshot assertions.
+- `frontend/playwright.config.ts` is intentionally serial (`fullyParallel: false`, `workers: 1`) because the suite is deterministic when Playwright owns the `webServer` lifecycle.

@@ -1,6 +1,6 @@
 import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { renderWithProviders } from "../support/test-utils";
+import { renderWithProviders } from "../support/renderWithProviders";
 
 const profileMocks = vi.hoisted(() => ({
   get: vi.fn(),

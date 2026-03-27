@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import structlog
 from arq.worker import Retry
 
+from app.runtime.worker_metrics import increment_worker_counter
 from app.workers.alert_worker import check_saved_search_alerts
 from app.workers.auto_apply_worker import run_auto_apply_batch
 from app.workers.digest_worker import run_daily_digest
@@ -49,11 +50,14 @@ class RegisteredJob:
 
 def _job_log_fields(ctx: dict[str, Any], *, queue_name: str) -> dict[str, Any]:
     job_try = int(ctx.get("job_try") or 1)
+    queue_job_id = ctx.get("job_id")
     registered_job = REGISTERED_JOBS.get(str(ctx.get("job_name", "")))
     max_tries = registered_job.max_tries if registered_job is not None else None
     retry_remaining = max(max_tries - job_try, 0) if max_tries is not None else None
     return {
-        "job_id": ctx.get("job_id"),
+        "job_id": queue_job_id,
+        "queue_job_id": queue_job_id,
+        "queue_correlation_id": queue_job_id,
         "job_try": job_try,
         "queue_name": queue_name,
         "job_max_tries": max_tries,
@@ -75,10 +79,19 @@ async def _run_with_lifecycle(
 ) -> None:
     context = {"job_name": job_name, **dict(ctx or {})}
     log_fields = _job_log_fields(context, queue_name=queue_name)
+    redis = cast(Any, context.get("redis"))
+    worker_role = str(context.get("worker_role", ""))
+    health_interval_seconds = int(context.get("health_check_interval_seconds") or 15)
     logger.info("queue_job_started", job_name=job_name, **log_fields)
     try:
         await callback()
     except Retry as exc:
+        await increment_worker_counter(
+            redis,
+            role=worker_role,
+            counter_name="retry_scheduled_total",
+            health_interval_seconds=health_interval_seconds,
+        )
         logger.warning(
             "queue_job_retry_requested",
             job_name=job_name,
@@ -93,6 +106,12 @@ async def _run_with_lifecycle(
             and log_fields["job_try"] < log_fields["job_max_tries"]
         ):
             retry_in_seconds = _retry_delay_seconds(log_fields["job_try"])
+            await increment_worker_counter(
+                redis,
+                role=worker_role,
+                counter_name="retry_scheduled_total",
+                health_interval_seconds=health_interval_seconds,
+            )
             logger.exception(
                 "queue_job_retry_scheduled",
                 job_name=job_name,
@@ -100,6 +119,19 @@ async def _run_with_lifecycle(
                 **log_fields,
             )
             raise Retry(defer=retry_in_seconds)
+        await increment_worker_counter(
+            redis,
+            role=worker_role,
+            counter_name="queue_job_failed_total",
+            health_interval_seconds=health_interval_seconds,
+        )
+        if bool(log_fields["job_retryable"]):
+            await increment_worker_counter(
+                redis,
+                role=worker_role,
+                counter_name="retry_exhausted_total",
+                health_interval_seconds=health_interval_seconds,
+            )
         logger.exception(
             "queue_job_failed",
             job_name=job_name,
@@ -108,6 +140,12 @@ async def _run_with_lifecycle(
             **log_fields,
         )
         raise
+    await increment_worker_counter(
+        redis,
+        role=worker_role,
+        counter_name="queue_job_completed_total",
+        health_interval_seconds=health_interval_seconds,
+    )
     logger.info("queue_job_completed", job_name=job_name, **log_fields)
 
 

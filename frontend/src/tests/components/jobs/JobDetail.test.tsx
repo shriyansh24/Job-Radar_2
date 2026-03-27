@@ -2,7 +2,7 @@ import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import JobDetail from "../../../components/jobs/JobDetail";
-import { renderWithProviders } from "../../support/test-utils";
+import { renderWithProviders } from "../../support/renderWithProviders";
 
 const pipelineMocks = vi.hoisted(() => ({
   create: vi.fn(),

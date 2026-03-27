@@ -1,10 +1,13 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { renderWithProviders } from "../support/test-utils";
+import { renderWithProviders } from "../support/renderWithProviders";
 
 const resumeMocks = vi.hoisted(() => ({
   listVersions: vi.fn(),
+  listTemplates: vi.fn(),
+  preview: vi.fn(),
+  exportVersion: vi.fn(),
   upload: vi.fn(),
   tailor: vi.fn(),
   council: vi.fn(),
@@ -34,7 +37,19 @@ import ResumeBuilder from "../../pages/ResumeBuilder";
 
 describe("ResumeBuilder page", () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      writable: true,
+      value: vi.fn(() => "blob:resume-preview"),
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      writable: true,
+      value: vi.fn(),
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     resumeMocks.listVersions.mockResolvedValue({
       data: [
         {
@@ -45,6 +60,32 @@ describe("ResumeBuilder page", () => {
           parsed_text: "Senior frontend engineer",
         },
       ],
+    });
+    resumeMocks.listTemplates.mockResolvedValue({
+      data: [
+        {
+          id: "professional",
+          name: "Professional",
+          description: "Balanced layout for general applications.",
+        },
+        {
+          id: "modern",
+          name: "Modern",
+          description: "Sharper typography for design-forward roles.",
+        },
+      ],
+    });
+    resumeMocks.preview.mockResolvedValue({
+      data: {
+        template_id: "professional",
+        html: "<section><h1>Jane Doe</h1><p>Built a shared UI platform</p></section>",
+      },
+    });
+    resumeMocks.exportVersion.mockResolvedValue({
+      data: new Blob(["%PDF"], { type: "application/pdf" }),
+      headers: {
+        "content-disposition": 'attachment; filename="resume-2026-professional.pdf"',
+      },
     });
     resumeMocks.upload.mockResolvedValue({ data: null });
     resumeMocks.tailor.mockResolvedValue({
@@ -135,5 +176,73 @@ describe("ResumeBuilder page", () => {
     expect(screen.getByText("81")).toBeInTheDocument();
     expect(screen.getByText("React")).toBeInTheDocument();
     expect(screen.getByText(/Built and scaled a shared UI platform/i)).toBeInTheDocument();
+  });
+
+  it("opens the version preview modal with parsed text", async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<ResumeBuilder />);
+
+    await user.click(await screen.findByRole("button", { name: /Versions/i }));
+    await user.click(await screen.findByText("resume-2026.pdf"));
+
+    expect(await screen.findByRole("heading", { name: "resume-2026.pdf" })).toBeInTheDocument();
+    expect(screen.getByText("Parsed text")).toBeInTheDocument();
+    expect(screen.getByText("Professional")).toBeInTheDocument();
+    expect(screen.getByText(/Balanced layout for general applications/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Export PDF/i })).toBeInTheDocument();
+    expect(await screen.findByText("Jane Doe")).toBeInTheDocument();
+    expect(await screen.findByText("Built a shared UI platform")).toBeInTheDocument();
+    expect(resumeMocks.preview).toHaveBeenCalledWith("resume-1", "professional");
+  });
+
+  it("exports the selected rendered template from the preview modal", async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<ResumeBuilder />);
+
+    await user.click(await screen.findByRole("button", { name: /Versions/i }));
+    await user.click(await screen.findByText("resume-2026.pdf"));
+    await user.click(await screen.findByRole("button", { name: /Export PDF/i }));
+
+    expect(resumeMocks.exportVersion).toHaveBeenCalledWith("resume-1", "professional");
+  });
+
+  it("renders council evaluation output for the selected resume", async () => {
+    const user = userEvent.setup();
+    resumeMocks.council.mockResolvedValue({
+      data: {
+        overall_score: 8.5,
+        consensus: "Strong fit",
+        evaluations: [
+          {
+            model: "gpt-5",
+            score: 9,
+            feedback: "Strong match for frontend platform work.",
+            strengths: ["UI systems"],
+            weaknesses: ["No GraphQL"],
+          },
+          {
+            model: "claude",
+            score: 8,
+            feedback: "Good alignment with staff-level scope.",
+            strengths: ["Architecture"],
+            weaknesses: [],
+          },
+        ],
+      },
+    });
+
+    renderWithProviders(<ResumeBuilder />);
+
+    await user.click(await screen.findByRole("button", { name: /^Council$/i }));
+    await user.selectOptions(screen.getByRole("combobox", { name: /resume version/i }), "resume-1");
+    await user.selectOptions(screen.getByRole("combobox", { name: /target job/i }), "job-1");
+    await user.click(screen.getByRole("button", { name: /^Run council$/i }));
+
+    expect(await screen.findByText("Average score")).toBeInTheDocument();
+    expect(screen.getByText("8.5")).toBeInTheDocument();
+    expect(screen.getByText("Strong match for frontend platform work.")).toBeInTheDocument();
+    expect(screen.getByText("Good alignment with staff-level scope.")).toBeInTheDocument();
   });
 });

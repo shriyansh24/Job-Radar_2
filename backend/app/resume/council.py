@@ -90,7 +90,7 @@ async def council_evaluate(
     # Aggregate scores
     # ------------------------------------------------------------------
 
-    evaluations: list[dict] = []
+    evaluations: list[dict[str, Any]] = []
     scores: list[float] = []
     for res in results:
         if res is None:

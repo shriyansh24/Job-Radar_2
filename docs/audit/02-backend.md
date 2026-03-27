@@ -67,7 +67,7 @@
 - **Status:** FIXED
 
 ## BE-F03 - FIXED: Interview Generation / Prep Reject Empty Model Payloads
-- **Files:** `backend/app/interview/service.py`, `backend/app/nlp/model_router.py`, `backend/tests/unit/interview/test_interview_service.py`, `backend/tests/unit/test_model_router.py`
+- **Files:** `backend/app/interview/service.py`, `backend/app/nlp/model_router.py`, `backend/tests/unit/interview/test_interview_service.py`, `backend/tests/unit/intelligence/test_model_router.py`
 - **Detail:** Empty JSON results now raise out of the model router, question generation no longer persists empty sessions, and interview prep now surfaces empty model payloads as `502` failures.
 - **Status:** FIXED
 

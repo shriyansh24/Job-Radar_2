@@ -74,8 +74,8 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 | `FIXED` | CI job naming was too coarse | Generic frontend/backend jobs made failures hard to localize | Required checks now emit stable, specific job names for backend quality, backend tests, frontend quality, frontend build/tests, docs validation, migration safety, and browser smoke |
 | `FIXED` | CODEOWNERS / templates were absent | No `CODEOWNERS`, no issue or PR templates under `.github/` | CODEOWNERS plus PR and issue templates are now checked in as repo guardrails |
 | `DOCUMENTED` | Dark-mode wording still drifts from tokens | Some docs still describe default dark mode as literal jet black | The live default dark tokens remain near-black unless a theme family overrides them; docs must keep that distinction explicit |
-| `DOCUMENTED` | Redis critical-path wording drifts from runtime | Redis is provisioned in compose and still has a config default, but there is no active backend Redis client usage | Redis is available for queued/future async surfaces today, but it is not on the API/scheduler critical path and docs must say so explicitly |
-| `DOCUMENTED` | Scheduler readiness is better but still file-based | `backend/app/runtime/scheduler.py` now gates readiness on DB reachability, but compose still checks a sentinel file | Scheduler readiness now proves startup + DB reachability, but job-level dependency health remains a separate observability concern |
+| `FIXED` | Redis critical-path wording drifted from runtime | Earlier docs treated Redis as merely provisioned for future async surfaces | Redis is now the live queue backbone for the scheduler and ARQ worker topology, and current-state/runtime docs reflect that |
+| `FIXED` | Scheduler readiness used to be file-based | Earlier compose and CI flows relied on sentinel files after scheduler startup | Scheduler and worker readiness now use runtime health probes, Redis heartbeat state, and ARQ health surfaces rather than sentinel files |
 
 ## Verified Test And Workflow Findings
 
@@ -83,8 +83,8 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 |---|---|---|---|
 | `FIXED` | Frontend ops-page tests | `frontend/src/tests/pages/Admin.page.test.tsx`, `Companies.page.test.tsx`, `SearchExpansion.page.test.tsx`, `Sources.page.test.tsx`, `Targets.page.test.tsx` | The misleading phase-based ops suite has been replaced with route-owned page tests inside the new taxonomy |
 | `DOCUMENTED` | Frontend test topology | `frontend/src/tests/`, `frontend/e2e/` | The frontend now has role-based unit and browser lanes, but several page and component suites still cover multiple behaviors inside one file |
-| `DOCUMENTED` | Backend test topology | `backend/tests/{contracts,infra,integration,migrations,security,unit,workers}` | The backend layout is role-based, but `unit/` and `edge_cases/` still contain mixed ownership and should continue to be drained deliberately |
-| `FIXED` | Committed browser/e2e lane exists | `frontend/playwright.config.ts`, `frontend/e2e/README.md`, and checked-in specs under `smoke/`, `flows/`, and `theme-matrix/` | Browser QA is no longer manual-only; the remaining gap is route breadth, not lane absence |
+| `FIXED` | Backend test topology | `backend/tests/{contracts,infra,integration,migrations,security,unit,workers}` plus `backend/tests/README.md` | The backend layout is now role-based and the flat `unit/` root has been drained; the remaining subsystem buckets are intentional rather than undocumented drift |
+| `FIXED` | Committed browser/e2e lane exists | `frontend/playwright.config.ts`, `frontend/e2e/README.md`, and checked-in specs under `smoke/`, `flows/`, and `theme-matrix/` | Browser QA is no longer manual-only and the route-family matrix now covers the routed frontend families across all 8 theme combinations |
 | `DOCUMENTED` | Coverage expectations are uneven | backend gate uses `--cov-fail-under=60`; frontend gate uses `40` statement coverage | The repo still needs an explicit rationale for why frontend quality policy is materially lower |
 
 ## Verified Branch And Phase Leads
@@ -108,13 +108,12 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 | Branch/phase truth | `git` history + GitHub PR metadata | Must be proven file-by-file before integration decisions |
 
 ## Immediate Risks
-- `feat/p1-core-value` still contains meaningful capability work that can be lost by neglect, even after ATS identity persistence, digest-worker follow-through, pipeline state exposure, and the backend auto-apply execution slice were partially recovered.
-- The committed Playwright/browser lane now exists, but route-family and eight-mode coverage are still thin.
 - Several historical/system-inventory documents still read like live status unless explicitly archived or demoted.
-- Scheduler readiness is now less false-green than before, but worker/job failure semantics still need more explicit observability.
+- Branch-era variants from `feat/p1-core-value` that were not promoted must stay explicitly archived in `docs/research/` and the traceability docs so they are not mistaken for live gaps later.
+- Deployment-level alert routing, audit-sink separation, and long-window queue monitoring still depend on infrastructure outside the repo even though repo-local runtime signals are now materially stronger.
 
 ## What This Ledger Does Not Yet Prove
 - Whether all current-state claims about frontend/backend contract alignment hold under a fresh full backend validation run
 - Whether Alembic replay from clean state is fully safe beyond the current upgrade check
 - Which exact remaining P1 slices should be ported next and which should be rejected
-- Whether all non-default theme families are route-complete across the full frontend
+- Whether deployment-level alert routing and dashboarding are wired to consume the stronger queue/runtime signals emitted by the repo

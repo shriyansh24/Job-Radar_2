@@ -33,6 +33,7 @@ _AUTH_REASON_ALIASES = {
     "User not found or inactive": "user_not_found_or_inactive",
     "Current password is incorrect": "invalid_current_password",
     "New password must be different from current password": "password_reuse",
+    "Email already registered": "email_already_registered",
 }
 
 
@@ -79,11 +80,11 @@ def _build_auth_log_fields(
 
 
 def log_auth_info(event: str, **kwargs: object) -> None:
-    logger.info(event, **kwargs)
+    logger.info(event, audit_stream="auth", **kwargs)
 
 
 def log_auth_warning(event: str, **kwargs: object) -> None:
-    logger.warning(event, **kwargs)
+    logger.warning(event, audit_stream="auth", **kwargs)
 
 
 def hash_password(password: str) -> str:
@@ -240,6 +241,11 @@ def clear_auth_cookies(
 async def register_user(db: AsyncSession, data: UserCreate) -> User:
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none() is not None:
+        log_auth_warning(
+            "auth_register_failed",
+            reason="email_already_registered",
+            auth_source="registration",
+        )
         raise ValidationError("Email already registered")
 
     user = User(
@@ -250,6 +256,11 @@ async def register_user(db: AsyncSession, data: UserCreate) -> User:
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    log_auth_info(
+        "auth_register_succeeded",
+        user_id=str(user.id),
+        auth_source="registration",
+    )
     return user
 
 

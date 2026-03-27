@@ -1,36 +1,17 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { buildTestUser, registerTestUser } from "../support/auth";
+import { buildTestUser, loginThroughUi, registerTestUser } from "../support/auth";
 import { THEME_FAMILIES, normalizeThemeSnapshot, seedThemePreference } from "../support/theme";
 
 const MODES = ["light", "dark"] as const;
-const REPRESENTATIVE_ROUTES = [
+const ROUTE_FAMILY_MATRIX = [
   {
     path: "/",
     locator: (page: Page) =>
-      page.getByRole("main").getByRole("heading", { name: "Command Center", exact: true }),
+      page.getByRole("button", { name: /^browse jobs$/i }),
     assertion: async (page: Page) => {
       await expect(page.getByRole("button", { name: /^browse jobs$/i })).toBeVisible();
       await expect(page.getByRole("button", { name: /^add application$/i })).toBeVisible();
-    },
-  },
-  {
-    path: "/jobs",
-    locator: (page: Page) =>
-      page.getByRole("button", { name: /^exact$/i }),
-    assertion: async (page: Page) => {
-      await expect(page.getByRole("button", { name: /^exact$/i })).toBeVisible();
-      await expect(page.getByRole("button", { name: /^semantic$/i })).toBeVisible();
-      await expect(page.getByPlaceholder("Search jobs")).toBeVisible();
-    },
-  },
-  {
-    path: "/pipeline",
-    locator: (page: Page) =>
-      page.getByRole("button", { name: /^auto-apply$/i }),
-    assertion: async (page: Page) => {
-      await expect(page.getByRole("button", { name: /^auto-apply$/i })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Stages", exact: true })).toBeVisible();
     },
   },
   {
@@ -39,26 +20,18 @@ const REPRESENTATIVE_ROUTES = [
       page.getByRole("button", { name: /^upload$/i }),
     assertion: async (page: Page) => {
       await expect(page.getByRole("button", { name: /^upload$/i })).toBeVisible();
-      await expect(page.getByText(/drag and drop a resume/i)).toBeVisible();
-    },
-  },
-  {
-    path: "/interview",
-    locator: (page: Page) =>
-      page.getByRole("button", { name: /^practice$/i }),
-    assertion: async (page: Page) => {
-      await expect(page.getByRole("button", { name: /^practice$/i })).toBeVisible();
-      await expect(page.getByRole("button", { name: /^prepare$/i })).toBeVisible();
-      await expect(page.getByRole("button", { name: /^history$/i })).toBeVisible();
+      await expect(page.getByRole("button", { name: /^versions$/i })).toBeVisible();
+      await expect(page.getByRole("button", { name: /^tailor$/i })).toBeVisible();
+      await expect(page.getByRole("button", { name: /^council$/i })).toBeVisible();
     },
   },
   {
     path: "/analytics",
     locator: (page: Page) =>
-      page.getByRole("button", { name: /last 30 days/i }),
+      page.getByText("30 day window", { exact: true }),
     assertion: async (page: Page) => {
-      await expect(page.getByRole("button", { name: /last 30 days/i })).toBeVisible();
-      await expect(page.getByRole("button", { name: /export pdf/i })).toBeVisible();
+      await expect(page.getByText("30 day window", { exact: true })).toBeVisible();
+      await expect(page.getByText("Application patterns", { exact: true })).toBeVisible();
     },
   },
   {
@@ -79,23 +52,55 @@ const REPRESENTATIVE_ROUTES = [
       await expect(page.getByRole("button", { name: /^integrations$/i })).toBeVisible();
     },
   },
-] as const;
-
-async function loginWithStableSubmit(
-  page: Page,
-  user: { email: string; password: string }
-) {
-  const response = await page.request.post("/api/v1/auth/login", {
-    data: {
-      email: user.email,
-      password: user.password,
+  {
+    path: "/networking",
+    locator: (page: Page) => page.getByRole("button", { name: /^new contact$/i }),
+    assertion: async (page: Page) => {
+      await expect(page.getByRole("button", { name: /^new contact$/i })).toBeVisible();
+      await expect(page.getByText("Contacts", { exact: true }).first()).toBeVisible();
     },
-  });
-
-  expect(response.ok(), `login status ${response.status()}`).toBeTruthy();
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/$/);
-}
+  },
+  {
+    path: "/email",
+    locator: (page: Page) => page.getByText("Signal log", { exact: true }),
+    assertion: async (page: Page) => {
+      await expect(page.getByText("Signal log", { exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: /^process signal$/i })).toBeVisible();
+    },
+  },
+  {
+    path: "/onboarding",
+    locator: (page: Page) => page.getByRole("button", { name: /^next$/i }),
+    assertion: async (page: Page) => {
+      await expect(page.getByRole("heading", { name: "Onboarding", exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: /^next$/i })).toBeVisible();
+    },
+  },
+  {
+    path: "/outcomes",
+    locator: (page: Page) => page.getByText("Response Rate", { exact: true }),
+    assertion: async (page: Page) => {
+      await expect(page.getByText("Response Rate", { exact: true })).toBeVisible();
+      await expect(page.getByText("Keep it honest", { exact: true })).toBeVisible();
+    },
+  },
+  {
+    path: "/copilot",
+    locator: (page: Page) => page.getByText("Switch tasks", { exact: true }),
+    assertion: async (page: Page) => {
+      await expect(page.getByText("Switch tasks", { exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: /^assistant$/i })).toBeVisible();
+    },
+  },
+  {
+    path: "/canonical-jobs",
+    locator: (page: Page) => page.getByRole("button", { name: /show stale/i }),
+    assertion: async (page: Page) => {
+      await expect(page.getByRole("heading", { name: "Canonical Jobs", exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: /show stale/i })).toBeVisible();
+    },
+  },
+] as const;
 
 function expectedThemeState(
   family: (typeof THEME_FAMILIES)[number],
@@ -118,33 +123,31 @@ function expectedThemeState(
 
 test.describe.configure({ mode: "serial" });
 
-for (const family of THEME_FAMILIES) {
-  for (const mode of MODES) {
-    test(`theme-matrix/route-theme-matrix: ${family} ${mode} keeps representative routes stable`, async ({
-      page,
-      request,
-    }) => {
-      test.setTimeout(90_000);
+test("theme-matrix/route-theme-matrix keeps route families stable across all 8 theme combinations", async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(480_000);
 
-      const user = buildTestUser(`route-theme-${family}-${mode}`);
+  const user = buildTestUser("route-theme-matrix");
 
-      await registerTestUser(request, user);
-      await loginWithStableSubmit(page, user);
+  await registerTestUser(request, user);
+  await loginThroughUi(page, user);
+  await expect(page.getByRole("button", { name: /logout/i })).toBeVisible();
 
-      for (const route of REPRESENTATIVE_ROUTES) {
+  for (const family of THEME_FAMILIES) {
+    for (const mode of MODES) {
+      for (const route of ROUTE_FAMILY_MATRIX) {
         await seedThemePreference(page, family, mode);
-        await page.goto(route.path);
-        await page.reload();
+        await page.goto(route.path, { waitUntil: "domcontentloaded" });
 
         await expect.poll(async () => page.evaluate(normalizeThemeSnapshot)).toMatchObject(
           expectedThemeState(family, mode)
         );
 
         await expect(route.locator(page)).toBeVisible();
-        await expect(page.getByRole("button", { name: /logout/i })).toBeVisible();
-        await expect(page.getByRole("button", { name: /toggle color mode/i })).toBeVisible();
         await route.assertion(page);
       }
-    });
+    }
   }
-}
+});

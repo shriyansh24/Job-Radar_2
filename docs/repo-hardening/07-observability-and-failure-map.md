@@ -18,7 +18,7 @@ Document where the major runtime flows log today, where failures surface, and wh
 - Failure behavior:
   - `validate_runtime_settings(settings)` fails fast before the app fully serves requests
 - Current gap:
-  - API startup now logs only API lifecycle; request-scoped failures still do not identify authenticated user context
+  - API startup now logs only API lifecycle; migration start/completion still depends on Alembic and CI surfaces rather than first-class app-lifecycle events
 
 ### HTTP request lifecycle
 - Files:
@@ -27,11 +27,10 @@ Document where the major runtime flows log today, where failures surface, and wh
 - Signals:
   - request ID binding
   - response time header
-  - `request_completed` structured log with method, path, status, duration
+  - `request_completed` structured log with method, path, route name, route path, authenticated user ID when available, status, and duration
   - security headers on every response
   - in-memory rate limiting and `429` response path
 - Current gap:
-  - request logs do not include authenticated user identifiers or router/module ownership
   - login rate-limit JSON parsing errors are downgraded to debug logs without broader abuse context
 
 ### Auth lifecycle
@@ -45,6 +44,8 @@ Document where the major runtime flows log today, where failures surface, and wh
   - readable CSRF cookie issuance and deletion
   - token version rotation on password change
   - structured lifecycle events for:
+    - `auth_register_succeeded`
+    - `auth_register_failed`
     - `auth_login_succeeded`
     - `auth_login_failed`
     - `auth_refresh_succeeded`
@@ -99,25 +100,26 @@ Document where the major runtime flows log today, where failures surface, and wh
   - `queue_job_completed`
   - Redis-backed scheduler heartbeat state
   - ARQ worker `health_check_key` state
+  - worker runtime metrics hash with queue depth, queue pressure, oldest-job age, queue alert, retry-scheduled totals, retry-exhausted totals, and completed/failed job counters
   - queue depth before and after enqueue
   - retry metadata including retryability, retry remaining, and scheduled backoff
   - truthful `retry_exhausted` logging for non-retryable or final failures
 - Current gap:
   - scheduler and worker readiness now come from live runtime healthcheck probes instead of sentinel files, but there is still no sustained queue-depth alerting or long-window throughput view
-  - queue lifecycle is now explicit and includes queue depth plus retry metadata, but request-to-job correlation is still not consistent enough for full end-to-end tracing
+  - queue lifecycle is now explicit and includes queue depth, queue alert state, worker counters, and retry metadata, but deployment-level dashboards and alert routing still live outside the repo
 
 ## Current Blind Spots
-- Browser/e2e now exists, but route-family coverage is still shallow.
-- Scheduler job execution semantics are now explicit and health-backed, but queue throughput and retry pressure are not yet monitored in one place.
+- Real external ATS/browser submission flows still depend on manual validation rather than deterministic in-repo browser tests.
+- Scheduler job execution semantics are now explicit and health-backed, but queue throughput trend monitoring and alert routing are still deployment concerns.
 - Auth logs are now explicit and request-correlated, but they are not separated into a dedicated audit sink.
 
 ## Existing Positive Controls
 - `request_completed` structured logs exist.
 - Request IDs are bound and echoed in response headers.
-- Auth lifecycle events now normalize common failure reasons and keep sensitive payloads out of the structured log stream.
+- Auth lifecycle events now cover register/login/refresh/logout/password/account-delete/session-clear paths, normalize common failure reasons, and keep sensitive payloads out of the structured log stream.
 - Security headers are centralized in middleware.
-- Queue enqueue and worker lifecycle logs now carry queue ownership, queue depth, retry metadata, scheduled retry backoff, truthful `retry_exhausted` outcomes, Redis heartbeat state, and ARQ worker health surfaces.
-- CI already runs `pip-audit`, `bandit`, `ruff`, `mypy`, `pytest`, `npm audit`, `eslint`, frontend tests, and builds.
+- Queue enqueue and worker lifecycle logs now carry queue ownership, queue depth, retry metadata, scheduled retry backoff, truthful `retry_exhausted` outcomes, Redis heartbeat state, ARQ worker health surfaces, and worker runtime metrics hashes.
+- CI already runs the reviewed backend dependency-audit policy, `bandit`, `ruff`, `mypy`, `pytest`, `npm audit`, `eslint`, frontend tests, and builds.
 - CodeQL and dependency review are already enabled.
 
 ## Hardening Direction
