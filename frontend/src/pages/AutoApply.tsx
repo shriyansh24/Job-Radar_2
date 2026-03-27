@@ -9,36 +9,29 @@ import {
   Shield,
   ShieldCheck,
   User,
-  X,
   XCircle,
 } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
 import { useMemo, useState } from "react";
-import {
-  autoApplyApi,
-  type AutoApplyProfile,
-  type AutoApplyProfileCreate,
-  type AutoApplyRule,
-  type AutoApplyRuleCreate,
-  type AutoApplyRun,
-} from "../api/auto-apply";
+import { autoApplyApi, type AutoApplyRule } from "../api/auto-apply";
 import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader } from "../components/system/PageHeader";
 import { SectionHeader } from "../components/system/SectionHeader";
 import { SplitWorkspace } from "../components/system/SplitWorkspace";
 import { StateBlock } from "../components/system/StateBlock";
 import { Surface } from "../components/system/Surface";
-import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import EmptyState from "../components/ui/EmptyState";
-import Input from "../components/ui/Input";
-import Modal from "../components/ui/Modal";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import Tabs from "../components/ui/Tabs";
-import Textarea from "../components/ui/Textarea";
 import { toast } from "../components/ui/toastService";
 import { cn } from "../lib/utils";
+import { CreateProfileModal } from "../components/auto-apply/CreateProfileModal";
+import { CreateRuleModal } from "../components/auto-apply/CreateRuleModal";
+import { ProfileCard } from "../components/auto-apply/ProfileCard";
+import { RuleCard } from "../components/auto-apply/RuleCard";
+import { RunRow } from "../components/auto-apply/RunRow";
+import { CHIP } from "../components/auto-apply/autoApplyUtils";
 
 const TABS = [
   { id: "profiles", label: "Profiles", icon: <User size={14} weight="bold" /> },
@@ -46,432 +39,6 @@ const TABS = [
   { id: "history", label: "Run History", icon: <Clock size={14} weight="bold" /> },
   { id: "stats", label: "Statistics", icon: <ChartBar size={14} weight="bold" /> },
 ] as const;
-
-const CHIP =
-  "inline-flex items-center gap-1 border-2 border-[var(--color-text-primary)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]";
-
-const EMPTY_PROFILE: AutoApplyProfileCreate = {
-  name: "",
-  email: "",
-  phone: "",
-  linkedin_url: "",
-  github_url: "",
-  portfolio_url: "",
-  cover_letter_template: "",
-};
-
-const EMPTY_RULE: AutoApplyRuleCreate = {
-  name: "",
-  min_match_score: undefined,
-  required_keywords: [],
-  excluded_keywords: [],
-  is_active: true,
-};
-
-function statusVariant(status: string): "success" | "danger" | "warning" | "info" | "default" {
-  switch (status) {
-    case "completed":
-      return "success";
-    case "failed":
-      return "danger";
-    case "pending":
-      return "warning";
-    case "running":
-      return "info";
-    default:
-      return "default";
-  }
-}
-
-function ProfileCard({ profile }: { profile: AutoApplyProfile }) {
-  return (
-    <Surface tone="subtle" padding="md" className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-semibold tracking-[-0.04em] text-text-primary">{profile.name}</h3>
-            {profile.is_active ? <Badge variant="success">Active</Badge> : null}
-          </div>
-          <p className="mt-2 flex items-center gap-2 text-sm text-text-secondary">
-            <Envelope size={14} weight="bold" />
-            {profile.email}
-          </p>
-        </div>
-        <div className="flex size-11 shrink-0 items-center justify-center border-2 border-[var(--color-text-primary)] bg-background">
-          <User size={18} weight="bold" />
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {profile.phone ? <span className={cn(CHIP, "bg-background text-text-primary")}>Phone</span> : null}
-        {profile.linkedin_url ? (
-          <span className={cn(CHIP, "bg-accent-primary/10 text-text-primary")}>LinkedIn</span>
-        ) : null}
-        {profile.github_url ? (
-          <span className={cn(CHIP, "bg-accent-primary/10 text-text-primary")}>GitHub</span>
-        ) : null}
-        {profile.portfolio_url ? (
-          <span className={cn(CHIP, "bg-accent-primary/10 text-text-primary")}>Portfolio</span>
-        ) : null}
-        {profile.cover_letter_template ? (
-          <span className={cn(CHIP, "bg-accent-warning/10 text-text-primary")}>Template</span>
-        ) : null}
-      </div>
-    </Surface>
-  );
-}
-
-function RuleCard({
-  rule,
-  onToggleActive,
-}: {
-  rule: AutoApplyRule;
-  onToggleActive: () => void;
-}) {
-  return (
-    <Surface tone="subtle" padding="md" className="space-y-4">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-semibold tracking-[-0.04em] text-text-primary">{rule.name}</h3>
-            <Badge variant={rule.is_active ? "success" : "default"}>
-              {rule.is_active ? "Active" : "Inactive"}
-            </Badge>
-            {rule.min_match_score !== null ? (
-              <span className={cn(CHIP, "bg-background text-text-primary")}>
-                Match {rule.min_match_score}%
-              </span>
-            ) : null}
-          </div>
-          <div className="space-y-2">
-            {rule.required_keywords.length ? (
-              <div className="flex flex-wrap gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                  Required
-                </span>
-                {rule.required_keywords.map((keyword) => (
-                  <Badge key={keyword} variant="success" size="sm">
-                    {keyword}
-                  </Badge>
-                ))}
-              </div>
-            ) : null}
-            {rule.excluded_keywords.length ? (
-              <div className="flex flex-wrap gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                  Excluded
-                </span>
-                {rule.excluded_keywords.map((keyword) => (
-                  <Badge key={keyword} variant="danger" size="sm">
-                    {keyword}
-                  </Badge>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onToggleActive}
-          icon={rule.is_active ? <ShieldCheck size={14} weight="bold" /> : <Shield size={14} weight="bold" />}
-        >
-          {rule.is_active ? "Deactivate" : "Activate"}
-        </Button>
-      </div>
-    </Surface>
-  );
-}
-
-function RunRow({ run }: { run: AutoApplyRun }) {
-  return (
-    <div className="border-t-2 border-[var(--color-text-primary)] px-4 py-4 first:border-t-0 sm:px-5">
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(100px,1fr))]">
-        <div className="min-w-0">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">Job</div>
-          <div className="mt-1 truncate text-sm font-semibold text-text-primary">{run.job_id.slice(0, 8)}...</div>
-        </div>
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">Status</div>
-          <div className="mt-1">
-            <Badge variant={statusVariant(run.status)} size="sm">
-              {run.status}
-            </Badge>
-          </div>
-        </div>
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">ATS</div>
-          <div className="mt-1 text-sm text-text-secondary">{run.ats_provider || "-"}</div>
-        </div>
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-            Fields Filled
-          </div>
-          <div className="mt-1 text-sm text-text-secondary">
-            {Object.keys(run.fields_filled).length} filled
-            {run.fields_missed.length ? (
-              <span className="ml-1 text-accent-danger">({run.fields_missed.length} missed)</span>
-            ) : null}
-          </div>
-        </div>
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">Time</div>
-          <div className="mt-1 text-sm text-text-secondary">
-            {run.completed_at
-              ? format(new Date(run.completed_at), "PP p")
-              : run.started_at
-                ? format(new Date(run.started_at), "PP p")
-                : "-"}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CreateProfileModal({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
-  const queryClient = useQueryClient();
-  const [form, setForm] = useState<AutoApplyProfileCreate>({ ...EMPTY_PROFILE });
-
-  const mutation = useMutation({
-    mutationFn: () => autoApplyApi.createProfile(form),
-    onSuccess: () => {
-      toast("success", "Profile created");
-      queryClient.invalidateQueries({ queryKey: ["auto-apply-profiles"] });
-      onClose();
-      setForm({ ...EMPTY_PROFILE });
-    },
-    onError: () => toast("error", "Failed to create profile"),
-  });
-
-  return (
-    <Modal open={open} onClose={onClose} title="Add Profile" size="lg">
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Input
-            label="Name"
-            value={form.name}
-            onChange={(event) => setForm({ ...form, name: event.target.value })}
-            placeholder="e.g. Default Profile"
-          />
-          <Input
-            label="Email"
-            type="email"
-            value={form.email}
-            onChange={(event) => setForm({ ...form, email: event.target.value })}
-            placeholder="e.g. john@example.com"
-          />
-        </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Input
-            label="Phone"
-            value={form.phone ?? ""}
-            onChange={(event) => setForm({ ...form, phone: event.target.value })}
-            placeholder="e.g. +1 555 123 4567"
-          />
-          <Input
-            label="LinkedIn URL"
-            value={form.linkedin_url ?? ""}
-            onChange={(event) => setForm({ ...form, linkedin_url: event.target.value })}
-            placeholder="e.g. https://linkedin.com/in/johndoe"
-          />
-        </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Input
-            label="GitHub URL"
-            value={form.github_url ?? ""}
-            onChange={(event) => setForm({ ...form, github_url: event.target.value })}
-            placeholder="e.g. https://github.com/johndoe"
-          />
-          <Input
-            label="Portfolio URL"
-            value={form.portfolio_url ?? ""}
-            onChange={(event) => setForm({ ...form, portfolio_url: event.target.value })}
-            placeholder="e.g. https://johndoe.dev"
-          />
-        </div>
-        <Textarea
-          label="Cover Letter Template"
-          value={form.cover_letter_template ?? ""}
-          onChange={(event) => setForm({ ...form, cover_letter_template: event.target.value })}
-          placeholder="Write a default cover letter template. Use {company} and {position} as placeholders..."
-          rows={5}
-        />
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            loading={mutation.isPending}
-            disabled={!form.name || !form.email}
-            onClick={() => mutation.mutate()}
-          >
-            Create Profile
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-function KeywordInput({
-  label,
-  keywords,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  keywords: string[];
-  onChange: (keywords: string[]) => void;
-  placeholder: string;
-}) {
-  const [inputValue, setInputValue] = useState("");
-
-  function addKeyword() {
-    const trimmed = inputValue.trim();
-    if (!trimmed || keywords.includes(trimmed)) {
-      return;
-    }
-
-    onChange([...keywords, trimmed]);
-    setInputValue("");
-  }
-
-  function removeKeyword(keyword: string) {
-    onChange(keywords.filter((value) => value !== keyword));
-  }
-
-  return (
-    <div className="space-y-3">
-      <label className="block text-sm font-medium text-text-secondary">{label}</label>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Input
-          value={inputValue}
-          onChange={(event) => setInputValue(event.target.value)}
-          placeholder={placeholder}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              addKeyword();
-            }
-          }}
-        />
-        <Button variant="secondary" size="md" onClick={addKeyword} disabled={!inputValue.trim()}>
-          Add
-        </Button>
-      </div>
-      {keywords.length ? (
-        <div className="flex flex-wrap gap-2">
-          {keywords.map((keyword) => (
-            <span key={keyword} className={cn(CHIP, "bg-background text-text-primary")}>
-              {keyword}
-              <button
-                type="button"
-                onClick={() => removeKeyword(keyword)}
-                className="inline-flex size-4 items-center justify-center border-l-2 border-[var(--color-text-primary)] pl-1 text-text-muted transition-colors hover:text-accent-danger"
-              >
-                <X size={10} weight="bold" />
-              </button>
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function CreateRuleModal({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
-  const queryClient = useQueryClient();
-  const [form, setForm] = useState<AutoApplyRuleCreate>({ ...EMPTY_RULE });
-
-  const mutation = useMutation({
-    mutationFn: () => autoApplyApi.createRule(form),
-    onSuccess: () => {
-      toast("success", "Rule created");
-      queryClient.invalidateQueries({ queryKey: ["auto-apply-rules"] });
-      onClose();
-      setForm({ ...EMPTY_RULE });
-    },
-    onError: () => toast("error", "Failed to create rule"),
-  });
-
-  return (
-    <Modal open={open} onClose={onClose} title="Add Rule" size="lg">
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Input
-            label="Rule Name"
-            value={form.name ?? ""}
-            onChange={(event) => setForm({ ...form, name: event.target.value })}
-            placeholder="e.g. Senior Frontend Roles"
-          />
-          <Input
-            label="Min Match Score (%)"
-            type="number"
-            min={0}
-            max={100}
-            value={form.min_match_score ?? ""}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                min_match_score: event.target.value ? Number(event.target.value) : undefined,
-              })
-            }
-            placeholder="e.g. 75"
-          />
-        </div>
-        <KeywordInput
-          label="Required Keywords"
-          keywords={form.required_keywords ?? []}
-          onChange={(keywords) => setForm({ ...form, required_keywords: keywords })}
-          placeholder="e.g. React"
-        />
-        <KeywordInput
-          label="Excluded Keywords"
-          keywords={form.excluded_keywords ?? []}
-          onChange={(keywords) => setForm({ ...form, excluded_keywords: keywords })}
-          placeholder="e.g. Intern"
-        />
-        <label className="flex items-center gap-3 text-sm text-text-secondary">
-          <input
-            type="checkbox"
-            className="size-4 border-2 border-border accent-[var(--color-accent-primary)]"
-            checked={form.is_active ?? true}
-            onChange={(event) => setForm({ ...form, is_active: event.target.checked })}
-          />
-          Enable rule immediately
-        </label>
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            loading={mutation.isPending}
-            disabled={!form.name}
-            onClick={() => mutation.mutate()}
-          >
-            Create Rule
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
 
 export default function AutoApply() {
   const queryClient = useQueryClient();
@@ -522,28 +89,28 @@ export default function AutoApply() {
         key: "profiles",
         label: "Profiles",
         value: profilesLoading ? "..." : String(profiles?.length ?? 0),
-        hint: "Application identities ready to send.",
+        hint: "Profiles ready for automation.",
         tone: "default" as const,
       },
       {
         key: "rules",
         label: "Active Rules",
         value: rulesLoading ? "..." : String(activeRuleCount),
-        hint: "Filters currently allowed to fire.",
+        hint: "Rules allowed to fire.",
         tone: "warning" as const,
       },
       {
         key: "runs",
         label: "Runs",
         value: statsLoading ? "..." : String(stats?.total_runs ?? 0),
-        hint: "End-to-end automation attempts recorded.",
+        hint: "Execution attempts recorded.",
         tone: "success" as const,
       },
       {
         key: "success",
         label: "Success Rate",
         value: statsLoading ? "..." : `${successRate}%`,
-        hint: "Share of runs that finished cleanly.",
+        hint: "Completed runs / total runs.",
         tone: "danger" as const,
       },
     ],
@@ -566,18 +133,12 @@ export default function AutoApply() {
       <PageHeader
         eyebrow="Execute"
         title="Auto Apply"
-        description="Operate profiles, matching rules, and run history from one control surface. The layout stays dense on desktop and collapses to single-column lanes on tablet and phone."
+        description="Profiles, rules, and run history."
         meta={
           <>
-            <span className={cn(CHIP, "bg-bg-secondary text-text-primary")}>
-              {profiles?.length ?? 0} profiles
-            </span>
-            <span className={cn(CHIP, "bg-bg-secondary text-text-primary")}>
-              {activeRuleCount} active rules
-            </span>
-            <span className={cn(CHIP, "bg-bg-secondary text-text-primary")}>
-              {stats?.pending ?? 0} pending
-            </span>
+            <span className={cn(CHIP, "bg-bg-secondary text-text-primary")}>{profiles?.length ?? 0} profiles</span>
+            <span className={cn(CHIP, "bg-bg-secondary text-text-primary")}>{activeRuleCount} active rules</span>
+            <span className={cn(CHIP, "bg-bg-secondary text-text-primary")}>{stats?.pending ?? 0} pending</span>
           </>
         }
         actions={headerActions}
@@ -592,10 +153,14 @@ export default function AutoApply() {
           primary={
             <Surface padding="lg" radius="xl">
               <SectionHeader
-                title="Profile roster"
-                description="Each profile carries the contact fields and optional cover-letter template used during automation."
+                title="Profiles"
+                description="Profiles carry contact fields and templates."
                 action={
-                  <Button variant="secondary" onClick={() => setShowCreateProfile(true)} icon={<Plus size={14} weight="bold" />}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowCreateProfile(true)}
+                    icon={<Plus size={14} weight="bold" />}
+                  >
                     Add Profile
                   </Button>
                 }
@@ -611,7 +176,7 @@ export default function AutoApply() {
                   <EmptyState
                     icon={<User size={40} weight="bold" />}
                     title="No profiles yet"
-                    description="Create your first auto-apply profile with your contact details and cover letter template"
+                    description="Create the first profile."
                     action={{ label: "Add Profile", onClick: () => setShowCreateProfile(true) }}
                   />
                 ) : (
@@ -632,16 +197,15 @@ export default function AutoApply() {
                 title="Active profile"
                 description={
                   profiles?.find((profile) => profile.is_active)
-                    ? "Primary profile is marked active and ready for automation."
-                    :
-                  "No active profile is marked yet."
+                    ? "Primary profile is active."
+                    : "No active profile is marked yet."
                 }
               />
               <StateBlock
                 tone="warning"
                 icon={<Envelope size={18} weight="bold" />}
                 title="Coverage"
-                description="Add LinkedIn, GitHub, and a reusable template to reduce missed fields during submit flows."
+                description="Add LinkedIn, GitHub, and a template."
               />
             </div>
           }
@@ -653,10 +217,14 @@ export default function AutoApply() {
           primary={
             <Surface padding="lg" radius="xl">
               <SectionHeader
-                title="Rule stack"
-                description="Rules gate which jobs are allowed to auto-submit. Keep them narrow enough to trust."
+                title="Rules"
+                description="Rules gate which jobs can auto-submit."
                 action={
-                  <Button variant="secondary" onClick={() => setShowCreateRule(true)} icon={<Plus size={14} weight="bold" />}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowCreateRule(true)}
+                    icon={<Plus size={14} weight="bold" />}
+                  >
                     Add Rule
                   </Button>
                 }
@@ -672,7 +240,7 @@ export default function AutoApply() {
                   <EmptyState
                     icon={<Shield size={40} weight="bold" />}
                     title="No rules yet"
-                    description="Set up rules to automatically apply to jobs that match your criteria"
+                    description="Create rules to gate automation."
                     action={{ label: "Add Rule", onClick: () => setShowCreateRule(true) }}
                   />
                 ) : (
@@ -694,14 +262,14 @@ export default function AutoApply() {
               <StateBlock
                 tone="neutral"
                 icon={<ShieldCheck size={18} weight="bold" />}
-                title="How to read rules"
-                description="Required keywords shrink the candidate pool. Excluded keywords are the fast guardrail against bad-fit automation."
+                title="Rule logic"
+                description="Required keywords shrink the pool. Excluded keywords block bad fits."
               />
               <StateBlock
                 tone="danger"
                 icon={<Lightning size={18} weight="bold" />}
                 title="Operating note"
-                description="If success rate drops, narrow the active rule set before adding more profiles."
+                description="If success drops, narrow active rules before adding profiles."
               />
             </div>
           }
@@ -715,7 +283,7 @@ export default function AutoApply() {
               <div className="border-b-2 border-[var(--color-text-primary)] bg-bg-tertiary px-5 py-4">
                 <SectionHeader
                   title="Run History"
-                  description="Recent execution attempts, ATS vendors, and field coverage."
+                  description="Recent attempts and field coverage."
                 />
               </div>
               {runsLoading ? (
@@ -729,7 +297,7 @@ export default function AutoApply() {
                   <EmptyState
                     icon={<Clock size={40} weight="bold" />}
                     title="No run history"
-                    description="Run history will appear here after auto-apply processes jobs"
+                    description="Runs will appear here after auto-apply starts."
                   />
                 </div>
               ) : (
@@ -747,7 +315,7 @@ export default function AutoApply() {
                 tone="success"
                 icon={<CheckCircle size={18} weight="bold" />}
                 title="Success signal"
-                description={`${stats?.successful ?? 0} completed runs are currently tracked.`}
+                description={`${stats?.successful ?? 0} completed runs are tracked.`}
               />
               <StateBlock
                 tone="danger"
@@ -755,7 +323,7 @@ export default function AutoApply() {
                 title="Failure watch"
                 description={
                   stats?.failed
-                    ? `${stats.failed} runs failed. Inspect ATS coverage and required fields.`
+                    ? `${stats.failed} runs failed. Inspect field coverage.`
                     : "No failed runs are currently recorded."
                 }
               />
@@ -769,7 +337,7 @@ export default function AutoApply() {
           <Surface padding="lg" radius="xl">
             <SectionHeader
               title="Summary"
-              description="A compact read of automation volume, queue state, and execution quality."
+              description="Automation volume, queue state, and execution quality."
             />
             {statsLoading ? (
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -828,7 +396,7 @@ export default function AutoApply() {
                 <EmptyState
                   icon={<ChartBar size={40} weight="bold" />}
                   title="No stats available"
-                  description="Stats will appear here once auto-apply starts processing jobs"
+                  description="Stats will appear once auto-apply starts processing jobs."
                 />
               </div>
             )}
