@@ -15,7 +15,7 @@
 ## Current Status At A Glance
 - Reference-first UI migration is implemented in this workspace using the external UI repo as the visual authority and the current repo as the behavior authority.
 - Active branch in this workspace: `codex/ui-changes`.
-- Backend targeted auth/settings/admin/vault integration tests pass locally.
+- Full backend pytest now passes locally with coverage on the current branch.
 - Frontend lint, test, and build pass locally after the latest frontend decomposition and copy cleanup pass.
 - Committed browser coverage now includes auth/shell smoke, shell navigation, responsive shell behavior, route-family outcomes, communications/setup flows, prepare/intelligence/outcomes flows, operations/admin/data flows, profile/settings/auth roundtrips, resume preview/export, and route-family 8-mode theme assertions under `frontend/e2e/`.
 - The current authenticated browser sweep is up to date, and representative screenshots now live in `.claude/ui-captures/`.
@@ -25,10 +25,10 @@
 ## Latest Validation Snapshot
 
 ### Backend
-- `cd backend && uv run pytest tests/integration/test_auth_api.py tests/integration/test_settings_api.py tests/integration/test_admin_api.py tests/integration/test_vault_api.py`
+- `cd backend && uv run pytest --cov=app --cov-report=json:coverage.json tests/`
 - `cd backend && uv run alembic current`
 - `cd backend && uv run alembic upgrade head`
-- Latest local result: `26 passed` in the prior verified backend slice
+- Latest local result on `2026-03-27`: `1025 passed, 1 skipped` with backend coverage at `71.24%`
 
 ### Frontend
 - `cd frontend && npm run lint`
@@ -62,6 +62,6 @@
 - Treat `docs/research/` as future-looking reference material.
 - Treat `docs/repo-hardening/` as the normalization and traceability audit trail while the hardening pass is in progress, not as a replacement for current-state.
 - Use `CLAUDE.md` and `AGENTS.md` for working conventions, not product-state discovery.
-- Treat `05-ops-and-ci.md` as the canonical runtime-status page for the live ARQ queue topology, worker services, and remaining queue-validation gaps.
+- Treat `05-ops-and-ci.md` as the canonical runtime-status page for the live ARQ queue topology, worker services, and deployment-facing follow-through.
 - The current workspace includes the reference-first frontend migration: shared shell, responsive navigation, light/dark parity, backend-aligned settings/admin/resume/salary/search-expansion surfaces, decomposed page families, and a completed browser-verified cleanup pass over the main routed surfaces.
 - The current routed app now includes live analytics pattern panels plus backend-backed resume template preview and PDF export flows on the main branch, not just branch-only recovery code.

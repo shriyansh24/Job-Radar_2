@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import AsyncClient
 
+from app.dependencies import get_current_operator_user
 from app.jobs.models import Job
 
 
@@ -21,7 +22,7 @@ async def _register_and_login(client: AsyncClient) -> tuple[uuid.UUID, str]:
         "/api/v1/auth/login",
         json={"email": email, "password": "testpassword123"},
     )
-    token = login_response.json()["access_token"]
+    token = login_response.cookies["jr_access_token"]
     me_response = await client.get(
         "/api/v1/auth/me",
         headers={"Authorization": f"Bearer {token}"},
@@ -100,11 +101,11 @@ async def test_batch_enrich_enqueues_runtime_job_with_request_correlation(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _, token = await _register_and_login(client)
+    user_id, token = await _register_and_login(client)
     fake_dispatch = SimpleNamespace(
         job_name="enrichment_batch",
         queue_name="arq:queue:analysis",
-        enqueued_job_id="req-correlation-123",
+        enqueued_job_id="enrichment-batch-123",
         queue_depth_after=4,
         queue_pressure_after="nominal",
         queue_alert_after="clear",
@@ -122,8 +123,9 @@ async def test_batch_enrich_enqueues_runtime_job_with_request_correlation(
         "status": "queued",
         "job_name": "enrichment_batch",
         "queue_name": "arq:queue:analysis",
-        "enqueued_job_id": "req-correlation-123",
+        "enqueued_job_id": "enrichment-batch-123",
         "request_id": "req-correlation-123",
+        "scoped_user_id": str(user_id),
         "queue_depth_after": 4,
         "queue_pressure_after": "nominal",
         "queue_alert_after": "clear",
@@ -131,4 +133,38 @@ async def test_batch_enrich_enqueues_runtime_job_with_request_correlation(
     mocked_enqueue.assert_awaited_once_with(
         "enrichment_batch",
         correlation_id="req-correlation-123",
+        user_id=str(user_id),
     )
+
+
+@pytest.mark.asyncio
+async def test_gpu_status_requires_operator_access(client: AsyncClient) -> None:
+    _, token = await _register_and_login(client)
+
+    response = await client.get(
+        "/api/v1/enrichment/system/gpu-status",
+        headers=_auth(token),
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "Operator access required"}
+
+
+@pytest.mark.asyncio
+async def test_gpu_status_allows_operator_override(client: AsyncClient) -> None:
+    from app.main import app
+
+    _, token = await _register_and_login(client)
+    app.dependency_overrides[get_current_operator_user] = lambda: SimpleNamespace(id="operator")
+
+    try:
+        response = await client.get(
+            "/api/v1/enrichment/system/gpu-status",
+            headers=_auth(token),
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_operator_user, None)
+
+    assert response.status_code == 200
+    assert "gpu_available" in response.json()
+    assert "device_info" in response.json()

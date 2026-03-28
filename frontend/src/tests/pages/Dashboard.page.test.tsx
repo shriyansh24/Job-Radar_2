@@ -1,7 +1,6 @@
-import { render, screen } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { renderWithProviders } from "../support/renderWithProviders";
 
 vi.mock("../../api/analytics", () => ({
   analyticsApi: {
@@ -34,17 +33,6 @@ vi.mock("../../api/pipeline", () => ({
 }));
 
 import Dashboard from "../../pages/Dashboard";
-
-function renderWithProviders(ui: React.ReactElement) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter>{ui}</MemoryRouter>
-    </QueryClientProvider>
-  );
-}
 
 describe("Dashboard", () => {
   it("renders heading and stat cards after loading", async () => {

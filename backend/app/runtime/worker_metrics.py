@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, Any, cast
 
 from arq.connections import ArqRedis
@@ -13,14 +14,33 @@ COUNTER_FIELDS = (
     "queue_job_completed_total",
     "queue_job_failed_total",
 )
+QUEUE_ROLE_BY_NAME = {
+    "arq:queue:scraping": "scraping",
+    "arq:queue:analysis": "analysis",
+    "arq:queue:ops": "ops",
+}
+DEFAULT_WORKER_HEALTH_INTERVAL_SECONDS = 15
 
 
 def worker_metrics_key(role: str) -> str:
     return f"jobradar:worker-metrics:{role}"
 
 
+def worker_role_for_queue(queue_name: str) -> str | None:
+    return QUEUE_ROLE_BY_NAME.get(queue_name)
+
+
 def worker_metrics_ttl_seconds(health_interval_seconds: int) -> int:
     return max(health_interval_seconds * 4, 60)
+
+
+def configured_worker_health_interval_seconds() -> int:
+    return int(
+        os.getenv(
+            "JR_WORKER_HEALTHCHECK_INTERVAL_SECONDS",
+            str(DEFAULT_WORKER_HEALTH_INTERVAL_SECONDS),
+        )
+    )
 
 
 async def _get_counter_values(
@@ -62,6 +82,23 @@ async def sync_worker_queue_metrics(
     }
     await cast(Any, redis).hset(key, mapping=mapping)
     await cast(Any, redis).expire(key, worker_metrics_ttl_seconds(health_interval_seconds))
+
+
+async def sync_worker_queue_metrics_for_queue(
+    redis: ArqRedis | None,
+    *,
+    snapshot: QueueSnapshot,
+    health_interval_seconds: int,
+) -> None:
+    role = worker_role_for_queue(snapshot.queue_name)
+    if role is None:
+        return
+    await sync_worker_queue_metrics(
+        redis,
+        role=role,
+        snapshot=snapshot,
+        health_interval_seconds=health_interval_seconds,
+    )
 
 
 async def increment_worker_counter(

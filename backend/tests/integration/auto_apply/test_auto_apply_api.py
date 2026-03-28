@@ -24,7 +24,7 @@ async def _register_and_login(client: AsyncClient) -> tuple[uuid.UUID, str]:
         "/api/v1/auth/login",
         json={"email": email, "password": "testpassword123"},
     )
-    token = login_response.json()["access_token"]
+    token = login_response.cookies["jr_access_token"]
     me_response = await client.get(
         "/api/v1/auth/me",
         headers=_auth(token),

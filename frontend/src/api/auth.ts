@@ -1,11 +1,11 @@
-import type { TokenResponse, User } from "../lib/types";
+import type { AuthSessionResponse, User } from "../lib/types";
 import apiClient from "./client";
 
 export async function loginApi(
   email: string,
   password: string
-): Promise<TokenResponse> {
-  const { data } = await apiClient.post<TokenResponse>("/auth/login", {
+): Promise<AuthSessionResponse> {
+  const { data } = await apiClient.post<AuthSessionResponse>("/auth/login", {
     email,
     password,
   });
@@ -30,8 +30,8 @@ export async function getMeApi(): Promise<User> {
   return data;
 }
 
-export async function refreshApi(): Promise<TokenResponse> {
-  const { data } = await apiClient.post<TokenResponse>("/auth/refresh");
+export async function refreshApi(): Promise<AuthSessionResponse> {
+  const { data } = await apiClient.post<AuthSessionResponse>("/auth/refresh");
   return data;
 }
 
@@ -42,8 +42,8 @@ export async function logoutApi(): Promise<void> {
 export async function changePasswordApi(
   currentPassword: string,
   newPassword: string
-): Promise<TokenResponse> {
-  const { data } = await apiClient.post<TokenResponse>("/auth/change-password", {
+): Promise<AuthSessionResponse> {
+  const { data } = await apiClient.post<AuthSessionResponse>("/auth/change-password", {
     current_password: currentPassword,
     new_password: newPassword,
   });

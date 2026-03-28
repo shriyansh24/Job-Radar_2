@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 from app.config import settings
-from app.dependencies import get_current_user, get_db
+from app.dependencies import get_current_operator_user, get_current_user, get_db
 from app.enrichment.llm_client import LLMClient
 from app.enrichment.service import EnrichmentService
 from app.jobs.models import Job
@@ -58,6 +58,7 @@ async def batch_enrich(
     dispatch = await enqueue_registered_job(
         "enrichment_batch",
         correlation_id=request_id,
+        user_id=str(user.id),
     )
     return {
         "status": "queued",
@@ -65,6 +66,7 @@ async def batch_enrich(
         "queue_name": dispatch.queue_name,
         "enqueued_job_id": dispatch.enqueued_job_id,
         "request_id": request_id,
+        "scoped_user_id": str(user.id),
         "queue_depth_after": dispatch.queue_depth_after,
         "queue_pressure_after": dispatch.queue_pressure_after,
         "queue_alert_after": dispatch.queue_alert_after,
@@ -73,7 +75,7 @@ async def batch_enrich(
 
 @router.get("/system/gpu-status")
 async def gpu_status(
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_operator_user),
 ) -> dict[str, object]:
     """Return Intel GPU availability and device information."""
     from app.enrichment.gpu_accelerator import gpu_accelerator

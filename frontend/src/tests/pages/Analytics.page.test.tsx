@@ -1,8 +1,6 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
-import type { ReactElement } from "react";
-import { MemoryRouter } from "react-router-dom";
+import { screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderWithProviders } from "../support/renderWithProviders";
 
 const analyticsMocks = vi.hoisted(() => ({
   overview: vi.fn(),
@@ -37,18 +35,6 @@ vi.mock("../../components/analytics/AnalyticsCharts", () => ({
 
 import Analytics from "../../pages/Analytics";
 
-function renderWithProviders(ui: ReactElement) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter>{ui}</MemoryRouter>
-    </QueryClientProvider>
-  );
-}
-
 describe("Analytics page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -82,47 +68,47 @@ describe("Analytics page", () => {
     analyticsMocks.skills.mockResolvedValue({
       data: [{ skill: "TypeScript", count: 12, percentage: 0.5 }],
     });
-  analyticsMocks.funnel.mockResolvedValue({
-    data: [{ stage: "Applied", count: 89 }],
+    analyticsMocks.funnel.mockResolvedValue({
+      data: [{ stage: "Applied", count: 89 }],
+    });
+    analyticsMocks.patterns.mockResolvedValue({
+      data: {
+        callback_rate_by_company_size: [
+          {
+            size_bucket: "small",
+            total_applications: 3,
+            callbacks: 2,
+            callback_rate: 66.7,
+          },
+        ],
+        conversion_funnel: [{ stage: "applied", count: 3 }],
+        response_time_patterns: [
+          {
+            avg_days_to_response: 2.5,
+            sample_size: 3,
+            warning: null,
+          },
+        ],
+        best_application_timing: [
+          {
+            day_of_week: "Tuesday",
+            total_applications: 3,
+            callbacks: 2,
+            callback_rate: 66.7,
+          },
+        ],
+        company_ghosting_rate: [
+          {
+            company: "Acme",
+            total_applications: 3,
+            ghosted: 1,
+            ghosting_rate: 33.3,
+          },
+        ],
+        skill_gap_detection: [{ skill: "GraphQL", demand_count: 4 }],
+      },
+    });
   });
-  analyticsMocks.patterns.mockResolvedValue({
-    data: {
-      callback_rate_by_company_size: [
-        {
-          size_bucket: "small",
-          total_applications: 3,
-          callbacks: 2,
-          callback_rate: 66.7,
-        },
-      ],
-      conversion_funnel: [{ stage: "applied", count: 3 }],
-      response_time_patterns: [
-        {
-          avg_days_to_response: 2.5,
-          sample_size: 3,
-          warning: null,
-        },
-      ],
-      best_application_timing: [
-        {
-          day_of_week: "Tuesday",
-          total_applications: 3,
-          callbacks: 2,
-          callback_rate: 66.7,
-        },
-      ],
-      company_ghosting_rate: [
-        {
-          company: "Acme",
-          total_applications: 3,
-          ghosted: 1,
-          ghosting_rate: 33.3,
-        },
-      ],
-      skill_gap_detection: [{ skill: "GraphQL", demand_count: 4 }],
-    },
-  });
-});
 
   it("loads analytics datasets and renders formatted stats and source quality", async () => {
     renderWithProviders(<Analytics />);

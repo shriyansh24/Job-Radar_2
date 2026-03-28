@@ -27,7 +27,10 @@ async def register_and_login(
         json={"email": email, "password": "securepassword123"},
     )
     assert login_response.status_code == 200
-    return email, login_response.json()
+    return email, {
+        "access_token": login_response.cookies["jr_access_token"],
+        "refresh_token": login_response.cookies["jr_refresh_token"],
+    }
 
 
 def auth_headers(token: str) -> dict[str, str]:

@@ -99,8 +99,9 @@ async def test_login(client: AsyncClient):
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert "access_token" in data
-    assert "refresh_token" in data
+    assert data == {"authenticated": True, "token_type": "bearer"}
+    assert "access_token" not in data
+    assert "refresh_token" not in data
     assert data["token_type"] == "bearer"
     assert "jr_access_token" in resp.cookies
     assert "jr_refresh_token" in resp.cookies
@@ -115,6 +116,18 @@ def _assert_no_sensitive_fields(fields: dict[str, object]) -> None:
         "csrf_token",
     }
     assert forbidden_keys.isdisjoint(fields.keys())
+
+
+def _access_cookie(client: AsyncClient) -> str:
+    token = client.cookies.get("jr_access_token")
+    assert token
+    return token
+
+
+def _refresh_cookie(client: AsyncClient) -> str:
+    token = client.cookies.get("jr_refresh_token")
+    assert token
+    return token
 
 
 def _csrf_headers(client: AsyncClient) -> dict[str, str]:
@@ -182,7 +195,7 @@ async def test_me(client: AsyncClient):
         "/api/v1/auth/login",
         json={"email": "me@example.com", "password": "securepassword123"},
     )
-    token = login_resp.json()["access_token"]
+    token = login_resp.cookies["jr_access_token"]
     resp = await client.get(
         "/api/v1/auth/me",
         headers={"Authorization": f"Bearer {token}"},
@@ -222,14 +235,16 @@ async def test_refresh(client: AsyncClient):
         "/api/v1/auth/login",
         json={"email": "refresh@example.com", "password": "securepassword123"},
     )
-    refresh_token = login_resp.json()["refresh_token"]
+    refresh_token = login_resp.cookies["jr_refresh_token"]
     resp = await client.post(
         "/api/v1/auth/refresh",
         json={"refresh_token": refresh_token},
         headers=_csrf_headers(client),
     )
     assert resp.status_code == 200
-    assert "access_token" in resp.json()
+    assert resp.json() == {"authenticated": True, "token_type": "bearer"}
+    assert "access_token" not in resp.json()
+    assert "refresh_token" not in resp.json()
 
 
 @pytest.mark.asyncio
@@ -246,7 +261,9 @@ async def test_refresh_uses_cookie_when_body_missing(client: AsyncClient):
     assert resp.status_code == 403
     resp = await client.post("/api/v1/auth/refresh", headers=_csrf_headers(client))
     assert resp.status_code == 200
-    assert "access_token" in resp.json()
+    assert resp.json() == {"authenticated": True, "token_type": "bearer"}
+    assert "access_token" not in resp.json()
+    assert "refresh_token" not in resp.json()
 
 
 @pytest.mark.asyncio
@@ -261,7 +278,7 @@ async def test_refresh_logging_omits_sensitive_fields(
         "/api/v1/auth/register",
         json={"email": "logging-refresh@example.com", "password": "securepassword123"},
     )
-    login_resp = await client.post(
+    await client.post(
         "/api/v1/auth/login",
         json={"email": "logging-refresh@example.com", "password": "securepassword123"},
     )
@@ -272,7 +289,7 @@ async def test_refresh_logging_omits_sensitive_fields(
     )
     rejected = await client.post(
         "/api/v1/auth/refresh",
-        json={"refresh_token": login_resp.json()["access_token"]},
+        json={"refresh_token": _access_cookie(client)},
         headers=_csrf_headers(client),
     )
 
@@ -323,7 +340,7 @@ async def test_logout_revokes_existing_bearer_token(client: AsyncClient):
         "/api/v1/auth/login",
         json={"email": "logout@example.com", "password": "securepassword123"},
     )
-    token = login_resp.json()["access_token"]
+    token = login_resp.cookies["jr_access_token"]
 
     logout_resp = await client.post(
         "/api/v1/auth/logout",
@@ -356,7 +373,7 @@ async def test_logout_and_account_deletion_logging_omit_sensitive_fields(
     )
     logout_resp = await client.post(
         "/api/v1/auth/logout",
-        headers={"Authorization": f"Bearer {logout_login.json()['access_token']}"},
+        headers={"Authorization": f"Bearer {logout_login.cookies['jr_access_token']}"},
     )
 
     await client.post(
@@ -369,7 +386,7 @@ async def test_logout_and_account_deletion_logging_omit_sensitive_fields(
     )
     delete_resp = await client.delete(
         "/api/v1/auth/account",
-        headers={"Authorization": f"Bearer {delete_login.json()['access_token']}"},
+        headers={"Authorization": f"Bearer {delete_login.cookies['jr_access_token']}"},
     )
 
     assert logout_resp.status_code == 200
@@ -395,7 +412,7 @@ async def test_change_password_rotates_credentials(client: AsyncClient):
         "/api/v1/auth/login",
         json={"email": "change-password@example.com", "password": "securepassword123"},
     )
-    old_token = login_resp.json()["access_token"]
+    old_token = login_resp.cookies["jr_access_token"]
 
     changed = await client.post(
         "/api/v1/auth/change-password",
@@ -421,8 +438,9 @@ async def test_change_password_rotates_credentials(client: AsyncClient):
     )
 
     assert changed.status_code == 200
-    assert "access_token" in changed.json()
-    assert "refresh_token" in changed.json()
+    assert changed.json() == {"authenticated": True, "token_type": "bearer"}
+    assert "access_token" not in changed.json()
+    assert "refresh_token" not in changed.json()
     assert me_with_old_token.status_code == 401
     assert login_with_old_password.status_code == 401
     assert login_with_new_password.status_code == 200
@@ -438,7 +456,7 @@ async def test_change_password_rejects_wrong_current_password(client: AsyncClien
         "/api/v1/auth/login",
         json={"email": "wrong-current@example.com", "password": "securepassword123"},
     )
-    token = login_resp.json()["access_token"]
+    token = login_resp.cookies["jr_access_token"]
 
     changed = await client.post(
         "/api/v1/auth/change-password",
@@ -462,7 +480,7 @@ async def test_delete_account_removes_user_and_revokes_token(client: AsyncClient
         "/api/v1/auth/login",
         json={"email": "delete-account@example.com", "password": "securepassword123"},
     )
-    token = login_resp.json()["access_token"]
+    token = login_resp.cookies["jr_access_token"]
 
     deleted = await client.delete(
         "/api/v1/auth/account",

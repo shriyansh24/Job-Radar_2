@@ -1,39 +1,16 @@
-import { Bell, CheckCircle, HardDrive, MagnifyingGlass, Palette, Plug, Shield, UserCircle } from "@phosphor-icons/react";
+import { Bell, HardDrive, MagnifyingGlass, Palette, Plug, Shield, UserCircle } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { adminApi } from "../api/admin";
 import { changePasswordApi, deleteAccountApi } from "../api/auth";
 import { settingsApi, type AppSettings, type IntegrationStatus, type SavedSearch } from "../api/settings";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
-import Modal from "../components/ui/Modal";
-import Textarea from "../components/ui/Textarea";
+import { SettingsPageHeader } from "../components/settings/SettingsPageHeader";
+import { SettingsSearchEditorModal, type SearchEditorState } from "../components/settings/SettingsSearchEditorModal";
 import { toast } from "../components/ui/toastService";
 import { useAuthStore } from "../store/useAuthStore";
 import { parseThemePreference, serializeThemePreference, type ThemeFamily, type ThemeMode, useUIStore } from "../store/useUIStore";
 import { SettingsTabNav, type SettingsTab } from "../components/settings/SettingsTabNav";
-import {
-  SettingsProfileSection,
-  SettingsAppearanceSection,
-  SettingsWorkspaceSection,
-  SettingsSecuritySection,
-  SettingsIntegrationsSection,
-  SettingsSearchesSection,
-  SettingsDataSection,
-} from "../components/settings/SettingsSections";
-
-type SearchEditorState = {
-  id: string | null;
-  name: string;
-  filtersText: string;
-  alertEnabled: boolean;
-};
-
-type PasswordForm = {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-};
+import { SettingsTabPanels, type PasswordForm } from "../components/settings/SettingsTabPanels";
 
 const SETTINGS_TABS: Array<{
   id: SettingsTab;
@@ -289,21 +266,10 @@ export default function Settings() {
 
   return (
     <div className="flex h-full flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="command-label mb-1">Operations</p>
-          <h1 className="font-headline text-3xl font-black uppercase tracking-tight">Settings</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Account, theme, integrations, and saved searches.</p>
-        </div>
-        <Button
-          variant="primary"
-          onClick={() => saveAppMutation.mutate(appForm)}
-          loading={saveAppMutation.isPending}
-          icon={<CheckCircle size={16} weight="bold" />}
-        >
-          Save changes
-        </Button>
-      </div>
+      <SettingsPageHeader
+        onSave={() => saveAppMutation.mutate(appForm)}
+        isSaving={saveAppMutation.isPending}
+      />
 
       <div className="flex flex-col gap-6 md:flex-row">
         <SettingsTabNav
@@ -314,159 +280,97 @@ export default function Settings() {
         />
 
         <div className="min-w-0 flex-1 space-y-6 pb-12">
-          {activeTab === "profile" ? (
-            <SettingsProfileSection userEmail={user?.email} displayName={user?.display_name} />
-          ) : null}
-
-          {activeTab === "appearance" ? (
-            <SettingsAppearanceSection
-              mode={mode}
-              themeFamily={themeFamily}
-              onModeChange={(nextMode) => updateThemeSelection({ mode: nextMode })}
-              onThemeFamilyChange={(nextFamily) => updateThemeSelection({ themeFamily: nextFamily })}
-            />
-          ) : null}
-
-          {activeTab === "workspace" ? (
-            <SettingsWorkspaceSection
-              notificationsEnabled={appForm.notifications_enabled}
-              autoApplyEnabled={appForm.auto_apply_enabled}
-              onNotificationsChange={(checked) =>
-                setAppForm((current) => ({ ...current, notifications_enabled: checked }))
-              }
-              onAutoApplyChange={(checked) =>
-                setAppForm((current) => ({ ...current, auto_apply_enabled: checked }))
-              }
-            />
-          ) : null}
-
-          {activeTab === "security" ? (
-            <SettingsSecuritySection
-              userEmail={user?.email}
-              currentPassword={passwordForm.currentPassword}
-              newPassword={passwordForm.newPassword}
-              confirmPassword={passwordForm.confirmPassword}
-              onCurrentPasswordChange={(value) =>
-                setPasswordForm((current) => ({ ...current, currentPassword: value }))
-              }
-              onNewPasswordChange={(value) =>
-                setPasswordForm((current) => ({ ...current, newPassword: value }))
-              }
-              onConfirmPasswordChange={(value) =>
-                setPasswordForm((current) => ({ ...current, confirmPassword: value }))
-              }
-              onSubmit={submitPasswordChange}
-              isPending={changePasswordMutation.isPending}
-            />
-          ) : null}
-
-          {activeTab === "integrations" ? (
-            <SettingsIntegrationsSection
-              userEmail={user?.email}
-              integrations={integrations}
-              drafts={integrationDrafts}
-              loading={integrationsLoading}
-              onDraftChange={(provider, value) =>
-                setIntegrationDrafts((current) => ({ ...current, [provider]: value }))
-              }
-              onSave={(provider) => integrationUpsertMutation.mutate(provider)}
-              onDelete={(provider) => integrationDeleteMutation.mutate(provider)}
-              savingProvider={integrationUpsertMutation.variables ?? null}
-              deletingProvider={integrationDeleteMutation.variables ?? null}
-            />
-          ) : null}
-
-          {activeTab === "searches" ? (
-            <SettingsSearchesSection
-              searches={searches}
-              loading={searchesLoading}
-              onCreate={() => openSearchEditor()}
-              onEdit={(search) => openSearchEditor(search)}
-              onToggle={(search) =>
-                settingsApi
-                  .updateSearch(search.id, { alert_enabled: !search.alert_enabled })
-                  .then(() => {
-                    toast("success", "Search updated");
-                    queryClient.invalidateQueries({ queryKey: ["settings", "searches"] });
-                  })
-                  .catch(() => toast("error", "Failed to update search"))
-              }
-              onDelete={(search) => deleteSearchMutation.mutate(search.id)}
-            />
-          ) : null}
-
-          {activeTab === "data" ? (
-            <SettingsDataSection
-              clearConfirm={clearConfirm}
-              deleteConfirm={deleteConfirm}
-              onClearConfirmChange={setClearConfirm}
-              onDeleteConfirmChange={setDeleteConfirm}
-              onExport={handleExport}
-              onClear={() => clearDataMutation.mutate()}
-              onDelete={() => deleteAccountMutation.mutate()}
-              clearReady={clearDataReady}
-              deleteReady={deleteAccountReady}
-              clearPending={clearDataMutation.isPending}
-              deletePending={deleteAccountMutation.isPending}
-            />
-          ) : null}
+          <SettingsTabPanels
+            activeTab={activeTab}
+            userEmail={user?.email}
+            displayName={user?.display_name}
+            mode={mode}
+            themeFamily={themeFamily}
+            appForm={appForm}
+            passwordForm={passwordForm}
+            integrations={integrations}
+            searches={searches}
+            searchesLoading={searchesLoading}
+            integrationsLoading={integrationsLoading}
+            integrationDrafts={integrationDrafts}
+            clearConfirm={clearConfirm}
+            deleteConfirm={deleteConfirm}
+            clearReady={clearDataReady}
+            deleteReady={deleteAccountReady}
+            clearPending={clearDataMutation.isPending}
+            deletePending={deleteAccountMutation.isPending}
+            passwordPending={changePasswordMutation.isPending}
+            savingProvider={integrationUpsertMutation.variables ?? null}
+            deletingProvider={integrationDeleteMutation.variables ?? null}
+            onModeChange={(nextMode) => updateThemeSelection({ mode: nextMode })}
+            onThemeFamilyChange={(nextFamily) => updateThemeSelection({ themeFamily: nextFamily })}
+            onNotificationsChange={(checked) =>
+              setAppForm((current) => ({ ...current, notifications_enabled: checked }))
+            }
+            onAutoApplyChange={(checked) =>
+              setAppForm((current) => ({ ...current, auto_apply_enabled: checked }))
+            }
+            onCurrentPasswordChange={(value) =>
+              setPasswordForm((current) => ({ ...current, currentPassword: value }))
+            }
+            onNewPasswordChange={(value) =>
+              setPasswordForm((current) => ({ ...current, newPassword: value }))
+            }
+            onConfirmPasswordChange={(value) =>
+              setPasswordForm((current) => ({ ...current, confirmPassword: value }))
+            }
+            onPasswordSubmit={submitPasswordChange}
+            onIntegrationDraftChange={(provider, value) =>
+              setIntegrationDrafts((current) => ({ ...current, [provider]: value }))
+            }
+            onIntegrationSave={(provider) => integrationUpsertMutation.mutate(provider)}
+            onIntegrationDelete={(provider) => integrationDeleteMutation.mutate(provider)}
+            onCreateSearch={() => openSearchEditor()}
+            onEditSearch={(search) => openSearchEditor(search)}
+            onToggleSearch={(search) =>
+              settingsApi
+                .updateSearch(search.id, { alert_enabled: !search.alert_enabled })
+                .then(() => {
+                  toast("success", "Search updated");
+                  queryClient.invalidateQueries({ queryKey: ["settings", "searches"] });
+                })
+                .catch(() => toast("error", "Failed to update search"))
+            }
+            onDeleteSearch={(search) => deleteSearchMutation.mutate(search.id)}
+            onClearConfirmChange={setClearConfirm}
+            onDeleteConfirmChange={setDeleteConfirm}
+            onExport={handleExport}
+            onClear={() => clearDataMutation.mutate()}
+            onDelete={() => deleteAccountMutation.mutate()}
+          />
         </div>
       </div>
 
-      <Modal
+      <SettingsSearchEditorModal
         open={searchModalOpen}
+        searchEditor={searchEditor}
+        saving={saveSearchMutation.isPending}
         onClose={() => setSearchModalOpen(false)}
-        title={searchEditor.id ? "Edit saved search" : "Create saved search"}
-        size="lg"
-        className="!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !shadow-none"
-      >
-        <div className="space-y-4">
-          <Input
-            label="Name"
-            value={searchEditor.name}
-            onChange={(event) =>
-              setSearchEditor((current) => ({
-                ...current,
-                name: event.target.value,
-              }))
-            }
-            placeholder="Frontend roles in New York"
-          />
-          <Textarea
-            label="Filters JSON"
-            value={searchEditor.filtersText}
-            onChange={(event) =>
-              setSearchEditor((current) => ({
-                ...current,
-                filtersText: event.target.value,
-              }))
-            }
-            className="min-h-[220px] font-mono text-sm"
-          />
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={searchEditor.alertEnabled}
-              onChange={(event) =>
-                setSearchEditor((current) => ({
-                  ...current,
-                  alertEnabled: event.target.checked,
-                }))
-              }
-              className="size-4 rounded-none border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] accent-[var(--color-accent-primary)]"
-            />
-            Alert when this search changes
-          </label>
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setSearchModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => saveSearchMutation.mutate()} loading={saveSearchMutation.isPending} icon={<CheckCircle size={16} weight="bold" />}>
-              Save search
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onNameChange={(value) =>
+          setSearchEditor((current) => ({
+            ...current,
+            name: value,
+          }))
+        }
+        onFiltersChange={(value) =>
+          setSearchEditor((current) => ({
+            ...current,
+            filtersText: value,
+          }))
+        }
+        onAlertEnabledChange={(value) =>
+          setSearchEditor((current) => ({
+            ...current,
+            alertEnabled: value,
+          }))
+        }
+        onSave={() => saveSearchMutation.mutate()}
+      />
     </div>
   );
 }

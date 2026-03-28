@@ -66,10 +66,10 @@ async def run_source_health_checks() -> None:
                 failed = sum(1 for r in recent_runs if r.status == "failed")
                 total = len(recent_runs)
 
-                if failed > total * 0.5:
-                    source.health_state = "degraded"
-                elif failed > total * 0.8:
+                if failed >= total * 0.8:
                     source.health_state = "failing"
+                elif failed >= total * 0.5:
+                    source.health_state = "degraded"
                 else:
                     source.health_state = "healthy"
 

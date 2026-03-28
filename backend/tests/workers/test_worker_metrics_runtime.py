@@ -5,10 +5,13 @@ import pytest
 from app.runtime.worker_metrics import (
     COUNTER_FIELDS,
     _get_counter_values,
+    configured_worker_health_interval_seconds,
     increment_worker_counter,
     sync_worker_queue_metrics,
+    sync_worker_queue_metrics_for_queue,
     worker_metrics_key,
     worker_metrics_ttl_seconds,
+    worker_role_for_queue,
 )
 
 
@@ -38,6 +41,21 @@ class _FakeRedis:
 def test_worker_metrics_ttl_seconds_has_floor() -> None:
     assert worker_metrics_ttl_seconds(5) == 60
     assert worker_metrics_ttl_seconds(20) == 80
+
+
+def test_configured_worker_health_interval_seconds_uses_env_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("JR_WORKER_HEALTHCHECK_INTERVAL_SECONDS", "22")
+
+    assert configured_worker_health_interval_seconds() == 22
+
+
+def test_worker_role_for_queue_maps_known_lanes() -> None:
+    assert worker_role_for_queue("arq:queue:scraping") == "scraping"
+    assert worker_role_for_queue("arq:queue:analysis") == "analysis"
+    assert worker_role_for_queue("arq:queue:ops") == "ops"
+    assert worker_role_for_queue("arq:queue:unknown") is None
 
 
 @pytest.mark.asyncio
@@ -96,6 +114,27 @@ async def test_sync_worker_queue_metrics_writes_snapshot_and_preserves_counters(
         "queue_job_failed_total": 3,
     }
     assert redis.expirations == [(key, 120)]
+
+
+@pytest.mark.asyncio
+async def test_sync_worker_queue_metrics_for_queue_uses_role_mapping() -> None:
+    from app.runtime.queue import QueueSnapshot
+
+    redis = _FakeRedis()
+
+    await sync_worker_queue_metrics_for_queue(
+        redis,
+        snapshot=QueueSnapshot(
+            queue_name="arq:queue:ops",
+            queue_depth=2,
+            queue_pressure="nominal",
+            oldest_job_age_seconds=10,
+            queue_alert="clear",
+        ),
+        health_interval_seconds=15,
+    )
+
+    assert redis.hashes[worker_metrics_key("ops")]["queue_depth"] == 2
 
 
 @pytest.mark.asyncio

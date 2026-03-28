@@ -62,9 +62,12 @@ const ROUTE_FAMILY_MATRIX = [
   },
   {
     path: "/email",
-    locator: (page: Page) => page.getByText("Signal log", { exact: true }),
+    locator: (page: Page) =>
+      page.getByRole("heading", { name: "Email Signals", exact: true }),
     assertion: async (page: Page) => {
-      await expect(page.getByText("Signal log", { exact: true })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Email Signals", exact: true })
+      ).toBeVisible();
       await expect(page.getByRole("button", { name: /^process signal$/i })).toBeVisible();
     },
   },

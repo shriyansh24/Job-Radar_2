@@ -26,9 +26,9 @@
 - `docs/repo-hardening/` is the active normalization and traceability trail.
 - `feat/p1-core-value` remains a selective recovery source rather than a merge target.
 
-## What Is Not Finished
-- Repo-wide backend mypy is still narrower than a full-program strict pass.
-- Browser/e2e coverage is representative rather than exhaustive; destructive provider-backed flows and seeded-data-heavy workflows still rely on targeted or manual validation.
+## External Or Optional Follow-Through
+- Repo-wide backend mypy remains a targeted CI gate rather than a full-program strict-type contract.
+- Browser/e2e coverage is committed and representative; destructive provider-backed flows and seeded-data-heavy workflows still rely on targeted or manual validation.
 - Queue-backed runtime is live with queue pressure, alert state, oldest-job age, and request/job correlation on queue-triggered operator paths. Long-window alert routing and dashboards still depend on deployment infrastructure outside the repo.
 - Migration replay, targeted rollback coverage, and the migration-ops runbook are live; full production restore strategy remains an operator concern outside the codebase.
 
@@ -47,7 +47,7 @@
 
 ## Current Hardening Posture
 - Runtime/doc truth is materially reconciled around the compose-first baseline.
-- Current docs now distinguish the live queue-backed runtime from the remaining migration/coverage hardening work instead of treating ARQ as a future-only target.
+- Current docs now distinguish the live queue-backed runtime from deployment-only follow-through instead of treating ARQ as a future-only target.
 - GitHub protections now include `Repository Validation`, `Docs Validation`, `Migration Safety`, `Dependency Review`, `CodeQL`, and `Frontend E2E Smoke / frontend-e2e-smoke`.
 - Remaining branch-era `feat/p1-core-value` variants are now treated as explicit adopt-or-archive decisions rather than open-ended live-scope ambiguity.
 

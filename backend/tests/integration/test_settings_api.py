@@ -16,7 +16,7 @@ async def _register_and_login(client: AsyncClient) -> str:
         "/api/v1/auth/login",
         json={"email": email, "password": "testpassword123"},
     )
-    return response.json()["access_token"]
+    return response.cookies["jr_access_token"]
 
 
 def _auth(token: str) -> dict[str, str]:

@@ -129,26 +129,24 @@ backend/tests/
   - `backend/tests/migrations/test_job_ats_identity_migration.py`
   - `backend/tests/migrations/test_scrape_target_identity_migrations.py`
 
-## Optional Further Refinement
+## Optional Future Strengthening
 
 ### Frontend
-- `frontend/src/tests/pages/*.page.test.tsx` still communicate route ownership better than behavior; some should later be narrowed into more behavior-specific suites when the page APIs stabilize.
-- UI primitive coverage is now split across `frontend/src/tests/components/ui/Card.test.tsx`, `frontend/src/tests/components/ui/Dropdown.test.tsx`, and `frontend/src/tests/components/ui/StatCard.test.tsx`; buttons, inputs, tables, and toggles still need first-class suites.
-- Several page suites still define inline `renderWithProviders` helpers and should converge on `support/renderWithProviders.tsx`.
-- `frontend/e2e/flows/` now protects shell/auth, recovered interview/search, route-family outcomes, prepare/intelligence/outcomes, operations/admin/data, profile/settings/auth, resume preview/export, and the current analytics-pattern route family, but it still needs deeper task-level workflows and failure-state coverage.
-- `frontend/e2e/theme-matrix/` now covers route-family 8-mode assertions across home, communications, setup, prepare, intelligence, operations, search, and settings surfaces. Keep deeper task-level failure-state coverage in `flows/`, not in theme-matrix assertions.
+- `frontend/src/tests/pages/*.page.test.tsx` currently communicate route ownership more strongly than behavior ownership. Split further only if a route family gains a stable internal contract that warrants narrower suites.
+- UI primitive coverage is already split across focused `components/ui/` suites. Add more primitive-specific suites only if those controls develop standalone logic that route-level coverage no longer exercises well.
+- Several page and component suites still wrap shared providers with local helpers such as `renderAdmin`, `renderVault`, and `renderGuard`; keep converging those toward `support/renderWithProviders.tsx` when the wrapper logic is no longer route-specific.
+- `frontend/e2e/flows/` already protects the committed route families. Any deeper task-level or failure-state flows should be added only when a product surface becomes operationally critical enough to justify the extra browser cost.
+- `frontend/e2e/theme-matrix/` already covers route-family 8-mode assertions across the routed app. Keep deeper task-level assertions in `flows/`, not in theme-matrix checks.
 
 ### Backend
-- `backend/tests/edge_cases/` is now split by route family. Further splits should happen only when a subsystem gains a clear ownership boundary rather than out of style pressure.
-- Non-scraping workers from deferred or retained branches still have no dedicated `backend/tests/workers/` coverage.
+- `backend/tests/edge_cases/` is now split by route family. Further splits should happen only when a subsystem gains a clearer ownership boundary rather than out of style pressure.
+- Non-scraping workers now have dedicated `backend/tests/workers/` coverage, including direct suites for `alert_worker` and `phase7a_worker`. Expand lane-isolation or retry-path coverage only when the queue topology or job semantics change materially.
 
-## Coverage Gaps That Need First-Class Homes
-- Browser e2e route depth across cross-route state transitions, richer task flows, and failure states beyond the current committed route-family coverage
-- Migration replay and rollback safety beyond the current targeted replay suite
-- Worker lifecycle and queue-owned execution behavior beyond the current enqueue/runtime coverage and role-lane probes
-- Auto-apply orchestration, service wiring, and browser/integration coverage beyond the current unit plus worker-level extractor/adapter/safety tests
-- Scraper failure handling and conditional request behavior
-- Provider-backed ATS flows, destructive admin actions, and seeded-data-heavy PDF/layout checks still rely on targeted/manual validation outside the committed Playwright tree
+## Optional Deep-Dive Coverage
+- Browser e2e depth beyond the current committed route-family coverage
+- Migration replay and rollback expansion beyond the targeted replay suite
+- Additional queue/worker lane probes beyond the current enqueue/runtime coverage
+- Provider-backed ATS flows, destructive admin actions, and seeded-data-heavy PDF/layout checks that stay outside the committed Playwright tree
 
 ## Safe Execution Order
 1. Keep the new support directories stable and update runners/docs in the same batch as moves.
