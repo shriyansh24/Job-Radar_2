@@ -79,7 +79,7 @@
 - Route-family browser coverage now includes `frontend/e2e/smoke/auth-shell.spec.ts`, `frontend/e2e/flows/route-shell-navigation.spec.ts`, `frontend/e2e/flows/route-family-outcomes.spec.ts`, `frontend/e2e/flows/communications-setup.spec.ts`, `frontend/e2e/flows/prepare-intelligence-outcomes.spec.ts`, `frontend/e2e/flows/operations-admin-data.spec.ts`, `frontend/e2e/flows/profile-settings-auth.spec.ts`, `frontend/e2e/flows/interview-search-recovered.spec.ts`, `frontend/e2e/flows/resume-template-preview.spec.ts`, `frontend/e2e/flows/shell-responsive.spec.ts`, `frontend/e2e/theme-matrix/theme-persistence.spec.ts`, and `frontend/e2e/theme-matrix/route-theme-matrix.spec.ts`.
 - `frontend-e2e.yml` emits one required check:
   - `Frontend E2E Smoke / frontend-e2e-smoke`
-- `frontend-e2e.yml` also runs weekly as a drift-detection lane in addition to PR, `main` push, and manual runs.
+- `frontend-e2e.yml` also runs weekly as a drift-detection lane in addition to PR, `main` push, `codex/*` push, and manual runs.
 - `docs-validation.yml` runs repo-local path/reference validation for live docs and workflow-linked files.
 - `migration-safety.yml` replays Alembic on clean Postgres and runs the full `backend/tests/migrations/` lane.
 - `migration-safety.yml` now runs the full `backend/tests/migrations/` lane and uploads `alembic history --verbose` output on failure for replay debugging.
