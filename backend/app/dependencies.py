@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.service import decode_token_payload, get_token_version
 from app.config import Settings, settings
 from app.database import async_session_factory
-from app.shared.errors import AuthError
+from app.shared.errors import AuthError, ForbiddenError
 
 if TYPE_CHECKING:
     from app.auth.models import User
@@ -57,3 +57,15 @@ async def get_current_user(
         raise AuthError("Token revoked")
     request.state.auth_user_id = str(user.id)
     return user
+
+
+async def get_current_operator_user(
+    current_user: "User" = Depends(get_current_user),
+) -> "User":
+    operator_emails = {
+        email.strip().lower() for email in settings.operator_emails if email.strip()
+    }
+    if current_user.email.lower() in operator_emails:
+        return current_user
+
+    raise ForbiddenError("Operator access required")

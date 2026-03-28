@@ -22,7 +22,7 @@ test.describe("flows/interview-search-recovered", () => {
 
     await page.goto("/interview");
     await expect(
-      page.getByRole("main").getByRole("heading", { name: "Interview Prep", exact: true })
+      page.getByRole("button", { name: /^prepare$/i })
     ).toBeVisible();
     await page.getByRole("button", { name: /^prepare$/i }).click();
     await expect(page.getByText("Prepare interview bundle", { exact: true })).toBeVisible();

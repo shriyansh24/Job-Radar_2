@@ -22,9 +22,8 @@ class UserResponse(BaseModel):
     created_at: datetime
 
 
-class TokenResponse(BaseModel):
-    access_token: str
-    refresh_token: str
+class AuthSessionResponse(BaseModel):
+    authenticated: bool = True
     token_type: str = "bearer"
 
 

@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import uuid
+from types import SimpleNamespace
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.dependencies import get_current_operator_user
 from app.jobs.models import Job
 from app.pipeline.models import Application
 
@@ -22,7 +24,7 @@ async def _register_and_login(client: AsyncClient) -> tuple[str, str]:
         "/api/v1/auth/login",
         json={"email": email, "password": "testpassword123"},
     )
-    token = login_resp.json()["access_token"]
+    token = login_resp.cookies["jr_access_token"]
     me_resp = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
     return token, me_resp.json()["id"]
 
@@ -46,6 +48,44 @@ async def test_admin_diagnostics_and_reindex_require_auth(client: AsyncClient) -
 
     assert diagnostics.status_code == 401
     assert reindex.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_admin_diagnostics_require_operator_access(client: AsyncClient) -> None:
+    token, _ = await _register_and_login(client)
+
+    diagnostics = await client.get("/api/v1/admin/diagnostics", headers=_auth(token))
+
+    assert diagnostics.status_code == 403
+    assert diagnostics.json() == {"detail": "Operator access required"}
+
+
+@pytest.mark.asyncio
+async def test_admin_operator_can_view_diagnostics(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    from app.main import app
+
+    token, user_id = await _register_and_login(client)
+    db_session.add(
+        Job(
+            id="admin-diagnostics-job",
+            user_id=uuid.UUID(user_id),
+            source="manual",
+            title="Ops",
+        )
+    )
+    await db_session.commit()
+    app.dependency_overrides[get_current_operator_user] = lambda: SimpleNamespace(id=user_id)
+
+    try:
+        diagnostics = await client.get("/api/v1/admin/diagnostics", headers=_auth(token))
+    finally:
+        app.dependency_overrides.pop(get_current_operator_user, None)
+
+    assert diagnostics.status_code == 200
+    assert diagnostics.json()["job_count"] >= 1
 
 
 @pytest.mark.asyncio
@@ -73,12 +113,9 @@ async def test_admin_export_and_reindex_only_include_current_user(
     )
     await db_session.commit()
 
-    diagnostics = await client.get("/api/v1/admin/diagnostics", headers=_auth(token))
     reindex = await client.post("/api/v1/admin/reindex", headers=_auth(token))
     export_response = await client.post("/api/v1/admin/export", headers=_auth(token))
 
-    assert diagnostics.status_code == 200
-    assert diagnostics.json()["job_count"] >= 1
     assert reindex.status_code == 200
     assert reindex.json()["jobs_reindexed"] == 1
     payload = json.loads(export_response.text)

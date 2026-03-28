@@ -117,6 +117,8 @@ describe("AutoApply page", () => {
 
     await user.click(screen.getAllByRole("button", { name: /^run now$/i })[0]);
     expect(autoApplyMocks.run).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("Recent attempts and field coverage.")).toBeInTheDocument();
+    expect(screen.getByText("Success signal")).toBeInTheDocument();
 
     await user.click(screen.getAllByRole("button", { name: /^pause$/i })[0]);
     expect(autoApplyMocks.pause).toHaveBeenCalledTimes(1);

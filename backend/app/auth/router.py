@@ -9,10 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.admin.service import AdminService
 from app.auth.models import User
 from app.auth.schemas import (
+    AuthSessionResponse,
     ChangePasswordRequest,
     LoginRequest,
     RefreshRequest,
-    TokenResponse,
     UserCreate,
     UserResponse,
 )
@@ -20,6 +20,7 @@ from app.auth.service import (
     authenticate_user,
     change_password,
     clear_auth_cookies,
+    create_session_response,
     create_tokens,
     decode_refresh_token,
     decode_token_payload,
@@ -43,12 +44,12 @@ async def register(data: UserCreate, db: AsyncSession = Depends(get_db)) -> User
     return UserResponse.model_validate(user)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=AuthSessionResponse)
 async def login(
     data: LoginRequest,
     response: Response,
     db: AsyncSession = Depends(get_db),
-) -> TokenResponse:
+) -> AuthSessionResponse:
     user = await authenticate_user(db, data.email, data.password)
     tokens = create_tokens(str(user.id), token_version=get_token_version(user))
     set_auth_cookies(response, tokens)
@@ -58,16 +59,16 @@ async def login(
         token_version=get_token_version(user),
         auth_source="password",
     )
-    return tokens
+    return create_session_response()
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/refresh", response_model=AuthSessionResponse)
 async def refresh(
     response: Response,
     request: Request,
     data: RefreshRequest | None = None,
     db: AsyncSession = Depends(get_db),
-) -> TokenResponse:
+) -> AuthSessionResponse:
     refresh_token = data.refresh_token if data and data.refresh_token else None
     auth_source = "body" if refresh_token else "cookie"
     refresh_user_id: str | None = None
@@ -82,7 +83,15 @@ async def refresh(
         user = result.scalar_one_or_none()
         if user is None or not user.is_active:
             raise AuthError("User not found or inactive")
-        if int(payload.get("ver", 0)) != get_token_version(user):
+        token_version_value = payload.get("ver", 0)
+        if not isinstance(token_version_value, int):
+            if isinstance(token_version_value, str) and token_version_value.isdigit():
+                token_version = int(token_version_value)
+            else:
+                raise AuthError("Token revoked")
+        else:
+            token_version = token_version_value
+        if token_version != get_token_version(user):
             raise AuthError("Token revoked")
     except AuthError as exc:
         log_auth_warning(
@@ -101,7 +110,7 @@ async def refresh(
         token_version=get_token_version(user),
         auth_source=auth_source,
     )
-    return tokens
+    return create_session_response()
 
 
 @router.post("/logout")
@@ -109,7 +118,8 @@ async def logout(
     response: Response,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, str]:
+    result: dict[str, str]
     if hasattr(current_user, "token_version"):
         current_user.token_version = get_token_version(current_user) + 1
         await db.commit()
@@ -120,20 +130,21 @@ async def logout(
         token_version=get_token_version(current_user),
     )
     clear_auth_cookies(response, reason="logout", user=current_user)
-    return {"status": "ok"}
+    result = {"status": "ok"}
+    return result
 
 
-@router.post("/change-password", response_model=TokenResponse)
+@router.post("/change-password", response_model=AuthSessionResponse)
 async def change_password_route(
     data: ChangePasswordRequest,
     response: Response,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> TokenResponse:
+) -> AuthSessionResponse:
     user = await change_password(db, current_user, data.current_password, data.new_password)
     tokens = create_tokens(str(user.id), token_version=get_token_version(user))
     set_auth_cookies(response, tokens)
-    return tokens
+    return create_session_response()
 
 
 @router.delete("/account", status_code=204, response_model=None)

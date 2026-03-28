@@ -50,7 +50,7 @@ test.describe("flows/operations-admin-data", () => {
     await expect(
       page.getByRole("main").getByRole("heading", { name: "Canonical Jobs", exact: true })
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: /show stale/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^show stale only$/i })).toBeVisible();
 
     await page.goto("/search-expansion");
     await expect(
@@ -64,8 +64,22 @@ test.describe("flows/operations-admin-data", () => {
     await expect(
       page.getByRole("main").getByRole("heading", { name: "Auto Apply", exact: true })
     ).toBeVisible();
+    await expect(page.getByText("Operator controls", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /^run now$/i }).first()).toBeVisible();
     await expect(page.getByRole("button", { name: /^pause$/i }).first()).toBeVisible();
-    await expect(page.getByText("Operator controls", { exact: true })).toBeVisible();
+
+    const runResponsePromise = page.waitForResponse((response) => {
+      return response.url().includes("/api/v1/auto-apply/run") && response.request().method() === "POST";
+    });
+    await page.getByRole("button", { name: /^run now$/i }).first().click();
+    await expect((await runResponsePromise).ok()).toBeTruthy();
+    await expect(page.getByText("Recent attempts and field coverage.", { exact: true })).toBeVisible();
+
+    const pauseResponsePromise = page.waitForResponse((response) => {
+      return response.url().includes("/api/v1/auto-apply/pause") && response.request().method() === "POST";
+    });
+    await page.getByRole("button", { name: /^pause$/i }).first().click();
+    await expect((await pauseResponsePromise).ok()).toBeTruthy();
+    await expect(page.getByText("Auto-apply pause sent", { exact: true })).toBeVisible();
   });
 });

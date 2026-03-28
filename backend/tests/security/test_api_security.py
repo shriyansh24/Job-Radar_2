@@ -38,7 +38,10 @@ async def _login(
         json={"email": email, "password": password},
     )
     assert response.status_code == 200
-    return response.json()
+    return {
+        "access_token": response.cookies["jr_access_token"],
+        "refresh_token": response.cookies["jr_refresh_token"],
+    }
 
 
 @pytest.fixture(autouse=True)
@@ -59,6 +62,26 @@ async def test_public_and_private_admin_boundaries(client: AsyncClient) -> None:
     assert diagnostics.headers["X-Content-Type-Options"] == "nosniff"
     assert diagnostics.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
     assert "Content-Security-Policy" in diagnostics.headers
+
+
+@pytest.mark.asyncio
+async def test_authenticated_non_operator_cannot_access_operator_endpoints(
+    client: AsyncClient,
+) -> None:
+    email = await _register_user(client)
+    tokens = await _login(client, email=email)
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+
+    diagnostics = await client.get("/api/v1/admin/diagnostics", headers=headers)
+    source_health = await client.get("/api/v1/source-health", headers=headers)
+    gpu_status = await client.get("/api/v1/enrichment/system/gpu-status", headers=headers)
+
+    assert diagnostics.status_code == 403
+    assert source_health.status_code == 403
+    assert gpu_status.status_code == 403
+    assert diagnostics.json()["detail"] == "Operator access required"
+    assert source_health.json()["detail"] == "Operator access required"
+    assert gpu_status.json()["detail"] == "Operator access required"
 
 
 @pytest.mark.asyncio
@@ -110,6 +133,7 @@ async def test_login_sets_http_only_auth_cookies(client: AsyncClient) -> None:
     )
 
     assert response.status_code == 200
+    assert response.json() == {"authenticated": True, "token_type": "bearer"}
     set_cookie_headers = response.headers.get_list("set-cookie")
     assert len(set_cookie_headers) == 3
     assert any("jr_access_token=" in header for header in set_cookie_headers)

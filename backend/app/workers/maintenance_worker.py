@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 import structlog
+from sqlalchemy.engine import CursorResult
 
 from app.config import Settings
 from app.database import async_session_factory
@@ -10,7 +13,7 @@ from app.database import async_session_factory
 logger = structlog.get_logger()
 
 
-async def run_cleanup(ctx: dict | None = None) -> None:
+async def run_cleanup(ctx: Mapping[str, Any] | None = None) -> None:
     """Remove old jobs, update source health."""
     async with async_session_factory() as db:
         try:
@@ -19,18 +22,22 @@ async def run_cleanup(ctx: dict | None = None) -> None:
             from app.jobs.models import Job
 
             cutoff = datetime.now(UTC) - timedelta(days=90)
-            result = await db.execute(
+            result = cast(
+                CursorResult[Any],
+                await db.execute(
                 update(Job)
                 .where(Job.scraped_at < cutoff, Job.status == "new")
                 .values(is_active=False)
+                ),
             )
             await db.commit()
             logger.info("cleanup_completed", deactivated=result.rowcount)
-        except Exception as e:
-            logger.error("cleanup_failed", error=str(e))
+        except Exception:
+            logger.exception("cleanup_failed")
+            raise
 
 
-async def run_source_health_check(ctx: dict | None = None) -> None:
+async def run_source_health_check(ctx: Mapping[str, Any] | None = None) -> None:
     """Check health of all scraper sources."""
     settings = Settings()
     from app.scraping.scrapers.ashby import AshbyScraper
@@ -46,6 +53,7 @@ async def run_source_health_check(ctx: dict | None = None) -> None:
         "ashby": AshbyScraper(settings),
         "theirstack": TheirStackScraper(settings),
     }
+    failed_sources: list[str] = []
     for name, scraper in scrapers.items():
         try:
             healthy = await scraper.health_check()
@@ -54,11 +62,17 @@ async def run_source_health_check(ctx: dict | None = None) -> None:
                 source=name,
                 healthy=healthy,
             )
-        except Exception as e:
-            logger.error(
+            if not healthy:
+                failed_sources.append(name)
+        except Exception:
+            failed_sources.append(name)
+            logger.exception(
                 "source_health_check_failed",
                 source=name,
-                error=str(e),
             )
         finally:
             await scraper.close()
+    if failed_sources:
+        raise RuntimeError(
+            "Source health checks failed for: " + ", ".join(sorted(failed_sources))
+        )

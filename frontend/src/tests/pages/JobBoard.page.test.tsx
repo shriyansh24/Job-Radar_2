@@ -1,7 +1,6 @@
-import { render, screen } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { renderWithProviders } from "../support/renderWithProviders";
 
 const jobsMocks = vi.hoisted(() => ({
   list: vi.fn(),
@@ -14,17 +13,6 @@ vi.mock("../../api/jobs", () => ({
 }));
 
 import JobBoard from "../../pages/JobBoard";
-
-function renderWithProviders(ui: React.ReactElement) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter>{ui}</MemoryRouter>
-    </QueryClientProvider>
-  );
-}
 
 describe("JobBoard", () => {
   beforeEach(() => {

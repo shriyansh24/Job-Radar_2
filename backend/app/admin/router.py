@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin.service import AdminService
 from app.auth.models import User
-from app.dependencies import get_current_user, get_db
+from app.dependencies import get_current_operator_user, get_current_user, get_db
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -20,7 +20,7 @@ async def health(
 
 @router.get("/diagnostics")
 async def diagnostics(
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_current_operator_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     svc = AdminService(db)

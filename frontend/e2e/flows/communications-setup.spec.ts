@@ -24,6 +24,9 @@ test.describe("flows/communications-setup", () => {
     await expect(page.getByText("No referral requests yet", { exact: true })).toBeVisible();
 
     await page.goto("/email");
+    await expect(
+      page.getByRole("main").getByRole("heading", { name: "Email Signals", exact: true })
+    ).toBeVisible();
     await expect(page.getByText("Signal log", { exact: true })).toBeVisible();
     await expect(page.getByText("Choose a log entry", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /^process signal$/i })).toBeVisible();

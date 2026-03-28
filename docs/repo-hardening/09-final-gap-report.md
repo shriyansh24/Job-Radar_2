@@ -4,8 +4,8 @@
 Record the major unresolved risks and deferred work that remain after the current hardening batches so the repo does not over-claim cleanliness.
 
 ## Source-Of-Truth Status
-- Status: `WORKING_GAP_REPORT`
-- Scope: unresolved repo-hardening, runtime, security, testing, and selective feature-recovery gaps
+- Status: `REPO_SCOPE_CLOSED`
+- Scope: external or deployment-level follow-through after repo-local hardening closure
 - Last validation basis: evidence ledger, runtime truth matrix, traceability matrix, and local validation on `2026-03-27`
 
 ## Repo-Internal Closure State
@@ -54,5 +54,5 @@ Record the major unresolved risks and deferred work that remain after the curren
 
 ## External Or Deployment Follow-Through
 - GitHub branch-protection enforcement for the documented required checks is configured outside the repo and is not proven by files alone.
-- A dedicated auth audit sink, alert routing, and long-window queue monitoring depend on deployment and log-routing decisions in addition to the repo-local logging that now exists.
+- Dedicated auth audit routing, alert routing, and long-window queue monitoring depend on deployment and log-routing decisions in addition to the repo-local logging that now exists.
 - Deployment-level queue alerting and dashboarding remain external even though the repo now emits healthier runtime signals and CI validates the queue-backed topology.

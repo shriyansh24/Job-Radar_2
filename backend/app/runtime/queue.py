@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 import time
 from dataclasses import dataclass
@@ -18,6 +19,10 @@ from app.runtime.job_registry import (
     SCRAPING_QUEUE,
     get_queue_names,
     get_registered_job,
+)
+from app.runtime.worker_metrics import (
+    configured_worker_health_interval_seconds,
+    sync_worker_queue_metrics_for_queue,
 )
 
 logger = structlog.get_logger()
@@ -39,6 +44,9 @@ QUEUE_ALERT_AGE_THRESHOLDS_SECONDS: dict[str, tuple[int, int]] = {
     ANALYSIS_QUEUE: (180, 900),
     OPS_QUEUE: (120, 600),
 }
+JOB_METADATA_KEY_PREFIX = "jobradar:queue-job-metadata"
+JOB_METADATA_TTL_SECONDS = 3600
+QUEUE_CORRELATION_METADATA_FIELD = "_queue_correlation_id"
 
 
 @dataclass(frozen=True)
@@ -246,35 +254,84 @@ def sanitize_correlation_id(correlation_id: str | None) -> str | None:
     return normalized[:96]
 
 
+def build_job_metadata_key(job_id: str) -> str:
+    return f"{JOB_METADATA_KEY_PREFIX}:{job_id}"
+
+
+def _build_job_metadata_payload(
+    *,
+    correlation_id: str | None,
+    job_kwargs: dict[str, object],
+) -> dict[str, object]:
+    payload = dict(job_kwargs)
+    if correlation_id is not None:
+        payload[QUEUE_CORRELATION_METADATA_FIELD] = correlation_id
+    return payload
+
+
 async def enqueue_registered_job(
     job_name: str,
     correlation_id: str | None = None,
+    **job_kwargs: object,
 ) -> QueueDispatchResult:
     job = get_registered_job(job_name)
     queue_pool = await get_queue_pool()
     before_snapshot = await capture_queue_snapshot(job.queue_name, queue_pool)
     normalized_correlation_id = sanitize_correlation_id(correlation_id)
-    requested_job_id = (
-        normalized_correlation_id
-        if normalized_correlation_id is not None
-        else f"{job.name}-{uuid4().hex}"
-    )
+    requested_job_id = f"{job.name}-{uuid4().hex}"
     job_ref = await queue_pool.enqueue_job(
         job.name,
         _job_id=requested_job_id,
         _queue_name=job.queue_name,
     )
-    enqueued_job_id = getattr(job_ref, "job_id", requested_job_id)
-    if not isinstance(enqueued_job_id, str):
-        enqueued_job_id = requested_job_id
+    if job_ref is None:
+        logger.warning(
+            "scheduler_job_enqueue_failed",
+            job_name=job.name,
+            queue_name=job.queue_name,
+            queue_job_id=requested_job_id,
+            queue_correlation_id=normalized_correlation_id,
+            failure_reason="missing_job_reference",
+        )
+        raise RuntimeError(
+            f"Queue enqueue for job '{job.name}' returned no job reference; treating as failure."
+        )
+    enqueued_job_id = getattr(job_ref, "job_id", None)
+    if not isinstance(enqueued_job_id, str) or not enqueued_job_id.strip():
+        logger.warning(
+            "scheduler_job_enqueue_failed",
+            job_name=job.name,
+            queue_name=job.queue_name,
+            queue_job_id=requested_job_id,
+            queue_correlation_id=normalized_correlation_id,
+            failure_reason="invalid_job_id",
+        )
+        raise RuntimeError(
+            f"Queue enqueue for job '{job.name}' returned an invalid job id; treating as failure."
+        )
+    metadata_payload = _build_job_metadata_payload(
+        correlation_id=normalized_correlation_id,
+        job_kwargs=job_kwargs,
+    )
+    if metadata_payload:
+        await cast(Any, queue_pool).set(
+            build_job_metadata_key(enqueued_job_id),
+            json.dumps(metadata_payload, separators=(",", ":"), sort_keys=True),
+            ex=JOB_METADATA_TTL_SECONDS,
+        )
     after_snapshot = await capture_queue_snapshot(job.queue_name, queue_pool)
+    await sync_worker_queue_metrics_for_queue(
+        queue_pool,
+        snapshot=after_snapshot,
+        health_interval_seconds=configured_worker_health_interval_seconds(),
+    )
     logger.info(
         "scheduler_job_enqueued",
         job_name=job.name,
         queue_name=job.queue_name,
         enqueued_job_id=enqueued_job_id,
         queue_job_id=enqueued_job_id,
-        queue_correlation_id=normalized_correlation_id or enqueued_job_id,
+        queue_correlation_id=normalized_correlation_id,
         queue_depth_before=before_snapshot.queue_depth,
         queue_depth_after=after_snapshot.queue_depth,
         queue_pressure_before=before_snapshot.queue_pressure,
@@ -295,7 +352,7 @@ async def enqueue_registered_job(
         queue_pressure_before=before_snapshot.queue_pressure,
         queue_pressure_after=after_snapshot.queue_pressure,
         queue_job_id=enqueued_job_id,
-        queue_correlation_id=normalized_correlation_id or enqueued_job_id,
+        queue_correlation_id=normalized_correlation_id,
         oldest_job_age_seconds_before=before_snapshot.oldest_job_age_seconds,
         oldest_job_age_seconds_after=after_snapshot.oldest_job_age_seconds,
         queue_alert_before=before_snapshot.queue_alert,

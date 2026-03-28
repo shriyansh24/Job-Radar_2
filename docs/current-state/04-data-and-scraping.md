@@ -30,4 +30,4 @@
 
 ## Current Assessment
 - No known blocking scraper or database bugs remain after the latest verified pass.
-- The remaining runtime gaps are queue alerting / sustained-pressure visibility, request-to-job correlation, and broader worker coverage, not scraper topology ownership.
+- Queue-backed scraping/runtime ownership is implemented locally. The remaining follow-through is deployment-level alert routing and dashboards rather than missing repo-local scraper/runtime behavior.

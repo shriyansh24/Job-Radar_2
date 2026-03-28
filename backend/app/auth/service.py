@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import cast
 
@@ -14,13 +15,19 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
-from app.auth.schemas import TokenResponse, UserCreate
+from app.auth.schemas import AuthSessionResponse, UserCreate
 from app.config import settings
 from app.shared.errors import AuthError, ValidationError
 
 type TokenPayload = dict[str, object]
 
 logger = structlog.get_logger()
+
+
+@dataclass(frozen=True)
+class AuthTokens:
+    access_token: str
+    refresh_token: str
 
 _AUTH_REASON_ALIASES = {
     "Invalid email or password": "invalid_credentials",
@@ -129,11 +136,15 @@ def create_refresh_token(user_id: str, token_version: int = 0) -> str:
     )
 
 
-def create_tokens(user_id: str, token_version: int = 0) -> TokenResponse:
-    return TokenResponse(
+def create_tokens(user_id: str, token_version: int = 0) -> AuthTokens:
+    return AuthTokens(
         access_token=create_access_token(user_id, token_version=token_version),
         refresh_token=create_refresh_token(user_id, token_version=token_version),
     )
+
+
+def create_session_response() -> AuthSessionResponse:
+    return AuthSessionResponse()
 
 
 def create_csrf_token() -> str:
@@ -164,7 +175,7 @@ def decode_refresh_token(token: str) -> str:
     return user_id
 
 
-def set_auth_cookies(response: Response, tokens: TokenResponse) -> None:
+def set_auth_cookies(response: Response, tokens: AuthTokens) -> None:
     csrf_token = create_csrf_token()
     response.set_cookie(
         key=settings.access_cookie_name,

@@ -36,7 +36,7 @@ SCRAPING_QUEUE = "arq:queue:scraping"
 ANALYSIS_QUEUE = "arq:queue:analysis"
 OPS_QUEUE = "arq:queue:ops"
 QueueName = str
-WorkerJob = Callable[[dict[str, Any]], Awaitable[None]]
+WorkerJob = Callable[..., Awaitable[None]]
 
 
 @dataclass(frozen=True)
@@ -193,12 +193,15 @@ async def _run_target_batch_watchlist(ctx: dict[str, Any]) -> None:
     )
 
 
-async def _run_enrichment_batch(ctx: dict[str, Any]) -> None:
+async def _run_enrichment_batch(
+    ctx: dict[str, Any],
+    user_id: str | None = None,
+) -> None:
     await _run_with_lifecycle(
         job_name="enrichment_batch",
         queue_name=ANALYSIS_QUEUE,
         ctx=ctx,
-        callback=lambda: run_enrichment_batch(ctx=ctx),
+        callback=lambda: run_enrichment_batch(ctx=ctx, user_id=user_id),
     )
 
 

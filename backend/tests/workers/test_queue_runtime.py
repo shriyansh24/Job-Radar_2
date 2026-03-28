@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 from arq.connections import RedisSettings, create_pool
@@ -201,6 +202,7 @@ async def test_enqueue_registered_job_uses_registered_queue(
             *,
             _job_id: str | None = None,
             _queue_name: str | None = None,
+            **_: object,
         ) -> SimpleNamespace:
             seen.append((job_name, _queue_name, _job_id))
             return SimpleNamespace(job_id=_job_id)
@@ -212,6 +214,16 @@ async def test_enqueue_registered_job_uses_registered_queue(
     monkeypatch.setattr(queue_runtime, "_queue_pool", _FakePool())
     monkeypatch.setattr(queue_runtime, "logger", _FakeLogger())
     monkeypatch.setattr(queue_runtime, "_current_unix_ms", lambda: 300_000)
+    monkeypatch.setattr(
+        queue_runtime,
+        "sync_worker_queue_metrics_for_queue",
+        _sync_worker_queue_metrics_for_queue := AsyncMock(),
+    )
+    monkeypatch.setattr(
+        queue_runtime,
+        "configured_worker_health_interval_seconds",
+        lambda: 27,
+    )
 
     result = await queue_runtime.enqueue_registered_job("scheduled_scrape")
 
@@ -225,12 +237,17 @@ async def test_enqueue_registered_job_uses_registered_queue(
     assert result.queue_pressure_before == "nominal"
     assert result.queue_pressure_after == "nominal"
     assert result.queue_job_id == result.enqueued_job_id
-    assert result.queue_correlation_id == result.enqueued_job_id
+    assert result.queue_correlation_id is None
     assert result.oldest_job_age_seconds_before == 2
     assert result.oldest_job_age_seconds_after == 4
     assert result.queue_alert_before == "clear"
     assert result.queue_alert_after == "clear"
     assert seen == [("scheduled_scrape", SCRAPING_QUEUE, result.enqueued_job_id)]
+    _sync_worker_queue_metrics_for_queue.assert_awaited_once()
+    assert _sync_worker_queue_metrics_for_queue.await_args.kwargs["health_interval_seconds"] == 27
+    synced_snapshot = _sync_worker_queue_metrics_for_queue.await_args.kwargs["snapshot"]
+    assert synced_snapshot.queue_name == SCRAPING_QUEUE
+    assert synced_snapshot.queue_depth == 4
     assert info_calls == [
         (
             "scheduler_job_enqueued",
@@ -239,7 +256,7 @@ async def test_enqueue_registered_job_uses_registered_queue(
                 "queue_name": SCRAPING_QUEUE,
                 "enqueued_job_id": result.enqueued_job_id,
                 "queue_job_id": result.enqueued_job_id,
-                "queue_correlation_id": result.enqueued_job_id,
+                "queue_correlation_id": None,
                 "queue_depth_before": 3,
                 "queue_depth_after": 4,
                 "queue_pressure_before": "nominal",
@@ -259,7 +276,8 @@ async def test_enqueue_registered_job_uses_registered_queue(
 async def test_enqueue_registered_job_uses_provided_correlation_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    seen: list[tuple[str, str | None, str | None]] = []
+    seen: list[tuple[str, str | None, str | None, dict[str, object]]] = []
+    stored_metadata: list[tuple[str, str, int | None]] = []
 
     class _FakePool:
         async def zcard(self, _queue_name: str) -> int:
@@ -282,21 +300,96 @@ async def test_enqueue_registered_job_uses_provided_correlation_id(
             *,
             _job_id: str | None = None,
             _queue_name: str | None = None,
+            **kwargs: object,
         ) -> SimpleNamespace:
-            seen.append((job_name, _queue_name, _job_id))
+            seen.append((job_name, _queue_name, _job_id, kwargs))
             return SimpleNamespace(job_id=_job_id)
 
+        async def set(self, key: str, value: str, *, ex: int | None = None) -> bool:
+            stored_metadata.append((key, value, ex))
+            return True
+
     monkeypatch.setattr(queue_runtime, "_queue_pool", _FakePool())
+    monkeypatch.setattr(
+        queue_runtime,
+        "sync_worker_queue_metrics_for_queue",
+        AsyncMock(),
+    )
 
     result = await queue_runtime.enqueue_registered_job(
         "enrichment_batch",
         correlation_id="request-123",
+        user_id="user-123",
     )
 
-    assert result.enqueued_job_id == "request-123"
-    assert result.queue_job_id == "request-123"
+    assert result.enqueued_job_id is not None
+    assert result.enqueued_job_id.startswith("enrichment_batch-")
+    assert result.queue_job_id == result.enqueued_job_id
     assert result.queue_correlation_id == "request-123"
-    assert seen == [("enrichment_batch", ANALYSIS_QUEUE, "request-123")]
+    assert seen == [("enrichment_batch", ANALYSIS_QUEUE, result.enqueued_job_id, {})]
+    assert stored_metadata == [
+        (
+            queue_runtime.build_job_metadata_key(result.enqueued_job_id),
+            '{"_queue_correlation_id":"request-123","user_id":"user-123"}',
+            queue_runtime.JOB_METADATA_TTL_SECONDS,
+        )
+    ]
+
+
+@pytest.mark.asyncio
+async def test_enqueue_registered_job_rejects_missing_job_reference(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakePool:
+        async def zcard(self, _queue_name: str) -> int:
+            return 0
+
+        async def zrange(
+            self,
+            _queue_name: str,
+            _start: int,
+            _stop: int,
+            *,
+            withscores: bool = False,
+        ) -> list[tuple[str, int]]:
+            assert withscores is True
+            return []
+
+        async def enqueue_job(self, *_args: object, **_kwargs: object) -> None:
+            return None
+
+    monkeypatch.setattr(queue_runtime, "_queue_pool", _FakePool())
+
+    with pytest.raises(RuntimeError, match="returned no job reference"):
+        await queue_runtime.enqueue_registered_job("cleanup")
+
+
+@pytest.mark.asyncio
+async def test_enqueue_registered_job_rejects_invalid_job_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakePool:
+        async def zcard(self, _queue_name: str) -> int:
+            return 0
+
+        async def zrange(
+            self,
+            _queue_name: str,
+            _start: int,
+            _stop: int,
+            *,
+            withscores: bool = False,
+        ) -> list[tuple[str, int]]:
+            assert withscores is True
+            return []
+
+        async def enqueue_job(self, *_args: object, **_kwargs: object) -> SimpleNamespace:
+            return SimpleNamespace(job_id="")
+
+    monkeypatch.setattr(queue_runtime, "_queue_pool", _FakePool())
+
+    with pytest.raises(RuntimeError, match="returned an invalid job id"):
+        await queue_runtime.enqueue_registered_job("cleanup")
 
 
 def test_job_queues_cover_expected_runtime_lanes() -> None:

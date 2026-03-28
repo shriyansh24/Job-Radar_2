@@ -1,22 +1,18 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from decimal import Decimal
 from typing import Any, cast
 from urllib.parse import urlparse
 
 import structlog
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Settings
-from app.scraping.deduplication import DeduplicationService, derive_ats_identity
+from app.scraping.deduplication import DeduplicationService
 from app.scraping.port import ScrapedJob, ScraperPort
 from app.scraping.rate_limiter import CircuitBreaker, TokenBucketLimiter
 from app.scraping.scrapers.apify import ApifyScraper
@@ -27,6 +23,13 @@ from app.scraping.scrapers.jobspy import JobSpyScraper
 from app.scraping.scrapers.lever import LeverScraper
 from app.scraping.scrapers.serpapi import SerpAPIScraper
 from app.scraping.scrapers.theirstack import TheirStackScraper
+from app.scraping.service_parts import (
+    complete_run_record,
+    compute_job_id,
+    create_run_record,
+    persist_jobs,
+    scraped_job_to_dict,
+)
 
 logger = structlog.get_logger()
 EventCallback = Callable[[dict[str, object]], Any]
@@ -178,22 +181,7 @@ class ScrapingService:
     async def _create_run_record(
         self, sources: list[str], user_id: uuid.UUID | None
     ) -> uuid.UUID | None:
-        """Create a scraper_runs record. Returns None if model not available."""
-        try:
-            from app.scraping.models import ScraperRun
-
-            run = ScraperRun(
-                user_id=user_id,
-                source=",".join(sources),
-                status="running",
-            )
-            self.db.add(run)
-            await self.db.flush()
-            return run.id
-        except Exception as exc:
-            logger.debug("scraper_run_record_unavailable", error=str(exc))
-            await self.db.rollback()
-            return None
+        return await create_run_record(self.db, sources=sources, user_id=user_id)
 
     async def _complete_run_record(
         self,
@@ -201,106 +189,28 @@ class ScrapingService:
         result: ScraperRunResult,
         elapsed: float,
     ) -> None:
-        if not run_id:
-            return
-        try:
-            from app.scraping.models import ScraperRun
-
-            run = await self.db.get(ScraperRun, run_id)
-            if run:
-                run.status = "completed" if not result.errors else "completed_with_errors"
-                run.jobs_found = result.jobs_found
-                run.jobs_new = result.jobs_new
-                run.jobs_updated = result.jobs_updated
-                run.error_message = "; ".join(result.errors) if result.errors else None
-                run.completed_at = datetime.now(UTC)
-                run.duration_seconds = Decimal(str(round(elapsed, 2)))
-            await self.db.commit()
-        except Exception as exc:
-            logger.warning("scraper_run_record_update_failed", error=str(exc))
-            await self.db.rollback()
+        await complete_run_record(
+            self.db,
+            run_id=run_id,
+            jobs_found=result.jobs_found,
+            jobs_new=result.jobs_new,
+            jobs_updated=result.jobs_updated,
+            errors=result.errors,
+            elapsed=elapsed,
+        )
 
     async def _persist_jobs(
         self, jobs: list[ScrapedJob], user_id: uuid.UUID | None
     ) -> tuple[int, int]:
-        """Save scraped jobs to DB. Returns (new_count, updated_count)."""
-        new_count = 0
-        updated_count = 0
-
-        try:
-            from app.jobs.models import Job
-        except ImportError:
-            logger.warning("job_model_not_available", hint="Phase 3A not complete")
-            return 0, 0
-
-        for scraped in jobs:
-            job_id = self._compute_job_id(scraped)
-            scraped_fields = self._scraped_to_dict(scraped)
-            ats_composite_key = scraped_fields.get("ats_composite_key")
-            existing = None
-            if ats_composite_key:
-                existing = await self.db.scalar(
-                    select(Job).where(Job.ats_composite_key == ats_composite_key)
-                )
-            if existing is None:
-                existing = await self.db.get(Job, job_id)
-
-            if existing:
-                for field_name, value in scraped_fields.items():
-                    if field_name == "scraped_at":
-                        continue
-                    setattr(existing, field_name, value)
-                existing.scraped_at = datetime.now(UTC)
-                updated_count += 1
-            else:
-                job = Job(
-                    id=job_id,
-                    user_id=user_id,
-                    **scraped_fields,
-                )
-                self.db.add(job)
-                new_count += 1
-
-        try:
-            await self.db.commit()
-        except Exception as e:
-            logger.error("persist_jobs_failed", error=str(e))
-            await self.db.rollback()
-
-        return new_count, updated_count
+        return await persist_jobs(self.db, jobs, user_id)
 
     @staticmethod
     def _compute_job_id(job: ScrapedJob) -> str:
-        """SHA-256 of (source + title + company + location) for stable ID."""
-        content = f"{job.source}|{job.title}|{job.company_name}|{job.location}"
-        return hashlib.sha256(content.encode()).hexdigest()[:64]
+        return compute_job_id(job)
 
     @staticmethod
     def _scraped_to_dict(job: ScrapedJob) -> dict[str, Any]:
-        """Convert ScrapedJob to dict for Job ORM model."""
-        ats_identity = derive_ats_identity(job)
-        return {
-            "source": job.source,
-            "source_url": job.source_url,
-            "title": job.title,
-            "company_name": job.company_name,
-            "company_domain": job.company_domain,
-            "company_logo_url": job.company_logo_url,
-            "location": job.location,
-            "remote_type": job.remote_type,
-            "description_raw": job.description_raw,
-            "salary_min": job.salary_min,
-            "salary_max": job.salary_max,
-            "salary_period": job.salary_period,
-            "salary_currency": job.salary_currency,
-            "experience_level": job.experience_level,
-            "job_type": job.job_type,
-            "posted_at": job.posted_at,
-            "ats_job_id": ats_identity["ats_job_id"],
-            "ats_provider": ats_identity["ats_provider"],
-            "ats_composite_key": ats_identity["ats_composite_key"],
-            "scraped_at": datetime.now(UTC),
-        }
+        return scraped_job_to_dict(job)
 
     async def run_target_batch(
         self,

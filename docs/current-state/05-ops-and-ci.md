@@ -62,7 +62,6 @@
   - `uv sync --frozen`
   - `uv run python -m pip check`
   - `uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
-  - `uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
   - `python ../scripts/run_backend_dependency_audit.py --requirements .ci-requirements.txt`
   - `uv tool run bandit -r app/ -c pyproject.toml --severity-level medium`
   - `uv run ruff check .`
@@ -101,4 +100,5 @@
 - Scheduler and worker readiness now come from runtime healthcheck probes against the live queue surfaces rather than ready-marker files; the scheduler heartbeat also lives in Redis so compose and CI can probe the real runtime state.
 - Queue enqueue/dequeue logs now emit queue depth and retry metadata, retryable jobs raise real ARQ `Retry` with scheduled backoff, and non-retryable or final failures log `retry_exhausted` truthfully.
 - Worker isolation is queue-backed and compose-visible; queue telemetry now includes depth, oldest-job age, pressure, alert state, truthful retry exhaustion, worker-lane counters, and request/job correlation on queue-triggered operator paths. Request lifecycle logs also now carry route identity and authenticated user context when available. The remaining follow-through is mostly deployment-level alert routing and dashboards rather than missing repo-local runtime ownership.
+- The latest full local backend validation run on `2026-03-27` completed at `1025 passed, 1 skipped` with backend coverage at `71.24%` and no `app/` module below `50%` coverage.
 - Backend dependency auditing now runs through `scripts/run_backend_dependency_audit.py`, which applies the checked-in reviewed exception policy from `backend/pip-audit-policy.json` instead of burying CVE ignores inline in workflow YAML.
