@@ -18,12 +18,14 @@ logger = structlog.get_logger()
 
 @runtime_checkable
 class ExtractorProtocol(Protocol):
-    async def extract_fields(self, page: Any) -> list[FormField]: ...
+    async def extract_fields(self, page: Any) -> list[FormField]:
+        pass
 
 
 @runtime_checkable
 class FieldClassifierProtocol(Protocol):
-    async def classify(self, field_label: str) -> str | None: ...
+    async def classify(self, field_label: str) -> str | None:
+        pass
 
 
 class GreenhouseBrowserAdapter:
