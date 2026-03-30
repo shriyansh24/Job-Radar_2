@@ -58,6 +58,23 @@ async def _sync_worker_queue_metrics_for_queue(
         health_interval_seconds=health_interval_seconds,
     )
 
+
+def configured_worker_health_interval_seconds() -> int:
+    return _configured_worker_health_interval_seconds()
+
+
+async def sync_worker_queue_metrics_for_queue(
+    redis: ArqRedis | None,
+    *,
+    snapshot: "QueueSnapshot",
+    health_interval_seconds: int,
+) -> None:
+    await _sync_worker_queue_metrics_for_queue(
+        redis,
+        snapshot=snapshot,
+        health_interval_seconds=health_interval_seconds,
+    )
+
 QUEUE_PRESSURE_THRESHOLDS: dict[str, tuple[int, int]] = {
     SCRAPING_QUEUE: (10, 25),
     ANALYSIS_QUEUE: (20, 50),
@@ -345,10 +362,10 @@ async def enqueue_registered_job(
             ex=JOB_METADATA_TTL_SECONDS,
         )
     after_snapshot = await capture_queue_snapshot(job.queue_name, queue_pool)
-    await _sync_worker_queue_metrics_for_queue(
+    await sync_worker_queue_metrics_for_queue(
         queue_pool,
         snapshot=after_snapshot,
-        health_interval_seconds=_configured_worker_health_interval_seconds(),
+        health_interval_seconds=configured_worker_health_interval_seconds(),
     )
     logger.info(
         "scheduler_job_enqueued",

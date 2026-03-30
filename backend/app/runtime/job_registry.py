@@ -47,6 +47,12 @@ class RegisteredJob:
     max_tries: int
 
 
+async def increment_worker_counter(*args: object, **kwargs: object) -> int | None:
+    from app.runtime.worker_metrics import increment_worker_counter as _increment_worker_counter
+
+    return await _increment_worker_counter(*args, **kwargs)
+
+
 def _job_log_fields(ctx: dict[str, Any], *, queue_name: str) -> dict[str, Any]:
     job_try = int(ctx.get("job_try") or 1)
     queue_job_id = ctx.get("job_id")
@@ -76,8 +82,6 @@ async def _run_with_lifecycle(
     ctx: dict[str, Any] | None,
     callback: Callable[[], Awaitable[None]],
 ) -> None:
-    from app.runtime.worker_metrics import increment_worker_counter
-
     context = {"job_name": job_name, **dict(ctx or {})}
     log_fields = _job_log_fields(context, queue_name=queue_name)
     redis = cast(Any, context.get("redis"))

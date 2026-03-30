@@ -92,16 +92,6 @@ async def test_worker_startup_marks_ready_and_pings_dependencies(
 ) -> None:
     seen: list[tuple[str, dict[str, object]]] = []
 
-    class _FakeConnection:
-        async def execute(self, _query: object) -> None:
-            return None
-
-        async def __aenter__(self) -> "_FakeConnection":
-            return self
-
-        async def __aexit__(self, exc_type: object, exc: object, tb: object) -> None:
-            return None
-
     class _FakeRedis:
         def __init__(self) -> None:
             self.ping_called = False
