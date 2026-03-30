@@ -6,6 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
+from app.enrichment.freshness import compute_freshness_score
+
 
 class JobBase(BaseModel):
     title: str
@@ -123,14 +125,6 @@ def _derive_freshness_score(data: Any) -> float | None:
         return None
 
     try:
-        now = (
-            datetime.now(anchor.tzinfo)
-            if getattr(anchor, "tzinfo", None)
-            else datetime.now()
-        )
-        age_days = max(0.0, (now - anchor).total_seconds() / 86400)
+        return compute_freshness_score(anchor)
     except Exception:
         return None
-
-    # 0 days old -> 1.0, 30+ days old -> 0.0, linear decay in between.
-    return round(max(0.0, 1.0 - min(age_days, 30.0) / 30.0), 4)

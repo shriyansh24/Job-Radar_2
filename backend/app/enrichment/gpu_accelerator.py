@@ -20,18 +20,18 @@ _openvino_available = False
 _ipex_available = False
 
 try:
-    from openvino.runtime import Core as OVCore  # type: ignore[import-untyped]
+    from openvino.runtime import Core as OVCore
 
     _openvino_available = True
 except ImportError:
-    OVCore = None  # type: ignore[assignment,misc]
+    OVCore = None
 
 try:
-    import intel_extension_for_pytorch as _unused_ipex  # type: ignore[import-untyped]
+    import intel_extension_for_pytorch as _unused_ipex
 
     _ipex_available = True
 except ImportError:
-    _unused_ipex = None  # type: ignore[assignment]
+    _unused_ipex = None
 
 
 # ---------------------------------------------------------------------------

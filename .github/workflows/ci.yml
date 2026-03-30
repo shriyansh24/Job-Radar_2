@@ -1,10 +1,61 @@
-name: CI
+name: Repository Validation
+
 on: [push, pull_request]
+
 permissions:
   contents: read
+
+concurrency:
+  group: repository-validation-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  backend:
+  backend-quality:
+    name: Backend quality and security checks
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          pip install uv
+          uv sync --frozen
+
+      - name: Check installed dependency consistency
+        working-directory: backend
+        run: uv run python -m pip check
+
+      - name: Export pinned requirements for audit
+        working-directory: backend
+        run: uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt
+
+      - name: Audit backend dependencies
+        working-directory: backend
+        run: python ../scripts/run_backend_dependency_audit.py --requirements .ci-requirements.txt
+
+      - name: Run Bandit
+        working-directory: backend
+        run: uv tool run bandit -r app/ -c pyproject.toml --severity-level medium
+
+      - name: Run Ruff
+        working-directory: backend
+        run: uv run ruff check .
+
+      - name: Run targeted mypy
+        working-directory: backend
+        run: uv run mypy app/auth/service.py app/config.py app/shared/middleware.py app/scraping/deduplication.py app/scraping/port.py --ignore-missing-imports
+
+  backend-tests:
+    name: Backend test suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -14,42 +65,79 @@ jobs:
           POSTGRES_DB: test
         ports: [5432:5432]
         options: --health-cmd "pg_isready -U test" --health-interval 10s
+      redis:
+        image: redis:7-alpine
+        ports: [6379:6379]
+        options: --health-cmd "redis-cli ping" --health-interval 10s
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
-        with: { python-version: '3.12' }
-      - run: pip install uv && uv sync --frozen
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
         working-directory: backend
-      - run: uv run python -m pip check
+        run: |
+          pip install uv
+          uv sync --frozen
+
+      - name: Run backend pytest suite
         working-directory: backend
-      - run: uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt
-        working-directory: backend
-      - run: uv tool run pip-audit -r .ci-requirements.txt
-        working-directory: backend
-      - run: uv tool run bandit -r app/ -c pyproject.toml --severity-level medium
-        working-directory: backend
-      - run: uv run ruff check .
-        working-directory: backend
-      - run: uv run mypy app/auth/service.py app/config.py app/shared/middleware.py app/scraping/deduplication.py app/scraping/port.py --ignore-missing-imports
-        working-directory: backend
-      - run: uv run pytest --cov=app --cov-fail-under=60 tests/
-        working-directory: backend
+        run: uv run pytest --cov=app --cov-fail-under=60 tests/
         env:
           JR_DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
+          JR_REDIS_URL: redis://127.0.0.1:6379/0
+          JR_SECRET_KEY: ci-local-secret
+          JR_CORS_ORIGINS: '["http://localhost:5173"]'
+          JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","test"]'
 
-  frontend:
+  frontend-quality:
+    name: Frontend audit and lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with: { node-version: '22' }
-      - run: npm ci
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install frontend dependencies
         working-directory: frontend
-      - run: npm audit --audit-level high
+        run: npm ci
+
+      - name: Audit frontend dependencies
         working-directory: frontend
-      - run: npm run lint
+        run: npm audit --audit-level high
+
+      - name: Run frontend lint
         working-directory: frontend
-      - run: npm run test -- --run --coverage --coverage.thresholds.statements=40
+        run: npm run lint
+
+  frontend-tests-build:
+    name: Frontend tests and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install frontend dependencies
         working-directory: frontend
-      - run: npm run build
+        run: npm ci
+
+      - name: Run frontend tests with coverage
         working-directory: frontend
+        run: npm run test -- --run --coverage --coverage.thresholds.statements=40
+
+      - name: Build frontend production bundle
+        working-directory: frontend
+        run: npm run build

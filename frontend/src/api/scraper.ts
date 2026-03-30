@@ -1,10 +1,22 @@
 import apiClient from './client';
 
 export interface ScraperRunResult {
-  run_id: string;
+  status?: string;
+  message?: string;
+  results?: Array<{
+    query: string;
+    jobs_found?: number;
+    jobs_new?: number;
+    error?: string;
+  }>;
+}
+
+export interface TriggerBatchResult {
+  run_id: string | null;
+  targets_attempted: number;
+  targets_succeeded: number;
+  targets_failed: number;
   jobs_found: number;
-  jobs_new: number;
-  jobs_updated: number;
   errors: string[];
 }
 
@@ -26,11 +38,9 @@ export interface CareerPage {
   url: string;
   company_name: string | null;
   enabled: boolean;
-  use_spider: boolean;
   consecutive_failures: number;
-  last_scraped_at: string | null;
-  last_error: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export interface ScraperEvent {
@@ -93,6 +103,11 @@ export interface TargetWithAttempts extends ScrapeTarget {
   recent_attempts: ScrapeAttempt[];
 }
 
+interface TargetWithAttemptsApiResponse {
+  target: ScrapeTarget;
+  recent_attempts: ScrapeAttempt[];
+}
+
 export interface ImportResult {
   imported: number;
   skipped: number;
@@ -121,7 +136,7 @@ export const scraperApi = {
     apiClient.get<CareerPage[]>('/scraper/career-pages'),
   createCareerPage: (data: { url: string; company_name?: string }) =>
     apiClient.post<CareerPage>('/scraper/career-pages', data),
-  updateCareerPage: (id: string, data: Partial<Pick<CareerPage, 'url' | 'company_name' | 'enabled' | 'use_spider'>>) =>
+  updateCareerPage: (id: string, data: Partial<Pick<CareerPage, 'url' | 'company_name' | 'enabled'>>) =>
     apiClient.patch<CareerPage>(`/scraper/career-pages/${id}`, data),
   deleteCareerPage: (id: string) =>
     apiClient.delete(`/scraper/career-pages/${id}`),
@@ -130,17 +145,29 @@ export const scraperApi = {
   listTargets: (params?: TargetListParams) =>
     apiClient.get<{ items: ScrapeTarget[]; total: number }>('/scraper/targets', { params }),
   getTarget: (id: string) =>
-    apiClient.get<TargetWithAttempts>(`/scraper/targets/${id}`),
+    apiClient.get<TargetWithAttemptsApiResponse>(`/scraper/targets/${id}`).then((response) => {
+      if (!response.data?.target) {
+        return { ...response, data: null as unknown as TargetWithAttempts };
+      }
+
+      return {
+        ...response,
+        data: {
+          ...response.data.target,
+          recent_attempts: response.data.recent_attempts,
+        },
+      };
+    }),
   importTargets: (targets: Partial<ScrapeTarget>[]) =>
     apiClient.post<ImportResult>('/scraper/targets/import', targets),
   triggerTarget: (id: string) =>
-    apiClient.post<ScraperRunResult>(`/scraper/targets/${id}/trigger`),
+    apiClient.post<ScrapeAttempt>(`/scraper/targets/${id}/trigger`),
   updateTarget: (id: string, data: Partial<ScrapeTarget>) =>
     apiClient.patch<ScrapeTarget>(`/scraper/targets/${id}`, data),
-  releaseTarget: (id: string, opts?: { reason?: string }) =>
+  releaseTarget: (id: string, opts?: { force_tier?: number }) =>
     apiClient.post<ScrapeTarget>(`/scraper/targets/${id}/release`, opts),
-  listAttempts: (params?: { target_id?: string; run_id?: string; limit?: number; offset?: number }) =>
+  listAttempts: (params?: { target_id?: string; run_id?: string; limit?: number }) =>
     apiClient.get<ScrapeAttempt[]>('/scraper/attempts', { params }),
   triggerBatch: (params?: BatchTriggerParams) =>
-    apiClient.post<ScraperRunResult>('/scraper/trigger-batch', params),
+    apiClient.post<TriggerBatchResult>('/scraper/trigger-batch', params),
 };

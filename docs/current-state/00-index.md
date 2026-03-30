@@ -1,6 +1,6 @@
 # Current State Index - JobRadar V2
 
-> Last updated: 2026-03-23
+> Last updated: 2026-03-27
 
 ## Read Order
 1. `00-index.md`
@@ -14,33 +14,36 @@
 9. `../audit/00-index.md`
 
 ## Current Status At A Glance
-- No known blocking reproducible bugs remain after the latest fix pass.
-- Active development branch: `feat/p2-polish-advanced` (P0/P1/P2 features).
-- `main` branch has PRs #15 and #16 merged (security hardening + CodeQL fixes).
-- Backend lint, tests, and dependency-health checks pass locally.
-- Frontend audit, lint, tests, and build pass locally.
-- GitHub Actions workflows are updated to current `actions/*@v6` releases.
-- The audit ledger is closed at `39 FIXED / 5 STALE / 0 OPEN / 0 PARTIAL`.
+- Reference-first UI migration is implemented in this workspace using the external UI repo as the visual authority and the current repo as the behavior authority.
+- Active branch in this workspace: `codex/ui-changes`.
+- Full backend pytest now passes locally with coverage on the current branch.
+- Frontend lint, test, and build pass locally after the latest frontend decomposition and copy cleanup pass.
+- Committed browser coverage now includes auth/shell smoke, shell navigation, responsive shell behavior, route-family outcomes, communications/setup flows, prepare/intelligence/outcomes flows, operations/admin/data flows, profile/settings/auth roundtrips, resume preview/export, and route-family 8-mode theme assertions under `frontend/e2e/`.
+- The current authenticated browser sweep is up to date, and representative screenshots now live in `.claude/ui-captures/`.
+- Local Postgres schema was upgraded from Alembic revision `005` to `head` during QA so the settings/integration surfaces match the current schema.
+- The audit ledger remains `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
 
 ## Latest Validation Snapshot
 
-### Backend (feat/p2-polish-advanced)
-- `cd backend && uv run python -m pip check`
-- `cd backend && uv export --frozen --format requirements-txt --no-emit-project -o .ci-requirements.txt`
-- `cd backend && uv tool run pip-audit -r .ci-requirements.txt`
-- `cd backend && uv tool run bandit -r app/ -c pyproject.toml --severity-level medium`
-- `cd backend && uv run ruff check .`
-- `cd backend && uv run pytest`
-- Latest local result: `716 passed`
+### Backend
+- `cd backend && uv run pytest --cov=app --cov-report=json:coverage.json tests/`
+- `cd backend && uv run alembic current`
+- `cd backend && uv run alembic upgrade head`
+- Latest local result on `2026-03-27`: `1025 passed, 1 skipped` with backend coverage at `71.24%`
 
-### Frontend (feat/p2-polish-advanced)
-- `cd frontend && npm audit --audit-level high`
+### Frontend
 - `cd frontend && npm run lint`
 - `cd frontend && npm run test -- --run`
-- `cd frontend && npm install --no-save @vitest/coverage-v8`
-- `cd frontend && npm run test -- --run --coverage --coverage.thresholds.statements=40`
+- `cd frontend && npm run e2e`
 - `cd frontend && npm run build`
-- Latest local result: `9 passed` in `6` test files
+- Latest local result: lint, full test suite, and production build pass after the current frontend decomposition and copy cleanup pass.
+
+### Browser QA
+- Start the local backend and frontend dev servers.
+- Authenticate through `/login`.
+- Sweep every authenticated route on desktop, tablet, and phone.
+- Capture representative screenshots into `.claude/ui-captures/`.
+- Committed browser/e2e coverage now lives under `frontend/e2e/` and covers auth/shell smoke, shell navigation, responsive shell behavior, route-family outcomes, communications/setup flows, prepare/intelligence/outcomes flows, operations/admin/data flows, profile/settings/auth roundtrips, resume preview/export, and route-family 8-mode theme assertions; the screenshot sweep is still useful as a broader operator QA lane, not the only browser signal.
 
 ## Documentation Map
 
@@ -48,17 +51,19 @@
 |------|---------|
 | `01-repo-map.md` | Repo layout, doc map, and onboarding order |
 | `02-backend.md` | Backend stack, runtime behavior, and recent fixes |
-| `03-frontend.md` | Frontend stack, theme system, and UI/runtime state |
+| `03-frontend.md` | Frontend stack, visual system, contract alignments, and QA state |
 | `04-data-and-scraping.md` | Data model, scraper platform, and scheduler state |
 | `05-ops-and-ci.md` | Local commands, Docker, CI, dependency checks, workflow state |
 | `06-open-items.md` | Deferred work, structural gaps, and non-bug residuals |
-| `07-system-analysis.md` | Exhaustive repository/system analysis (directories, files, flow, branch deltas) |
+| `07-system-analysis.md` | Reference snapshot of the repository/system layout and branch deltas; defer to `01-repo-map.md` and `../repo-hardening/06-test-taxonomy.md` for live filesystem ownership |
 | `../audit/00-index.md` | Verified bug ledger and stale-audit tracking |
 | `../research/00-index.md` | Future design and roadmap material |
 
 ## Notes For Agents
 - Treat this directory plus `docs/audit/` as the current source of truth.
 - Treat `docs/research/` as future-looking reference material.
-- `docs/superpowers/` has been removed (historical, fully completed).
-- `specs/` has been removed (superseded by `docs/design-brief.md` and memory).
+- Treat `docs/repo-hardening/` as the normalization and traceability audit trail while the hardening pass is in progress, not as a replacement for current-state.
 - Use `CLAUDE.md` and `AGENTS.md` for working conventions, not product-state discovery.
+- Treat `05-ops-and-ci.md` as the canonical runtime-status page for the live ARQ queue topology, worker services, and deployment-facing follow-through.
+- The current workspace includes the reference-first frontend migration: shared shell, responsive navigation, light/dark parity, backend-aligned settings/admin/resume/salary/search-expansion surfaces, decomposed page families, and a completed browser-verified cleanup pass over the main routed surfaces.
+- The current routed app now includes live analytics pattern panels plus backend-backed resume template preview and PDF export flows on the main branch, not just branch-only recovery code.

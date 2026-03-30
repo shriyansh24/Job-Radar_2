@@ -1,73 +1,248 @@
-import { List, Moon, SignOut, Sun } from "@phosphor-icons/react";
-import { Outlet } from "react-router-dom";
+import {
+  List,
+  Moon,
+  SignOut,
+  Sun,
+  X,
+} from "@phosphor-icons/react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+
 import { useAuthStore } from "../../store/useAuthStore";
 import { useUIStore } from "../../store/useUIStore";
+import {
+  getWorkspaceRoute,
+  mobilePrimaryRoutes,
+  workspaceSections,
+} from "../../lib/navigation";
+import { cn } from "../../lib/utils";
 import ScraperLog from "../scraper/ScraperLog";
+import { WorkspaceShell } from "../system";
 import NotificationBell from "./NotificationBell";
 import Sidebar from "./Sidebar";
 
+function navLinkActive(targetPath: string, pathname: string) {
+  if (targetPath === "/") return pathname === "/";
+  return pathname === targetPath;
+}
+
 export default function AppShell() {
-  const toggleSidebar = useUIStore((s) => s.toggleSidebar);
-  const theme = useUIStore((s) => s.theme);
-  const toggleTheme = useUIStore((s) => s.toggleTheme);
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const pathname = location.pathname;
+  const currentRoute = getWorkspaceRoute(pathname);
+
+  const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
+  const toggleSidebar = useUIStore((state) => state.toggleSidebar);
+  const mobileNavOpen = useUIStore((state) => state.mobileNavOpen);
+  const setMobileNavOpen = useUIStore((state) => state.setMobileNavOpen);
+  const toggleMobileNav = useUIStore((state) => state.toggleMobileNav);
+  const mode = useUIStore((state) => state.mode);
+  const toggleMode = useUIStore((state) => state.toggleMode);
+
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
+  const showScraperLog = currentRoute?.group === "Operations";
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname, setMobileNavOpen]);
+
+  async function handleLogout() {
+    await logout();
+    navigate("/login", { replace: true });
+  }
+
+  const headerButtonClass =
+    "hard-press inline-flex size-10 items-center justify-center border-2 border-border bg-background text-foreground shadow-none";
 
   return (
-    <div className="flex min-h-[100dvh] bg-bg-primary">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-12 border-b border-border bg-bg-secondary/80 supports-[backdrop-filter]:bg-bg-secondary/60 backdrop-blur-xl flex items-center justify-between px-3">
-          <div className="flex items-center gap-1.5">
+    <WorkspaceShell
+      sidebar={<Sidebar />}
+      sidebarCollapsed={sidebarCollapsed}
+      contentClassName="pb-24 lg:pb-8"
+      header={
+        <div className="flex h-[var(--header-height)] items-center justify-between gap-3 px-3 sm:px-5">
+          <div className="flex min-w-0 items-center gap-3">
             <button
+              type="button"
+              onClick={toggleMobileNav}
+              className={cn(headerButtonClass, "xl:hidden")}
+              aria-label="Open navigation"
+            >
+              {mobileNavOpen ? <X size={18} weight="bold" /> : <List size={18} weight="bold" />}
+            </button>
+
+            <button
+              type="button"
               onClick={toggleSidebar}
-              className="p-1.5 rounded-[var(--radius-md)] hover:bg-bg-hover text-text-muted transition-[background-color,color] duration-[var(--transition-fast)]"
-              aria-label="Toggle sidebar"
+              className={cn(headerButtonClass, "hidden xl:inline-flex")}
+              aria-label="Collapse navigation"
             >
               <List size={18} weight="bold" />
             </button>
+
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="hidden size-10 items-center justify-center border-2 border-border bg-primary text-sm font-black uppercase text-primary-foreground sm:flex">
+                JR
+              </div>
+              <div className="min-w-0 space-y-0.5">
+                <div className="flex min-w-0 items-center gap-2">
+                  <h1 className="truncate font-display text-lg font-black uppercase tracking-[-0.06em] text-foreground sm:text-xl">
+                    JobRadar
+                  </h1>
+                </div>
+                <div className="hidden min-w-0 items-center gap-2 lg:flex">
+                  <span className="truncate text-xs font-bold uppercase tracking-[0.16em] text-text-muted">
+                    {currentRoute?.label ?? "Workspace"}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <NotificationBell />
 
             <button
-              onClick={toggleTheme}
-              className="p-1.5 rounded-[var(--radius-md)] hover:bg-bg-hover text-text-muted transition-[background-color,color] duration-[var(--transition-fast)]"
-              aria-label="Toggle theme"
+              type="button"
+              onClick={toggleMode}
+              className={headerButtonClass}
+              aria-label="Toggle color mode"
             >
-              {theme === "dark" ? (
+              {mode === "dark" ? (
                 <Sun size={16} weight="bold" />
               ) : (
                 <Moon size={16} weight="bold" />
               )}
             </button>
 
-            <div className="hidden sm:flex items-center gap-2 ml-1 pl-2 border-l border-border">
-              <div className="h-6 w-6 rounded-full bg-accent-primary/15 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-accent-primary">
-                  {(user?.display_name || user?.email || "U")[0].toUpperCase()}
-                </span>
+            <div className="hidden items-center gap-3 border-2 border-border bg-card px-3 py-2 sm:flex">
+              <div className="flex size-8 items-center justify-center border-2 border-border bg-[var(--color-bg-tertiary)] font-mono text-xs font-bold uppercase text-foreground">
+                {(user?.display_name || user?.email || "U")[0].toUpperCase()}
               </div>
-              <span className="text-xs text-text-secondary">
-                {user?.display_name || user?.email}
-              </span>
+              <div className="min-w-0">
+                <p className="command-label">Active operator</p>
+                <p className="max-w-40 truncate text-sm font-medium text-foreground">
+                  {user?.display_name || user?.email}
+                </p>
+              </div>
             </div>
 
             <button
-              onClick={logout}
-              className="flex items-center gap-1.5 ml-1 px-2 py-1 rounded-[var(--radius-md)] text-xs text-text-muted hover:bg-bg-hover hover:text-text-primary transition-[background-color,color] duration-[var(--transition-fast)]"
+              type="button"
+              onClick={() => {
+                void handleLogout();
+              }}
+              className="hard-press inline-flex items-center gap-2 border-2 border-border bg-foreground px-3 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-background shadow-none"
             >
               <SignOut size={14} weight="bold" />
               <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
-        </header>
-        <main className="flex-1 overflow-auto p-6">
-          <Outlet />
-        </main>
+        </div>
+      }
+      bottomNav={
+        <nav className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-border bg-background lg:hidden">
+          <div className="grid h-20 grid-cols-5">
+            {mobilePrimaryRoutes.map((route) => {
+              const active = navLinkActive(route.path, pathname);
+              const Icon = route.icon;
+              return (
+                <NavLink
+                  key={route.path}
+                  to={route.path}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 border-r-2 border-border px-2 text-foreground transition-colors last:border-r-0",
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background hover:bg-card"
+                  )}
+                >
+                  <Icon size={18} weight={active ? "fill" : "bold"} />
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
+                    {route.group === "Home" ? "Radar" : route.label}
+                  </span>
+                </NavLink>
+              );
+            })}
+          </div>
+        </nav>
+      }
+    >
+      <AnimatePresence>
+        {mobileNavOpen ? (
+          <>
+            <motion.button
+              type="button"
+              className="fixed inset-0 z-30 bg-black/65 xl:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileNavOpen(false)}
+              aria-label="Close navigation"
+            />
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 260, damping: 28 }}
+              className="fixed left-0 top-[var(--header-height)] z-40 h-[calc(100dvh-var(--header-height))] w-[min(22rem,100vw)] overflow-y-auto border-r-2 border-border bg-background px-4 py-5 xl:hidden"
+            >
+              <div className="space-y-6">
+                <div className="border-2 border-border bg-card p-4">
+                  <p className="command-label">Navigation</p>
+                  <h2 className="mt-2 font-display text-2xl font-black uppercase tracking-[-0.08em]">
+                    JobRadar
+                  </h2>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="border-2 border-border bg-primary px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-primary-foreground">
+                      {currentRoute?.label ?? "Command Center"}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-text-secondary">
+                    {currentRoute?.description ??
+                      "Move across discovery, execution, intelligence, and operations."}
+                  </p>
+                </div>
+
+                {workspaceSections.map((section) => (
+                  <div key={section.label} className="space-y-2">
+                    <div className="label">{section.label}</div>
+                    <div className="space-y-1">
+                      {section.items.map(({ path, icon: Icon, label }) => (
+                        <NavLink
+                          key={path}
+                          to={path}
+                          className={({ isActive }) =>
+                            cn(
+                              "hard-press flex items-center gap-3 border-2 px-3 py-3",
+                              isActive
+                                ? "border-border bg-primary text-primary-foreground shadow-none"
+                                : "border-transparent bg-transparent text-foreground hover:border-border hover:bg-card"
+                            )
+                          }
+                        >
+                          <Icon size={18} weight="bold" />
+                          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em]">
+                            {label}
+                          </span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.aside>
+          </>
+        ) : null}
+      </AnimatePresence>
+
+      <div className="min-h-0">
+        <Outlet />
       </div>
-      <ScraperLog />
-    </div>
+      {showScraperLog ? <ScraperLog /> : null}
+    </WorkspaceShell>
   );
 }

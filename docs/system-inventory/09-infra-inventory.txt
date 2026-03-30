@@ -1,0 +1,129 @@
+# Infrastructure And Runtime Inventory
+
+Historical note: this is an archived infra/runtime inventory snapshot, not the live runtime or CI truth.
+
+Do not use this file as the current source of truth for scheduler/process boundaries, compose services, workflow coverage, or local runtime commands.
+
+Use these docs instead:
+- `docs/current-state/00-index.md`
+- `docs/current-state/05-ops-and-ci.md`
+- `docs/repo-hardening/00-index.md`
+- `docs/repo-hardening/03-runtime-truth-matrix.md`
+
+Root scope: `D:/jobradar-v2/infra`, root operational files, Docker/Compose artifacts, and GitHub workflows.
+
+## Infrastructure Summary
+
+- Primary runtime model: Docker Compose
+- Base services in `docker-compose.yml`: `backend`, `frontend`, `postgres`, `redis`
+- Dev overlay: `docker-compose.dev.yml`
+- CI: GitHub Actions only
+- Deployment manifests: none found
+- Worker deployment: not separate; scheduler/workers run inside backend API process
+
+## Runtime Files And What They Configure
+
+| File Path | Purpose | What It Configures | What Depends On It | Risk Notes |
+|---|---|---|---|---|
+| `D:/jobradar-v2/docker-compose.yml` | Base runtime topology | Backend, frontend, postgres, redis services; ports; volumes; health checks; env | Local container runtime, dev overlay merge | Source of truth for local container topology, but conflicts with README/CLAUDE DB guidance |
+| `D:/jobradar-v2/docker-compose.dev.yml` | Dev overlay | Bind mounts, dev commands, reload, debug env | Local dev compose runs | Merged config keeps base frontend port/healthcheck assumptions that do not fit the dev server |
+| `D:/jobradar-v2/backend/Dockerfile` | Backend image build | Python base, `uv`, dependencies, source copy, startup command | Backend compose service and any containerized run | Runs migrations inline at startup; browser/scraper dependencies may be incomplete |
+| `D:/jobradar-v2/frontend/Dockerfile` | Frontend image build | Dev stage, build stage, Nginx runtime, `/api` proxying | Frontend compose service | Assumes backend network hostname; SSE proxy tuning is not explicit |
+| `D:/jobradar-v2/backend/.dockerignore` | Backend build exclusions | Docker build context contents | Backend image build | Does not explicitly exclude `.db` files |
+| `D:/jobradar-v2/frontend/.dockerignore` | Frontend build exclusions | Docker build context contents | Frontend image build | Standard support file |
+| `D:/jobradar-v2/.env.example` | Env template | `JR_*` backend env and related runtime values | Local env setup, compose overrides | Not fully aligned with README/CLAUDE database guidance |
+| `D:/jobradar-v2/Makefile` | Local command surface | Common build/test/dev commands | Human operators | Secondary source; command behavior still depends on compose and package managers |
+| `D:/jobradar-v2/README.md` | Human setup guide | Local stack startup instructions | Developers/operators | Conflicts with compose on Postgres version, port, and password |
+| `D:/jobradar-v2/CLAUDE.md` | Repo conventions and operational notes | Alternate local DB and command guidance | Developers/operators | Also diverges from compose |
+| `D:/jobradar-v2/.github/workflows/ci.yml` | Main CI pipeline | Backend/frontend lint/test/build/audit jobs | PRs and pushes | No compose smoke test or deploy job |
+| `D:/jobradar-v2/.github/workflows/codeql.yml` | CodeQL scanning | Static analysis | GitHub Actions | Security-only, not runtime validation |
+| `D:/jobradar-v2/.github/workflows/dependency-review.yml` | Dependency policy | Dependency diff review | PR workflow | No runtime impact beyond gating |
+| `D:/jobradar-v2/.github/dependabot.yml` | Dependency updates | Scheduled dependency PR behavior | GitHub repo maintenance | Maintenance-only |
+| `D:/jobradar-v2/infra/redis/tls/.gitkeep` | Redis TLS placeholder | Empty certificate directory placeholder | Redis service only if manually populated | Not an active TLS setup |
+
+## Compose Topology
+
+### Base Compose: `D:/jobradar-v2/docker-compose.yml`
+
+| Service | Image / Build | Ports | Volumes | Health Check | Key Env / Config | Risk Notes |
+|---|---|---|---|---|---|---|
+| `backend` | Build from `D:/jobradar-v2/backend/Dockerfile` | `8000:8000` | none in base file | HTTP health check against backend | `JR_DATABASE_URL=postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar`, `JR_REDIS_URL=redis://:jobradar-redis@redis:6379/0`, `JR_SECRET_KEY=docker-dev-secret`, CORS origins for localhost | Runs API and scheduler together; dev-grade secret in compose |
+| `frontend` | Build from `D:/jobradar-v2/frontend/Dockerfile` | `3000:80` | none in base file | `wget http://127.0.0.1/` | Build arg `VITE_API_URL=/api/v1`; Nginx proxies `/api` to backend | Nginx runtime assumes same Docker network and static build |
+| `postgres` | `pgvector/pgvector:pg16` | `5432:5432` | Named volume `pgdata` | `pg_isready -U jobradar` | Standard DB env vars for `jobradar` DB/user/password | Conflicts with README/CLAUDE PG17/5433 guidance |
+| `redis` | `redis:7-alpine` | `6379:6379` | Optional TLS dir mount and data volume per compose config | Redis ping/CLI style health check | Password auth always on; optional TLS if certs exist | TLS is placeholder-only in repo |
+
+### Dev Overlay: `D:/jobradar-v2/docker-compose.dev.yml`
+
+| Service | Dev Override | Operational Effect | Risk Notes |
+|---|---|---|---|
+| `backend` | Bind mounts repo, command `uv run uvicorn ... --reload`, `JR_DEBUG=true` | Live reload against local source | Good for iteration, but still scheduler-coupled |
+| `frontend` | Uses Dockerfile `dev` target, bind mounts source, exposes `5173:5173`, command `npm run dev -- --host 0.0.0.0` | Vite dev server inside container | Base compose still leaves `3000:80` and Nginx healthcheck assumptions in merged config |
+
+## Environment Variable Usage
+
+| Variable / Surface | Where Defined / Referenced | Role | Notes |
+|---|---|---|---|
+| `JR_DATABASE_URL` | `.env.example`, `docker-compose.yml`, `backend/app/config.py` | Main DB connection string | Current docs disagree on exact runtime value |
+| `JR_REDIS_URL` | `docker-compose.yml`, `backend/app/config.py` | Redis connection string | Redis is provisioned, but many runtime behaviors remain in-memory |
+| `JR_SECRET_KEY` | `.env.example`, compose, backend config validation | JWT/cookie signing | Default/dev examples must not leak into non-debug environments |
+| `JR_CORS_ORIGINS` | compose and backend config | Allowed browser origins | Configured for localhost dev |
+| `VITE_API_URL` | `frontend/Dockerfile`, `frontend/src/lib/constants.ts` | Frontend API base URL | Defaults to `/api/v1` for Nginx runtime |
+| Browser/proxy settings | `frontend/vite.config.ts` | Dev proxy target | Points to `http://localhost:8000`, which is wrong inside the frontend dev container |
+
+## Local Development Boot Flow
+
+### Containerized path
+
+1. `docker-compose.yml` starts backend, frontend, postgres, redis.
+2. `docker-compose.dev.yml` overlays bind mounts and dev commands.
+3. Backend boots, runs `alembic upgrade head`, then starts Uvicorn with reload in dev.
+4. Frontend either serves built assets through Nginx or runs Vite dev server in the dev overlay.
+
+### Manual/local path described in docs
+
+1. `README.md` and `CLAUDE.md` describe a standalone `pgvector` container with different version/port/password assumptions.
+2. Backend local commands use `uv`.
+3. Frontend local commands use `npm`.
+
+### Drift
+
+- Compose says PostgreSQL 16 on `5432`.
+- README/CLAUDE describe PostgreSQL 17 on `5433`.
+- `.env.example` aligns more closely with compose than README/CLAUDE.
+
+## CI / Operational Automation
+
+| File Path | Workflow | What It Runs | What Is Missing | Risk Notes |
+|---|---|---|---|---|
+| `D:/jobradar-v2/.github/workflows/ci.yml` | Main CI | Backend lint/tests/security; frontend audit/lint/tests/build | No compose integration test, no deploy, no runtime smoke of backend+frontend together, no separate worker job | Contracts can drift across layers without CI catching it |
+| `D:/jobradar-v2/.github/workflows/codeql.yml` | Static security analysis | CodeQL | No runtime verification | Useful but not operational validation |
+| `D:/jobradar-v2/.github/workflows/dependency-review.yml` | Dependency review | PR dependency diff checks | No runtime impact checks | Policy-only |
+| `D:/jobradar-v2/.github/dependabot.yml` | Dependency updates | Automated update PRs | No deployment integration | Maintenance-only |
+
+## Runtime Process Topology
+
+| Process | Where It Runs | Notes |
+|---|---|---|
+| FastAPI API | Backend container/process | Also owns scheduler startup |
+| APScheduler jobs | Same backend process | No external scheduler/worker separation |
+| Frontend SPA | Browser or frontend container | Nginx in base container path, Vite in dev overlay |
+| Postgres | Dedicated compose service | Primary persistent store |
+| Redis | Dedicated compose service | Configured runtime dependency, but not broadly used for distributed coordination |
+
+## Deployment Assumptions And Gaps
+
+- The repo is optimized for local Compose-based development, not a clearly defined production deployment target.
+- No orchestration manifests were found for ECS, Kubernetes, Nomad, or Terraform-managed infrastructure.
+- No standalone worker container or scheduler leader-election mechanism exists.
+- Frontend Nginx proxy assumes backend hostname `backend` on the same container network.
+
+## Major Infra Risks
+
+1. `frontend/vite.config.ts` targets `http://localhost:8000`, which breaks when the frontend dev server runs inside its own container.
+2. The dev compose merge still retains the base frontend `3000:80` and Nginx healthcheck assumptions even though the dev service runs Vite on `5173`.
+3. Secrets and origins in compose are development-grade and should not be mistaken for deployment-safe defaults.
+4. README/CLAUDE/compose/env drift makes local boot and migration debugging harder than necessary.
+5. Running scheduler jobs inside the API process makes horizontal scaling unsafe without duplication controls.
+6. Backend container startup couples migration execution to app boot.
+7. Scraping and browser-heavy automation may fail in the slim backend image if OS/browser dependencies are incomplete.
+8. Redis TLS is not actually provisioned by repo contents; only a placeholder directory exists.

@@ -1,124 +1,139 @@
-import { SpinnerGap } from "@phosphor-icons/react";
+import {
+  ArrowRight,
+  SpinnerGap,
+  Sun,
+  Moon,
+} from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import { Surface } from "../components/system/Surface";
 import { useAuthStore } from "../store/useAuthStore";
+import { useUIStore } from "../store/useUIStore";
+
+const FIELD =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-bg-secondary)] !text-[var(--color-text-primary)] placeholder:!text-[var(--color-text-muted)] focus:!border-[var(--color-accent-primary)] focus:!ring-0";
+const PRIMARY_BUTTON =
+  "!rounded-none !border-2 !border-[var(--color-text-primary)] !bg-[var(--color-accent-primary)] !text-white dark:!bg-blue-700 dark:hover:!bg-blue-800 transition-colors";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [keepSession, setKeepSession] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const login = useAuthStore((s) => s.login);
+  const login = useAuthStore((state) => state.login);
+  const { theme, toggleTheme } = useUIStore();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     setError("");
     setLoading(true);
+
     try {
       await login(email, password);
       navigate("/", { replace: true });
-    } catch (err: unknown) {
-      const isNetworkError =
-        err instanceof Error && (err.message.includes("Network") || err.message.includes("ECONNREFUSED"));
-      setError(
-        isNetworkError
-          ? "Unable to connect to server. Please check your connection."
-          : "Invalid email or password"
-      );
+    } catch (reason: unknown) {
+      const message =
+        reason instanceof Error &&
+        (reason.message.includes("Network") || reason.message.includes("ECONNREFUSED"))
+          ? "Unable to reach the backend."
+          : "Invalid email or password.";
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-primary relative overflow-hidden">
-      {/* Subtle gradient orb */}
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.03] pointer-events-none"
-        style={{
-          background: "radial-gradient(circle, var(--color-accent-primary) 0%, transparent 70%)",
-        }}
-      />
+    <div className="relative min-h-[100dvh] overflow-hidden bg-background text-foreground dark:bg-black">
+      <div className="absolute right-6 top-6 z-10">
+        <button
+          onClick={toggleTheme}
+          className="flex size-10 items-center justify-center border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] transition-colors hover:bg-black/5 dark:hover:bg-white/5 active:scale-95"
+          aria-label="Toggle theme"
+        >
+          {theme === "dark" ? <Sun size={20} weight="bold" /> : <Moon size={20} weight="bold" />}
+        </button>
+      </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-sm mx-4"
-      >
-        <div className="p-8 bg-bg-secondary rounded-[var(--radius-2xl)] border border-border shadow-[var(--shadow-xl)]">
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <h1 className="text-xl font-bold tracking-[-0.03em] text-text-primary">
-              JobRadar
-              <span className="ml-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-accent-primary/10 text-accent-primary font-medium align-middle">
-                v2
-              </span>
-            </h1>
-            <p className="mt-2 text-sm text-text-muted">
-              Sign in to your account
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="p-3 rounded-[var(--radius-md)] bg-accent-danger/8 border border-accent-danger/20 text-accent-danger text-sm"
-              >
-                {error}
-              </motion.div>
-            )}
-
-            <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1.5 tracking-wide">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 bg-bg-primary border border-border rounded-[var(--radius-lg)] text-sm text-text-primary placeholder:text-text-muted/60 focus:outline-none focus:border-border-focus focus:shadow-[var(--shadow-glow)] transition-[border-color,box-shadow] duration-[var(--transition-fast)]"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1.5 tracking-wide">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 bg-bg-primary border border-border rounded-[var(--radius-lg)] text-sm text-text-primary placeholder:text-text-muted/60 focus:outline-none focus:border-border-focus focus:shadow-[var(--shadow-glow)] transition-[border-color,box-shadow] duration-[var(--transition-fast)]"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <motion.button
-              type="submit"
-              disabled={loading}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-2.5 mt-2 bg-accent-primary text-white text-sm font-medium rounded-[var(--radius-lg)] hover:brightness-110 disabled:opacity-50 transition-[filter,transform] duration-[var(--transition-fast)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] flex items-center justify-center gap-2"
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md items-center px-4 py-6 sm:px-6">
+          <motion.section
+            initial={{ opacity: 0, y: 20, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1], delay: 0.08 }}
+            className="flex"
+          >
+            <Surface
+              tone="default"
+              padding="none"
+              radius="xl"
+              className="flex h-full w-full flex-col overflow-hidden bg-[var(--color-bg-secondary)]"
             >
-              {loading ? (
-                <>
-                  <SpinnerGap size={16} weight="bold" className="animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
-            </motion.button>
-          </form>
-        </div>
-      </motion.div>
+                <div className="border-b-2 border-[var(--color-text-primary)] px-5 py-4 sm:px-6">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--color-text-muted)]">
+                    JobRadar
+                  </div>
+                  <h1 className="mt-2 font-display text-3xl font-black uppercase tracking-[-0.06em] text-[var(--color-text-primary)]">
+                    Sign in
+                  </h1>
+                  <p className="mt-2 max-w-md text-sm leading-6 text-[var(--color-text-secondary)]">
+                    Enter your email and password to open the workspace.
+                  </p>
+                </div>
+
+              <form className="space-y-4 px-5 py-5 sm:px-6" onSubmit={handleSubmit}>
+                {error ? (
+                  <div className="border-2 border-[var(--color-accent-danger)] bg-[var(--color-accent-danger-subtle)] px-4 py-3 text-sm font-medium text-[var(--color-accent-danger)]">
+                    {error}
+                  </div>
+                ) : null}
+
+                <Input
+                  label="Email address"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  className={FIELD}
+                />
+
+                <Input
+                  label="Password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Enter password"
+                  className={FIELD}
+                />
+
+                <label className="flex cursor-pointer items-center gap-3 border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-primary)] px-4 py-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={keepSession}
+                    onChange={(event) => setKeepSession(event.target.checked)}
+                    className="size-4 cursor-pointer rounded-none border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] accent-[var(--color-accent-primary)]"
+                  />
+                  <span className="font-medium uppercase tracking-[0.08em]">Keep session active</span>
+                </label>
+
+                <Button
+                  type="submit"
+                  className={`w-full justify-center ${PRIMARY_BUTTON}`}
+                  loading={loading}
+                  icon={loading ? <SpinnerGap size={16} weight="bold" /> : <ArrowRight size={16} weight="bold" />}
+                >
+                  Sign in
+                </Button>
+              </form>
+            </Surface>
+          </motion.section>
+      </div>
     </div>
   );
 }

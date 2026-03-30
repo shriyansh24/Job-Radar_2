@@ -63,6 +63,8 @@ class GreenhouseScraper(BaseScraper):
                     remote_type=self._normalize_remote_type(loc),
                     description_raw=item.get("content", ""),
                     posted_at=posted_at,
+                    ats_job_id=str(item.get("id")) if item.get("id") is not None else None,
+                    ats_provider=self.source_name,
                 )
             )
         return jobs[:limit]

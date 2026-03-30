@@ -8,35 +8,47 @@
 - Zustand
 - TanStack Query
 - Phosphor icons
-- Geist Sans and Geist Mono
+- Inter and JetBrains Mono
 
 ## UI/State Facts
 - Theme state is persisted through `useUIStore`.
-- Light mode and high-contrast dark mode are first-class themes.
+- Theme family plus mode is persisted through `useUIStore`.
+- Light mode and near-black default dark mode are first-class themes; alternate theme families may push darker than the default token set.
 - The root theme toggle applies a `.dark` class to the HTML element.
 - Design tokens live in `frontend/src/index.css`.
 - `@phosphor-icons/react` is the active icon set.
+- `frontend/system.md` is the design-system source of truth.
+- Buttons are intentionally shadowless; structural elevation belongs to panels and surfaces.
 
 ## Current Functional State
-- Admin page no longer exposes a misleading "Rebuild Embeddings" action.
-- Vault PATCH flows are present for editable document metadata.
-- SSE uses credentialed transport instead of a token query parameter.
-- Recent TypeScript nullability regressions are fixed.
-- Current frontend lint, tests, coverage gate, and build all pass.
+- The reference-first command-center shell is route-complete across the frontend.
+- Shared shell primitives now provide the fixed header, desktop rail, mobile drawer, and mobile bottom nav.
+- The latest frontend sweep simplified the shell chrome and removed fake promo/system blocks from the header and sidebar.
+- `Login` is now a lean auth surface instead of a marketing-style two-column screen.
+- `Settings` is a cleaner operator page with smaller extracted sections, fewer dead imports, and the live settings/data flows intact.
+- `Dashboard`, `Jobs`, `Pipeline`, and `Copilot` have been stripped of the most obvious generated copy and fake system commentary.
+- `AutoApply` now exposes real operator controls for refresh, pause, and run-now instead of a passive status-only surface.
+- `Pipeline` now renders `rejected` and `withdrawn` stages and supports bounded drag/drop transitions that respect the workflow transition map.
+- `SearchExpansion` now uses the live backend expansion endpoint instead of a fake template inventory.
+- `Resume Studio` consumes the backend `ResumeTailorResponse` contract directly and now exposes live template preview plus PDF export through the resume API.
+- `Compensation` uses the backend salary percentile and offer-evaluation contract directly.
+- `Analytics` now consumes the live analytics patterns endpoint alongside the overview, funnel, source, and skill datasets.
+- `Settings` persists workspace settings, saved searches, integrations, password changes, account deletion, and data clear actions against real backend endpoints.
+- `DocumentVault` edit flows are wired through the live PATCH endpoints.
+- `Admin` and source-health surfaces now read the current backend status and diagnostics shape instead of stale frontend assumptions.
+- The largest routed surfaces have been partially decomposed into dedicated component groups under `frontend/src/components/`, including `admin`, `copilot`, `dashboard`, `email`, `interview`, `jobs`, `networking`, `onboarding`, `outcomes`, `pipeline`, `profile`, `resume`, `salary`, `settings`, and `vault`.
 
 ## Validation
-- `cd frontend && npm audit --audit-level high`
 - `cd frontend && npm run lint`
 - `cd frontend && npm run test -- --run`
-- `cd frontend && npm install --no-save @vitest/coverage-v8`
-- `cd frontend && npm run test -- --run --coverage --coverage.thresholds.statements=40`
 - `cd frontend && npm run build`
-- Latest local result: `23` test files, `35` tests, coverage `43.19%` statements
+- Authenticated browser QA was rerun after the decomposition/copy-cleanup pass, covering the routed app with representative captures in `.claude/ui-captures/`.
+- The current validated route-family browser pass also covers Auto Apply operator controls, the updated pipeline board flow, live analytics patterns, and the resume preview/export flow.
+- Frontend test suites now live under `frontend/src/tests/` with `app/`, `api/`, `components/`, `hooks/`, `pages/`, and `support/` lanes.
 
 ## Non-Blocking Residual
-- Vitest still prints `--localstorage-file was provided without a valid path` warnings.
-- Those warnings are noisy but non-fatal and do not currently fail tests.
-- Coverage intentionally excludes thin API wrappers, scraper/pipeline internals, and zero-value bootstrap files so the `40%` gate tracks the tested UI/runtime surface.
+- Route-by-route visual polish remains iterative work on some larger surfaces, but no blocking frontend issue is currently known from the latest validated pass.
 
 ## Current Assessment
-- No actionable frontend or dependency bugs remain in the current verified tree.
+- No blocking frontend bugs are currently known from the verified local pass.
+- The shared system layer is the frontend source of truth for layout, typography, spacing, shell posture, and tokenized surfaces.

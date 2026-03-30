@@ -33,15 +33,15 @@ export default function Table<T extends Record<string, unknown>>({
   className,
 }: TableProps<T>) {
   return (
-    <div className={cn("overflow-x-auto", className)}>
+    <div className={cn("overflow-x-auto border-2 border-border bg-card shadow-[var(--shadow-sm)]", className)}>
       <table className="w-full">
         <thead>
-          <tr className="border-b border-border">
+          <tr className="border-b-2 border-border bg-[var(--color-bg-secondary)]">
             {columns.map((col) => (
               <th
                 key={col.key}
                 className={cn(
-                  "px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider",
+                  "px-4 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted",
                   col.sortable && "cursor-pointer hover:text-text-secondary",
                   col.className
                 )}
@@ -70,15 +70,15 @@ export default function Table<T extends Record<string, unknown>>({
             <tr
               key={i}
               className={cn(
-                "border-b border-border/50 transition-colors",
-                onRowClick && "cursor-pointer hover:bg-bg-tertiary"
+                "border-b-2 border-border transition-colors last:border-b-0",
+                onRowClick && "cursor-pointer hover:bg-[var(--color-bg-secondary)]"
               )}
               onClick={() => onRowClick?.(row)}
             >
               {columns.map((col) => (
                 <td
                   key={col.key}
-                  className={cn("px-4 py-3 text-sm text-text-primary", col.className)}
+                  className={cn("px-4 py-3 text-sm leading-6 text-text-primary", col.className)}
                 >
                   {col.render ? col.render(row) : String(row[col.key] ?? "")}
                 </td>

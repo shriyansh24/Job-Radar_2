@@ -1,0 +1,197 @@
+# Frontend Inventory
+
+Historical note: this is an archived frontend inventory snapshot, not the live frontend truth.
+
+Do not use this file as the current source of truth for route contracts, test paths, token wording, or UI-system status.
+
+Use these docs instead:
+- `docs/current-state/00-index.md`
+- `docs/current-state/03-frontend.md`
+- `frontend/system.md`
+- `docs/repo-hardening/06-test-taxonomy.md`
+
+Root: `D:/jobradar-v2/frontend`
+
+## Frontend Architecture Summary
+
+- Entry: `D:/jobradar-v2/frontend/src/main.tsx`
+- Runtime root: `D:/jobradar-v2/frontend/src/App.tsx`
+- Routing source of truth: `D:/jobradar-v2/frontend/src/App.tsx` plus `D:/jobradar-v2/frontend/src/lib/navigation.tsx`
+- Theme source of truth: `D:/jobradar-v2/frontend/src/index.css` and `D:/jobradar-v2/frontend/src/store/useUIStore.ts`
+- Server state: TanStack Query with page-local query keys
+- Global client state: Zustand stores in `src/store`
+- API boundary: axios wrappers in `src/api`
+
+## Entry, Routing, Shell, And Theme
+
+| File Path | Purpose | Props / Contract | Dependencies | Consumers | Stateful vs Presentational | Behavior Notes | Migration Sensitivity |
+|---|---|---|---|---|---|---|---|
+| `D:/jobradar-v2/frontend/src/main.tsx` | Browser bootstrap | No props; mounts `App` under `StrictMode`; imports `index.css` | React DOM, `App`, global CSS | Browser entrypoint only | Stateful only via render root | Smallest safe entry seam | Low |
+| `D:/jobradar-v2/frontend/src/App.tsx` | Global runtime root | No props; owns `QueryClient`, `BrowserRouter`, `ErrorBoundary`, `Suspense`, `ToastContainer`, route table | React Router, React Query, `AuthGuard`, `AppShell`, all pages | `main.tsx` | Stateful | Defines public vs protected routing and provider order | High |
+| `D:/jobradar-v2/frontend/src/lib/navigation.tsx` | Navigation metadata and prefetch plan | Route metadata objects plus prefetch helpers; implicit contract used by sidebar/shell | React Query client, API wrappers, icon metadata | `Sidebar`, `AppShell`, route-aware UI | Mixed | This is the route-group source of truth: `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, `Operations` | High |
+| `D:/jobradar-v2/frontend/src/index.css` | Token and theme system | CSS custom properties mapped into Tailwind v4 tokens | Geist fonts, app-wide CSS variables, `.dark` root class | Entire frontend | Presentational | Defines both light mode and jet-black dark mode tokens | High |
+| `D:/jobradar-v2/frontend/src/components/ErrorBoundary.tsx` | Top-level runtime fallback | Error boundary props and fallback UI; no special domain contract | React error boundary APIs | `App.tsx` | Stateful | Prevents full crash on render errors | Medium |
+| `D:/jobradar-v2/frontend/src/components/layout/AuthGuard.tsx` | Protected-route gate | `children: ReactNode` | `useAuthStore`, React Router navigate | `App.tsx` protected branch | Stateful | Loads session from cookie-backed auth store before routing | High |
+| `D:/jobradar-v2/frontend/src/components/layout/AppShell.tsx` | Main authenticated workspace shell | No props; derives state from route/auth/UI stores | `useAuthStore`, `useUIStore`, `navigation`, `Sidebar`, `WorkspaceShell`, `NotificationBell`, `ScraperLog` | Protected routes in `App.tsx` | Stateful | Controls sidebar collapse, mobile nav, theme toggle, logout, operations rail | High |
+| `D:/jobradar-v2/frontend/src/components/layout/Sidebar.tsx` | Main nav rendering | Implicit nav contract from `navigation.tsx` | Route metadata, React Query prefetch, icons | `AppShell` | Stateful | Hover prefetches page data and reflects current route group | Medium |
+| `D:/jobradar-v2/frontend/src/components/layout/NotificationBell.tsx` | Notification list and unread actions | No props; notification API contract | `notificationsApi`, React Query | `AppShell` header | Stateful | Lists notifications, marks read, deletes, invalidates cache | Medium |
+| `D:/jobradar-v2/frontend/src/components/system/WorkspaceShell.tsx` | Generic shell layout primitive | `sidebar`, `header`, `rail`, `bottomNav`, `contentClassName`, `sidebarCollapsed` | Layout wrappers, CSS classes | `AppShell` and shell-like pages | Presentational | Core shell grammar primitive | Medium |
+
+## Shared System And UI Primitives
+
+| File Path | Purpose | Props / Contract | Dependencies | Consumers | Stateful vs Presentational | Behavior Notes | Migration Sensitivity |
+|---|---|---|---|---|---|---|---|
+| `D:/jobradar-v2/frontend/src/components/system/PageHeader.tsx` | Shared page heading block | `eyebrow`, `title`, `description`, `meta`, `actions` | Typography/tokens | Most route pages | Presentational | Common page intro grammar | Low |
+| `D:/jobradar-v2/frontend/src/components/system/MetricStrip.tsx` | Shared metric band | `items` array | Icons, `Surface`, token classes | Dashboard, AutoApply, Networking, Email, others | Presentational | Repeated bento metric pattern | Low |
+| `D:/jobradar-v2/frontend/src/components/system/SectionHeader.tsx` | Section subheader | `title`, `description`, `action` | Shared typography classes | Many pages | Presentational | Standard section intro | Low |
+| `D:/jobradar-v2/frontend/src/components/system/SettingsSection.tsx` | Settings-specific grouped surface | `title`, `description`, `actions`, `children` | Layout primitives | `Settings.tsx`, settings-like forms | Presentational | Encodes settings panel rhythm | Low |
+| `D:/jobradar-v2/frontend/src/components/system/SplitWorkspace.tsx` | Multi-column page layout | `primary`, `secondary`, `tertiary` | Grid/flex layout | AutoApply, Networking, Email, Copilot, Targets | Presentational | Heavily reused in workspace pages | Medium |
+| `D:/jobradar-v2/frontend/src/components/system/StateBlock.tsx` | Empty/error/state section | `tone`, `icon`, `title`, `description`, `action` | Icons, `Surface` | Across pages | Presentational | Standardized empty/loading/error callout | Low |
+| `D:/jobradar-v2/frontend/src/components/system/Surface.tsx` | Main surface primitive | `tone`, `padding`, `radius`, `interactive`, HTML div props | `cva`, token classes | Almost every page/component | Presentational | Core surface token wrapper | Low |
+| `D:/jobradar-v2/frontend/src/components/system/ActivityFeed.tsx` | Reusable activity list scaffold | Inferred feed item and render props | `Surface`, typography utilities | Limited current usage | Presentational | Support component, not shell-critical | Low |
+| `D:/jobradar-v2/frontend/src/components/system/CommandBar.tsx` | Top command/quick-action strip | Inferred command/action props | Shared UI primitives | Limited current usage | Mixed | Appears to be system support layer | Low |
+| `D:/jobradar-v2/frontend/src/components/system/DataList.tsx` | Generic data list renderer | Inferred item + row render contract | `Surface`, list styling | Support component | Presentational | Reusable list grammar | Low |
+| `D:/jobradar-v2/frontend/src/components/system/EntitySheet.tsx` | Drawer/sheet style entity display | Inferred open/entity/action props | Modal/surface primitives | Support component | Stateful | Useful for future modularization | Medium |
+| `D:/jobradar-v2/frontend/src/components/system/WorkspaceSidebar.tsx` | Alternate sidebar abstraction | Inferred nav/item props | System layout primitives | Not part of live `AppShell` path | Presentational | Residual/non-authoritative shell path | Low |
+| `D:/jobradar-v2/frontend/src/components/system/index.ts` | Barrel exports | Re-export contract only | System components | Many pages | Presentational | Import convenience only | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/Button.tsx` | Main button primitive | `variant`, `size`, `loading`, `icon`, `children`, `className`, `disabled`, native button props | `buttonVariants`, icon rendering | Throughout app | Presentational | Stable primitive surface | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/Input.tsx` | Text input primitive | Native input props plus className | Token classes | Forms across pages | Presentational | Stable primitive | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/Textarea.tsx` | Textarea primitive | Native textarea props | Token classes | Forms across pages | Presentational | Stable primitive | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/Select.tsx` | Select/dropdown primitive | Option/value/onChange style contract | Token classes | Forms across pages | Mixed | Used heavily in filters/settings | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/Modal.tsx` | Modal primitive | `open`, `onClose`, `title`, `children`, `size`, `className` | Portal/overlay logic | Pipeline, job detail, many pages | Stateful | Central dialog surface | Medium |
+| `D:/jobradar-v2/frontend/src/components/ui/Tabs.tsx` | Tab strip primitive | `tabs`, `activeTab`, `onChange`, `className` | Token classes | Dashboard-like pages | Presentational | Stable primitive | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/Table.tsx` | Table primitive | Inferred columns/rows/render contract | Token classes | Data-heavy pages | Presentational | Reusable but less dominant than surfaces | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/Dropdown.tsx` | Menu/dropdown primitive | `trigger`, `items`, `onSelect`, `align`, `className` | Overlay/menu handling | Header menus and actions | Stateful | Support primitive | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/Toast.tsx` | Toast render layer | Toast item contract | Internal state and styling | `ToastContainer`, `toastService` | Stateful | App-wide ephemeral notifications | Medium |
+| `D:/jobradar-v2/frontend/src/components/ui/toastService.ts` | Imperative toast API | Push/dismiss toast functions | Toast store/event mechanism | Pages and mutations | Stateful | Side-effect surface used by mutations | Medium |
+| `D:/jobradar-v2/frontend/src/components/ui/Skeleton.tsx` | Loading placeholder | `className`, `variant`, `width`, `height` | Token classes | Loading states across pages | Presentational | Stable primitive | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/Badge.tsx` | Label/tag primitive | `variant`, `size`, `children`, `className` | Token classes | Tables/cards/status chips | Presentational | Stable primitive | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/Card.tsx` | Box/card wrapper | `children`, `className`, `hover`, `onClick`, `padding` | Token classes | Legacy and support usage | Presentational | Less central than `Surface` | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/StatCard.tsx` | Simple metric card | `title`, `value`, `icon`, `change`, `className` | Card/tokens | Analytics/dashboard support | Presentational | Supplemental metric primitive | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/EmptyState.tsx` | Empty-state block | `icon`, `title`, `description`, `action`, `className` | UI tokens | Low-data states | Presentational | Overlaps with `StateBlock` | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/Toggle.tsx` | Toggle/switch primitive | `checked`, `onChange`, `label`, `disabled`, `className` | Forms/tokens | Settings/forms | Stateful | Simple control | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/PageLoader.tsx` | App/page loading view | No special props | Skeleton/loading styling | `Suspense` fallback | Presentational | Used during route suspense | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/buttonVariants.ts` | Button variant token map | Variant function only | Class variance helper | `Button.tsx` | Presentational | Styling support | Low |
+| `D:/jobradar-v2/frontend/src/components/ui/index.ts` | UI barrel export | Re-export contract only | UI components | Many pages | Presentational | Import convenience | Low |
+
+## Domain Components
+
+| File Path | Purpose | Props / Contract | Dependencies | Consumers | Stateful vs Presentational | Behavior Notes | Migration Sensitivity |
+|---|---|---|---|---|---|---|---|
+| `D:/jobradar-v2/frontend/src/components/jobs/JobCard.tsx` | Summary card for one job | Inferred `job`, selection/action props | Job types, badges, score display | `JobBoard`, related job lists | Presentational | Safe extraction boundary | Low |
+| `D:/jobradar-v2/frontend/src/components/jobs/ScoreGauge.tsx` | Match-score visualization | Inferred numeric score props | Tokens, radial/progress styles | Job cards/detail | Presentational | Pure display | Low |
+| `D:/jobradar-v2/frontend/src/components/jobs/JobFilters.tsx` | Job filtering controls | Uses job filter state contract | `useJobStore`, UI primitives | `JobBoard` | Stateful | Couples UI to filter schema | Medium |
+| `D:/jobradar-v2/frontend/src/components/jobs/JobDetail.tsx` | Detailed job panel and apply actions | Inferred `job`, action handlers, selection props | `jobsApi`, `pipelineApi`, React Query, modal/state helpers | `JobBoard`, possibly related flows | Stateful | Creates pipeline items and invalidates `["applications"]` | High |
+| `D:/jobradar-v2/frontend/src/components/pipeline/ApplicationCard.tsx` | One application card | Inferred application props | Status badge, tokens | Pipeline column/board | Presentational | Stable display component | Low |
+| `D:/jobradar-v2/frontend/src/components/pipeline/PipelineColumn.tsx` | One status column | Inferred list/status callbacks | Application cards, DnD styling | `KanbanBoard` | Presentational | Business meaning tied to status names | Medium |
+| `D:/jobradar-v2/frontend/src/components/pipeline/KanbanBoard.tsx` | Full pipeline board | Inferred grouped applications and selection handlers | Pipeline components | `Pipeline.tsx` | Stateful | Encodes board interaction | Medium |
+| `D:/jobradar-v2/frontend/src/components/pipeline/AddApplicationModal.tsx` | Create-application modal | Inferred open/close and selected-job props | `pipelineApi`, React Query | `Pipeline.tsx`, `JobDetail.tsx` flows | Stateful | Invalidates `['pipeline']` on create | High |
+| `D:/jobradar-v2/frontend/src/components/pipeline/ApplicationModal.tsx` | Application edit/history modal | Inferred application/open/close props | `pipelineApi`, history query | `Pipeline.tsx` | Stateful | Pulls `['application-history', id]` | High |
+| `D:/jobradar-v2/frontend/src/components/pipeline/statusBadgeVariant.ts` | Status-to-badge mapping | Mapping function only | Token utilities | Pipeline components | Presentational | Shared status style support | Low |
+| `D:/jobradar-v2/frontend/src/components/scraper/ScraperControlPanel.tsx` | Manual scraper run controls | No complex public props beyond embedding context | `scraperApi`, React Query | Operations surfaces | Stateful | Invalidates `["scraper","runs"]` | Medium |
+| `D:/jobradar-v2/frontend/src/components/scraper/ScraperLog.tsx` | Live scraper SSE log view | Inferred open/visibility props | Direct `EventSource`, `scraperApi.stream()` | `AppShell` operations rail, scraper pages | Stateful | Uses direct SSE rather than `useSSE` hook | High |
+| `D:/jobradar-v2/frontend/src/components/analytics/AnalyticsCharts.tsx` | Chart rendering helpers | Inferred chart data props | Analytics data, chart libs/styles | `Analytics.tsx` | Presentational | Analytics rendering support | Low |
+
+## Route Pages
+
+| File Path | Route | Purpose | Props / Contract | Dependencies | Consumers | Stateful vs Presentational | Behavior Notes | Migration Sensitivity |
+|---|---|---|---|---|---|---|---|---|
+| `D:/jobradar-v2/frontend/src/pages/Login.tsx` | `/login` | Public auth entry | No props | `authApi`, `useAuthStore`, router | `App.tsx` | Stateful | Writes auth state and redirects into protected app | High |
+| `D:/jobradar-v2/frontend/src/pages/Onboarding.tsx` | `/onboarding` | Initial profile/settings setup | No props | `profileApi`, `settingsApi` | `App.tsx` | Stateful | Bridges setup data into profile/settings backend | High |
+| `D:/jobradar-v2/frontend/src/pages/Dashboard.tsx` | `/` | Career OS home dashboard | No props | `analyticsApi`, `jobsApi`, `pipelineApi`, shared system primitives | `App.tsx`, nav home | Stateful via React Query | Uses `["analytics","overview"]`, `["jobs","recent"]`, `["pipeline"]` | Medium |
+| `D:/jobradar-v2/frontend/src/pages/JobBoard.tsx` | `/jobs` | Main discovery/search surface | No props; local `SearchMode` and selected-job state | `jobsApi`, `useJobStore`, `useDebounce`, `JobDetail`, `JobFilters` | `App.tsx`, nav discover | Highly stateful | Query keys include `["jobs", activeFilters]`, semantic search, `["job", id]` | High |
+| `D:/jobradar-v2/frontend/src/pages/Companies.tsx` | `/companies` | Company registry browser | No props | `companiesApi`, system primitives | `App.tsx` | Stateful | Uses `["companies"]` | Medium |
+| `D:/jobradar-v2/frontend/src/pages/Pipeline.tsx` | `/pipeline` | Application kanban and create/edit flows | No props | `pipelineApi`, `KanbanBoard`, `AddApplicationModal`, `ApplicationModal` | `App.tsx`, nav execute | Highly stateful | Invalidates `["pipeline"]` and `["jobs"]` | High |
+| `D:/jobradar-v2/frontend/src/pages/AutoApply.tsx` | `/auto-apply` | Auto-apply profile/rule/run management | No props | `autoApplyApi`, shared system primitives, modals/forms | `App.tsx`, nav execute | Highly stateful | Query keys for profiles, rules, stats, runs; multiple mutations | High |
+| `D:/jobradar-v2/frontend/src/pages/Networking.tsx` | `/networking` | Contacts, connection lookup, referral workflow | No props | `networkingApi`, `jobsApi`, shared system primitives | `App.tsx`, nav execute | Highly stateful | Uses contacts/referral request caches and job context | High |
+| `D:/jobradar-v2/frontend/src/pages/Email.tsx` | `/email` | Email log and webhook-processing surface | No props | `emailApi`, shared system primitives | `App.tsx`, nav execute | Stateful | Uses `["email","logs"]` and mutation refresh | Medium |
+| `D:/jobradar-v2/frontend/src/pages/Copilot.tsx` | `/copilot` | LLM assistant workspace | No props | `copilotApi`, `jobsApi`, shared system primitives | `App.tsx`, nav execute | Stateful | Depends on job context and freeform prompt handling | High |
+| `D:/jobradar-v2/frontend/src/pages/ResumeBuilder.tsx` | `/resume` | Resume versioning and tailoring | No props | `resumeApi`, `jobsApi`, system primitives | `App.tsx`, nav prepare | Highly stateful | Current frontend tailor type does not match backend response richness | High |
+| `D:/jobradar-v2/frontend/src/pages/InterviewPrep.tsx` | `/interview` | Interview session generation and scoring | No props | `interviewApi`, `jobsApi`, system primitives | `App.tsx`, nav prepare | Stateful | Uses `["interview-sessions"]`; frontend does not expose backend `/prepare` route | Medium |
+| `D:/jobradar-v2/frontend/src/pages/SalaryInsights.tsx` | `/salary` | Salary research and offer evaluation | No props | `salaryApi`, system primitives | `App.tsx`, nav prepare | Stateful | Frontend response types drift from backend salary schemas | High |
+| `D:/jobradar-v2/frontend/src/pages/DocumentVault.tsx` | `/vault` | Resume and cover-letter vault | No props | `vaultApi`, system primitives | `App.tsx`, nav prepare | Highly stateful | Update endpoints are backend-fragile because service methods are missing | High |
+| `D:/jobradar-v2/frontend/src/pages/Analytics.tsx` | `/analytics` | Detailed metrics page | No props | `analyticsApi`, `AnalyticsCharts`, system primitives | `App.tsx`, nav intelligence | Stateful | Uses overview/daily/sources/skills/funnel query set | Medium |
+| `D:/jobradar-v2/frontend/src/pages/Outcomes.tsx` | `/outcomes` | Outcome capture and insight review | No props | `outcomesApi`, `pipelineApi`, system primitives | `App.tsx`, nav intelligence | Highly stateful | Uses `["outcomes","stats"]`, application selection, per-application mutation flows | High |
+| `D:/jobradar-v2/frontend/src/pages/Profile.tsx` | `/profile` | Personal profile editor | No props | `profileApi`, `useAuthStore`, system/UI primitives | `App.tsx`, nav operations | Highly stateful | Updates long-form structured profile payload | High |
+| `D:/jobradar-v2/frontend/src/pages/Settings.tsx` | `/settings` | App settings, saved searches, integrations, destructive account actions | No props | `settingsApi`, `authApi`, `adminApi`, system/UI primitives | `App.tsx`, nav operations | Highly stateful | One of the heaviest route files; many mutations and invalidations | High |
+| `D:/jobradar-v2/frontend/src/pages/Admin.tsx` | `/admin` | Admin diagnostics/import/export/reindex surface | No props | `adminApi`, system primitives | `App.tsx`, nav operations | Stateful | Contract-sensitive because frontend types do not fully match backend dict payloads | High |
+| `D:/jobradar-v2/frontend/src/pages/Sources.tsx` | `/sources` | Source health list | No props | `sourceHealthApi`, system primitives | `App.tsx`, nav operations | Stateful | Uses `["source-health"]` | Medium |
+| `D:/jobradar-v2/frontend/src/pages/Targets.tsx` | `/targets` | Scrape target operations, details, attempts, batch control | No props | `scraperApi`, system primitives, control panel | `App.tsx`, nav operations | Highly stateful | Highest-entropy operations page; heavy invalidation pattern | High |
+| `D:/jobradar-v2/frontend/src/pages/CanonicalJobs.tsx` | `/canonical-jobs` | Canonical jobs and stale-job operations | No props | `canonicalJobsApi`, system primitives | `App.tsx`, nav operations | Stateful | Uses `["canonical-jobs", { stale_only: ... }]` | Medium |
+| `D:/jobradar-v2/frontend/src/pages/SearchExpansion.tsx` | `/search-expansion` | Search expansion admin surface | No props | `searchExpansionApi`, system primitives | `App.tsx`, nav operations | Stateful | Live contract mismatch: frontend expects `GET /search-expansion`; backend exposes only `POST /search-expansion/expand` | High |
+
+## Stores, Hooks, API Clients, And Support Libraries
+
+| File Path | Purpose | Public Interface / Contract | Dependencies | Consumers | Stateful vs Presentational | Behavior Notes | Migration Sensitivity |
+|---|---|---|---|---|---|---|---|
+| `D:/jobradar-v2/frontend/src/store/useAuthStore.ts` | Session/auth state | `user`, `isAuthenticated`, `initialized`, `login`, `logout`, `refresh`, `loadFromSession` | `authApi`, browser storage/session assumptions | `AuthGuard`, `AppShell`, `Login`, `Profile`, `Settings` | Stateful | Bridges cookie session into client auth state | High |
+| `D:/jobradar-v2/frontend/src/store/useUIStore.ts` | Theme and shell UI state | `sidebarCollapsed`, `mobileNavOpen`, `theme`, mutators, `toggleTheme` | Zustand persist, DOM root class | `AppShell`, theme toggle, shell controls | Stateful | Writes `.dark` to `document.documentElement`, persists `jobradar.theme` | High |
+| `D:/jobradar-v2/frontend/src/store/useJobStore.ts` | Job list local selection/filter state | `selectedJobId`, `filters`, setters/reset | Zustand | `JobBoard`, `JobFilters` | Stateful | Couples UI to jobs filter contract | Medium |
+| `D:/jobradar-v2/frontend/src/store/useScraperStore.ts` | Scraper event store | `isRunning`, `events`, mutators | Zustand | No live consumers discovered | Stateful | Residual/unused state surface | Low |
+| `D:/jobradar-v2/frontend/src/hooks/useDebounce.ts` | Debounce utility | Generic debounced value hook | React state/effect | `JobBoard` | Stateful | Stable utility | Low |
+| `D:/jobradar-v2/frontend/src/hooks/useKeyboard.ts` | Keyboard shortcut hook | `bindings: KeyBinding[]` | DOM events | No production consumers found | Stateful | Utility/residual surface | Low |
+| `D:/jobradar-v2/frontend/src/hooks/useSSE.ts` | SSE hook abstraction | `url`, `onEvent`, `onError?` | `EventSource` | No production consumers found | Stateful | `ScraperLog` bypasses it and opens SSE directly | Low |
+| `D:/jobradar-v2/frontend/src/api/client.ts` | Shared axios client | Base URL, credentials, 401 refresh retry interceptor | axios, `constants.ts`, auth refresh | Every API module | Stateful | Critical frontend/backend auth boundary | High |
+| `D:/jobradar-v2/frontend/src/lib/constants.ts` | Runtime constants | `API_BASE_URL` and other constants | env/Vite runtime | API client and pages | Presentational | Config seam | Medium |
+| `D:/jobradar-v2/frontend/src/lib/types.ts` | Shared TypeScript types | App-level types | TS only | Components/pages | Presentational | Support layer | Low |
+| `D:/jobradar-v2/frontend/src/lib/utils.ts` | Utility helpers | Helper functions | TS/browser utilities | Components/pages | Presentational | Support layer | Low |
+
+## API Modules
+
+| File Path | Purpose | Public Interface / Contract | Major Consumers | Behavior Notes | Migration Sensitivity |
+|---|---|---|---|---|---|
+| `D:/jobradar-v2/frontend/src/api/auth.ts` | Auth/account endpoints | `loginApi`, `registerApi`, `getMeApi`, `refreshApi`, `logoutApi`, `changePasswordApi`, `deleteAccountApi` | `useAuthStore`, `Login`, `Settings` | Cookie + token refresh boundary | High |
+| `D:/jobradar-v2/frontend/src/api/jobs.ts` | Job endpoints | list/detail/update/delete/semantic/export | Dashboard, JobBoard, Copilot, Interview, Networking, Resume | One of the most shared API surfaces | High |
+| `D:/jobradar-v2/frontend/src/api/pipeline.ts` | Applications/pipeline endpoints | list, pipeline board, create, update, transition, history | Pipeline, Outcomes, Dashboard, JobDetail | Strong coupling to status lifecycle | High |
+| `D:/jobradar-v2/frontend/src/api/profile.ts` | Profile endpoints | get/update/generate answers | Onboarding, Profile | Large structured payloads | Medium |
+| `D:/jobradar-v2/frontend/src/api/settings.ts` | Settings/search/integration endpoints | app settings, saved searches, integrations | Onboarding, Settings | Good centralization; uses both `PUT` and `PATCH` for integrations | Medium |
+| `D:/jobradar-v2/frontend/src/api/analytics.ts` | Analytics endpoints | overview/daily/sources/skills/funnel | Dashboard, Analytics, navigation prefetch | Stable metric read surface | Medium |
+| `D:/jobradar-v2/frontend/src/api/auto-apply.ts` | Auto-apply endpoints | profiles, rules, stats, runs, run/pause/apply-single | AutoApply page | Does not expose learned-mappings endpoints currently used by backend | High |
+| `D:/jobradar-v2/frontend/src/api/networking.ts` | Contacts/referral endpoints | contacts CRUD, connections, referral suggestions, outreach, requests | Networking page | Company-name normalization matters | High |
+| `D:/jobradar-v2/frontend/src/api/email.ts` | Email endpoints | log list and webhook-processing call | Email page | Frontend can invoke webhook route directly | Medium |
+| `D:/jobradar-v2/frontend/src/api/copilot.ts` | Copilot endpoints | chat, ask-history, cover-letter generate | Copilot, DocumentVault | Freeform AI prompt interface | Medium |
+| `D:/jobradar-v2/frontend/src/api/resume.ts` | Resume endpoints | versions, upload, tailor, council | ResumeBuilder, DocumentVault | Tailor response typing is stale/narrow vs backend | High |
+| `D:/jobradar-v2/frontend/src/api/interview.ts` | Interview endpoints | sessions, get session, generate, evaluate | InterviewPrep | Backend `/prepare` route not wrapped | Medium |
+| `D:/jobradar-v2/frontend/src/api/salary.ts` | Salary endpoints | research and offer evaluation | SalaryInsights | Response typing drifts from backend fields | High |
+| `D:/jobradar-v2/frontend/src/api/outcomes.ts` | Outcome endpoints | create/update/get/stats/company insights | Outcomes | Strongly tied to applications | Medium |
+| `D:/jobradar-v2/frontend/src/api/notifications.ts` | Notification endpoints | list, unread count, mark read, mark all read, delete | NotificationBell | Simple but side-effectful | Medium |
+| `D:/jobradar-v2/frontend/src/api/admin.ts` | Admin and source-health endpoints | health, diagnostics, sourceHealth, reindex, export/import, clearData | Admin, Settings | Dict/blob endpoints and response typing are loosely coupled | High |
+| `D:/jobradar-v2/frontend/src/api/phase7a.ts` | Phase-7A ops endpoints | canonical jobs, companies, source health, search expansion | Companies, Sources, CanonicalJobs, SearchExpansion | Contains the clearest live route mismatch (`GET /search-expansion`) | High |
+| `D:/jobradar-v2/frontend/src/api/scraper.ts` | Scraper/career-page/target endpoints | SSE path, runs, career pages, targets, attempts, batch control | Targets, ScraperLog, ScraperControlPanel | Several response type mismatches vs backend schemas | High |
+| `D:/jobradar-v2/frontend/src/api/vault.ts` | Vault endpoints | list/update/delete resumes and cover letters | DocumentVault | Frontend shape depends on backend service methods that are missing | High |
+
+## Tests And Config
+
+| File Path | Purpose | Notes |
+|---|---|---|
+| `D:/jobradar-v2/frontend/src/__tests__` | Route and page integration tests | Best current behavior baseline for pages and providers |
+| `D:/jobradar-v2/frontend/src/api/__tests__` | API wrapper tests | Useful for request/response drift detection |
+| `D:/jobradar-v2/frontend/src/hooks/__tests__` | Hook tests | Covers debounce/keyboard/SSE helpers |
+| `D:/jobradar-v2/frontend/src/__tests__/setup.ts` | Test environment setup | Shared test bootstrap |
+| `D:/jobradar-v2/frontend/src/__tests__/testUtils.tsx` | Test helper render utilities | Provider/test harness support |
+| `D:/jobradar-v2/frontend/vite.config.ts` | Build and dev proxy config | Dev proxy targets `http://localhost:8000`, which is wrong inside the dev container |
+| `D:/jobradar-v2/frontend/vitest.config.ts` | Vitest config | Test runner source of truth |
+| `D:/jobradar-v2/frontend/eslint.config.js` | Lint config | Frontend lint behavior |
+| `D:/jobradar-v2/frontend/system.md` | Design-system source of truth | Use this before changing shell/layout/tokens |
+
+## Frontend Migration Notes
+
+- Safest surfaces to reuse or refactor independently:
+  - `components/ui`
+  - most `components/system`
+  - `index.css` tokens if kept API-compatible
+- Highest-risk files to touch without contract/test reinforcement:
+  - `App.tsx`
+  - `useAuthStore.ts`
+  - `useUIStore.ts`
+  - `pages/Settings.tsx`
+  - `pages/Targets.tsx`
+  - `pages/JobBoard.tsx`
+  - `pages/ResumeBuilder.tsx`
+  - `pages/SearchExpansion.tsx`
+- Dead or residual surfaces worth confirming before reuse:
+  - `useScraperStore.ts`
+  - `useKeyboard.ts`
+  - `useSSE.ts`
+  - `components/system/WorkspaceSidebar.tsx`
+  - dependency residue in `package.json` such as `lucide-react` and Radix-era tooling

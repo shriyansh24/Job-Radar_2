@@ -1,7 +1,7 @@
 services:
-  backend:
+  migrate:
     build: ./backend
-    ports: ["8000:8000"]
+    command: ["alembic", "upgrade", "head"]
     environment:
       JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
       JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
@@ -10,7 +10,22 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+    restart: "no"
+
+  backend:
+    build: ./backend
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports: ["8000:8000"]
+    environment:
+      JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
+      JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
+      JR_SECRET_KEY: docker-dev-secret
+      JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
         condition: service_healthy
     healthcheck:
       test:
@@ -24,6 +39,118 @@ services:
       timeout: 5s
       retries: 12
       start_period: 30s
+    restart: unless-stopped
+
+  scheduler:
+    build: ./backend
+    command: ["python", "-m", "app.runtime.scheduler"]
+    environment:
+      JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
+      JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
+      JR_SECRET_KEY: docker-dev-secret
+      JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+      JR_SCHEDULER_READY_MARKER: /tmp/jobradar-scheduler.ready
+      JR_SCHEDULER_HEALTHCHECK_KEY: jobradar:scheduler-health
+      JR_SCHEDULER_HEALTHCHECK_INTERVAL_SECONDS: "15"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.runtime.healthcheck", "scheduler"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  worker-scraping:
+    build: ./backend
+    command: ["python", "-m", "app.runtime.arq_worker", "scraping"]
+    environment:
+      JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
+      JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
+      JR_SECRET_KEY: docker-dev-secret
+      JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+      JR_WORKER_ROLE: scraping
+      JR_WORKER_READY_MARKER: /tmp/jobradar-worker-scraping.ready
+      JR_WORKER_HEALTHCHECK_KEY: jobradar:worker-health:scraping
+      JR_WORKER_HEALTHCHECK_INTERVAL_SECONDS: "15"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.runtime.healthcheck", "worker", "scraping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  worker-analysis:
+    build: ./backend
+    command: ["python", "-m", "app.runtime.arq_worker", "analysis"]
+    environment:
+      JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
+      JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
+      JR_SECRET_KEY: docker-dev-secret
+      JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+      JR_WORKER_ROLE: analysis
+      JR_WORKER_READY_MARKER: /tmp/jobradar-worker-analysis.ready
+      JR_WORKER_HEALTHCHECK_KEY: jobradar:worker-health:analysis
+      JR_WORKER_HEALTHCHECK_INTERVAL_SECONDS: "15"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.runtime.healthcheck", "worker", "analysis"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  worker-ops:
+    build: ./backend
+    command: ["python", "-m", "app.runtime.arq_worker", "ops"]
+    environment:
+      JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
+      JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
+      JR_SECRET_KEY: docker-dev-secret
+      JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+      JR_WORKER_ROLE: ops
+      JR_WORKER_READY_MARKER: /tmp/jobradar-worker-ops.ready
+      JR_WORKER_HEALTHCHECK_KEY: jobradar:worker-health:ops
+      JR_WORKER_HEALTHCHECK_INTERVAL_SECONDS: "15"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.runtime.healthcheck", "worker", "ops"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
 
   frontend:
     build: ./frontend

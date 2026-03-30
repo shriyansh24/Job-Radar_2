@@ -1,5 +1,9 @@
 import apiClient from "./client";
 
+function toNumber(value: number | string): number {
+  return typeof value === "number" ? value : Number(value);
+}
+
 // -- Canonical Jobs --
 
 export interface CanonicalJob {
@@ -89,27 +93,32 @@ export interface SourceHealth {
   total_jobs_found: number;
   last_check_at: string | null;
   failure_count: number;
-  source_type: string | null;
+  backoff_until: string | null;
+  created_at: string;
 }
 
 export const sourceHealthApi = {
   list: () =>
-    apiClient.get<SourceHealth[]>("/source-health").then((r) => r.data),
+    apiClient.get<SourceHealth[]>("/source-health").then((response) =>
+      response.data.map((item) => ({
+        ...item,
+        quality_score: toNumber(item.quality_score),
+      }))
+    ),
 };
 
 // -- Search Expansion --
 
-export interface QueryTemplate {
-  id: string;
-  name: string;
-  base_query: string;
-  expanded_queries: string[] | null;
-  strictness: string;
-  is_active: boolean;
-  created_at: string;
+export interface SearchExpansionResult {
+  original_query: string;
+  expanded_terms: string[];
+  synonyms: string[];
+  message: string;
 }
 
 export const searchExpansionApi = {
-  listTemplates: () =>
-    apiClient.get<QueryTemplate[]>("/search-expansion").then((r) => r.data),
+  expand: (query: string) =>
+    apiClient
+      .post<SearchExpansionResult>("/search-expansion/expand", { query })
+      .then((r) => r.data),
 };

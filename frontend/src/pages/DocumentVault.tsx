@@ -1,23 +1,16 @@
-import {
-  Briefcase,
-  Clock,
-  FileText,
-  Eye,
-  PencilSimple,
-  Scroll,
-  Trash,
-  UploadSimple,
-} from "@phosphor-icons/react";
+import { FileText, Scroll } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import type { CoverLetterResult } from "../api/copilot";
 import { resumeApi, type ResumeVersion } from "../api/resume";
 import { vaultApi } from "../api/vault";
-import Badge from "../components/ui/Badge";
+import { MetricStrip } from "../components/system/MetricStrip";
+import { PageHeader } from "../components/system/PageHeader";
+import { SplitWorkspace } from "../components/system/SplitWorkspace";
+import { StateBlock } from "../components/system/StateBlock";
+import { Surface } from "../components/system/Surface";
 import Button from "../components/ui/Button";
-import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Input from "../components/ui/Input";
 import Modal from "../components/ui/Modal";
@@ -25,218 +18,82 @@ import { SkeletonCard } from "../components/ui/Skeleton";
 import Tabs from "../components/ui/Tabs";
 import Textarea from "../components/ui/Textarea";
 import { toast } from "../components/ui/toastService";
+import { VaultCoverLetterCard, VaultResumeCard, VaultUploadSurface } from "../components/vault/VaultPanels";
 
 const TABS = [
   { id: "resumes", label: "Resumes", icon: <FileText size={14} weight="bold" /> },
   { id: "cover-letters", label: "Cover Letters", icon: <Scroll size={14} weight="bold" /> },
-];
-
-function ResumeCard({
-  resume,
-  onPreview,
-  onEdit,
-  onDelete,
-}: {
-  resume: ResumeVersion;
-  onPreview: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  return (
-    <Card hover>
-      <div className="flex items-start gap-3">
-        <FileText size={24} weight="bold" className="text-accent-primary shrink-0 mt-0.5" />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-text-primary truncate">
-            {resume.filename}
-          </p>
-          <p className="text-xs text-text-muted flex items-center gap-1 mt-1">
-            <Clock size={10} weight="bold" />
-            {format(new Date(resume.created_at), 'PP')}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<Eye size={14} weight="bold" />}
-          onClick={onPreview}
-        >
-          Preview
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<PencilSimple size={14} weight="bold" />}
-          onClick={onEdit}
-        >
-          Edit
-        </Button>
-        {confirmDelete ? (
-          <div className="flex items-center gap-1.5 ml-auto">
-            <span className="text-xs text-text-muted">Delete?</span>
-            <Button variant="danger" size="sm" onClick={onDelete}>
-              Yes
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setConfirmDelete(false)}>
-              No
-            </Button>
-          </div>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<Trash size={14} weight="bold" />}
-            className="ml-auto text-accent-danger hover:text-accent-danger"
-            onClick={() => setConfirmDelete(true)}
-          >
-            Delete
-          </Button>
-        )}
-      </div>
-    </Card>
-  );
-}
-
-function CoverLetterCard({
-  letter,
-  onEdit,
-  onDelete,
-}: {
-  letter: CoverLetterResult;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  return (
-    <Card hover>
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Badge variant="info" size="sm">{letter.style ?? "Cover Letter"}</Badge>
-          <span className="text-xs text-text-muted flex items-center gap-1">
-            <Briefcase size={10} weight="bold" />
-            {letter.job_id ? `${letter.job_id.slice(0, 8)}...` : "General"}
-          </span>
-        </div>
-        <p className="text-xs text-text-muted">
-          {format(new Date(letter.created_at), 'PP')}
-        </p>
-      </div>
-      <p className="text-sm text-text-secondary mt-3 line-clamp-4 leading-relaxed">
-        {letter.content}
-      </p>
-      <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border">
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<PencilSimple size={14} weight="bold" />}
-          onClick={onEdit}
-        >
-          Edit
-        </Button>
-        {confirmDelete ? (
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-text-muted">Delete?</span>
-            <Button variant="danger" size="sm" onClick={onDelete}>
-              Yes
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setConfirmDelete(false)}>
-              No
-            </Button>
-          </div>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<Trash size={14} weight="bold" />}
-            className="text-accent-danger hover:text-accent-danger"
-            onClick={() => setConfirmDelete(true)}
-          >
-            Delete
-          </Button>
-        )}
-      </div>
-    </Card>
-  );
-}
+] as const;
 
 export default function DocumentVault() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('resumes');
+  const [activeTab, setActiveTab] = useState("resumes");
   const [previewResume, setPreviewResume] = useState<ResumeVersion | null>(null);
   const [editingItem, setEditingItem] = useState<
-    | { kind: 'resume'; item: ResumeVersion }
-    | { kind: 'cover-letter'; item: CoverLetterResult }
+    | { kind: "resume"; item: ResumeVersion }
+    | { kind: "cover-letter"; item: CoverLetterResult }
     | null
   >(null);
-  const [editValue, setEditValue] = useState('');
+  const [editValue, setEditValue] = useState("");
 
-  // Queries
   const { data: resumes, isLoading: resumesLoading } = useQuery({
-    queryKey: ['vault-resumes'],
-    queryFn: () => vaultApi.listResumes().then((r) => r.data),
+    queryKey: ["vault-resumes"],
+    queryFn: () => vaultApi.listResumes().then((response) => response.data),
   });
 
   const { data: coverLetters, isLoading: lettersLoading } = useQuery({
-    queryKey: ['vault-cover-letters'],
-    queryFn: () => vaultApi.listCoverLetters().then((r) => r.data),
+    queryKey: ["vault-cover-letters"],
+    queryFn: () => vaultApi.listCoverLetters().then((response) => response.data),
   });
 
-  // Mutations
   const uploadMutation = useMutation({
     mutationFn: (file: File) => resumeApi.upload(file),
     onSuccess: () => {
-      toast('success', 'Resume uploaded successfully');
-      queryClient.invalidateQueries({ queryKey: ['vault-resumes'] });
+      toast("success", "Resume uploaded");
+      queryClient.invalidateQueries({ queryKey: ["vault-resumes"] });
     },
-    onError: () => toast('error', 'Failed to upload resume'),
+    onError: () => toast("error", "Failed to upload resume"),
   });
 
   const deleteResumeMutation = useMutation({
     mutationFn: (id: string) => vaultApi.deleteResume(id),
     onSuccess: () => {
-      toast('success', 'Resume deleted');
-      queryClient.invalidateQueries({ queryKey: ['vault-resumes'] });
+      toast("success", "Resume deleted");
+      queryClient.invalidateQueries({ queryKey: ["vault-resumes"] });
     },
-    onError: () => toast('error', 'Failed to delete resume'),
+    onError: () => toast("error", "Failed to delete resume"),
   });
 
   const deleteCoverLetterMutation = useMutation({
     mutationFn: (id: string) => vaultApi.deleteCoverLetter(id),
     onSuccess: () => {
-      toast('success', 'Cover letter deleted');
-      queryClient.invalidateQueries({ queryKey: ['vault-cover-letters'] });
+      toast("success", "Cover letter deleted");
+      queryClient.invalidateQueries({ queryKey: ["vault-cover-letters"] });
     },
-    onError: () => toast('error', 'Failed to delete cover letter'),
+    onError: () => toast("error", "Failed to delete cover letter"),
   });
 
   const updateResumeMutation = useMutation({
-    mutationFn: ({ id, label }: { id: string; label: string }) =>
-      vaultApi.updateResume(id, label),
+    mutationFn: ({ id, label }: { id: string; label: string }) => vaultApi.updateResume(id, label),
     onSuccess: () => {
-      toast('success', 'Resume updated');
-      queryClient.invalidateQueries({ queryKey: ['vault-resumes'] });
+      toast("success", "Resume updated");
+      queryClient.invalidateQueries({ queryKey: ["vault-resumes"] });
       closeEditor();
     },
-    onError: () => toast('error', 'Failed to update resume'),
+    onError: () => toast("error", "Failed to update resume"),
   });
 
   const updateCoverLetterMutation = useMutation({
     mutationFn: ({ id, content }: { id: string; content: string }) =>
       vaultApi.updateCoverLetter(id, content),
     onSuccess: () => {
-      toast('success', 'Cover letter updated');
-      queryClient.invalidateQueries({ queryKey: ['vault-cover-letters'] });
+      toast("success", "Cover letter updated");
+      queryClient.invalidateQueries({ queryKey: ["vault-cover-letters"] });
       closeEditor();
     },
-    onError: () => toast('error', 'Failed to update cover letter'),
+    onError: () => toast("error", "Failed to update cover letter"),
   });
 
-  // Dropzone
   const onDrop = useCallback(
     (accepted: File[]) => {
       const file = accepted[0];
@@ -248,158 +105,202 @@ export default function DocumentVault() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/pdf': ['.pdf'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      "application/pdf": [".pdf"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
     },
     maxFiles: 1,
   });
 
   function closeEditor() {
     setEditingItem(null);
-    setEditValue('');
+    setEditValue("");
   }
 
   function handleEditResume(resume: ResumeVersion) {
-    setEditingItem({ kind: 'resume', item: resume });
-    setEditValue(resume.label ?? '');
+    setEditingItem({ kind: "resume", item: resume });
+    setEditValue(resume.label ?? "");
   }
 
   function handleEditCoverLetter(letter: CoverLetterResult) {
-    setEditingItem({ kind: 'cover-letter', item: letter });
+    setEditingItem({ kind: "cover-letter", item: letter });
     setEditValue(letter.content);
   }
 
   function handleSaveEdit() {
     if (!editingItem) return;
-    if (editingItem.kind === 'resume') {
+
+    if (editingItem.kind === "resume") {
       updateResumeMutation.mutate({
         id: editingItem.item.id,
         label: editValue.trim(),
       });
       return;
     }
+
     updateCoverLetterMutation.mutate({
       id: editingItem.item.id,
       content: editValue,
     });
   }
 
-  const editorPending =
-    updateResumeMutation.isPending || updateCoverLetterMutation.isPending;
-  const editorTitle =
-    editingItem?.kind === 'resume' ? 'Edit Resume Label' : 'Edit Cover Letter';
-  const editorDescription =
-    editingItem?.kind === 'resume'
-      ? 'Rename how this resume version appears in the vault.'
-      : 'Update the saved cover letter text.';
+  const editorPending = updateResumeMutation.isPending || updateCoverLetterMutation.isPending;
+
+  const metrics = useMemo(
+    () => [
+      {
+        key: "resumes",
+        label: "Resumes",
+        value: `${resumes?.length ?? 0}`,
+        hint: "Stored resumes.",
+        icon: <FileText size={18} weight="bold" />,
+      },
+      {
+        key: "letters",
+        label: "Cover letters",
+        value: `${coverLetters?.length ?? 0}`,
+        hint: "Saved letter drafts.",
+        icon: <Scroll size={18} weight="bold" />,
+      },
+      {
+        key: "editing",
+        label: "Editor state",
+        value: editingItem ? "Open" : "Idle",
+        hint: "Modal state.",
+        icon: <FileText size={18} weight="bold" />,
+      },
+      {
+        key: "uploads",
+        label: "Upload state",
+        value: uploadMutation.isPending ? "Running" : "Ready",
+        hint: "Upload readiness.",
+        icon: <FileText size={18} weight="bold" />,
+        tone: uploadMutation.isPending ? ("warning" as const) : ("default" as const),
+      },
+    ],
+    [coverLetters?.length, editingItem, resumes?.length, uploadMutation.isPending]
+  );
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-text-primary">Document Vault</h1>
+      <PageHeader
+        className="hero-panel"
+        eyebrow="Prepare"
+        title="Document Vault"
+        description="Store source documents, cover letters, and resume variants in one place."
+      />
 
-      <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+      <MetricStrip items={metrics} />
 
-      {/* Resumes Tab */}
-      {activeTab === 'resumes' && (
-        <div className="space-y-4">
-          {/* Upload Zone */}
-          <Card padding="none">
-            <div
-              {...getRootProps()}
-              className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-[var(--radius-lg)] cursor-pointer transition-colors ${
-                isDragActive
-                  ? 'border-accent-primary bg-accent-primary/5'
-                  : 'border-border hover:border-border-focus'
-              }`}
-            >
-              <input {...getInputProps()} />
-              <UploadSimple size={32} weight="bold" className="text-text-muted mb-3" />
-              <p className="text-sm text-text-primary font-medium">
-                {isDragActive
-                  ? 'Drop your resume here'
-                  : 'Drag & drop a resume, or click to browse'}
-              </p>
-              <p className="text-xs text-text-muted mt-1">PDF or DOCX, max 10MB</p>
-              {uploadMutation.isPending && (
-                <p className="text-xs text-accent-primary mt-2">Uploading...</p>
+      <Tabs tabs={TABS.map((tab) => ({ ...tab }))} activeTab={activeTab} onChange={setActiveTab} />
+
+      {activeTab === "resumes" ? (
+        <SplitWorkspace
+          primary={
+            <div className="space-y-6">
+              <VaultUploadSurface
+                getRootProps={getRootProps as unknown as () => Record<string, unknown>}
+                getInputProps={getInputProps as unknown as () => Record<string, unknown>}
+                isDragActive={isDragActive}
+                uploading={uploadMutation.isPending}
+              />
+
+              {resumesLoading ? (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <SkeletonCard key={index} />
+                  ))}
+                </div>
+              ) : !resumes || resumes.length === 0 ? (
+                <Surface tone="default" padding="lg" radius="xl" className="brutal-panel">
+                  <EmptyState
+                    icon={<FileText size={40} weight="bold" />}
+                    title="No resumes"
+                    description="Upload a resume to start the vault."
+                  />
+                </Surface>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {resumes.map((resume) => (
+                    <VaultResumeCard
+                      key={resume.id}
+                      resume={resume}
+                      onPreview={() => setPreviewResume(resume)}
+                      onEdit={() => handleEditResume(resume)}
+                      onDelete={() => deleteResumeMutation.mutate(resume.id)}
+                    />
+                  ))}
+                </div>
               )}
             </div>
-          </Card>
-
-          {/* Resume Grid */}
-          {resumesLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <SkeletonCard key={i} />
-              ))}
+          }
+          secondary={
+            <div className="space-y-4">
+              <StateBlock
+                tone="neutral"
+                icon={<FileText size={18} weight="bold" />}
+                title="Vault role"
+                description="Keep source material stable while downstream surfaces generate variants."
+              />
             </div>
-          ) : !resumes || resumes.length === 0 ? (
-            <EmptyState
-              icon={<FileText size={40} weight="bold" />}
-              title="No resumes yet"
-              description="Upload your first resume to start building your document vault"
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {resumes.map((resume: ResumeVersion) => (
-                <ResumeCard
-                  key={resume.id}
-                  resume={resume}
-                  onPreview={() => setPreviewResume(resume)}
-                  onEdit={() => handleEditResume(resume)}
-                  onDelete={() => deleteResumeMutation.mutate(resume.id)}
+          }
+        />
+      ) : null}
+
+      {activeTab === "cover-letters" ? (
+        <SplitWorkspace
+          primary={
+            lettersLoading ? (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <SkeletonCard key={index} />
+                ))}
+              </div>
+            ) : !coverLetters || coverLetters.length === 0 ? (
+              <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
+                <EmptyState
+                  icon={<Scroll size={40} weight="bold" />}
+                  title="No cover letters"
+                  description="Generate a letter in Copilot and it will appear here."
                 />
-              ))}
+              </Surface>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {coverLetters.map((letter) => (
+                  <VaultCoverLetterCard
+                    key={letter.id}
+                    letter={letter}
+                    onEdit={() => handleEditCoverLetter(letter)}
+                    onDelete={() => deleteCoverLetterMutation.mutate(letter.id)}
+                  />
+                ))}
+              </div>
+            )
+          }
+          secondary={
+            <div className="space-y-4">
+              <StateBlock
+                tone="warning"
+                icon={<Scroll size={18} weight="bold" />}
+                title="Draft behavior"
+                description="Letter drafts stay editable here before reuse."
+              />
             </div>
-          )}
-        </div>
-      )}
+          }
+        />
+      ) : null}
 
-      {/* Cover Letters Tab */}
-      {activeTab === 'cover-letters' && (
-        <div>
-          {lettersLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <SkeletonCard key={i} />
-              ))}
-            </div>
-          ) : !coverLetters || coverLetters.length === 0 ? (
-            <EmptyState
-              icon={<Scroll size={40} weight="bold" />}
-              title="No cover letters yet"
-              description="Generate cover letters from the Copilot page and they will appear here"
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {coverLetters.map((letter: CoverLetterResult) => (
-                <CoverLetterCard
-                  key={letter.id}
-                  letter={letter}
-                  onEdit={() => handleEditCoverLetter(letter)}
-                  onDelete={() => deleteCoverLetterMutation.mutate(letter.id)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Resume Preview Modal */}
       <Modal
         open={!!previewResume}
         onClose={() => setPreviewResume(null)}
-        title={previewResume?.filename ?? "Resume Preview"}
+        title={previewResume?.filename ?? "Resume preview"}
         size="lg"
       >
         {previewResume?.parsed_text ? (
-          <pre className="text-sm text-text-primary whitespace-pre-wrap font-mono">
-            {previewResume.parsed_text}
-          </pre>
+          <pre className="whitespace-pre-wrap font-mono text-sm text-text-primary">{previewResume.parsed_text}</pre>
         ) : (
-          <div className="flex items-center gap-3 text-text-muted py-8 justify-center">
+          <div className="flex items-center justify-center gap-3 py-8 text-text-muted">
             <FileText size={20} weight="bold" />
-            <span className="text-sm">No text has been extracted from this resume yet.</span>
+            <span className="text-sm">No parsed text available yet.</span>
           </div>
         )}
       </Modal>
@@ -407,17 +308,19 @@ export default function DocumentVault() {
       <Modal
         open={!!editingItem}
         onClose={closeEditor}
-        title={editorTitle}
+        title={editingItem?.kind === "resume" ? "Edit resume label" : "Edit cover letter"}
         size="lg"
       >
         <div className="space-y-4">
-          <p className="text-sm text-text-secondary">{editorDescription}</p>
-          {editingItem?.kind === 'resume' ? (
+          <p className="text-sm text-text-secondary">
+            {editingItem?.kind === "resume" ? "Rename the resume label." : "Update the saved cover letter."}
+          </p>
+          {editingItem?.kind === "resume" ? (
             <Input
               label="Label"
               aria-label="Resume label"
               value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
+              onChange={(event) => setEditValue(event.target.value)}
               placeholder="Optional label"
             />
           ) : (
@@ -425,7 +328,7 @@ export default function DocumentVault() {
               label="Content"
               aria-label="Cover letter content"
               value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
+              onChange={(event) => setEditValue(event.target.value)}
               className="min-h-[240px]"
             />
           )}
@@ -434,7 +337,7 @@ export default function DocumentVault() {
               Cancel
             </Button>
             <Button onClick={handleSaveEdit} loading={editorPending}>
-              Save changes
+              Save
             </Button>
           </div>
         </div>

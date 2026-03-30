@@ -13,15 +13,21 @@ from starlette.responses import JSONResponse, Response
 from app.config import settings
 
 logger = structlog.get_logger()
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        structlog.contextvars.clear_contextvars()
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        request.state.request_id = request_id
         structlog.contextvars.bind_contextvars(request_id=request_id)
-        response = await call_next(request)
-        response.headers["X-Request-ID"] = request_id
-        return response
+        try:
+            response = await call_next(request)
+            response.headers["X-Request-ID"] = request_id
+            return response
+        finally:
+            structlog.contextvars.clear_contextvars()
 
 
 class TimingMiddleware(BaseHTTPMiddleware):
@@ -30,10 +36,14 @@ class TimingMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         duration_ms = (time.perf_counter() - start) * 1000
         response.headers["X-Response-Time"] = f"{duration_ms:.1f}ms"
+        route = request.scope.get("route")
         logger.info(
             "request_completed",
             method=request.method,
             path=request.url.path,
+            route_name=getattr(route, "name", None),
+            route_path=getattr(route, "path", None),
+            auth_user_id=getattr(request.state, "auth_user_id", None),
             status=response.status_code,
             duration_ms=round(duration_ms, 1),
         )
@@ -102,6 +112,38 @@ class ApiRateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["X-RateLimit-Limit"] = str(limit)
         response.headers["X-RateLimit-Remaining"] = str(meta)
         return response
+
+
+class CsrfProtectionMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        if not request.url.path.startswith(settings.api_prefix) or request.method in SAFE_METHODS:
+            return await call_next(request)
+
+        bearer_authorization = bool(request.headers.get("Authorization"))
+        cookie_auth_present = bool(
+            request.cookies.get(settings.access_cookie_name)
+            or request.cookies.get(settings.refresh_cookie_name)
+        )
+        if not cookie_auth_present or bearer_authorization:
+            return await call_next(request)
+
+        csrf_cookie = request.cookies.get(settings.csrf_cookie_name)
+        csrf_header = request.headers.get(settings.csrf_header_name)
+        if not csrf_cookie or csrf_cookie != csrf_header:
+            logger.warning(
+                "csrf_validation_failed",
+                reason="missing_or_invalid_token",
+                method=request.method,
+                path=request.url.path,
+                has_cookie=bool(csrf_cookie),
+                has_header=bool(csrf_header),
+            )
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "CSRF token missing or invalid"},
+            )
+
+        return await call_next(request)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

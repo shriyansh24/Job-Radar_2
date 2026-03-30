@@ -1,0 +1,66 @@
+# Open Questions
+
+Historical status: archived ambiguity snapshot, not the live unresolved-work list.
+
+Historical inventory note:
+- This file is an inventory snapshot from the earlier system-inventory pass.
+- When it conflicts with verified live behavior, `docs/current-state/*` is authoritative.
+- Several questions below were later resolved in `docs/current-state/` and `docs/repo-hardening/`; keep this file for historical context, not live planning.
+- Use `docs/current-state/00-index.md`, `docs/current-state/02-backend.md`, `docs/current-state/03-frontend.md`, `docs/current-state/05-ops-and-ci.md`, and `docs/repo-hardening/00-index.md` for current truth.
+
+## Contract And Behavior Questions
+
+1. Should `GET /api/v1/search-expansion` exist, or should the frontend be rewritten to use `POST /api/v1/search-expansion/expand`?
+2. Is the frontend `resumeApi.tailor()` type intentionally narrowed, or is it stale relative to backend `ResumeTailorResponse`?
+3. Is the frontend `salaryApi` type layer stale, or is the backend expected to translate `p25/p50/p75/p90` into `min/median/max` style fields?
+4. Should `scraperApi.getTarget()` return a flattened object, or should the frontend consume backend `ScrapeTargetWithAttemptsResponse { target, recent_attempts }` directly?
+5. Should `scraperApi.triggerTarget()` and `triggerBatch()` return attempt/batch summaries, or should the backend be adapted to the frontend’s `ScraperRunResult` expectation?
+6. Is `frontend/src/api/admin.ts` intentionally typed narrower than backend dict responses, or is the admin page currently relying on best-effort field access?
+7. Are notification `link` values guaranteed to map to valid frontend routes? Current backend-generated paths may not always line up with route structure.
+
+## Database And Migration Questions
+
+1. Can the Alembic chain be replayed from `001_create_users_table.py` to `head` on a clean PostgreSQL instance without manual fixes?
+2. Is `005_create_p2_tables.py` meant as a consolidation migration after merge conflicts, or is it unintentionally duplicating already-created tables from earlier branch revisions?
+3. Are Postgres-only vector/search columns and indexes fully represented in the current live schema, or do some exist only through raw migration SQL?
+4. Should `jobs.company_name` and `company_insights.company_name` remain soft-linked strings, or is a future hard-FK normalization intended?
+5. Is storing `user_integration_secrets.secret_value` in the primary DB an accepted design, or was an external secret store planned?
+
+## Runtime And Infra Questions
+
+1. Which source is authoritative for local DB boot:
+   - `docker-compose.yml`
+   - `.env.example`
+   - `README.md`
+   - `CLAUDE.md`
+2. Is Redis intended to become an active distributed primitive for rate limiting, task dispatch, or event fan-out, or is it currently just provisioned ahead of need?
+3. Should APScheduler remain embedded in the API process, or is a dedicated worker/scheduler split expected later?
+4. Is the frontend dev-container proxy expected to target `backend:8000` instead of `localhost:8000`?
+5. Is Nginx in the frontend container expected to support long-lived SSE traffic without additional proxy tuning?
+
+## Backend Structure Questions
+
+1. Are `backend/app/enrichment/models.py` and `backend/app/vault/models.py` intentionally empty placeholders, or should they be removed to reduce false discovery signals?
+2. Should `backend/app/vault/service.py` implement `update_resume` and `update_cover_letter`, or should the router/frontend stop exposing those operations?
+3. Is `backend/app/email/router.py` intended for authenticated internal use only, or for third-party inbound provider webhooks with signature verification?
+4. Should a repository/data-access layer exist eventually, or is direct service-level SQLAlchemy access the deliberate long-term pattern?
+5. Is `backend/tests/conftest.py` intentionally SQLite-only, or should Postgres-backed integration coverage become the standard for migration-sensitive features?
+
+## Frontend Structure Questions
+
+1. Is `frontend/src/store/useScraperStore.ts` dead code, or reserved for a future SSE/log refactor?
+2. Are `frontend/src/hooks/useKeyboard.ts` and `frontend/src/hooks/useSSE.ts` intentionally unused support hooks, or should they be removed?
+3. Is `frontend/src/components/system/WorkspaceSidebar.tsx` a dormant replacement for the live `Sidebar`, or leftover code?
+4. Should `frontend/package.json` still retain `lucide-react`, Radix, and shadcn-era config if Phosphor and local primitives are the active design system?
+5. Are the Phase-7A pages (`Companies`, `Sources`, `CanonicalJobs`, `SearchExpansion`) considered production surfaces or still transitional ops tooling?
+
+## Cross-Layer Confirmation Needed
+
+1. Confirm the five most drift-prone domains before any migration work:
+   - search expansion
+   - resume tailoring
+   - salary research/evaluation
+   - scraper responses
+   - vault updates
+2. Confirm whether the current source-of-truth for environment/runtime is Compose-first or docs-first.
+3. Confirm whether horizontal scaling of the backend is a real near-term requirement, because that directly changes scheduler architecture decisions.

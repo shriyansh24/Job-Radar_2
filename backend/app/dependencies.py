@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid as uuid_mod
 from collections.abc import AsyncGenerator
 from functools import lru_cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.service import decode_token_payload, get_token_version
 from app.config import Settings, settings
 from app.database import async_session_factory
-from app.shared.errors import AuthError
+from app.shared.errors import AuthError, ForbiddenError
 
 if TYPE_CHECKING:
     from app.auth.models import User
@@ -43,7 +43,7 @@ async def get_current_user(
         raise AuthError("Authentication required")
 
     payload = decode_token_payload(access_token, expected_type="access")
-    user_id: str | None = payload.get("sub")
+    user_id = cast(str | None, payload.get("sub"))
     if user_id is None:
         raise AuthError("Invalid token")
 
@@ -53,6 +53,19 @@ async def get_current_user(
         raise AuthError("User not found")
     if not user.is_active:
         raise AuthError("User is inactive")
-    if int(payload.get("ver", 0)) != get_token_version(user):
+    if int(cast(int | str, payload.get("ver", 0))) != get_token_version(user):
         raise AuthError("Token revoked")
+    request.state.auth_user_id = str(user.id)
     return user
+
+
+async def get_current_operator_user(
+    current_user: "User" = Depends(get_current_user),
+) -> "User":
+    operator_emails = {
+        email.strip().lower() for email in settings.operator_emails if email.strip()
+    }
+    if current_user.email.lower() in operator_emails:
+        return current_user
+
+    raise ForbiddenError("Operator access required")

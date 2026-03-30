@@ -1,95 +1,189 @@
-import { Plus } from "@phosphor-icons/react";
+import { CheckCircle, Clock, Kanban, Play, Sparkle } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { pipelineApi, type Application } from "../api/pipeline";
-import AddApplicationModal from "../components/pipeline/AddApplicationModal";
-import ApplicationModal from "../components/pipeline/ApplicationModal";
-import PipelineColumn from "../components/pipeline/PipelineColumn";
+import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
-import { toast } from "../components/ui/toastService";
-
-const COLUMNS = [
-  { key: "saved", label: "Saved", color: "border-text-muted" },
-  { key: "applied", label: "Applied", color: "border-accent-primary" },
-  { key: "screening", label: "Screening", color: "border-accent-primary/60" },
-  { key: "interviewing", label: "Interviewing", color: "border-accent-warning" },
-  { key: "offer", label: "Offer", color: "border-accent-success" },
-  { key: "accepted", label: "Accepted", color: "border-accent-success" },
-  { key: "rejected", label: "Rejected", color: "border-accent-danger" },
-  { key: "withdrawn", label: "Withdrawn", color: "border-text-muted" },
-];
+import { MetricStrip, PageHeader, SplitWorkspace } from "../components/system";
+import KanbanBoard from "../components/pipeline/KanbanBoard";
+import { PipelineBoard } from "../components/pipeline/PipelineBoard";
+import { PipelineDetailPanel } from "../components/pipeline/PipelineDetailPanel";
+import { NEXT_STAGE, PIPELINE_STAGES, getAllowedTransitions } from "../components/pipeline/pipelineWorkflow";
 
 export default function Pipeline() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [showCreate, setShowCreate] = useState(false);
-  const [historyApp, setHistoryApp] = useState<Application | null>(null);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
+  const [advancingId, setAdvancingId] = useState<string | null>(null);
 
-  const { data: pipelineData, isLoading } = useQuery({
+  const { data: pipelineData, isLoading, isError } = useQuery({
     queryKey: ["pipeline"],
     queryFn: () => pipelineApi.pipeline().then((r) => r.data),
   });
 
+  const stageColumns = PIPELINE_STAGES.map((stage) => ({
+    ...stage,
+    applications: pipelineData?.[stage.key] ?? [],
+  }));
+
+  const allApplications = stageColumns.flatMap((stage) => stage.applications);
+  const selectedApplication =
+    allApplications.find((application) => application.id === selectedApplicationId) ?? null;
+  const firstApplicationId = allApplications[0]?.id ?? null;
+
+  useEffect(() => {
+    if (!selectedApplicationId && firstApplicationId) {
+      setSelectedApplicationId(firstApplicationId);
+    }
+  }, [firstApplicationId, selectedApplicationId]);
+
   const transitionMutation = useMutation({
-    mutationFn: ({ id, newStatus }: { id: string; newStatus: string }) =>
-      pipelineApi.transition(id, { new_status: newStatus }),
-    onSuccess: () => {
-      toast('success', 'Status updated');
-      queryClient.invalidateQueries({ queryKey: ['pipeline'] });
+    mutationFn: async ({
+      application,
+      nextStatus,
+    }: {
+      application: Application;
+      nextStatus: string;
+    }) => {
+      setAdvancingId(application.id);
+      return pipelineApi.transition(application.id, {
+        new_status: nextStatus,
+        note: `Moved to ${nextStatus}`,
+      });
     },
-    onError: () => toast('error', 'Invalid transition'),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+      await queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onSettled: () => setAdvancingId(null),
   });
 
-  const totalApps = COLUMNS.reduce(
-    (sum, col) => sum + (pipelineData?.[col.key]?.length || 0),
-    0
-  );
+  const totalApplications = allApplications.length;
+  const interviewAndBeyond = allApplications.filter((application) =>
+    ["interviewing", "offer", "accepted"].includes(application.status)
+  ).length;
+  const followUpLoad = Math.max(totalApplications - interviewAndBeyond, 0);
 
   return (
-    <div className="flex flex-col min-h-0 gap-4">
-      <div className="flex items-end justify-between shrink-0">
-        <div>
-          <div className="text-xs font-medium text-text-muted tracking-tight">
-            Pipeline
-          </div>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-text-primary">
-            Applications
-          </h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            <span className="font-mono">{totalApps}</span> total
-          </p>
-        </div>
-        <Button
-          variant="primary"
-          onClick={() => setShowCreate(true)}
-          icon={<Plus size={16} weight="bold" />}
-        >
-          Add Application
-        </Button>
-      </div>
+    <div className="space-y-6 px-4 py-4 sm:px-6 sm:py-6">
+      <PageHeader
+        eyebrow="Execute"
+        title="Pipeline"
+        description="Track applications by stage."
+        meta={
+          <>
+            <Badge variant="info">{totalApplications.toLocaleString()} tracked</Badge>
+            <Badge variant="warning">{interviewAndBeyond.toLocaleString()} late-stage</Badge>
+          </>
+        }
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              icon={<Play size={16} weight="bold" />}
+              onClick={() => navigate("/auto-apply")}
+            >
+              Auto-apply
+            </Button>
+            <Button
+              variant="primary"
+              icon={<Sparkle size={16} weight="bold" />}
+              onClick={() => navigate("/copilot")}
+            >
+              Copilot
+            </Button>
+          </>
+        }
+      />
 
-      <div className="flex-1 min-h-0 overflow-x-auto">
-        <div className="flex gap-4 h-full min-w-max pb-4 pr-1">
-          {COLUMNS.map((col) => (
-            <PipelineColumn
-              key={col.key}
-              label={col.label}
-              color={col.color}
-              apps={(pipelineData?.[col.key] || []) as Application[]}
-              loading={isLoading}
-              onTransition={(appId, newStatus) =>
-                transitionMutation.mutate({ id: appId, newStatus })
+      <MetricStrip
+        items={[
+          {
+            key: "applications",
+            label: "Applications",
+            value: totalApplications.toLocaleString(),
+            icon: <Kanban size={18} weight="bold" />,
+            tone: "default",
+            hint: "Total on board.",
+          },
+          {
+            key: "follow-up",
+            label: "Follow-up",
+            value: followUpLoad.toLocaleString(),
+            icon: <Clock size={18} weight="bold" />,
+            tone: "warning",
+            hint: "Needs attention.",
+          },
+          {
+            key: "late-stage",
+            label: "Late stage",
+            value: interviewAndBeyond.toLocaleString(),
+            icon: <CheckCircle size={18} weight="bold" />,
+            tone: "success",
+            hint: "Interview or later.",
+          },
+          {
+            key: "selected",
+            label: "Selected",
+            value: selectedApplication ? selectedApplication.status : "None",
+            icon: <Sparkle size={18} weight="bold" />,
+            tone: "default",
+            hint: "Open in detail pane.",
+          },
+        ]}
+      />
+
+      <SplitWorkspace
+        primary={
+          <KanbanBoard
+            apps={allApplications}
+            onDragTransition={(appId, newStatus) => {
+              const application = allApplications.find((item) => item.id === appId);
+              if (!application || application.status === newStatus) {
+                return;
               }
-              onViewHistory={(app) => setHistoryApp(app)}
+              if (!getAllowedTransitions(application.status).includes(newStatus)) {
+                return;
+              }
+              transitionMutation.mutate({ application, nextStatus: newStatus });
+            }}
+          >
+            <PipelineBoard
+              isLoading={isLoading}
+              isError={isError}
+              stageColumns={stageColumns}
+              selectedApplicationId={selectedApplicationId}
+              onSelect={(application) => setSelectedApplicationId(application.id)}
+              onAdvance={(application) => {
+                const nextStatus = NEXT_STAGE[application.status];
+                if (!nextStatus) {
+                  return;
+                }
+                transitionMutation.mutate({ application, nextStatus });
+              }}
+              advancingId={advancingId}
             />
-          ))}
-        </div>
-      </div>
-
-      <AddApplicationModal open={showCreate} onClose={() => setShowCreate(false)} />
-      <ApplicationModal
-        open={!!historyApp}
-        onClose={() => setHistoryApp(null)}
-        application={historyApp}
+          </KanbanBoard>
+        }
+        secondary={
+          <PipelineDetailPanel
+            selectedApplication={selectedApplication}
+            firstApplicationId={firstApplicationId}
+            advancingId={advancingId}
+            onTransition={(application, nextStatus) => {
+              if (!nextStatus) {
+                return;
+              }
+              transitionMutation.mutate({ application, nextStatus });
+            }}
+            onSelectFirst={() => {
+              if (firstApplicationId) {
+                setSelectedApplicationId(firstApplicationId);
+              }
+            }}
+          />
+        }
       />
     </div>
   );

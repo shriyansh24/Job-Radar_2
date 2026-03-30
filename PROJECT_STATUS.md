@@ -1,54 +1,56 @@
 # JobRadar V2 - Project Status
 
-> Last updated: 2026-03-23
-> Canonical operational state lives in `docs/current-state/00-index.md`.
+> Last updated: 2026-03-27
+> Canonical live state lives in `docs/current-state/00-index.md`.
 
-## Current Snapshot
-- See `docs/current-state/00-index.md` for the canonical live state.
-- Active development branch: `feat/p2-polish-advanced` (all P0/P1/P2 feature code).
-- `main` has PRs #15 (security hardening) and #16 (CodeQL + deps) merged.
-- Backend: **716 tests pass**, ruff clean, 23 routers mounted, 37 DB tables.
-- Frontend: lint clean, build clean, 9 tests pass in 6 files.
-- Audit status remains `39 FIXED / 5 STALE / 0 OPEN / 0 PARTIAL`.
-- GitHub workflows are updated to current `actions/*@v6` releases.
+## Snapshot
+- Active workspace branch: `codex/ui-changes`
+- Compose-first local runtime is the current repo baseline
+- Dedicated scheduler runtime is live alongside the API process
+- Queue-backed ARQ worker services are now live for `scraping`, `analysis`, and `ops`
+- ATS identity persistence is now live on scraped jobs with migration coverage
+- Auto Apply now exposes run/pause/refresh operator controls and has API integration coverage
+- Resume Studio now supports live template preview and PDF export against the backend API
+- Analytics now includes live application-pattern surfaces on top of the overview and chart stack
+- Interview prep now returns richer company/role context, and Job Board semantic mode now runs through the live hybrid-search backend path
+- Pipeline now renders `rejected` and `withdrawn` stages and supports bounded drag/drop transitions
+- Frontend test taxonomy lives under `frontend/src/tests/`
+- Browser/e2e coverage lives under `frontend/e2e/`
+- Backend pytest lanes now use explicit role-based directories under `backend/tests/`
+- Representative browser captures live under `.claude/ui-captures/`
 
-## What Is Stable
-- Cookie-based auth, refresh, revocation, rate limiting, and security headers
-- Target-based scraping platform with ATS detection, tier routing, pagination crawling, and attempt telemetry
-- Job enrichment, salary analysis, cover-letter generation, interview prep, resume tailoring, and application pipeline flows
-- Frontend theme system with light mode and high-contrast dark mode
-- Vault PATCH flows, admin cleanup, SSE credentialed transport, and current frontend build compatibility
+## What Is Currently True
+- The reference-first frontend is the active UI direction on `codex/ui-changes`.
+- The main routed app is validated locally through frontend lint, frontend tests, browser/e2e, frontend build, and targeted backend integration coverage.
+- `docs/current-state/` and `docs/audit/` are the live authority layers.
+- `docs/repo-hardening/` is the active normalization and traceability trail.
+- `feat/p1-core-value` remains a selective recovery source rather than a merge target.
 
-## P0/P1/P2 Feature Status (feat/p2-polish-advanced)
-All 38 spec features have backend code. Backend wiring is now complete:
-- All 37 DB tables exist (10 P2 tables created via consolidation migration `005`)
-- 23 routers mounted (email and outcomes added this session)
-- Resume `ir_schema.py`, `renderer.py`, and `professional.html` template all present
-- `users.created_at`/`updated_at` fixed to `timestamp with time zone`
+## External Or Optional Follow-Through
+- Repo-wide backend mypy remains a targeted CI gate rather than a full-program strict-type contract.
+- Browser/e2e coverage is committed and representative; destructive provider-backed flows and seeded-data-heavy workflows still rely on targeted or manual validation.
+- Queue-backed runtime is live with queue pressure, alert state, oldest-job age, and request/job correlation on queue-triggered operator paths. Long-window alert routing and dashboards still depend on deployment infrastructure outside the repo.
+- Migration replay, targeted rollback coverage, and the migration-ops runbook are live; full production restore strategy remains an operator concern outside the codebase.
 
-Remaining frontend gaps:
-- No API modules or pages for: email, networking, outcomes, copilot chat
-- Settings stubs (change password, delete account, clear data) are no-ops
-- API keys collected but not persisted to backend
-
-## Where To Read Next
+## Read Order
 1. `docs/current-state/00-index.md`
 2. `docs/audit/00-index.md`
-3. `AGENTS.md`
-4. `CLAUDE.md`
-5. `README.md`
+3. `docs/repo-hardening/00-index.md`
+4. `README.md`
+5. `CLAUDE.md`
 
-## Non-Blocking Residuals
-- Repo-wide strict backend mypy remains deferred outside the current targeted CI scope.
-- Vitest still emits non-fatal `--localstorage-file` warnings.
+## Where Each Question Goes
+- "What is live?" -> `docs/current-state/`
+- "What was broken or fixed?" -> `docs/audit/`
+- "What is still being normalized or traced?" -> `docs/repo-hardening/`
+- "What is exploratory?" -> `docs/research/`
 
-## Deferred Work (Not Current Bugs)
-- Create frontend API modules and pages for: email, networking, outcomes, copilot chat
-- Add backend endpoints for: change password, delete account, clear data
-- Wire API key persistence from Settings/Onboarding to backend
-- Wire semantic search into Job Board UI
-- Resume PDF generation end-to-end testing (WeasyPrint is optional dep)
-- Saved-search alerts UI and scheduler UX
-- Additional parser tuning for difficult JS-heavy career pages
-- End-to-end Playwright coverage
-- Rebase feat/p2-polish-advanced onto current main
+## Current Hardening Posture
+- Runtime/doc truth is materially reconciled around the compose-first baseline.
+- Current docs now distinguish the live queue-backed runtime from deployment-only follow-through instead of treating ARQ as a future-only target.
+- GitHub protections now include `Repository Validation`, `Docs Validation`, `Migration Safety`, `Dependency Review`, `CodeQL`, and `Frontend E2E Smoke / frontend-e2e-smoke`.
+- Remaining branch-era `feat/p1-core-value` variants are now treated as explicit adopt-or-archive decisions rather than open-ended live-scope ambiguity.
+
+## Intentional Non-Goals In Live Scope
+- Branch-era `feat/p1-core-value` variants that were not promoted are now historical/archive material, not active committed work.
+- Provider-backed ATS submission flows, destructive admin actions, and seeded-data-heavy PDF fidelity remain environment-specific validation concerns rather than missing repo-local implementation.

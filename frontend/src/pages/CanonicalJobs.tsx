@@ -1,104 +1,180 @@
 import { GitMerge, WarningCircle } from "@phosphor-icons/react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { canonicalJobsApi, type CanonicalJob } from "../api/phase7a";
+import { PageHeader, SectionHeader, Surface } from "../components/system";
+import Badge from "../components/ui/Badge";
+import Button from "../components/ui/Button";
+import EmptyState from "../components/ui/EmptyState";
+import Skeleton from "../components/ui/Skeleton";
+import { cn } from "../lib/utils";
 
 export default function CanonicalJobs() {
   const [showStale, setShowStale] = useState(false);
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
 
   const { data: jobs = [], isLoading } = useQuery({
     queryKey: ["canonical-jobs", { stale_only: showStale }],
     queryFn: () => canonicalJobsApi.list({ stale_only: showStale }),
   });
 
-  const closeMut = useMutation({
+  const closeMutation = useMutation({
     mutationFn: canonicalJobsApi.close,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["canonical-jobs"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["canonical-jobs"] }),
   });
 
-  const reactivateMut = useMutation({
+  const reactivateMutation = useMutation({
     mutationFn: canonicalJobsApi.reactivate,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["canonical-jobs"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["canonical-jobs"] }),
   });
+
+  const staleCount = useMemo(() => jobs.filter((job) => job.is_stale).length, [jobs]);
+  const openCount = useMemo(() => jobs.filter((job) => job.status === "open").length, [jobs]);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-text-primary flex items-center gap-2">
-          <GitMerge size={24} weight="bold" />
-          Canonical Jobs
-        </h1>
-        <button
-          onClick={() => setShowStale(!showStale)}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius-md)] text-sm transition-colors ${
-            showStale
-              ? "bg-yellow-500/10 text-yellow-400"
-              : "bg-bg-tertiary text-text-secondary hover:text-text-primary"
-          }`}
-        >
-          <WarningCircle size={16} />
-          {showStale ? "Showing stale" : "Show stale only"}
-        </button>
-      </div>
+      <PageHeader
+        className="hero-panel"
+        eyebrow="Operations"
+        title="Canonical Jobs"
+        description="Merged job entities, source consolidation, and stale record cleanup for the canonical registry."
+        actions={
+          <button
+            type="button"
+            onClick={() => setShowStale(!showStale)}
+            className={cn(
+              "hard-press inline-flex items-center gap-2 border-2 border-border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] transition-[background-color,color,border-color] duration-[var(--transition-fast)]",
+              showStale
+                ? "bg-[var(--color-accent-warning-subtle)] text-[var(--color-accent-warning)] shadow-[var(--shadow-sm)]"
+                : "bg-card text-text-secondary hover:text-text-primary"
+            )}
+          >
+            <WarningCircle size={14} weight="bold" />
+            {showStale ? "Showing stale" : "Show stale only"}
+          </button>
+        }
+        meta={
+          <>
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+              {jobs.length} loaded
+            </span>
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+              {openCount} open
+            </span>
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+              {staleCount} stale
+            </span>
+          </>
+        }
+      />
 
       {isLoading ? (
-        <div className="text-text-muted text-sm">Loading...</div>
-      ) : jobs.length === 0 ? (
-        <div className="text-center py-12 text-text-muted">
-          <GitMerge size={48} className="mx-auto mb-3 opacity-50" />
-          <p>No canonical jobs found</p>
+        <div className="space-y-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Surface key={index} className="brutal-panel">
+              <Skeleton variant="text" className="h-5 w-40" />
+              <Skeleton variant="text" className="mt-4 h-4 w-56" />
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <Skeleton variant="text" className="h-4 w-20" />
+                <Skeleton variant="text" className="h-4 w-20" />
+                <Skeleton variant="text" className="h-4 w-20" />
+              </div>
+            </Surface>
+          ))}
         </div>
+      ) : jobs.length === 0 ? (
+        <EmptyState
+          icon={<GitMerge size={40} weight="bold" />}
+          title="No canonical jobs found"
+          description="The canonical queue will appear here once source jobs are merged."
+        />
       ) : (
-        <div className="space-y-3">
-          {jobs.map((job: CanonicalJob) => (
-            <div
-              key={job.id}
-              className="border border-border rounded-[var(--radius-lg)] p-4 bg-bg-secondary hover:bg-bg-tertiary/50 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <h3 className="text-sm font-medium text-text-primary truncate">
-                    {job.title}
-                  </h3>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    {job.company_name}
-                    {job.location && ` \u2022 ${job.location}`}
-                    {job.remote_type && ` \u2022 ${job.remote_type}`}
-                  </p>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-text-muted">
-                    <span>{job.source_count} source(s)</span>
-                    <span>
-                      First seen {new Date(job.first_seen_at).toLocaleDateString()}
-                    </span>
-                    {job.is_stale && (
-                      <span className="text-yellow-400 flex items-center gap-1">
-                        <WarningCircle size={12} /> Stale
+        <Surface padding="none" className="hero-panel">
+          <div className="border-b-2 border-border px-5 py-5">
+            <SectionHeader
+              title="Canonical Queue"
+              description="Monitor merged job records, source coverage, and stale lifecycle actions."
+              action={
+                <div className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                  {jobs.length} rows
+                </div>
+              }
+            />
+          </div>
+
+          <div className="divide-y-2 divide-border">
+            {jobs.map((job: CanonicalJob) => (
+              <div key={job.id} className="px-5 py-5">
+                <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_220px_180px] xl:items-start">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-xl font-black uppercase tracking-[-0.05em] text-text-primary">
+                        {job.title}
+                      </h3>
+                      <Badge variant={job.status === "open" ? "info" : "default"}>{job.status}</Badge>
+                      {job.is_stale ? <Badge variant="warning">Stale</Badge> : null}
+                    </div>
+
+                    <p className="mt-3 text-sm text-text-secondary">
+                      {job.company_name}
+                      {job.location ? ` | ${job.location}` : ""}
+                      {job.remote_type ? ` | ${job.remote_type}` : ""}
+                    </p>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="brutal-panel px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-text-secondary">
+                        {job.source_count} source(s)
                       </span>
+                      <span className="brutal-panel px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-text-secondary">
+                        First seen {new Date(job.first_seen_at).toLocaleDateString()}
+                      </span>
+                      <span className="brutal-panel px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-text-secondary">
+                        Refreshed {new Date(job.last_refreshed_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <div className="brutal-panel px-4 py-3">
+                      <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                        Company
+                      </p>
+                      <p className="mt-3 text-sm text-text-primary">{job.company_name}</p>
+                    </div>
+                    <div className="brutal-panel px-4 py-3">
+                      <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                        Domain
+                      </p>
+                      <p className="mt-3 text-sm text-text-primary">{job.company_domain ?? "-"}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 xl:justify-end">
+                    {job.status === "open" ? (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        loading={closeMutation.isPending}
+                        onClick={() => closeMutation.mutate(job.id)}
+                      >
+                        Close
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="success"
+                        size="sm"
+                        loading={reactivateMutation.isPending}
+                        onClick={() => reactivateMutation.mutate(job.id)}
+                      >
+                        Reactivate
+                      </Button>
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  {job.status === "open" ? (
-                    <button
-                      onClick={() => closeMut.mutate(job.id)}
-                      className="px-3 py-1 rounded-[var(--radius-md)] text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                    >
-                      Close
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => reactivateMut.mutate(job.id)}
-                      className="px-3 py-1 rounded-[var(--radius-md)] text-xs bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors"
-                    >
-                      Reactivate
-                    </button>
-                  )}
-                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </Surface>
       )}
     </div>
   );

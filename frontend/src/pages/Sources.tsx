@@ -1,20 +1,23 @@
-import { Heartbeat } from "@phosphor-icons/react";
+import { Heartbeat, Pulse, ShieldCheck, WarningCircle } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { sourceHealthApi, type SourceHealth } from "../api/phase7a";
+import { PageHeader, Surface } from "../components/system";
+import Badge from "../components/ui/Badge";
+import EmptyState from "../components/ui/EmptyState";
+import Skeleton from "../components/ui/Skeleton";
 
-const healthColors: Record<string, string> = {
-  healthy: "bg-green-500",
-  degraded: "bg-yellow-500",
-  failing: "bg-red-500",
-  unknown: "bg-gray-500",
-};
-
-const healthBadgeColors: Record<string, string> = {
-  healthy: "bg-green-500/10 text-green-400",
-  degraded: "bg-yellow-500/10 text-yellow-400",
-  failing: "bg-red-500/10 text-red-400",
-  unknown: "bg-bg-tertiary text-text-muted",
-};
+function healthVariant(state: string): "success" | "warning" | "danger" | "default" {
+  switch (state) {
+    case "healthy":
+      return "success";
+    case "degraded":
+      return "warning";
+    case "unhealthy":
+      return "danger";
+    default:
+      return "default";
+  }
+}
 
 export default function Sources() {
   const { data: sources = [], isLoading } = useQuery({
@@ -23,63 +26,146 @@ export default function Sources() {
     refetchInterval: 60_000,
   });
 
+  const healthyCount = sources.filter((source) => source.health_state === "healthy").length;
+  const totalJobs = sources.reduce((sum, source) => sum + source.total_jobs_found, 0);
+
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-text-primary flex items-center gap-2">
-        <Heartbeat size={24} weight="bold" />
-        Source Health
-      </h1>
+      <PageHeader
+        className="hero-panel"
+        eyebrow="Operations"
+        title="Source Health"
+        description="Scraper source status, quality, and failure telemetry across the ingestion layer."
+        meta={
+          <>
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+              {sources.length} sources
+            </span>
+            <span className="brutal-panel px-3 py-2 font-mono font-bold uppercase tracking-[0.16em]">
+              {healthyCount} healthy
+            </span>
+          </>
+        }
+      />
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Surface tone="subtle" padding="md" className="hero-panel">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                Sources
+              </p>
+              <p className="mt-3 text-3xl font-black uppercase tracking-[-0.05em] text-text-primary">
+                {isLoading ? "..." : sources.length.toLocaleString()}
+              </p>
+            </div>
+            <Heartbeat size={24} weight="bold" className="text-text-muted" />
+          </div>
+        </Surface>
+        <Surface tone="subtle" padding="md" className="hero-panel">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                Healthy
+              </p>
+              <p className="mt-3 text-3xl font-black uppercase tracking-[-0.05em] text-text-primary">
+                {isLoading ? "..." : healthyCount.toLocaleString()}
+              </p>
+            </div>
+            <ShieldCheck size={24} weight="fill" className="text-accent-secondary" />
+          </div>
+        </Surface>
+        <Surface tone="subtle" padding="md" className="hero-panel">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                Jobs Found
+              </p>
+              <p className="mt-3 text-3xl font-black uppercase tracking-[-0.05em] text-text-primary">
+                {isLoading ? "..." : `${totalJobs.toLocaleString()} total`}
+              </p>
+            </div>
+            <Pulse size={24} weight="bold" className="text-accent-primary" />
+          </div>
+        </Surface>
+      </div>
 
       {isLoading ? (
-        <div className="text-text-muted text-sm">Loading sources...</div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Surface key={index} className="brutal-panel">
+              <Skeleton variant="text" className="h-4 w-28" />
+              <Skeleton variant="text" className="mt-6 h-8 w-16" />
+              <div className="mt-6 space-y-3">
+                <Skeleton variant="text" className="h-4 w-full" />
+                <Skeleton variant="text" className="h-4 w-full" />
+                <Skeleton variant="text" className="h-4 w-full" />
+              </div>
+            </Surface>
+          ))}
+        </div>
+      ) : sources.length === 0 ? (
+        <EmptyState
+          icon={<WarningCircle size={40} weight="bold" />}
+          title="No sources found"
+          description="Source health will appear here once the scraper registry starts reporting."
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sources.map((s: SourceHealth) => (
-            <div
-              key={s.id}
-              className="border border-border rounded-[var(--radius-lg)] p-4 bg-bg-secondary"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-medium text-text-primary capitalize">
-                  {s.source_name}
-                </span>
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium ${
-                    healthBadgeColors[s.health_state] || healthBadgeColors.unknown
-                  }`}
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full ${healthColors[s.health_state] || healthColors.unknown}`}
-                  />
-                  {s.health_state}
-                </span>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {sources.map((source: SourceHealth) => (
+            <Surface key={source.id} className="brutal-panel h-full">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-lg font-black uppercase tracking-[-0.05em] text-text-primary">
+                    {source.source_name}
+                  </p>
+                  <p className="mt-2 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                    monitored source
+                  </p>
+                </div>
+                <Badge variant={healthVariant(source.health_state)}>{source.health_state}</Badge>
               </div>
 
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between text-text-secondary">
-                  <span>Jobs found</span>
-                  <span className="text-text-primary font-mono">{s.total_jobs_found}</span>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="brutal-panel px-4 py-3">
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                    Quality
+                  </p>
+                  <p className="mt-3 text-2xl font-black uppercase tracking-[-0.05em] text-text-primary">
+                    {(source.quality_score * 100).toFixed(0)}%
+                  </p>
                 </div>
-                <div className="flex justify-between text-text-secondary">
-                  <span>Quality</span>
-                  <span className="text-text-primary font-mono">
-                    {(s.quality_score * 100).toFixed(0)}%
+                <div className="brutal-panel px-4 py-3">
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                    Jobs found
+                  </p>
+                  <p className="mt-3 text-2xl font-black uppercase tracking-[-0.05em] text-text-primary">
+                    {source.total_jobs_found}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3 border-t-2 border-border pt-4">
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-text-muted">Failures</span>
+                  <span className="font-mono text-text-primary">{source.failure_count}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-text-muted">Last check</span>
+                  <span className="text-right text-text-secondary">
+                    {source.last_check_at
+                      ? new Date(source.last_check_at).toLocaleString()
+                      : "Never"}
                   </span>
                 </div>
-                <div className="flex justify-between text-text-secondary">
-                  <span>Failures</span>
-                  <span className="text-text-primary font-mono">{s.failure_count}</span>
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-text-muted">Created</span>
+                  <span className="text-right text-text-secondary">
+                    {new Date(source.created_at).toLocaleDateString()}
+                  </span>
                 </div>
-                {s.last_check_at && (
-                  <div className="flex justify-between text-text-secondary">
-                    <span>Last check</span>
-                    <span className="text-text-muted text-xs">
-                      {new Date(s.last_check_at).toLocaleString()}
-                    </span>
-                  </div>
-                )}
               </div>
-            </div>
+            </Surface>
           ))}
         </div>
       )}

@@ -1,85 +1,337 @@
-import { MagnifyingGlassPlus } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
-import { searchExpansionApi, type QueryTemplate } from "../api/phase7a";
+import {
+  ArrowSquareOut,
+  Lightning,
+  MagnifyingGlassPlus,
+  Sparkle,
+  TerminalWindow,
+} from "@phosphor-icons/react";
+import { useMutation } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { searchExpansionApi } from "../api/phase7a";
+import { MetricStrip } from "../components/system/MetricStrip";
+import { PageHeader } from "../components/system/PageHeader";
+import { SectionHeader } from "../components/system/SectionHeader";
+import { SplitWorkspace } from "../components/system/SplitWorkspace";
+import { StateBlock } from "../components/system/StateBlock";
+import { Surface } from "../components/system/Surface";
+import Badge from "../components/ui/Badge";
+import Button from "../components/ui/Button";
+import EmptyState from "../components/ui/EmptyState";
+import Input from "../components/ui/Input";
+import Skeleton from "../components/ui/Skeleton";
+import { toast } from "../components/ui/toastService";
+
+const SUGGESTED_QUERIES = [
+  "senior frontend engineer",
+  "product designer fintech",
+  "ai product manager remote",
+  "staff software engineer platform",
+] as const;
+
+function QueryChip({
+  value,
+  onClick,
+}: {
+  value: string;
+  onClick: (value: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(value)}
+      className="hard-press border-2 border-border bg-[var(--color-bg-secondary)] px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary hover:bg-[var(--color-bg-tertiary)] hover:text-text-primary"
+    >
+      {value}
+    </button>
+  );
+}
 
 export default function SearchExpansion() {
-  const { data: templates = [], isLoading } = useQuery({
-    queryKey: ["search-expansion", "templates"],
-    queryFn: searchExpansionApi.listTemplates,
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+  const [history, setHistory] = useState<string[]>([]);
+
+  const expandMutation = useMutation({
+    mutationFn: (rawQuery: string) => searchExpansionApi.expand(rawQuery),
+    onSuccess: (result, rawQuery) => {
+      setHistory((current) => [rawQuery, ...current.filter((entry) => entry !== rawQuery)].slice(0, 6));
+      toast("success", "Query expansion complete");
+      if (!result.expanded_terms.length && !result.synonyms.length) {
+        toast("info", "Expansion returned no additional terms yet");
+      }
+    },
+    onError: () => toast("error", "Search expansion failed"),
   });
+
+  const latest = expandMutation.data ?? null;
+
+  const openSemanticSearch = (value: string) => {
+    const normalized = value.trim();
+    if (!normalized) return;
+    navigate(`/jobs?mode=semantic&q=${encodeURIComponent(normalized)}`);
+  };
+
+  const metrics = useMemo(
+    () => [
+      {
+        key: "history",
+        label: "Recent runs",
+        value: history.length.toLocaleString(),
+        hint: "Queries expanded in this session.",
+        icon: <TerminalWindow size={18} weight="bold" />,
+      },
+      {
+        key: "expanded",
+        label: "Expanded terms",
+        value: `${latest?.expanded_terms.length ?? 0}`,
+        hint: "Terms returned from the latest run.",
+        icon: <Sparkle size={18} weight="fill" />,
+        tone: latest?.expanded_terms.length ? ("success" as const) : ("default" as const),
+      },
+      {
+        key: "synonyms",
+        label: "Synonyms",
+        value: `${latest?.synonyms.length ?? 0}`,
+        hint: "Alternate phrases returned.",
+        icon: <MagnifyingGlassPlus size={18} weight="bold" />,
+      },
+      {
+        key: "status",
+        label: "Engine state",
+        value: expandMutation.isPending ? "Running" : latest ? "Complete" : "Idle",
+        hint: "Current endpoint state.",
+        icon: <Lightning size={18} weight="bold" />,
+        tone: expandMutation.isPending ? ("warning" as const) : ("default" as const),
+      },
+    ],
+    [expandMutation.isPending, history.length, latest]
+  );
+
+  const runExpansion = (value = query) => {
+    const normalized = value.trim();
+    if (!normalized) return;
+    setQuery(normalized);
+    expandMutation.mutate(normalized);
+  };
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-text-primary flex items-center gap-2">
-        <MagnifyingGlassPlus size={24} weight="bold" />
-        Search Expansion
-      </h1>
+      <PageHeader
+        eyebrow="Operations"
+        title="Search Expansion"
+        description="Run the live expansion endpoint, review the response, and send a term into semantic search."
+        actions={
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => runExpansion()}
+            loading={expandMutation.isPending}
+            icon={<Sparkle size={14} weight="fill" />}
+          >
+            Expand query
+          </Button>
+        }
+        meta={
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="info" size="sm">
+              Live endpoint
+            </Badge>
+            <Badge variant={latest ? "success" : "default"} size="sm">
+              {latest ? "Result loaded" : "Awaiting query"}
+            </Badge>
+          </div>
+        }
+      />
 
-      <p className="text-sm text-text-secondary">
-        Expand your job search queries with synonyms and related terms to find more relevant listings.
-      </p>
+      <MetricStrip items={metrics} />
 
-      {isLoading ? (
-        <div className="text-text-muted text-sm">Loading templates...</div>
-      ) : templates.length === 0 ? (
-        <div className="text-center py-12 text-text-muted">
-          <MagnifyingGlassPlus size={48} className="mx-auto mb-3 opacity-50" />
-          <p>No search templates yet</p>
-          <p className="text-xs mt-1">Templates will appear here as you configure search expansion rules.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {templates.map((t: QueryTemplate) => (
-            <div
-              key={t.id}
-              className="border border-border rounded-[var(--radius-lg)] p-4 bg-bg-secondary"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-text-primary">{t.name}</h3>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`px-2 py-0.5 rounded text-xs ${
-                      t.strictness === "strict"
-                        ? "bg-red-500/10 text-red-400"
-                        : t.strictness === "loose"
-                          ? "bg-green-500/10 text-green-400"
-                          : "bg-blue-500/10 text-blue-400"
-                    }`}
+      <SplitWorkspace
+        primary={
+          <div className="space-y-6">
+            <Surface tone="default" padding="lg" radius="xl">
+              <SectionHeader
+                title="Expansion console"
+                description="One query in, one response out."
+              />
+              <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_200px]">
+                <Input
+                  label="Base query"
+                  placeholder="senior frontend engineer"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  icon={<MagnifyingGlassPlus size={16} weight="bold" />}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      runExpansion();
+                    }
+                  }}
+                />
+                <div className="flex items-end">
+                  <Button
+                    className="w-full"
+                    loading={expandMutation.isPending}
+                    disabled={!query.trim()}
+                    onClick={() => runExpansion()}
+                    icon={<Sparkle size={14} weight="fill" />}
                   >
-                    {t.strictness}
-                  </span>
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      t.is_active ? "bg-green-500" : "bg-gray-500"
-                    }`}
-                    title={t.is_active ? "Active" : "Inactive"}
-                  />
+                    Expand query
+                  </Button>
                 </div>
               </div>
 
-              <p className="text-sm text-text-secondary font-mono bg-bg-tertiary px-3 py-2 rounded-[var(--radius-md)]">
-                {t.base_query}
-              </p>
+              <div className="mt-5 flex flex-wrap gap-2 border-t-2 border-border pt-5">
+                {SUGGESTED_QUERIES.map((entry) => (
+                  <QueryChip key={entry} value={entry} onClick={runExpansion} />
+                ))}
+              </div>
+            </Surface>
 
-              {t.expanded_queries && t.expanded_queries.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-xs text-text-muted mb-1">Expanded queries:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {t.expanded_queries.map((q, i) => (
-                      <span
-                        key={i}
-                        className="px-2 py-0.5 rounded-full text-xs bg-bg-tertiary text-text-secondary"
+            {expandMutation.isPending ? (
+              <Surface tone="default" padding="lg" radius="xl">
+                <Skeleton variant="text" className="h-5 w-48" />
+                <Skeleton variant="rect" className="mt-6 h-24 w-full" />
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Skeleton variant="rect" className="h-10 w-32" />
+                  <Skeleton variant="rect" className="h-10 w-28" />
+                  <Skeleton variant="rect" className="h-10 w-36" />
+                </div>
+              </Surface>
+            ) : latest ? (
+              <Surface tone="default" padding="lg" radius="xl">
+                <SectionHeader
+                  title="Expansion result"
+                  description={latest.message || "Latest response returned from the backend."}
+                />
+
+                <div className="mt-6 grid gap-4 xl:grid-cols-3">
+                  <div className="border-2 border-border bg-[var(--color-bg-secondary)] p-4 shadow-[var(--shadow-xs)] xl:col-span-3">
+                    <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                      Original query
+                    </div>
+                    <div className="mt-3 text-2xl font-black uppercase tracking-[-0.05em] text-text-primary">
+                      {latest.original_query}
+                    </div>
+                    <div className="mt-4">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => openSemanticSearch(latest.original_query)}
+                        icon={<ArrowSquareOut size={14} weight="bold" />}
                       >
-                        {q}
-                      </span>
-                    ))}
+                        Open in jobs
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="xl:col-span-2">
+                    <div className="border-2 border-border bg-[var(--color-bg-secondary)] p-4 shadow-[var(--shadow-xs)]">
+                      <div className="flex items-center gap-2">
+                        <Sparkle size={16} weight="fill" className="text-accent-primary" />
+                        <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                          Expanded terms
+                        </div>
+                      </div>
+                      {latest.expanded_terms.length ? (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {latest.expanded_terms.map((term) => (
+                            <Button
+                              key={term}
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => openSemanticSearch(term)}
+                              icon={<ArrowSquareOut size={14} weight="bold" />}
+                            >
+                              {term}
+                            </Button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-4 text-sm leading-6 text-text-secondary">
+                          No expanded terms were returned for this query.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="border-2 border-border bg-[var(--color-bg-secondary)] p-4 shadow-[var(--shadow-xs)]">
+                      <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                        Synonyms
+                      </div>
+                      {latest.synonyms.length ? (
+                        <div className="mt-4 space-y-2">
+                          {latest.synonyms.map((term) => (
+                            <button
+                              key={term}
+                              type="button"
+                              onClick={() => openSemanticSearch(term)}
+                              className="border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary"
+                            >
+                              {term}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-4 text-sm leading-6 text-text-secondary">
+                          No synonyms were returned.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+              </Surface>
+            ) : (
+              <Surface tone="default" padding="lg" radius="xl">
+                <EmptyState
+                  icon={<MagnifyingGlassPlus size={40} weight="bold" />}
+                  title="No expansion run yet"
+                  description="Enter a base role query or use one of the suggested examples to hit the live backend endpoint."
+                />
+              </Surface>
+            )}
+          </div>
+        }
+        secondary={
+          <div className="space-y-4">
+            <StateBlock
+              tone="neutral"
+              icon={<TerminalWindow size={18} weight="bold" />}
+              title="Semantic handoff"
+              description="Use any returned term to jump straight into semantic search on the jobs route."
+            />
+            <StateBlock
+              tone="warning"
+              icon={<Lightning size={18} weight="bold" />}
+              title="Engine note"
+              description="If the backend returns empty arrays, the endpoint is reachable but there are no extra terms for that query yet."
+            />
+            {history.length ? (
+              <Surface tone="default" padding="md" radius="xl">
+                <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                  Recent queries
+                </div>
+                <div className="mt-4 space-y-2">
+                  {history.map((entry) => (
+                    <button
+                      key={entry}
+                      type="button"
+                      onClick={() => runExpansion(entry)}
+                      className="hard-press flex w-full items-center justify-between border-2 border-border bg-[var(--color-bg-tertiary)] px-3 py-3 text-left"
+                    >
+                        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-text-primary">
+                          {entry}
+                        </span>
+                        <Sparkle size={14} weight="fill" className="text-accent-primary" />
+                      </button>
+                  ))}
+                </div>
+              </Surface>
+            ) : null}
+          </div>
+        }
+      />
     </div>
   );
 }

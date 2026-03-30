@@ -7,29 +7,26 @@ export interface HealthStatus {
 
 export interface Diagnostics {
   python_version: string;
-  db_size: string;
-  uptime: string;
-  total_jobs: number;
-  total_users: number;
-  scraper_runs: number;
+  platform?: string;
+  job_count?: number;
+  application_count?: number;
+  db_size?: string;
+  uptime?: string;
+  total_jobs?: number;
+  total_users?: number;
+  scraper_runs?: number;
 }
 
 export interface SourceHealth {
   id: string;
   source_name: string;
   health_state: string;
+  quality_score: number;
   last_check_at: string | null;
   total_jobs_found: number;
   failure_count: number;
-  recent_checks: SourceCheck[];
-}
-
-export interface SourceCheck {
-  id: string;
-  status: string;
-  jobs_found: number;
-  error_message: string | null;
-  checked_at: string;
+  backoff_until: string | null;
+  created_at: string;
 }
 
 export const adminApi = {
@@ -38,11 +35,19 @@ export const adminApi = {
   diagnostics: () =>
     apiClient.get<Diagnostics>('/admin/diagnostics'),
   sourceHealth: () =>
-    apiClient.get<SourceHealth[]>('/source-health'),
+    apiClient.get<Array<SourceHealth & { quality_score: number | string }>>('/source-health').then((response) => ({
+      ...response,
+      data: response.data.map((item) => ({
+        ...item,
+        quality_score: Number(item.quality_score ?? 0),
+      })),
+    })),
   reindex: () =>
     apiClient.post('/admin/reindex'),
   exportData: () =>
     apiClient.post('/admin/export', {}, { responseType: 'blob' }),
   importData: (data: Record<string, unknown>) =>
     apiClient.post('/admin/import', data),
+  clearData: () =>
+    apiClient.delete<{ status: string; rows_deleted: number }>('/admin/data'),
 };

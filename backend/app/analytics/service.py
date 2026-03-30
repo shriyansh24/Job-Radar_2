@@ -6,7 +6,9 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.analytics.pattern_detector import PatternDetector
 from app.analytics.schemas import (
+    AnalyticsPatternsResponse,
     DailyStats,
     FunnelStageData,
     OverviewStats,
@@ -199,6 +201,10 @@ class AnalyticsService:
             FunnelStageData(stage=stage.capitalize(), count=counts.get(stage, 0))
             for stage in stages
         ]
+
+    async def get_patterns(self, user_id: uuid.UUID) -> AnalyticsPatternsResponse:
+        detector = PatternDetector(self.db)
+        return AnalyticsPatternsResponse(**(await detector.get_all_patterns(user_id)))
 
     @staticmethod
     def _coerce_day(value: object) -> date:

@@ -125,6 +125,8 @@ class WorkdayScraper(BaseScraper):
                     remote_type=remote_type,
                     job_type=job_type,
                     posted_at=posted_at,
+                    ats_job_id=external_path or None,
+                    ats_provider=self.source_name,
                 )
             )
 

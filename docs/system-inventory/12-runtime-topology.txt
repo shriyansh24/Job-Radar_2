@@ -1,0 +1,124 @@
+# Runtime Topology
+
+Historical note: this inventory file predates the dedicated scheduler runtime split and the committed Playwright tree. For live runtime truth, use `docs/current-state/05-ops-and-ci.md` and `docs/repo-hardening/03-runtime-truth-matrix.md`.
+
+Root scope: whole system runtime across browser, frontend container/dev server, backend API, DB, Redis, workers, and CI.
+
+## Topology Summary
+
+- Browser clients talk to the React SPA.
+- The SPA calls the backend under `/api/v1`.
+- The backend API and the scheduler now have separate runtime entrypoints.
+- PostgreSQL is the primary persistent store.
+- Redis is provisioned as a runtime dependency but is not the backbone of request-time coordination.
+- Scraping and auto-apply can fan out into external websites, browser automation, and ATS-specific adapters.
+
+## Mermaid Runtime Diagram
+
+```mermaid
+flowchart LR
+    Browser["Browser Client"] --> Frontend["Frontend SPA\nReact 19 + Vite/Nginx"]
+    Frontend -->|axios + cookies| API["FastAPI API\n/app/main.py"]
+    API --> DB["PostgreSQL\npgvector image in compose"]
+    API --> Redis["Redis\npassword-auth compose service"]
+    API --> SSE["In-memory event stream\nScraper SSE"]
+    API --> Scheduler["Dedicated scheduler runtime\nbackend/app/runtime/scheduler.py"]
+    Scheduler --> ScrapeWorker["Scraping Worker Functions"]
+    Scheduler --> EnrichWorker["Enrichment Worker Functions"]
+    Scheduler --> ApplyWorker["Auto-Apply Worker Functions"]
+    Scheduler --> AlertWorker["Alert + Maintenance + Phase7A Jobs"]
+    ScrapeWorker --> ExternalSites["External job boards / career pages / ATS sites"]
+    ApplyWorker --> ExternalATS["ATS portals / browser automation targets"]
+    EnrichWorker --> ExternalLLM["LLM / embedding providers"]
+    API --> ExternalLLM
+    API --> ExternalSites
+    CI["GitHub Actions CI"] --> Frontend
+    CI --> API
+```
+
+## Runtime Components
+
+| Component | Runtime Location | Primary Files | Responsibilities | Notes |
+|---|---|---|---|---|
+| Browser UI | User browser | `frontend/src/main.tsx`, `frontend/src/App.tsx` | Render routes, manage auth/session state, drive API calls | Query and UI state are client-side |
+| Frontend dev server | Frontend container or local node process | `frontend/vite.config.ts`, `frontend/start-dev.cjs` | Dev-time bundling, proxying, HMR | Containerized dev now overrides the proxy target to `backend:8000` |
+| Frontend runtime server | Frontend container (base compose) | `frontend/Dockerfile` Nginx stage | Serves built SPA and proxies `/api` to backend | Production-ish only inside same Docker network |
+| Backend API | Backend container or local `uvicorn` process | `backend/app/main.py`, `backend/Dockerfile` | HTTP API, auth, business logic | Modular monolith |
+| DB | Postgres container | `docker-compose.yml` | Persistent relational storage | PostgreSQL-first path |
+| Redis | Redis container | `docker-compose.yml`, `infra/redis/tls/.gitkeep` | Cache/broker-like runtime service | Not heavily used for distributed coordination yet |
+| Scheduler | Dedicated backend runtime process | `backend/app/runtime/scheduler.py`, `backend/app/workers/scheduler.py` | Registers recurring jobs and dispatches scheduled worker functions | Process split is explicit, but broader worker isolation is still limited |
+| Worker functions | Same backend process | `backend/app/workers/*.py` | Batch scraping, enrichment, alerts, follow-up, auto-apply | Invoked by APScheduler |
+| CI | GitHub Actions | `.github/workflows/*.yml` | Lint, test, build, static analysis | No deployment job |
+
+## Scheduled Jobs
+
+Source: `D:/jobradar-v2/backend/app/workers/scheduler.py`
+
+| Job Family | Trigger Style | Backing Worker |
+|---|---|---|
+| Scheduled scrape | Recurring | `workers/scraping_worker.py` |
+| Career page scrape | Recurring | `workers/scraping_worker.py` |
+| Target batch scrape | Recurring | `workers/scraping_worker.py` |
+| Enrichment batch | Recurring | `workers/enrichment_worker.py` |
+| Embedding batch | Recurring | `workers/enrichment_worker.py` |
+| TF-IDF scoring | Recurring | `workers/enrichment_worker.py` |
+| Auto-apply batch | Recurring | `workers/auto_apply_worker.py` |
+| Saved-search alerts | Recurring | `workers/alert_worker.py` |
+| Cleanup / stale job sweep | Recurring | `workers/maintenance_worker.py`, `workers/phase7a_worker.py` |
+| Source health / staleness / follow-up reminders | Recurring | `workers/phase7a_worker.py` |
+
+## Local Development Flow
+
+### Containerized
+
+1. `docker-compose.yml` starts backend, frontend, postgres, redis.
+2. `docker-compose.dev.yml` overlays bind mounts and reload commands.
+3. Migrations run as a dedicated one-shot service before the API and scheduler.
+4. Backend API and scheduler run as separate services.
+5. Frontend either serves a static build through Nginx or a Vite dev server.
+6. Browser talks to frontend on `3000` in base compose or `5173` in dev overlay.
+
+### Manual
+
+1. Postgres is started manually per README/CLAUDE guidance.
+2. Backend is run with `uv`.
+3. Frontend is run with `npm run dev`.
+
+## Ports, Volumes, And Networks
+
+| Service | Ports | Volumes | Network Assumption |
+|---|---|---|---|
+| Frontend base compose | `3000:80` | none in base file | Same compose network as backend |
+| Frontend dev overlay | `5173:5173` | bind-mounted source | Same compose network, with proxy target overridden to `backend:8000` |
+| Backend | `8000:8000` | bind mount in dev overlay | Same compose network as DB/Redis |
+| Postgres | `5432:5432` | named volume `pgdata` | Same compose network as backend |
+| Redis | `6379:6379` | runtime data/TLS placeholder mounts | Same compose network as backend |
+
+## Health Checks
+
+| Component | Health Check |
+|---|---|
+| Backend | HTTP endpoint used by compose/container runtime |
+| Frontend base compose | `wget http://127.0.0.1/` against Nginx |
+| Postgres | `pg_isready -U jobradar` |
+| Redis | Redis CLI ping-style health check |
+
+## Production Assumptions Inferable From The Repo
+
+- The likely intended production shape is still:
+  - one frontend runtime
+  - one backend runtime
+  - one Postgres instance
+  - one Redis instance
+- The repo does not show:
+  - horizontal scheduler coordination
+  - dedicated worker process separation
+  - infrastructure-as-code for a production target
+  - deployment rollouts or release automation
+
+## Topology Risks
+
+1. Dedicated scheduler runtime exists, but the broader worker/process model is still not fully separated.
+2. Runtime docs still need continued reconciliation on DB version, port, and credentials outside the refreshed current-state/hardening docs.
+3. SSE and in-memory events are single-instance scoped.
+4. Browser-heavy scraping/auto-apply paths are more demanding than the current generic runtime definition suggests.

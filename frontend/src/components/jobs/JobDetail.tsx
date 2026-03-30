@@ -8,22 +8,39 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
 import type { Job } from "../../api/jobs";
 import { pipelineApi } from "../../api/pipeline";
 import { cn, getSafeExternalUrl } from "../../lib/utils";
+import { MetricStrip, StateBlock, Surface } from "../system";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
-import Card from "../ui/Card";
 import Modal from "../ui/Modal";
 import { toast } from "../ui/toastService";
-import ScoreGauge from "./ScoreGauge";
+import { freshnessLabel, freshnessVariant } from "./jobBoardUtils";
 
 interface JobDetailProps {
   job: Job;
   onClose: () => void;
+}
+
+function formatSalary(job: Job) {
+  if (job.salary_min || job.salary_max) {
+    if (job.salary_min && job.salary_max) {
+      return `$${(job.salary_min / 1000).toFixed(0)}k-$${(job.salary_max / 1000).toFixed(0)}k`;
+    }
+
+    if (job.salary_min) {
+      return `$${(job.salary_min / 1000).toFixed(0)}k+`;
+    }
+
+    return `Up to $${(job.salary_max! / 1000).toFixed(0)}k`;
+  }
+
+  return "-";
 }
 
 export default function JobDetail({ job, onClose }: JobDetailProps) {
@@ -47,188 +64,260 @@ export default function JobDetail({ job, onClose }: JobDetailProps) {
     onError: () => toast("error", "Failed to create application"),
   });
 
+  const matchScore =
+    job.match_score !== null ? `${Math.round(job.match_score * 100)}%` : "-";
+  const tfidfScore = job.tfidf_score !== null ? job.tfidf_score.toFixed(3) : "-";
+  const freshnessScore = freshnessLabel(job.freshness_score) ?? "-";
+
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          {job.company_logo_url && (
-            <img src={job.company_logo_url} alt="" className="w-10 h-10 rounded-[var(--radius-md)] object-cover" />
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="flex items-start justify-between gap-4 border-b-2 border-border bg-[var(--color-bg-tertiary)] p-5 sm:p-6">
+        <div className="flex min-w-0 gap-3">
+          {job.company_logo_url ? (
+            <img
+              src={job.company_logo_url}
+              alt=""
+              className="size-12 shrink-0 border-2 border-border object-cover shadow-[var(--shadow-xs)]"
+            />
+          ) : (
+            <div className="flex size-12 shrink-0 items-center justify-center border-2 border-border bg-background text-muted-foreground shadow-[var(--shadow-xs)]">
+              <Briefcase size={18} weight="bold" />
+            </div>
           )}
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-text-primary truncate">{job.title}</h2>
-            <div className="flex items-center gap-2 text-sm text-text-secondary">
-              {job.company_name && <span>{job.company_name}</span>}
-              {job.location && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">{job.source ?? "source"}</Badge>
+              {job.remote_type ? <Badge variant="secondary">{job.remote_type}</Badge> : null}
+              {job.is_enriched ? <Badge variant="info">Enriched</Badge> : null}
+            </div>
+            <h2 className="mt-3 truncate font-display text-2xl font-black uppercase tracking-[-0.06em] text-foreground sm:text-3xl">
+              {job.title}
+            </h2>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              {job.company_name ? <span>{job.company_name}</span> : null}
+              {job.location ? (
                 <>
-                  <span className="text-text-muted">&middot;</span>
+                  <span className="text-text-muted">-</span>
                   <span className="flex items-center gap-1">
                     <MapPin size={12} weight="bold" />
                     {job.location}
                   </span>
                 </>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 rounded-[var(--radius-md)] hover:bg-bg-tertiary text-text-muted lg:hidden">
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex size-10 shrink-0 items-center justify-center border-2 border-border bg-background text-text-muted transition-colors hover:bg-[var(--color-accent-primary-subtle)] hover:text-foreground lg:hidden"
+          aria-label="Close detail pane"
+        >
           <X size={18} weight="bold" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto px-6 py-4 space-y-6">
-        <div className="flex flex-wrap gap-2">
-          {job.remote_type && <Badge variant="info">{job.remote_type}</Badge>}
-          {job.experience_level && <Badge>{job.experience_level}</Badge>}
-          {job.job_type && <Badge>{job.job_type}</Badge>}
-          {job.is_enriched && <Badge variant="success">Enriched</Badge>}
+      <div className="min-h-0 flex-1 overflow-auto p-5 sm:p-6">
+        <div className="space-y-5">
+          <div className="flex flex-wrap gap-2">
+            {job.experience_level ? <Badge variant="outline">{job.experience_level}</Badge> : null}
+            {job.job_type ? <Badge variant="outline">{job.job_type}</Badge> : null}
+            {job.remote_type ? <Badge variant="outline">{job.remote_type}</Badge> : null}
+          </div>
+
+          <MetricStrip
+            items={[
+              {
+                key: "match",
+                label: "Match score",
+                value: matchScore,
+                hint: "Overall fit signal for this role.",
+                icon: <Sparkle size={18} weight="bold" />,
+                tone: job.match_score ? "success" : "default",
+              },
+              {
+                key: "tfidf",
+                label: "TF-IDF",
+                value: tfidfScore,
+                hint: "Text relevance against the current profile.",
+                icon: <CheckCircle size={18} weight="bold" />,
+                tone: "default",
+              },
+              {
+                key: "freshness",
+                label: "Freshness",
+                value: freshnessScore,
+                hint: "Recency signal from the recovered search payload.",
+                icon: <Sparkle size={18} weight="bold" />,
+                tone: freshnessVariant(job.freshness_score),
+              },
+              {
+                key: "salary",
+                label: "Salary",
+                value: formatSalary(job),
+                hint: job.salary_period ? `Per ${job.salary_period}` : "No salary range recorded.",
+                icon: <Briefcase size={18} weight="bold" />,
+                tone: job.salary_min || job.salary_max ? "warning" : "default",
+              },
+            ]}
+            className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
+          />
+
+          {job.summary_ai ? (
+            <StateBlock
+              tone="muted"
+              title="AI summary"
+              description={job.summary_ai}
+              icon={<Sparkle size={14} weight="fill" />}
+            />
+          ) : null}
+
+          {job.skills_required.length > 0 ? (
+            <Surface tone="subtle" padding="md">
+              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                Required skills
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {job.skills_required.map((skill) => (
+                  <Badge key={skill} variant="secondary">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
+            </Surface>
+          ) : null}
+
+          {job.skills_nice_to_have.length > 0 ? (
+            <Surface tone="subtle" padding="md">
+              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                Nice to have
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {job.skills_nice_to_have.map((skill) => (
+                  <Badge key={skill} variant="outline">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
+            </Surface>
+          ) : null}
+
+          {job.tech_stack.length > 0 ? (
+            <Surface tone="subtle" padding="md">
+              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                Tech stack
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {job.tech_stack.map((tech) => (
+                  <Badge key={tech} variant="default">
+                    {tech}
+                  </Badge>
+                ))}
+              </div>
+            </Surface>
+          ) : null}
+
+          {job.green_flags.length > 0 ? (
+            <StateBlock
+              tone="success"
+              title="Green flags"
+              description={
+                <ul className="space-y-2">
+                  {job.green_flags.map((flag, index) => (
+                    <li key={`${flag}-${index}`} className="flex items-start gap-2 text-sm leading-6">
+                      <span className="mt-1 inline-flex size-3 shrink-0 border border-border bg-[var(--color-accent-success)]/30" />
+                      {flag}
+                    </li>
+                  ))}
+                </ul>
+              }
+              icon={<CheckCircle size={14} weight="fill" className="text-[var(--color-accent-success)]" />}
+            />
+          ) : null}
+
+          {job.red_flags.length > 0 ? (
+            <StateBlock
+              tone="danger"
+              title="Red flags"
+              description={
+                <ul className="space-y-2">
+                  {job.red_flags.map((flag, index) => (
+                    <li key={`${flag}-${index}`} className="flex items-start gap-2 text-sm leading-6">
+                      <span className="mt-1 inline-flex size-3 shrink-0 border border-border bg-[var(--color-accent-danger)]/30" />
+                      {flag}
+                    </li>
+                  ))}
+                </ul>
+              }
+              icon={<Warning size={14} weight="fill" className="text-[var(--color-accent-danger)]" />}
+            />
+          ) : null}
+
+          {job.description_markdown ? (
+            <Surface tone="default" padding="md">
+              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                Description
+              </div>
+              <div
+                className={cn(
+                  "prose prose-sm mt-3 max-w-none text-foreground",
+                  "[&_a]:text-[var(--color-accent-primary)] [&_strong]:text-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground"
+                )}
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {job.description_markdown}
+                </ReactMarkdown>
+              </div>
+            </Surface>
+          ) : null}
         </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {job.match_score !== null && (
-            <Card padding="sm">
-              <ScoreGauge score={job.match_score} label="Match Score" />
-            </Card>
-          )}
-          {job.tfidf_score !== null && (
-            <Card padding="sm">
-              <p className="text-xs text-text-muted mb-1">TF-IDF Score</p>
-              <p className="text-sm font-medium text-text-primary">{job.tfidf_score.toFixed(3)}</p>
-            </Card>
-          )}
-        </div>
-
-        {(job.salary_min || job.salary_max) && (
-          <Card padding="sm">
-            <p className="text-xs text-text-muted mb-1">Salary Range</p>
-            <p className="text-lg font-semibold text-accent-success">
-              {job.salary_min && job.salary_max
-                ? `$${(job.salary_min / 1000).toFixed(0)}k - $${(job.salary_max / 1000).toFixed(0)}k`
-                : job.salary_min
-                ? `$${(job.salary_min / 1000).toFixed(0)}k+`
-                : `Up to $${(job.salary_max! / 1000).toFixed(0)}k`}
-              {job.salary_period && <span className="text-sm text-text-muted ml-1">/{job.salary_period}</span>}
-            </p>
-          </Card>
-        )}
-
-        {job.summary_ai && (
-          <div>
-            <h3 className="text-sm font-medium text-text-secondary flex items-center gap-1.5 mb-2">
-              <Sparkle size={14} weight="fill" className="text-accent-primary" />
-              AI Summary
-            </h3>
-            <p className="text-sm text-text-primary leading-relaxed">{job.summary_ai}</p>
-          </div>
-        )}
-
-        {job.skills_required.length > 0 && (
-          <div>
-            <h3 className="text-sm font-medium text-text-secondary mb-2">Required Skills</h3>
-            <div className="flex flex-wrap gap-1.5">
-              {job.skills_required.map((s) => (
-                <Badge key={s} variant="info" size="sm">{s}</Badge>
-              ))}
-            </div>
-          </div>
-        )}
-        {job.skills_nice_to_have.length > 0 && (
-          <div>
-            <h3 className="text-sm font-medium text-text-secondary mb-2">Nice to Have</h3>
-            <div className="flex flex-wrap gap-1.5">
-              {job.skills_nice_to_have.map((s) => (
-                <Badge key={s} size="sm">{s}</Badge>
-              ))}
-            </div>
-          </div>
-        )}
-        {job.tech_stack.length > 0 && (
-          <div>
-            <h3 className="text-sm font-medium text-text-secondary mb-2">Tech Stack</h3>
-            <div className="flex flex-wrap gap-1.5">
-              {job.tech_stack.map((s) => (
-                <Badge key={s} variant="info" size="sm">{s}</Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {job.green_flags.length > 0 && (
-          <div>
-            <h3 className="text-sm font-medium text-text-secondary flex items-center gap-1.5 mb-2">
-              <CheckCircle size={14} weight="fill" className="text-accent-success" />
-              Green Flags
-            </h3>
-            <ul className="space-y-1">
-              {job.green_flags.map((f, i) => (
-                <li key={i} className="text-sm text-accent-success flex items-start gap-2">
-                  <CheckCircle size={12} weight="fill" className="mt-1 shrink-0" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {job.red_flags.length > 0 && (
-          <div>
-            <h3 className="text-sm font-medium text-text-secondary flex items-center gap-1.5 mb-2">
-              <Warning size={14} weight="fill" className="text-accent-danger" />
-              Red Flags
-            </h3>
-            <ul className="space-y-1">
-              {job.red_flags.map((f, i) => (
-                <li key={i} className="text-sm text-accent-danger flex items-start gap-2">
-                  <Warning size={12} weight="fill" className="mt-1 shrink-0" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {job.description_markdown && (
-          <div>
-            <h3 className="text-sm font-medium text-text-secondary mb-2">Description</h3>
-            <div className={cn(
-              'prose prose-sm prose-invert max-w-none text-text-primary',
-              '[&_a]:text-accent-primary [&_h1]:text-text-primary [&_h2]:text-text-primary [&_h3]:text-text-primary [&_strong]:text-text-primary [&_li]:text-text-secondary'
-            )}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {job.description_markdown}
-              </ReactMarkdown>
-            </div>
-          </div>
-        )}
       </div>
 
-      <div className="px-6 py-3 border-t border-border flex items-center gap-2 shrink-0">
-        <Button
-          variant="primary"
-          onClick={() => setShowApplyModal(true)}
-          icon={<Briefcase size={14} weight="bold" />}
-        >
-          Apply
-        </Button>
-        {safeSourceUrl && (
+      <div className="border-t-2 border-border bg-[var(--color-bg-tertiary)] p-4 sm:p-5">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
-            variant="secondary"
-            onClick={() => window.open(safeSourceUrl, "_blank", "noopener,noreferrer")}
-            icon={<LinkSimple size={14} weight="bold" />}
+            variant="primary"
+            onClick={() => setShowApplyModal(true)}
+            icon={<Briefcase size={14} weight="bold" />}
           >
-            Original
+            Apply
           </Button>
-        )}
+          {safeSourceUrl ? (
+            <Button
+              variant="secondary"
+              onClick={() => window.open(safeSourceUrl, "_blank", "noopener,noreferrer")}
+              icon={<LinkSimple size={14} weight="bold" />}
+            >
+              Original
+            </Button>
+          ) : null}
+        </div>
       </div>
 
-      <Modal open={showApplyModal} onClose={() => setShowApplyModal(false)} title="Create Application" size="sm">
-        <p className="text-sm text-text-secondary mb-4">
-          Track your application for <strong className="text-text-primary">{job.title}</strong> at{' '}
-          <strong className="text-text-primary">{job.company_name}</strong>?
-        </p>
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={() => setShowApplyModal(false)}>Cancel</Button>
-          <Button variant="primary" loading={applyMutation.isPending} onClick={() => applyMutation.mutate()}>
-            Create
-          </Button>
+      <Modal
+        open={showApplyModal}
+        onClose={() => setShowApplyModal(false)}
+        title="Create Application"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm leading-6 text-muted-foreground">
+            Track your application for <strong className="text-foreground">{job.title}</strong>{" "}
+            at <strong className="text-foreground">{job.company_name}</strong>?
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setShowApplyModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              loading={applyMutation.isPending}
+              onClick={() => applyMutation.mutate()}
+            >
+              Create
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

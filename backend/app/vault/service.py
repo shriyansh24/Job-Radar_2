@@ -31,6 +31,60 @@ class VaultService:
         result = await self.db.scalars(query)
         return list(result.all())
 
+    async def update_resume(
+        self,
+        resume_id: uuid.UUID,
+        user_id: uuid.UUID,
+        *,
+        label: str | None = None,
+    ) -> ResumeVersion:
+        """Update mutable resume metadata owned by the user."""
+        logger.info(
+            "vault.update_resume",
+            resume_id=str(resume_id),
+            user_id=str(user_id),
+        )
+        query = select(ResumeVersion).where(
+            ResumeVersion.id == resume_id,
+            ResumeVersion.user_id == user_id,
+        )
+        resume = await self.db.scalar(query)
+        if resume is None:
+            raise NotFoundError(detail=f"Resume {resume_id} not found")
+
+        resume.label = label or None
+        await self.db.commit()
+        await self.db.refresh(resume)
+        return resume
+
+    async def update_cover_letter(
+        self,
+        letter_id: uuid.UUID,
+        user_id: uuid.UUID,
+        *,
+        content: str | None = None,
+    ) -> CoverLetter:
+        """Update the saved cover-letter content for the given user."""
+        logger.info(
+            "vault.update_cover_letter",
+            letter_id=str(letter_id),
+            user_id=str(user_id),
+        )
+        query = select(CoverLetter).where(
+            CoverLetter.id == letter_id,
+            CoverLetter.user_id == user_id,
+        )
+        letter = await self.db.scalar(query)
+        if letter is None:
+            raise NotFoundError(detail=f"Cover letter {letter_id} not found")
+
+        if content is not None:
+            letter.content = content
+
+        await self.db.commit()
+        await self.db.refresh(letter)
+        return letter
+
     async def delete_resume(self, resume_id: uuid.UUID, user_id: uuid.UUID) -> None:
         """Delete a resume version owned by the user."""
         logger.info(

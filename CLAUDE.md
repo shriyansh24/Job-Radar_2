@@ -16,6 +16,8 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Auth: cookie-based access and refresh tokens
 - Scraping: ATS registry, target-based scheduler, browser pool, tier router, page crawler
 - CI: dependency checks, backend lint/tests, frontend audit/lint/tests/build
+- Current UI: reference-first command-center shell with shared primitives under `frontend/src/components/system`, a `frontend/system.md` design source of truth, shadowless buttons, and routed workspace groupings for `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, and `Operations`
+- Test layout: frontend Vitest suites live under `frontend/src/tests/`, browser suites live under `frontend/e2e/`, and backend pytest suites are moving toward explicit `contracts/`, `infra/`, `migrations/`, `security/`, and `workers/` lanes
 
 ## Canonical Working Commands
 
@@ -34,50 +36,60 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Install: `cd frontend && npm ci`
 - Lint: `cd frontend && npm run lint`
 - Tests: `cd frontend && npm run test -- --run`
+- Frontend e2e: `cd frontend && npm run e2e`
 - Build: `cd frontend && npm run build`
 - Dependency audit: `cd frontend && npm audit --audit-level high`
 - Dev server: `cd frontend && npm run dev`
+- Containerized dev proxy override: `VITE_API_PROXY_TARGET=http://backend:8000`
 
 ## Branch Context
-- `main` has PRs #15 (security hardening) and #16 (CodeQL + deps) merged.
-- `feat/p2-polish-advanced` has all P0/P1/P2 feature code (38 spec features). This is the active development branch.
-- P0/P1/P2 features were built by Codex agents from a comprehensive spec; code quality is solid but integration wiring has gaps (see Known Structural Gaps below).
+- Active migration branch in this workspace: `codex/ui-changes`.
 
-## Current State Summary (feat/p2-polish-advanced, 2026-03-23)
-- Backend: **716 tests pass**, `ruff` clean, 23 routers mounted, 37 DB tables.
-- Frontend: lint clean, build clean, 9 tests pass in 6 files.
-- Backend and frontend dependency health checks pass locally.
-- The audit ledger is closed at `39 FIXED / 5 STALE / 0 OPEN / 0 PARTIAL`.
-- No known blocking reproducible bugs on the core platform.
-- Alembic at revision `005` (consolidation migration for P2 tables).
+## Current State Summary (2026-03-27)
+- Frontend: reference-first UI migration is implemented, the shared system is flatter and shadowless on controls, the largest routed pages have been broken into smaller component groups, and the slop-copy cleanup pass is already integrated into login, settings, dashboard, jobs, pipeline, and copilot.
+- Backend: targeted auth/settings/admin/vault integration tests pass locally.
+- Browser QA: the latest authenticated route sweep is current and representative captures live under `.claude/ui-captures/`.
+- Local Postgres schema was upgraded from Alembic revision `005` to `head` during QA so the settings/integration surfaces match the live schema.
+- The audit ledger remains at `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
 
-## Remaining Frontend Gaps (feat/p2-polish-advanced)
-- Frontend has no API modules or pages for: email, networking, outcomes, copilot chat.
-- Settings stubs (change password, delete account, clear data) are frontend no-ops with no backend endpoint.
-- API keys collected in Settings/Onboarding but not persisted to backend.
-- Auto-apply run/pause/applySingle API functions defined but no UI triggers.
+## Remaining Frontend Gaps
+- No blocking frontend gaps are currently known from the verified local pass.
+- Remaining work is iterative polish on the remaining larger routed surfaces and deeper route-by-route theme review, not a known blocker.
 
 ## Important Invariants
 - `jobs.id` is a SHA-256 string key, not a UUID.
 - Runtime `DateTime` columns should use `DateTime(timezone=True)`.
 - Use `uv run` for backend commands; do not mix in ad hoc Python invocations when repo-managed commands exist.
 - Use `npm` for frontend commands.
-- The frontend theme system is driven by `useUIStore` and a `.dark` class on the root element.
+- The frontend theme system is driven by `useUIStore`, stores theme family plus mode, and applies a `.dark` class on the root element for dark variants.
 - The frontend icon set is `@phosphor-icons/react`, not `lucide-react`.
+- Buttons should not carry drop shadows; elevation belongs to surfaces and containers, not interactive controls.
+- Keep `frontend/system.md` aligned with any new visual or layout rule.
 
 ## Infrastructure
-- Docker container: `jobradar-postgres` (pgvector/pgvector:pg17) on port 5433.
-- Start: `docker start jobradar-postgres`
-- Connection: `postgresql+asyncpg://jobradar:jobradar220568@localhost:5433/jobradar`
-- psql: `PGPASSWORD=jobradar220568 "C:/Program Files/PostgreSQL/18/bin/psql.exe" -h localhost -p 5433 -U jobradar -d jobradar`
+- Canonical local runtime: `docker compose up -d`
+- Base compose now runs Postgres, Redis, one-shot migrations, the API, a dedicated scheduler, and the frontend.
+- Dedicated scheduler entrypoint: `cd backend && uv run python -m app.runtime.scheduler`
+- Canonical compose DB: `postgresql+asyncpg://jobradar:jobradar@localhost:5432/jobradar`
+- Canonical compose Redis: `redis://:jobradar-redis@localhost:6379/0`
+- `docker-compose.dev.yml` is an overlay for bind-mounted frontend/backend/scheduler dev on top of the base compose services, and it sets `VITE_API_PROXY_TARGET=http://backend:8000` so Vite can reach the backend from inside the frontend container.
+- Legacy/manual local container setups on `5433` are workspace-specific overrides and should not be treated as the repo default.
+
+## GitHub Guardrails
+- Repository validation workflow: backend quality, backend tests, frontend quality, and frontend tests/build.
+- Docs validation workflow: checks repo-local doc/path references.
+- Migration safety workflow: replays Alembic on clean Postgres and runs targeted migration tests.
+- Frontend E2E Smoke workflow: emits the required `Frontend E2E Smoke / frontend-e2e-smoke` check against the live login, shell, scheduler bootstrap, and theme persistence path.
+- CodeQL and dependency review remain enabled.
+- The browser lane is intentionally single-job and non-matrix so the emitted required-check name stays stable for branch protection.
 
 ## Agent Rules
 - Read the current-state and audit docs before changing behavior.
-- Prefer minimal, high-confidence fixes over refactors.
+- Preserve the reference-first shell, typography, color system, and responsive grammar across all new surfaces.
 - Prove behavior changes with focused tests when possible.
 - Do not treat old plan files or `docs/research/` as current product requirements.
 - Do not commit `.claude/launch.json`; it is machine-local.
 - Ignore `.claude/worktrees/` for live repo state unless you are explicitly working inside one.
 
 ## Known Residual Noise
-- Frontend Vitest still prints a non-fatal `--localstorage-file` warning during test runs.
+- Browser QA is current for the latest integrated sweep; additional captures should be treated as incremental visual regression checks, not as a missing validation step.

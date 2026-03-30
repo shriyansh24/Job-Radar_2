@@ -1,0 +1,105 @@
+name: Migration Safety
+
+on:
+  pull_request:
+    paths:
+      - "backend/alembic.ini"
+      - "backend/app/**"
+      - "backend/pyproject.toml"
+      - "backend/tests/**"
+      - "docker-compose.yml"
+      - "docker-compose.dev.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/alembic.ini"
+      - "backend/app/**"
+      - "backend/pyproject.toml"
+      - "backend/tests/**"
+      - "docker-compose.yml"
+      - "docker-compose.dev.yml"
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migration-safety-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  alembic-replay:
+    name: Alembic replay on clean Postgres
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      JR_DATABASE_URL: postgresql+asyncpg://test:test@127.0.0.1:5432/test
+      JR_REDIS_URL: redis://127.0.0.1:6379/0
+      JR_SECRET_KEY: ci-local-secret
+      JR_CORS_ORIGINS: '["http://localhost:5173"]'
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","test"]'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          pip install uv
+          uv sync --frozen
+
+      - name: Replay Alembic migrations to head
+        working-directory: backend
+        run: uv run alembic upgrade head
+
+      - name: Record Alembic head state
+        if: always()
+        working-directory: backend
+        run: uv run alembic heads > "$RUNNER_TEMP/alembic-heads.txt"
+
+      - name: Record Alembic current state
+        if: always()
+        working-directory: backend
+        run: uv run alembic current > "$RUNNER_TEMP/alembic-current.txt"
+
+      - name: Record Alembic history
+        if: always()
+        working-directory: backend
+        run: uv run alembic history --verbose > "$RUNNER_TEMP/alembic-history.txt"
+
+      - name: Run migration contract tests
+        working-directory: backend
+        run: uv run pytest tests/migrations/
+
+      - name: Upload migration diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-safety-diagnostics
+          path: |
+            ${{ runner.temp }}/alembic-heads.txt
+            ${{ runner.temp }}/alembic-current.txt
+            ${{ runner.temp }}/alembic-history.txt

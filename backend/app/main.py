@@ -5,12 +5,14 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import settings, validate_runtime_settings
 from app.database import engine
 from app.shared.logging import setup_logging
 from app.shared.middleware import (
     ApiRateLimitMiddleware,
+    CsrfProtectionMiddleware,
     RequestIDMiddleware,
     SecurityHeadersMiddleware,
     TimingMiddleware,
@@ -27,17 +29,8 @@ def create_app() -> FastAPI:
         validate_runtime_settings(settings)
         logger.info("starting_up", app=settings.app_name)
 
-        # Start background scheduler
-        from app.workers.scheduler import create_scheduler
-
-        scheduler = create_scheduler()
-        scheduler.start()
-        logger.info("scheduler_started")
-
         yield
 
-        scheduler.shutdown(wait=False)
-        logger.info("scheduler_stopped")
         await engine.dispose()
         logger.info("shutting_down")
 
@@ -48,7 +41,9 @@ def create_app() -> FastAPI:
     )
 
     # Middleware (order matters — outermost first)
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_hosts)
     app.add_middleware(ApiRateLimitMiddleware)
+    app.add_middleware(CsrfProtectionMiddleware)
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(
         CORSMiddleware,

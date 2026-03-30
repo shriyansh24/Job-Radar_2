@@ -71,7 +71,9 @@ class InterviewService:
         logger.info("interview.generate_questions", job_id=request.job_id, user_id=str(user_id))
         types = request.types or ["behavioral", "technical"]
         count = request.count or 5
-        job_title, company_name, job_description = await self._load_job_context(request.job_id)
+        job_title, company_name, job_description, _ = self._coerce_job_context(
+            await self._load_job_context(request.job_id)
+        )
 
         prompt = GENERATE_QUESTIONS_PROMPT.format(
             count=count,
@@ -128,13 +130,17 @@ class InterviewService:
         job_description, required_skills = request.job_description, request.required_skills
 
         if not job_title:
-            db_title, db_company, db_desc = await self._load_job_context(request.job_id)
+            db_title, db_company, db_desc, db_skills = self._coerce_job_context(
+                await self._load_job_context(request.job_id)
+            )
             job_title = job_title or db_title
             company_name = company_name or db_company
             job_description = job_description or db_desc
+            required_skills = required_skills or db_skills
 
         prompt = INTERVIEW_PREP_PROMPT.format(
             resume_text=resume_text[:4000],
+            stage=request.stage,
             job_title=job_title,
             company_name=company_name or "the company",
             job_description=(job_description or "")[:3000],
@@ -158,19 +164,22 @@ class InterviewService:
             raise AppError("Interview preparation failed", status_code=502)
 
         logger.info("interview.prepare_done", user_id=str(user_id))
-        _keys = (
-            "likely_questions",
-            "star_stories",
-            "technical_topics",
-            "company_talking_points",
-            "questions_to_ask",
-            "red_flag_responses",
+        return InterviewPrepResponse(
+            likely_questions=data.get("likely_questions", []),
+            star_stories=data.get("star_stories", []),
+            technical_topics=data.get("technical_topics", []),
+            company_talking_points=data.get("company_talking_points", []),
+            questions_to_ask=data.get("questions_to_ask", []),
+            red_flag_responses=data.get("red_flag_responses", []),
+            company_research=data.get("company_research"),
+            role_analysis=data.get("role_analysis"),
         )
-        return InterviewPrepResponse(**{k: data.get(k, []) for k in _keys})
 
     # -- answer evaluation (delegates to evaluator) -------------------------
 
-    async def evaluate_answer(self, request: EvaluateAnswerRequest, user_id: uuid.UUID) -> dict:
+    async def evaluate_answer(
+        self, request: EvaluateAnswerRequest, user_id: uuid.UUID
+    ) -> dict[str, object]:
         logger.info(
             "interview.evaluate_answer",
             session_id=str(request.session_id),
@@ -186,7 +195,9 @@ class InterviewService:
             )
 
         question_text = questions[request.question_index].get("question", "")
-        job_title, company_name, _ = await self._load_job_context(session.job_id or "")
+        job_title, company_name, _, _ = self._coerce_job_context(
+            await self._load_job_context(session.job_id or "")
+        )
 
         result = await answer_evaluator.evaluate_answer(
             self._router,
@@ -212,7 +223,7 @@ class InterviewService:
         session: InterviewSession,
         question_index: int,
         answer: str,
-        result: dict,
+        result: dict[str, object],
     ) -> None:
         idx = question_index
         answers = [a for a in list(session.answers or []) if a.get("question_index") != idx]
@@ -228,20 +239,30 @@ class InterviewService:
         await self.db.commit()
         await self.db.refresh(session)
 
-    async def _load_job_context(self, job_id: str) -> tuple[str, str, str]:
+    async def _load_job_context(self, job_id: str) -> tuple[str, str, str, list[str]]:
         if not job_id:
-            return "", "", ""
+            return "", "", "", []
         try:
             from app.jobs.models import Job
 
             job = await self.db.scalar(select(Job).where(Job.id == job_id))
             if job is None:
-                return "", "", ""
+                return "", "", "", []
             return (
                 getattr(job, "title", "") or "",
                 getattr(job, "company_name", "") or "",
                 getattr(job, "description_clean", "") or getattr(job, "description", "") or "",
+                list(getattr(job, "skills_required", []) or []),
             )
         except Exception:
             logger.debug("interview.load_job_context_failed", job_id=job_id)
-            return "", "", ""
+            return "", "", "", []
+
+    @staticmethod
+    def _coerce_job_context(
+        context: tuple[str, str, str] | tuple[str, str, str, list[str]]
+    ) -> tuple[str, str, str, list[str]]:
+        if len(context) == 4:
+            return context
+        title, company, description = context
+        return title, company, description, []

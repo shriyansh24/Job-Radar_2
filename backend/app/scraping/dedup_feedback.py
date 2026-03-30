@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Literal
+from typing import Literal, cast
 
 import structlog
 from pydantic import BaseModel, ConfigDict
@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+from app.shared.errors import NotFoundError
 
 logger = structlog.get_logger()
 
@@ -109,7 +110,11 @@ class DedupFeedbackService:
         is_dup = decision == "same"
 
         # Compute similarity features for the pair
-        title_sim, comp_ratio = await self._compute_pair_features(a_id, b_id)
+        title_sim, comp_ratio = await self._compute_pair_features(
+            a_id,
+            b_id,
+            user_id=user_id,
+        )
 
         feedback = DedupFeedback(
             job_a_id=a_id,
@@ -131,7 +136,12 @@ class DedupFeedbackService:
         )
         return feedback
 
-    async def get_pending_reviews(self, limit: int = 10) -> list[PendingReviewItem]:
+    async def get_pending_reviews(
+        self,
+        *,
+        user_id: uuid.UUID,
+        limit: int = 10,
+    ) -> list[PendingReviewItem]:
         """Return pairs that the system is least confident about.
 
         Confidence is proxied by title_similarity being in the ambiguous range
@@ -143,7 +153,11 @@ class DedupFeedbackService:
         # Get jobs that share company names (potential near-dupes)
         stmt = (
             select(Job.id, Job.title, Job.company_name)
-            .where(Job.title.isnot(None), Job.company_name.isnot(None))
+            .where(
+                Job.user_id == user_id,
+                Job.title.isnot(None),
+                Job.company_name.isnot(None),
+            )
             .order_by(Job.created_at.desc())
             .limit(200)
         )
@@ -154,7 +168,9 @@ class DedupFeedbackService:
             return []
 
         # Find already-reviewed pairs
-        reviewed_stmt = select(DedupFeedback.job_a_id, DedupFeedback.job_b_id)
+        reviewed_stmt = select(DedupFeedback.job_a_id, DedupFeedback.job_b_id).where(
+            DedupFeedback.user_id == user_id
+        )
         reviewed_result = await self._db.execute(reviewed_stmt)
         reviewed_pairs: set[tuple[str, str]] = {
             (str(r[0]), str(r[1])) for r in reviewed_result.all()
@@ -198,13 +214,15 @@ class DedupFeedbackService:
         candidates.sort(key=lambda c: c.confidence)
         return candidates[:limit]
 
-    async def adjust_thresholds(self) -> dict[str, object]:
+    async def adjust_thresholds(self, *, user_id: uuid.UUID) -> dict[str, object]:
         """Analyze feedback to suggest threshold adjustments.
 
         If users frequently say 'different' for pairs the system marked as dupes
         (high similarity), the threshold should be raised. Vice versa.
         """
-        result = await self._db.execute(select(DedupFeedback))
+        result = await self._db.execute(
+            select(DedupFeedback).where(DedupFeedback.user_id == user_id)
+        )
         rows = result.scalars().all()
 
         if len(rows) < 10:
@@ -247,9 +265,11 @@ class DedupFeedbackService:
             },
         }
 
-    async def get_accuracy_stats(self) -> AccuracyStats:
+    async def get_accuracy_stats(self, *, user_id: uuid.UUID) -> AccuracyStats:
         """Compute precision/recall estimates from user feedback."""
-        result = await self._db.execute(select(DedupFeedback))
+        result = await self._db.execute(
+            select(DedupFeedback).where(DedupFeedback.user_id == user_id)
+        )
         rows = result.scalars().all()
 
         total = len(rows)
@@ -294,8 +314,9 @@ class DedupFeedbackService:
         )
 
         # Get suggested thresholds
-        adjustment = await self.adjust_thresholds()
-        suggested = (
+        adjustment = await self.adjust_thresholds(user_id=user_id)
+        suggested = cast(
+            dict[str, float] | None,
             adjustment.get("suggested_thresholds") if isinstance(adjustment, dict) else None
         )
 
@@ -308,30 +329,45 @@ class DedupFeedbackService:
             suggested_thresholds=suggested,
         )
 
-    async def lookup_pair(self, job_a_id: str, job_b_id: str) -> DedupFeedback | None:
+    async def lookup_pair(
+        self,
+        job_a_id: str,
+        job_b_id: str,
+        *,
+        user_id: uuid.UUID,
+    ) -> DedupFeedback | None:
         """Look up existing feedback for a pair (order-independent)."""
         a_id, b_id = sorted([job_a_id, job_b_id])
         result = await self._db.execute(
             select(DedupFeedback).where(
                 DedupFeedback.job_a_id == a_id,
                 DedupFeedback.job_b_id == b_id,
+                DedupFeedback.user_id == user_id,
             )
         )
         return result.scalar_one_or_none()
 
     async def _compute_pair_features(
-        self, job_a_id: str, job_b_id: str
+        self,
+        job_a_id: str,
+        job_b_id: str,
+        *,
+        user_id: uuid.UUID,
     ) -> tuple[float | None, float | None]:
         """Compute title similarity and company ratio for a job pair."""
         from app.jobs.models import Job
 
-        a_result = await self._db.execute(select(Job).where(Job.id == job_a_id))
-        b_result = await self._db.execute(select(Job).where(Job.id == job_b_id))
+        a_result = await self._db.execute(
+            select(Job).where(Job.id == job_a_id, Job.user_id == user_id)
+        )
+        b_result = await self._db.execute(
+            select(Job).where(Job.id == job_b_id, Job.user_id == user_id)
+        )
         job_a = a_result.scalar_one_or_none()
         job_b = b_result.scalar_one_or_none()
 
         if not job_a or not job_b:
-            return None, None
+            raise NotFoundError("One or both jobs were not found in the current workspace")
 
         title_a = (job_a.title or "").lower().strip()
         title_b = (job_b.title or "").lower().strip()
@@ -367,5 +403,5 @@ def check_feedback_override(
 ) -> bool | None:
     """Check if user feedback exists for a pair. Returns True if user said
     'same', False if 'different', None if no feedback."""
-    pair = tuple(sorted([job_a_id, job_b_id]))
+    pair = cast(tuple[str, str], tuple(sorted([job_a_id, job_b_id])))
     return feedback_lookup.get(pair)

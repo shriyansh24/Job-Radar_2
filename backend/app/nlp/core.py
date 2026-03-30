@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
+from collections.abc import Mapping
 
 # ---------------------------------------------------------------------------
 # Stopwords
@@ -252,7 +253,10 @@ def build_freq_map(tokens: list[str]) -> dict[str, int]:
 # ---------------------------------------------------------------------------
 
 
-def cosine_similarity(a: dict[str, float], b: dict[str, float]) -> float:
+def cosine_similarity(
+    a: Mapping[str, float | int],
+    b: Mapping[str, float | int],
+) -> float:
     """Compute cosine similarity between two sparse frequency/weight vectors.
 
     Returns a float in [0.0, 1.0].
