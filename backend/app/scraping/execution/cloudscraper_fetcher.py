@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import time
+from collections.abc import Mapping
 
 import cloudscraper as cs
 
@@ -27,10 +28,13 @@ class CloudscraperFetcher(FetcherPort):
         url: str,
         timeout_s: int = 30,
         user_agent: str | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> FetchResult:
         scraper = cs.create_scraper(
             browser={"browser": "chrome", "platform": "windows"},
         )
+        if headers:
+            scraper.headers.update(dict(headers))
         if user_agent:
             scraper.headers["User-Agent"] = user_agent
         start = time.monotonic()

@@ -79,8 +79,9 @@ class _SuperFetcherPort(FetcherPort):
         url: str,
         timeout_s: int = 30,
         user_agent: str | None = None,
+        headers=None,
     ) -> FetchResult:
-        return await super().fetch(url, timeout_s, user_agent)
+        return await super().fetch(url, timeout_s, user_agent, headers)
 
     async def health_check(self) -> bool:
         return await super().health_check()

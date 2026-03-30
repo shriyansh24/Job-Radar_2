@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import time
+from collections.abc import Mapping
 
 from app.scraping.execution.browser_port import BrowserPort, BrowserResult
 from app.scraping.execution.fetcher_port import FetcherPort, FetchResult
@@ -21,8 +22,8 @@ try:
 
     SCRAPLING_AVAILABLE = True
 except ImportError:
-    Fetcher = None  # type: ignore[assignment,misc]
-    StealthyFetcher = None  # type: ignore[assignment,misc]
+    Fetcher = None
+    StealthyFetcher = None
     SCRAPLING_AVAILABLE = False
 
 
@@ -42,6 +43,7 @@ class ScraplingFetcher(FetcherPort, BrowserPort):
         url: str,
         timeout_s: int = 30,
         user_agent: str | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> FetchResult:
         if not SCRAPLING_AVAILABLE:
             raise RuntimeError("scrapling not installed")
@@ -50,7 +52,9 @@ class ScraplingFetcher(FetcherPort, BrowserPort):
         # The scrapling Fetcher manages its own UA string internally;
         # the caller-supplied user_agent is therefore intentionally ignored.
         fetcher = Fetcher()
-        kwargs: dict = {"timeout": timeout_s}
+        kwargs: dict[str, object] = {"timeout": timeout_s}
+        if headers:
+            kwargs["headers"] = dict(headers)
         # Attempt to request Chrome-like TLS fingerprinting when supported.
         try:
             resp = await asyncio.to_thread(
@@ -78,7 +82,7 @@ class ScraplingFetcher(FetcherPort, BrowserPort):
         self,
         url: str,
         timeout_s: int = 60,
-        fingerprint: dict | None = None,
+        fingerprint: dict[str, object] | None = None,
         wait_for_selector: str | None = None,
     ) -> BrowserResult:
         if not SCRAPLING_AVAILABLE:

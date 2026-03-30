@@ -106,6 +106,32 @@ async def test_render_returns_browser_result():
 
 
 @pytest.mark.asyncio
+async def test_fetch_passes_headers_to_fetcher():
+    """fetch() should pass conditional headers to the underlying client."""
+    mock_resp = MagicMock()
+    mock_resp.text = "<html>fast</html>"
+    mock_resp.status_code = 304
+
+    mock_fetcher_cls = MagicMock()
+    mock_fetcher_instance = MagicMock()
+    mock_fetcher_instance.get.return_value = mock_resp
+    mock_fetcher_cls.return_value = mock_fetcher_instance
+
+    with (
+        patch("app.scraping.execution.scrapling_fetcher.SCRAPLING_AVAILABLE", True),
+        patch("app.scraping.execution.scrapling_fetcher.Fetcher", mock_fetcher_cls),
+    ):
+        f = ScraplingFetcher()
+        await f.fetch(
+            "https://example.com",
+            headers={"If-Modified-Since": "Mon, 01 Jan 2026 00:00:00 GMT"},
+        )
+
+    call_kwargs = mock_fetcher_instance.get.call_args.kwargs
+    assert call_kwargs["headers"]["If-Modified-Since"] == "Mon, 01 Jan 2026 00:00:00 GMT"
+
+
+@pytest.mark.asyncio
 async def test_close_is_noop():
     f = ScraplingFetcher()
     await f.close()  # Should not raise

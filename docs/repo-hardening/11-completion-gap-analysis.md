@@ -18,7 +18,7 @@ This plan is the result of an exhaustive audit of every directory in the repo, a
 | `POST /batch-scrape` localhost HTTP API | **NOT STARTED** | No sidecar API; Python backend calls scrapers directly |
 | `GET /health` sidecar endpoint | **NOT STARTED** | |
 | Per-domain rate limit (1 req/s/domain in Rust) | **PYTHON EQUIVALENT EXISTS** | `rate_limiter.py` handles this in Python |
-| robots.txt parsing + Protego | **NOT IMPLEMENTED** | DEF-07 and DEF-08 in audit are still deferred |
+| robots.txt parsing + Protego | **DONE** | Non-ATS target batches now evaluate `robots.txt` with Protego and block disallowed fetches before execution |
 | User-Agent rotation pool | **PARTIAL** | camoufox/nodriver handle UA rotation at browser level, not HTTP level |
 | Cross-compile CI for 3 platforms | **NOT STARTED** | No Rust CI at all |
 | Site discovery via Google dorking | **NOT IMPLEMENTED** | Targets are manually added via admin API |
@@ -124,9 +124,9 @@ These are items from the original 44-issue audit that no longer match the live c
 | DEF-01 | Resume PDF generation + templates | **DONE** — WeasyPrint + 3 HTML templates |
 | DEF-03 | Targets add/edit/delete career page UI | **DONE** — `/targets` now exposes operator-facing career-page create/edit/delete flows over the existing career-page API |
 | DEF-04 | Saved Search Alerts UI + scheduler trigger | **DONE** — saved searches now expose alert status, manual checks, worker notifications, and scheduled alert execution |
-| DEF-06 | Conditional requests (ETag/If-Modified-Since) | **NOT DONE** |
-| DEF-07 | robots.txt checking via Protego | **NOT DONE** |
-| DEF-08 | Protego library wired into execution loop | **NOT DONE** |
+| DEF-06 | Conditional requests (ETag/If-Modified-Since) | **DONE** â€” fetcher tiers now send conditional headers from target cache metadata and refresh cache state after successful fetches |
+| DEF-07 | robots.txt checking via Protego | **DONE** â€” non-ATS target batches now evaluate `robots.txt` before fetches and surface block/warn outcomes in logs and attempts |
+| DEF-08 | Protego library wired into execution loop | **DONE** â€” Protego policy now runs inside the live target-batch execution path with deterministic regression coverage |
 
 ### Research Items Still Exploratory
 | Item | Status |
@@ -214,10 +214,9 @@ The doc correctly identifies: Rust sidecar (performance), Google Workspace (prod
 3. LLM cost/token tracking and logging
 4. CAPTCHA handling for Greenhouse API submissions
 5. Unseen question review UI flow (present LLM answers for approval before submit)
-6. Saved search alert triggers (notifications on new matching jobs)
-7. robots.txt / Protego integration
-8. Conditional requests (ETag/If-Modified-Since)
-9. Remove dead code (Apify scraper SC-14)
+6. Parser tuning for difficult JS-heavy career pages and source-specific anti-bot recovery
+7. Alert delivery depth beyond in-app saved-search notifications
+8. Remove dead code (Apify scraper SC-14)
 
 ### Tier 3 — High-Effort from Doc (Strategic)
 1. Rust sidecar binary for high-throughput scraping
