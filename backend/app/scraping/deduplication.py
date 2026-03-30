@@ -66,12 +66,13 @@ def _extract_ats_provider(job: ScrapedJob) -> str | None:
     if not job.source_url:
         return None
 
-    host = urlparse(job.source_url).netloc.lower()
-    if "greenhouse" in host:
+    parsed = urlparse(job.source_url)
+    host = (parsed.hostname or "").lower()
+    if host == "greenhouse" or host.endswith(".greenhouse.com"):
         return "greenhouse"
-    if "lever.co" in host:
+    if host == "lever.co" or host.endswith(".lever.co"):
         return "lever"
-    if "ashbyhq.com" in host:
+    if host == "ashbyhq.com" or host.endswith(".ashbyhq.com"):
         return "ashby"
     return None
 
