@@ -173,6 +173,22 @@ export default function Settings() {
     onError: () => toast("error", "Failed to delete search"),
   });
 
+  const checkSearchMutation = useMutation({
+    mutationFn: (id: string) => settingsApi.checkSearch(id),
+    onSuccess: (response) => {
+      const result = response.data;
+      toast(
+        "success",
+        result.new_matches
+          ? `${result.new_matches} new job${result.new_matches === 1 ? "" : "s"} found`
+          : "No new jobs matched this search"
+      );
+      queryClient.invalidateQueries({ queryKey: ["settings", "searches"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+    onError: () => toast("error", "Failed to check saved search"),
+  });
+
   const integrationUpsertMutation = useMutation({
     mutationFn: async (provider: IntegrationStatus["provider"]) => {
       const key = integrationDrafts[provider]?.trim();
@@ -293,6 +309,7 @@ export default function Settings() {
             searchesLoading={searchesLoading}
             integrationsLoading={integrationsLoading}
             integrationDrafts={integrationDrafts}
+            checkingSearchId={checkSearchMutation.variables ?? null}
             clearConfirm={clearConfirm}
             deleteConfirm={deleteConfirm}
             clearReady={clearDataReady}
@@ -336,6 +353,7 @@ export default function Settings() {
                 })
                 .catch(() => toast("error", "Failed to update search"))
             }
+            onCheckSearch={(search) => checkSearchMutation.mutate(search.id)}
             onDeleteSearch={(search) => deleteSearchMutation.mutate(search.id)}
             onClearConfirmChange={setClearConfirm}
             onDeleteConfirmChange={setDeleteConfirm}

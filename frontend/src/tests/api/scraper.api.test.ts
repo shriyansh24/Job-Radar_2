@@ -50,6 +50,9 @@ describe("scraperApi", () => {
   });
 
   it("routes scraper mutations to the expected endpoints", () => {
+    scraperApi.createCareerPage({ url: "https://careers.acme.example", company_name: "Acme" });
+    scraperApi.updateCareerPage("career-page-1", { enabled: false });
+    scraperApi.deleteCareerPage("career-page-1");
     scraperApi.importTargets([{ url: "https://acme.example/jobs" }]);
     scraperApi.triggerTarget("target-1");
     scraperApi.updateTarget("target-1", { enabled: false });
@@ -58,24 +61,39 @@ describe("scraperApi", () => {
 
     expect(apiClientMock.post).toHaveBeenNthCalledWith(
       1,
+      "/scraper/career-pages",
+      { url: "https://careers.acme.example", company_name: "Acme" }
+    );
+    expect(apiClientMock.patch).toHaveBeenNthCalledWith(
+      1,
+      "/scraper/career-pages/career-page-1",
+      { enabled: false }
+    );
+    expect(apiClientMock.delete).toHaveBeenNthCalledWith(
+      1,
+      "/scraper/career-pages/career-page-1"
+    );
+    expect(apiClientMock.post).toHaveBeenNthCalledWith(
+      2,
       "/scraper/targets/import",
       [{ url: "https://acme.example/jobs" }]
     );
     expect(apiClientMock.post).toHaveBeenNthCalledWith(
-      2,
+      3,
       "/scraper/targets/target-1/trigger"
     );
-    expect(apiClientMock.patch).toHaveBeenCalledWith(
+    expect(apiClientMock.patch).toHaveBeenNthCalledWith(
+      2,
       "/scraper/targets/target-1",
       { enabled: false }
     );
     expect(apiClientMock.post).toHaveBeenNthCalledWith(
-      3,
+      4,
       "/scraper/targets/target-1/release",
       { force_tier: 2 }
     );
     expect(apiClientMock.post).toHaveBeenNthCalledWith(
-      4,
+      5,
       "/scraper/trigger-batch",
       { priority_class: "watchlist", batch_size: 3 }
     );

@@ -4,17 +4,19 @@ import {
   CaretRight,
   CheckCircle,
   Crosshair,
+  Plus,
   UploadSimple,
   Warning,
 } from "@phosphor-icons/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { scraperApi, type TargetListParams } from "../api/scraper";
+import { scraperApi, type TargetListParams, type TargetWithAttempts } from "../api/scraper";
 import ScraperControlPanel from "../components/scraper/ScraperControlPanel";
 import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader } from "../components/system/PageHeader";
 import { StateBlock } from "../components/system/StateBlock";
 import { Surface } from "../components/system/Surface";
+import { CareerPageModal, type CareerPageDraft } from "../components/targets/CareerPageModal";
 import Button from "../components/ui/Button";
 import EmptyState from "../components/ui/EmptyState";
 import Select from "../components/ui/Select";
@@ -26,10 +28,21 @@ import { TargetRowSkeleton } from "../components/targets/TargetRowSkeleton";
 
 const pageSize = 50;
 
+function blankCareerPageDraft(): CareerPageDraft {
+  return {
+    id: null,
+    url: "",
+    companyName: "",
+    enabled: true,
+  };
+}
+
 export default function Targets() {
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [careerPageModalOpen, setCareerPageModalOpen] = useState(false);
+  const [careerPageDraft, setCareerPageDraft] = useState<CareerPageDraft>(blankCareerPageDraft());
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<{
     priority_class: string;
@@ -68,12 +81,94 @@ export default function Targets() {
     onError: () => toast("error", "Failed to update target"),
   });
 
+  const createCareerPageMutation = useMutation({
+    mutationFn: (draft: CareerPageDraft) =>
+      scraperApi.createCareerPage({
+        url: draft.url,
+        company_name: draft.companyName || undefined,
+      }),
+    onSuccess: () => {
+      toast("success", "Career page created");
+      queryClient.invalidateQueries({ queryKey: ["targets"] });
+      setCareerPageModalOpen(false);
+      setCareerPageDraft(blankCareerPageDraft());
+    },
+    onError: () => toast("error", "Failed to create career page"),
+  });
+
+  const updateCareerPageMutation = useMutation({
+    mutationFn: (draft: CareerPageDraft) =>
+      scraperApi.updateCareerPage(draft.id!, {
+        url: draft.url,
+        company_name: draft.companyName || undefined,
+        enabled: draft.enabled,
+      }),
+    onSuccess: (_response, draft) => {
+      toast("success", "Career page updated");
+      queryClient.invalidateQueries({ queryKey: ["targets"] });
+      if (draft.id) {
+        queryClient.invalidateQueries({ queryKey: ["target", draft.id] });
+      }
+      setCareerPageModalOpen(false);
+      setCareerPageDraft(blankCareerPageDraft());
+    },
+    onError: () => toast("error", "Failed to update career page"),
+  });
+
+  const deleteCareerPageMutation = useMutation({
+    mutationFn: (id: string) => scraperApi.deleteCareerPage(id),
+    onSuccess: (_response, id) => {
+      toast("success", "Career page deleted");
+      queryClient.invalidateQueries({ queryKey: ["targets"] });
+      queryClient.removeQueries({ queryKey: ["target", id] });
+      if (selectedId === id) {
+        setSelectedId(null);
+      }
+      setCareerPageModalOpen(false);
+      setCareerPageDraft(blankCareerPageDraft());
+    },
+    onError: () => toast("error", "Failed to delete career page"),
+  });
+
   const list = targets?.items ?? [];
   const totalCount = targets?.total ?? 0;
   const hasMore = list.length === pageSize;
   const enabledCount = list.filter((target) => target.enabled).length;
   const quarantinedCount = list.filter((target) => target.quarantined).length;
   const vendors = new Set(list.map((target) => target.ats_vendor || "unknown"));
+
+  function openCreateCareerPage() {
+    setCareerPageDraft(blankCareerPageDraft());
+    setCareerPageModalOpen(true);
+  }
+
+  function openEditCareerPage(target: TargetWithAttempts) {
+    setCareerPageDraft({
+      id: target.id,
+      url: target.url,
+      companyName: target.company_name ?? "",
+      enabled: target.enabled,
+    });
+    setCareerPageModalOpen(true);
+  }
+
+  function submitCareerPage(draft: CareerPageDraft) {
+    if (draft.id) {
+      updateCareerPageMutation.mutate(draft);
+      return;
+    }
+    createCareerPageMutation.mutate(draft);
+  }
+
+  function requestCareerPageDelete(target: TargetWithAttempts) {
+    const confirmed = window.confirm(
+      `Delete the career page target for ${target.company_name ?? target.url}?`
+    );
+    if (!confirmed) {
+      return;
+    }
+    deleteCareerPageMutation.mutate(target.id);
+  }
 
   return (
     <div className="space-y-6">
@@ -83,14 +178,24 @@ export default function Targets() {
         title="Scrape Targets"
         description="Review targets, quarantine state, and batch runs."
         actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setShowImport(true)}
-            icon={<UploadSimple size={14} weight="bold" />}
-          >
-            Import Targets
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={openCreateCareerPage}
+              icon={<Plus size={14} weight="bold" />}
+            >
+              Add Career Page
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowImport(true)}
+              icon={<UploadSimple size={14} weight="bold" />}
+            >
+              Import Targets
+            </Button>
+          </div>
         }
         meta={
           !isLoading ? (
@@ -221,7 +326,7 @@ export default function Targets() {
                   icon={<Crosshair size={40} weight="bold" />}
                   title="No targets found"
                   description="Import targets or adjust your filters"
-                  action={{ label: "Import Targets", onClick: () => setShowImport(true) }}
+                  action={{ label: "Add Career Page", onClick: openCreateCareerPage }}
                 />
               </div>
             ) : (
@@ -274,7 +379,13 @@ export default function Targets() {
 
         <Surface tone="default" padding="none" radius="xl" className="hero-panel overflow-hidden">
           {selectedId ? (
-            <TargetDetail targetId={selectedId} onClose={() => setSelectedId(null)} />
+            <TargetDetail
+              targetId={selectedId}
+              onClose={() => setSelectedId(null)}
+              onEditCareerPage={openEditCareerPage}
+              onDeleteCareerPage={requestCareerPageDelete}
+              deletingCareerPage={deleteCareerPageMutation.isPending}
+            />
           ) : (
             <div className="p-5">
               <StateBlock
@@ -289,6 +400,29 @@ export default function Targets() {
       </div>
 
       <TargetImportModal open={showImport} onClose={() => setShowImport(false)} />
+      <CareerPageModal
+        open={careerPageModalOpen}
+        draft={careerPageDraft}
+        saving={createCareerPageMutation.isPending || updateCareerPageMutation.isPending}
+        deleting={deleteCareerPageMutation.isPending}
+        onClose={() => {
+          setCareerPageModalOpen(false);
+          setCareerPageDraft(blankCareerPageDraft());
+        }}
+        onSave={submitCareerPage}
+        onDelete={
+          careerPageDraft.id
+            ? (draft) => {
+                const confirmed = window.confirm(
+                  `Delete the career page target for ${draft.companyName || draft.url}?`
+                );
+                if (confirmed) {
+                  deleteCareerPageMutation.mutate(draft.id!);
+                }
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }

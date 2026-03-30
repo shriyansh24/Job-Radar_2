@@ -21,6 +21,9 @@ class SavedSearchResponse(BaseModel):
     filters: dict[str, Any]
     alert_enabled: bool
     last_checked_at: datetime | None = None
+    last_matched_at: datetime | None = None
+    last_match_count: int = 0
+    last_error: str | None = None
     created_at: datetime
 
 
@@ -52,3 +55,12 @@ class AppSettingsUpdate(BaseModel):
     theme: str | None = None
     notifications_enabled: bool | None = None
     auto_apply_enabled: bool | None = None
+
+
+class SavedSearchCheckResponse(BaseModel):
+    search: SavedSearchResponse
+    status: Literal["matched", "no_match"]
+    new_matches: int
+    notification_created: bool
+    notification_id: uuid.UUID | None = None
+    link: str
