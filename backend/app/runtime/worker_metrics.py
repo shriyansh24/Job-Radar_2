@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 from arq.connections import ArqRedis
-
-if TYPE_CHECKING:
-    from app.runtime.queue import QueueSnapshot
 
 COUNTER_FIELDS = (
     "retry_exhausted_total",
@@ -64,7 +61,7 @@ async def sync_worker_queue_metrics(
     redis: ArqRedis | None,
     *,
     role: str,
-    snapshot: QueueSnapshot,
+    snapshot: Any,
     health_interval_seconds: int,
 ) -> None:
     if redis is None:
@@ -87,7 +84,7 @@ async def sync_worker_queue_metrics(
 async def sync_worker_queue_metrics_for_queue(
     redis: ArqRedis | None,
     *,
-    snapshot: QueueSnapshot,
+    snapshot: Any,
     health_interval_seconds: int,
 ) -> None:
     role = worker_role_for_queue(snapshot.queue_name)

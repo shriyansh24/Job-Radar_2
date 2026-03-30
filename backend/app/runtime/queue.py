@@ -13,17 +13,6 @@ import structlog
 from arq.connections import ArqRedis, RedisSettings, create_pool
 
 from app.config import settings
-from app.runtime.job_registry import (
-    ANALYSIS_QUEUE,
-    OPS_QUEUE,
-    SCRAPING_QUEUE,
-    get_queue_names,
-    get_registered_job,
-)
-from app.runtime.worker_metrics import (
-    configured_worker_health_interval_seconds,
-    sync_worker_queue_metrics_for_queue,
-)
 
 logger = structlog.get_logger()
 
@@ -32,6 +21,42 @@ _queue_pool_lock = asyncio.Lock()
 VALID_QUEUE_PRESSURES = frozenset({"nominal", "elevated", "saturated"})
 VALID_QUEUE_ALERTS = frozenset({"clear", "watch", "backlog", "stalled"})
 _CORRELATION_ID_SANITIZER = re.compile(r"[^A-Za-z0-9_-]+")
+SCRAPING_QUEUE = "arq:queue:scraping"
+ANALYSIS_QUEUE = "arq:queue:analysis"
+OPS_QUEUE = "arq:queue:ops"
+
+
+def _get_queue_names() -> list[str]:
+    from app.runtime.job_registry import get_queue_names
+
+    return get_queue_names()
+
+
+def _get_registered_job(job_name: str):
+    from app.runtime.job_registry import get_registered_job
+
+    return get_registered_job(job_name)
+
+
+def _configured_worker_health_interval_seconds() -> int:
+    from app.runtime.worker_metrics import configured_worker_health_interval_seconds
+
+    return configured_worker_health_interval_seconds()
+
+
+async def _sync_worker_queue_metrics_for_queue(
+    redis: ArqRedis | None,
+    *,
+    snapshot: "QueueSnapshot",
+    health_interval_seconds: int,
+) -> None:
+    from app.runtime.worker_metrics import sync_worker_queue_metrics_for_queue
+
+    await sync_worker_queue_metrics_for_queue(
+        redis,
+        snapshot=snapshot,
+        health_interval_seconds=health_interval_seconds,
+    )
 
 QUEUE_PRESSURE_THRESHOLDS: dict[str, tuple[int, int]] = {
     SCRAPING_QUEUE: (10, 25),
@@ -108,7 +133,7 @@ async def startup_queue_pool() -> ArqRedis:
                 redis_port=redis_settings.port,
                 redis_database=redis_settings.database,
                 redis_tls=redis_settings.ssl,
-                queue_names=get_queue_names(),
+                queue_names=_get_queue_names(),
             )
     return _queue_pool
 
@@ -130,7 +155,7 @@ async def shutdown_queue_pool() -> None:
 
 async def get_queue_depths(queue_pool: ArqRedis | None = None) -> dict[str, int]:
     active_pool = queue_pool or await get_queue_pool()
-    queue_names = get_queue_names()
+    queue_names = _get_queue_names()
     queue_depths = await asyncio.gather(
         *(active_pool.zcard(queue_name) for queue_name in queue_names)
     )
@@ -238,7 +263,7 @@ async def get_queue_snapshots(
     queue_pool: ArqRedis | None = None,
 ) -> dict[str, QueueSnapshot]:
     active_pool = queue_pool or await get_queue_pool()
-    queue_names = get_queue_names()
+    queue_names = _get_queue_names()
     snapshots = await asyncio.gather(
         *(capture_queue_snapshot(queue_name, active_pool) for queue_name in queue_names)
     )
@@ -274,7 +299,7 @@ async def enqueue_registered_job(
     correlation_id: str | None = None,
     **job_kwargs: object,
 ) -> QueueDispatchResult:
-    job = get_registered_job(job_name)
+    job = _get_registered_job(job_name)
     queue_pool = await get_queue_pool()
     before_snapshot = await capture_queue_snapshot(job.queue_name, queue_pool)
     normalized_correlation_id = sanitize_correlation_id(correlation_id)
@@ -320,10 +345,10 @@ async def enqueue_registered_job(
             ex=JOB_METADATA_TTL_SECONDS,
         )
     after_snapshot = await capture_queue_snapshot(job.queue_name, queue_pool)
-    await sync_worker_queue_metrics_for_queue(
+    await _sync_worker_queue_metrics_for_queue(
         queue_pool,
         snapshot=after_snapshot,
-        health_interval_seconds=configured_worker_health_interval_seconds(),
+        health_interval_seconds=_configured_worker_health_interval_seconds(),
     )
     logger.info(
         "scheduler_job_enqueued",

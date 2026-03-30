@@ -7,7 +7,6 @@ from typing import Any, cast
 import structlog
 from arq.worker import Retry
 
-from app.runtime.worker_metrics import increment_worker_counter
 from app.workers.alert_worker import check_saved_search_alerts
 from app.workers.auto_apply_worker import run_auto_apply_batch
 from app.workers.digest_worker import run_daily_digest
@@ -77,6 +76,8 @@ async def _run_with_lifecycle(
     ctx: dict[str, Any] | None,
     callback: Callable[[], Awaitable[None]],
 ) -> None:
+    from app.runtime.worker_metrics import increment_worker_counter
+
     context = {"job_name": job_name, **dict(ctx or {})}
     log_fields = _job_log_fields(context, queue_name=queue_name)
     redis = cast(Any, context.get("redis"))
