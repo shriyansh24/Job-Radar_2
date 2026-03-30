@@ -15,6 +15,18 @@ from app.runtime.job_registry import (
 )
 
 
+def _fake_redis_settings() -> object:
+    return object()
+
+
+def _fake_current_unix_ms() -> int:
+    return 361_000
+
+
+def _fake_current_unix_ms_short() -> int:
+    return 6_000
+
+
 @pytest.mark.parametrize(
     ("role", "queue_name"),
     [
@@ -28,7 +40,7 @@ def test_build_worker_assigns_expected_queue(
     queue_name: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(arq_worker, "build_redis_settings", lambda: object())
+    monkeypatch.setattr(arq_worker, "build_redis_settings", _fake_redis_settings)
 
     worker = arq_worker.build_worker(role)
 
@@ -42,7 +54,7 @@ def test_build_worker_assigns_expected_queue(
 
 
 def test_build_worker_preserves_function_retry_policy(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(arq_worker, "build_redis_settings", lambda: object())
+    monkeypatch.setattr(arq_worker, "build_redis_settings", _fake_redis_settings)
 
     worker = arq_worker.build_worker("ops")
 
@@ -131,11 +143,11 @@ async def test_worker_startup_marks_ready_and_pings_dependencies(
 
     fake_redis = _FakeRedis()
     monkeypatch.setenv("JR_WORKER_READY_MARKER", str(tmp_path / "worker.ready"))
-    monkeypatch.setattr(arq_worker, "setup_logging", lambda debug: None)
-    monkeypatch.setattr(arq_worker, "validate_runtime_settings", lambda settings: None)
-    monkeypatch.setattr(arq_worker, "engine", SimpleNamespace(connect=lambda: _FakeConnection()))
+    monkeypatch.setattr(arq_worker, "setup_logging", _fake_setup_logging)
+    monkeypatch.setattr(arq_worker, "validate_runtime_settings", _fake_validate_runtime_settings)
+    monkeypatch.setattr(arq_worker, "engine", SimpleNamespace(connect=_fake_connect))
     monkeypatch.setattr(arq_worker, "logger", _FakeLogger())
-    monkeypatch.setattr(queue_runtime, "_current_unix_ms", lambda: 361_000)
+    monkeypatch.setattr(queue_runtime, "_current_unix_ms", _fake_current_unix_ms)
 
     ctx: dict[str, object] = {
         "worker_role": "analysis",
@@ -258,7 +270,7 @@ async def test_worker_job_hooks_report_queue_depth(monkeypatch: pytest.MonkeyPat
             seen.append((event, fields))
 
     monkeypatch.setattr(arq_worker, "logger", _FakeLogger())
-    monkeypatch.setattr(queue_runtime, "_current_unix_ms", lambda: 6_000)
+    monkeypatch.setattr(queue_runtime, "_current_unix_ms", _fake_current_unix_ms_short)
     ctx: dict[str, object] = {
         "worker_role": "scraping",
         "queue_name": SCRAPING_QUEUE,
@@ -307,3 +319,25 @@ async def test_worker_job_hooks_report_queue_depth(monkeypatch: pytest.MonkeyPat
     ]
     assert fake_redis.metrics["jobradar:worker-metrics:scraping"]["queue_depth"] == "5"
     assert fake_redis.metrics["jobradar:worker-metrics:scraping"]["queue_alert"] == "clear"
+
+
+def _fake_setup_logging(*, debug: bool) -> None:
+    return None
+
+
+def _fake_validate_runtime_settings(_settings: object) -> None:
+    return None
+
+
+def _fake_connect() -> object:
+    class _FakeConnection:
+        async def execute(self, _query: object) -> None:
+            return None
+
+        async def __aenter__(self) -> "_FakeConnection":
+            return self
+
+        async def __aexit__(self, exc_type: object, exc: object, tb: object) -> None:
+            return None
+
+    return _FakeConnection()
