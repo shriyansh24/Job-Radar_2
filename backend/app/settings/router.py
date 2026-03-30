@@ -12,6 +12,7 @@ from app.settings.schemas import (
     AppSettingsUpdate,
     IntegrationResponse,
     IntegrationUpsertRequest,
+    SavedSearchCheckResponse,
     SavedSearchCreate,
     SavedSearchResponse,
     SavedSearchUpdate,
@@ -52,6 +53,24 @@ async def update_saved_search(
     svc = SettingsService(db)
     search = await svc.update_saved_search(search_id, data, user.id)
     return SavedSearchResponse.model_validate(search)
+
+
+@router.post("/searches/{search_id}/check", response_model=SavedSearchCheckResponse)
+async def check_saved_search(
+    search_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> SavedSearchCheckResponse:
+    svc = SettingsService(db)
+    result = await svc.check_saved_search(search_id, user.id)
+    return SavedSearchCheckResponse(
+        search=SavedSearchResponse.model_validate(result["search"]),
+        status=result["status"],
+        new_matches=result["new_matches"],
+        notification_created=result["notification_created"],
+        notification_id=result["notification_id"],
+        link=result["link"],
+    )
 
 
 @router.delete("/searches/{search_id}", status_code=204, response_model=None)

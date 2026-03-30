@@ -6,6 +6,9 @@ import { renderWithProviders } from "../../support/renderWithProviders";
 const scraperMocks = vi.hoisted(() => ({
   listTargets: vi.fn(),
   getTarget: vi.fn(),
+  createCareerPage: vi.fn(),
+  updateCareerPage: vi.fn(),
+  deleteCareerPage: vi.fn(),
   triggerBatch: vi.fn(),
   updateTarget: vi.fn(),
   triggerTarget: vi.fn(),
@@ -112,6 +115,9 @@ describe("Targets page", () => {
     scraperMocks.getTarget.mockResolvedValue({
       data: defaultTargetDetail,
     });
+    scraperMocks.createCareerPage.mockResolvedValue({ data: null });
+    scraperMocks.updateCareerPage.mockResolvedValue({ data: null });
+    scraperMocks.deleteCareerPage.mockResolvedValue({ data: null });
     scraperMocks.triggerBatch.mockResolvedValue({ data: { jobs_found: 0 } });
     scraperMocks.updateTarget.mockResolvedValue({ data: null });
     scraperMocks.triggerTarget.mockResolvedValue({ data: null });
@@ -172,5 +178,46 @@ describe("Targets page", () => {
     expect(
       await screen.findByText(/Each entry must have a valid "http:\/\/" or "https:\/\/" URL/i)
     ).toBeInTheDocument();
+  });
+
+  it("creates a career page target from the operator modal", async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<Targets />);
+
+    await user.click(await screen.findByRole("button", { name: /Add Career Page/i }));
+    await user.type(screen.getByLabelText(/Career page URL/i), "https://careers.acme.example");
+    await user.type(screen.getByLabelText(/Company name/i), "Acme");
+    await user.click(screen.getByRole("button", { name: /Create career page/i }));
+
+    expect(scraperMocks.createCareerPage).toHaveBeenCalledWith({
+      url: "https://careers.acme.example",
+      company_name: "Acme",
+    });
+  });
+
+  it("exposes edit and delete actions for career-page targets", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    renderWithProviders(<Targets />);
+    await user.click(await screen.findByText("Acme"));
+
+    await user.click(await screen.findByRole("button", { name: /Edit career page/i }));
+    await user.clear(screen.getByLabelText(/Company name/i));
+    await user.type(screen.getByLabelText(/Company name/i), "Acme Updated");
+    await user.click(screen.getByRole("button", { name: /Save changes/i }));
+
+    expect(scraperMocks.updateCareerPage).toHaveBeenCalledWith("target-1", {
+      url: "https://acme.example/jobs",
+      company_name: "Acme Updated",
+      enabled: true,
+    });
+
+    await user.click(await screen.findByRole("button", { name: /Delete career page/i }));
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(scraperMocks.deleteCareerPage).toHaveBeenCalledWith("target-1");
+
+    confirmSpy.mockRestore();
   });
 });

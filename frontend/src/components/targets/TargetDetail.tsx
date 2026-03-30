@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CaretRight, Lightning, LinkSimple, LockOpen, Warning } from "@phosphor-icons/react";
-import { scraperApi } from "../../api/scraper";
+import {
+  CaretRight,
+  Lightning,
+  LinkSimple,
+  LockOpen,
+  PencilSimple,
+  Trash,
+  Warning,
+} from "@phosphor-icons/react";
+import { scraperApi, type TargetWithAttempts } from "../../api/scraper";
 import { getSafeExternalUrl } from "../../lib/utils";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
@@ -13,9 +21,15 @@ import { priorityVariant, atsVariant, relativeTime } from "./targetUtils";
 export function TargetDetail({
   targetId,
   onClose,
+  onEditCareerPage,
+  onDeleteCareerPage,
+  deletingCareerPage = false,
 }: {
   targetId: string;
   onClose: () => void;
+  onEditCareerPage?: (target: TargetWithAttempts) => void;
+  onDeleteCareerPage?: (target: TargetWithAttempts) => void;
+  deletingCareerPage?: boolean;
 }) {
   const queryClient = useQueryClient();
 
@@ -173,6 +187,27 @@ export function TargetDetail({
                   icon={<LockOpen size={14} weight="bold" />}
                 >
                   Release
+                </Button>
+              ) : null}
+              {target.source_kind === "career_page" && onEditCareerPage ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => onEditCareerPage(target)}
+                  icon={<PencilSimple size={14} weight="bold" />}
+                >
+                  Edit career page
+                </Button>
+              ) : null}
+              {target.source_kind === "career_page" && onDeleteCareerPage ? (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  loading={deletingCareerPage}
+                  onClick={() => onDeleteCareerPage(target)}
+                  icon={<Trash size={14} weight="bold" />}
+                >
+                  Delete career page
                 </Button>
               ) : null}
             </div>

@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.profile.models import UserProfile
+from app.settings.alerts import check_saved_search_alert
 from app.settings.models import SavedSearch, UserIntegrationSecret
 from app.settings.schemas import AppSettingsUpdate, SavedSearchCreate, SavedSearchUpdate
 from app.shared.errors import NotFoundError, ValidationError
@@ -48,8 +49,11 @@ class SettingsService:
         update_data = data.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(search, key, value)
-        if "alert_enabled" in update_data:
-            search.last_checked_at = datetime.now(timezone.utc) if search.alert_enabled else None
+        if "alert_enabled" in update_data and not search.alert_enabled:
+            search.last_checked_at = None
+            search.last_matched_at = None
+            search.last_match_count = 0
+            search.last_error = None
         await self.db.commit()
         await self.db.refresh(search)
         logger.info(
@@ -116,6 +120,27 @@ class SettingsService:
         await self.db.delete(integration)
         await self.db.commit()
         logger.info("integration_deleted", provider=normalized_provider, user_id=str(user_id))
+
+    async def check_saved_search(self, search_id: uuid.UUID, user_id: uuid.UUID) -> dict[str, Any]:
+        search = await self._get_saved_search(search_id, user_id)
+        result = await check_saved_search_alert(self.db, search)
+        await self.db.commit()
+        await self.db.refresh(search)
+        logger.info(
+            "saved_search_checked",
+            search_id=str(search.id),
+            user_id=str(user_id),
+            new_matches=result.new_matches,
+            notification_created=result.notification_created,
+        )
+        return {
+            "search": search,
+            "status": "matched" if result.new_matches else "no_match",
+            "new_matches": result.new_matches,
+            "notification_created": result.notification_created,
+            "notification_id": result.notification_id,
+            "link": result.link,
+        }
 
     async def _get_or_create_profile(self, user_id: uuid.UUID) -> UserProfile:
         result = await self.db.execute(select(UserProfile).where(UserProfile.user_id == user_id))

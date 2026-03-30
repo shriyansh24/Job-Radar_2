@@ -9,6 +9,7 @@ const settingsMocks = vi.hoisted(() => ({
   listIntegrations: vi.fn(),
   updateSettings: vi.fn(),
   updateSearch: vi.fn(),
+  checkSearch: vi.fn(),
   createSearch: vi.fn(),
   deleteSearch: vi.fn(),
   upsertIntegration: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock("../../api/settings", () => ({
     listIntegrations: settingsMocks.listIntegrations,
     updateSettings: settingsMocks.updateSettings,
     updateSearch: settingsMocks.updateSearch,
+    checkSearch: settingsMocks.checkSearch,
     createSearch: settingsMocks.createSearch,
     deleteSearch: settingsMocks.deleteSearch,
     upsertIntegration: settingsMocks.upsertIntegration,
@@ -70,6 +72,10 @@ describe("Settings page", () => {
           filters: { q: "react", remote_type: "remote" },
           alert_enabled: true,
           last_checked_at: "2026-03-22T10:00:00Z",
+          last_matched_at: "2026-03-22T10:05:00Z",
+          last_match_count: 3,
+          last_error: null,
+          created_at: "2026-03-20T10:00:00Z",
         },
       ],
     });
@@ -85,7 +91,7 @@ describe("Settings page", () => {
         {
           provider: "serpapi",
           connected: false,
-          status: "missing",
+          status: "not_configured",
           masked_value: null,
           updated_at: null,
         },
@@ -93,6 +99,26 @@ describe("Settings page", () => {
     });
     settingsMocks.updateSettings.mockResolvedValue({ data: null });
     settingsMocks.updateSearch.mockResolvedValue({ data: null });
+    settingsMocks.checkSearch.mockResolvedValue({
+      data: {
+        status: "matched",
+        new_matches: 1,
+        notification_created: true,
+        notification_id: "notif-1",
+        link: "/jobs?q=react",
+        search: {
+          id: "search-1",
+          name: "Remote React",
+          filters: { q: "react", remote_type: "remote" },
+          alert_enabled: true,
+          last_checked_at: "2026-03-22T10:10:00Z",
+          last_matched_at: "2026-03-22T10:10:00Z",
+          last_match_count: 1,
+          last_error: null,
+          created_at: "2026-03-20T10:00:00Z",
+        },
+      },
+    });
     settingsMocks.createSearch.mockResolvedValue({ data: null });
     settingsMocks.deleteSearch.mockResolvedValue({ data: null });
     settingsMocks.upsertIntegration.mockResolvedValue({ data: null });
@@ -116,6 +142,7 @@ describe("Settings page", () => {
     await user.click(screen.getByRole("button", { name: /^searches$/i }));
     expect(await screen.findByText("Remote React")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /new search/i })).toBeInTheDocument();
+    expect(screen.getByText(/Last match 3 jobs/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^integrations$/i }));
     expect(await screen.findByText("OpenRouter")).toBeInTheDocument();
@@ -123,5 +150,15 @@ describe("Settings page", () => {
 
     await user.click(screen.getByRole("button", { name: /^data$/i }));
     expect(await screen.findByRole("button", { name: /export data/i })).toBeInTheDocument();
+  });
+
+  it("runs a saved search check from the settings surface", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Settings />);
+
+    await user.click(await screen.findByRole("button", { name: /^searches$/i }));
+    await user.click(await screen.findByRole("button", { name: /check now/i }));
+
+    expect(settingsMocks.checkSearch).toHaveBeenCalledWith("search-1");
   });
 });

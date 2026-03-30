@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
+
+from app.jobs.models import Job
+from app.notifications.models import Notification
 
 
 async def _register_and_login(client: AsyncClient) -> str:
@@ -66,6 +71,9 @@ async def test_saved_searches_crud(client: AsyncClient) -> None:
 
     assert created.status_code == 201
     assert created.json()["last_checked_at"] is None
+    assert created.json()["last_matched_at"] is None
+    assert created.json()["last_match_count"] == 0
+    assert created.json()["last_error"] is None
     assert listed.status_code == 200
     assert len(listed.json()) == 1
     assert deleted.status_code == 204
@@ -96,7 +104,66 @@ async def test_saved_search_update(client: AsyncClient) -> None:
     assert payload["name"] == "Remote ML Roles"
     assert payload["filters"] == {"remote": True, "keywords": ["ml", "python"]}
     assert payload["alert_enabled"] is True
-    assert payload["last_checked_at"] is not None
+    assert payload["last_checked_at"] is None
+    assert payload["last_matched_at"] is None
+    assert payload["last_match_count"] == 0
+    assert payload["last_error"] is None
+
+
+@pytest.mark.asyncio
+async def test_saved_search_check_creates_notification_and_updates_metadata(
+    client: AsyncClient,
+    db_session,
+) -> None:
+    token = await _register_and_login(client)
+    created = await client.post(
+        "/api/v1/settings/searches",
+        headers=_auth(token),
+        json={"name": "Remote Roles", "filters": {"q": "Engineer"}, "alert_enabled": True},
+    )
+
+    from app.auth.models import User
+
+    auth_user = await db_session.scalar(
+        select(User).where(User.email.like("settings-api-%@test.com")).order_by(User.created_at.desc())
+    )
+    assert auth_user is not None
+    user_id = auth_user.id
+
+    db_session.add(
+        Job(
+            id=f"settings-check-{uuid.uuid4().hex[:8]}",
+            user_id=user_id,
+            source="test",
+            title="Backend Engineer",
+            company_name="Acme",
+            is_active=True,
+            created_at=datetime.now(UTC) - timedelta(minutes=5),
+        )
+    )
+    await db_session.commit()
+
+    checked = await client.post(
+        f"/api/v1/settings/searches/{created.json()['id']}/check",
+        headers=_auth(token),
+    )
+
+    assert checked.status_code == 200
+    payload = checked.json()
+    assert payload["status"] == "matched"
+    assert payload["new_matches"] == 1
+    assert payload["notification_created"] is True
+    assert payload["link"] == "/jobs?q=Engineer"
+    assert payload["search"]["last_checked_at"] is not None
+    assert payload["search"]["last_matched_at"] is not None
+    assert payload["search"]["last_match_count"] == 1
+    assert payload["search"]["last_error"] is None
+
+    notification = await db_session.scalar(
+        select(Notification).where(Notification.user_id == user_id)
+    )
+    assert notification is not None
+    assert notification.notification_type == "saved_search_alert"
 
 
 @pytest.mark.asyncio

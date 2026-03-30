@@ -30,6 +30,7 @@ type SettingsTabPanelsProps = {
   searchesLoading: boolean;
   integrationsLoading: boolean;
   integrationDrafts: Record<string, string>;
+  checkingSearchId: string | null;
   clearConfirm: string;
   deleteConfirm: string;
   clearReady: boolean;
@@ -53,6 +54,7 @@ type SettingsTabPanelsProps = {
   onCreateSearch: () => void;
   onEditSearch: (search: SavedSearch) => void;
   onToggleSearch: (search: SavedSearch) => void;
+  onCheckSearch: (search: SavedSearch) => void;
   onDeleteSearch: (search: SavedSearch) => void;
   onClearConfirmChange: (value: string) => void;
   onDeleteConfirmChange: (value: string) => void;
@@ -74,6 +76,7 @@ function SettingsTabPanels({
   searchesLoading,
   integrationsLoading,
   integrationDrafts,
+  checkingSearchId,
   clearConfirm,
   deleteConfirm,
   clearReady,
@@ -97,6 +100,7 @@ function SettingsTabPanels({
   onCreateSearch,
   onEditSearch,
   onToggleSearch,
+  onCheckSearch,
   onDeleteSearch,
   onClearConfirmChange,
   onDeleteConfirmChange,
@@ -167,6 +171,7 @@ function SettingsTabPanels({
       <SettingsSearchesSection
         searches={searches}
         loading={searchesLoading}
+        checkingSearchId={checkingSearchId}
         onCreate={onCreateSearch}
         onEdit={(search) => {
           if (search) {
@@ -174,6 +179,7 @@ function SettingsTabPanels({
           }
         }}
         onToggle={onToggleSearch}
+        onCheck={onCheckSearch}
         onDelete={onDeleteSearch}
       />
     );

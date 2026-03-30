@@ -122,8 +122,8 @@ These are items from the original 44-issue audit that no longer match the live c
 | ID | Feature | Status |
 |----|---------|--------|
 | DEF-01 | Resume PDF generation + templates | **DONE** — WeasyPrint + 3 HTML templates |
-| DEF-03 | Targets add/edit/delete career page UI | **DONE** — `Targets.tsx` page exists |
-| DEF-04 | Saved Search Alerts UI + scheduler trigger | **PARTIAL** — Search expansion exists, but no alert/notification trigger from saved searches |
+| DEF-03 | Targets add/edit/delete career page UI | **DONE** — `/targets` now exposes operator-facing career-page create/edit/delete flows over the existing career-page API |
+| DEF-04 | Saved Search Alerts UI + scheduler trigger | **DONE** — saved searches now expose alert status, manual checks, worker notifications, and scheduled alert execution |
 | DEF-06 | Conditional requests (ETag/If-Modified-Since) | **NOT DONE** |
 | DEF-07 | robots.txt checking via Protego | **NOT DONE** |
 | DEF-08 | Protego library wired into execution loop | **NOT DONE** |
