@@ -67,7 +67,9 @@ Primary files:
 - `frontend/e2e/**`
 - `frontend/vitest.config.ts`
 - `.github/workflows/ci.yml`
-- `.claude/agents/14-test.md`
+- `backend/tests/README.md`
+- `frontend/src/tests/README.md`
+- `docs/repo-hardening/06-test-taxonomy.md`
 
 Dependencies:
 - truth reconciliation so docs and commands point to the correct paths
