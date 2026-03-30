@@ -55,7 +55,7 @@
 | `04-data-and-scraping.md` | Data model, scraper platform, and scheduler state |
 | `05-ops-and-ci.md` | Local commands, Docker, CI, dependency checks, workflow state |
 | `06-open-items.md` | Deferred work, structural gaps, and non-bug residuals |
-| `07-system-analysis.md` | Exhaustive repository/system analysis (directories, files, flow, branch deltas) |
+| `07-system-analysis.md` | Reference snapshot of the repository/system layout and branch deltas; defer to `01-repo-map.md` and `../repo-hardening/06-test-taxonomy.md` for live filesystem ownership |
 | `../audit/00-index.md` | Verified bug ledger and stale-audit tracking |
 | `../research/00-index.md` | Future design and roadmap material |
 
