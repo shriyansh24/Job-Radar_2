@@ -1,773 +1,376 @@
-import {
-  Bell,
-  BellSlash,
-  BookmarkSimple,
-  Database,
-  DownloadSimple,
-  Eye,
-  EyeSlash,
-  FloppyDisk,
-  GearSix,
-  Key,
-  Lightning,
-  LightningSlash,
-  Lock,
-  MagnifyingGlass,
-  Moon,
-  Play,
-  Plus,
-  Sun,
-  ToggleLeft,
-  ToggleRight,
-  Trash,
-  UploadSimple,
-  UserMinus,
-  Warning,
-} from "@phosphor-icons/react";
+import { Bell, HardDrive, MagnifyingGlass, Palette, Plug, Shield, UserCircle } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { adminApi } from "../api/admin";
-import { scraperApi } from "../api/scraper";
-import { settingsApi, type AppSettings, type SavedSearch } from "../api/settings";
-import Badge from "../components/ui/Badge";
-import Button from "../components/ui/Button";
-import Card from "../components/ui/Card";
-import EmptyState from "../components/ui/EmptyState";
-import Input from "../components/ui/Input";
-import Modal from "../components/ui/Modal";
-import ScraperControlPanel from "../components/scraper/ScraperControlPanel";
-import Skeleton from "../components/ui/Skeleton";
+import { changePasswordApi, deleteAccountApi } from "../api/auth";
+import { settingsApi, type AppSettings, type IntegrationStatus, type SavedSearch } from "../api/settings";
+import { SettingsPageHeader } from "../components/settings/SettingsPageHeader";
+import { SettingsSearchEditorModal, type SearchEditorState } from "../components/settings/SettingsSearchEditorModal";
 import { toast } from "../components/ui/toastService";
 import { useAuthStore } from "../store/useAuthStore";
-import { useUIStore } from "../store/useUIStore";
+import { parseThemePreference, serializeThemePreference, type ThemeFamily, type ThemeMode, useUIStore } from "../store/useUIStore";
+import { SettingsTabNav, type SettingsTab } from "../components/settings/SettingsTabNav";
+import { SettingsTabPanels, type PasswordForm } from "../components/settings/SettingsTabPanels";
 
-function ToggleRow({
-  icon,
-  label,
-  description,
-  enabled,
-  onToggle,
-}: {
-  icon: React.ReactNode;
+const SETTINGS_TABS: Array<{
+  id: SettingsTab;
   label: string;
-  description: string;
-  enabled: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between py-3">
-      <div className="flex items-center gap-3">
-        <div className="text-text-muted">{icon}</div>
-        <div>
-          <p className="text-sm font-medium text-text-primary">{label}</p>
-          <p className="text-xs text-text-muted">{description}</p>
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={onToggle}
-        className="text-accent-primary hover:opacity-80 transition-opacity"
-      >
-        {enabled ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-text-muted" />}
-      </button>
-    </div>
-  );
+  icon: typeof UserCircle;
+}> = [
+  { id: "profile", label: "Profile", icon: UserCircle },
+  { id: "appearance", label: "Appearance", icon: Palette },
+  { id: "workspace", label: "Workspace", icon: Bell },
+  { id: "security", label: "Security", icon: Shield },
+  { id: "integrations", label: "Integrations", icon: Plug },
+  { id: "searches", label: "Searches", icon: MagnifyingGlass },
+  { id: "data", label: "Data", icon: HardDrive },
+];
+
+const initialAppSettings = (): AppSettings => ({
+  theme: "dark",
+  notifications_enabled: true,
+  auto_apply_enabled: false,
+});
+
+const blankSearchEditor = (): SearchEditorState => ({
+  id: null,
+  name: "",
+  filtersText: JSON.stringify({}, null, 2),
+  alertEnabled: true,
+});
+
+function normalizeAppSettings(settings: AppSettings): AppSettings {
+  const { mode, themeFamily } = parseThemePreference(settings.theme);
+  return {
+    ...settings,
+    theme: serializeThemePreference(themeFamily, mode),
+  };
 }
 
-function SettingsSkeleton() {
-  return (
-    <div className="space-y-6">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="bg-bg-secondary border border-border rounded-[var(--radius-lg)] p-4 space-y-4">
-          <Skeleton variant="text" className="w-1/4 h-5" />
-          <Skeleton variant="rect" className="w-full h-12" />
-          <Skeleton variant="rect" className="w-full h-12" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SavedSearchCard({
-  search,
-  onToggleAlert,
-  onDelete,
-  isDeleting,
-}: {
-  search: SavedSearch;
-  onToggleAlert: () => void;
-  onDelete: () => void;
-  isDeleting: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between py-3 px-3 rounded-[var(--radius-md)] hover:bg-bg-tertiary transition-colors">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
-        <MagnifyingGlass size={16} weight="bold" className="text-text-muted shrink-0" />
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-text-primary truncate">{search.name}</p>
-          {search.filters && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {Object.entries(search.filters).map(([key, value]) => (
-                <Badge key={key} size="sm">
-                  {key}: {String(value)}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <button
-          type="button"
-          onClick={onToggleAlert}
-          className="p-1.5 rounded-[var(--radius-md)] hover:bg-bg-elevated transition-colors"
-          title={search.alert_enabled ? 'Disable alerts' : 'Enable alerts'}
-        >
-          {search.alert_enabled ? (
-            <Bell size={16} weight="bold" className="text-accent-primary" />
-          ) : (
-            <BellSlash size={16} weight="bold" className="text-text-muted" />
-          )}
-        </button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onDelete}
-          loading={isDeleting}
-          icon={<Trash size={14} weight="bold" />}
-          className="text-text-muted hover:text-accent-danger"
-        />
-      </div>
-    </div>
-  );
+function parseFilters(text: string): Record<string, unknown> {
+  const trimmed = text.trim();
+  if (!trimmed) return {};
+  const parsed = JSON.parse(trimmed);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Saved search filters must be a JSON object");
+  }
+  return parsed as Record<string, unknown>;
 }
 
 export default function Settings() {
   const queryClient = useQueryClient();
-  const { theme, setTheme } = useUIStore();
-  const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((state) => state.user);
+  const mode = useUIStore((state) => state.mode);
+  const themeFamily = useUIStore((state) => state.themeFamily);
+  const setThemePreference = useUIStore((state) => state.setThemePreference);
 
-  // Settings query
-  const { data: settings, isLoading: loadingSettings } = useQuery({
-    queryKey: ['settings'],
-    queryFn: () => settingsApi.getSettings().then((r) => r.data),
+  const [appForm, setAppForm] = useState<AppSettings>(initialAppSettings());
+  const [passwordForm, setPasswordForm] = useState<PasswordForm>({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [searchEditor, setSearchEditor] = useState<SearchEditorState>(blankSearchEditor());
+  const [integrationDrafts, setIntegrationDrafts] = useState<Record<string, string>>({});
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [clearConfirm, setClearConfirm] = useState("");
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
+
+  const { data: settings } = useQuery({
+    queryKey: ["settings", "app"],
+    queryFn: () => settingsApi.getSettings().then((response) => response.data),
   });
 
-  // Saved searches query
-  const { data: searches, isLoading: loadingSearches } = useQuery({
-    queryKey: ['savedSearches'],
-    queryFn: () => settingsApi.listSearches().then((r) => r.data),
+  const { data: searches, isLoading: searchesLoading } = useQuery({
+    queryKey: ["settings", "searches"],
+    queryFn: () => settingsApi.listSearches().then((response) => response.data),
   });
 
-  // Local settings state
-  const [notifications, setNotifications] = useState(false);
-  const [autoApply, setAutoApply] = useState(false);
+  const { data: integrations, isLoading: integrationsLoading } = useQuery({
+    queryKey: ["settings", "integrations"],
+    queryFn: () => settingsApi.listIntegrations().then((response) => response.data),
+  });
 
   useEffect(() => {
-    if (settings) {
-      setNotifications(settings.notifications_enabled ?? false);
-      setAutoApply(settings.auto_apply_enabled ?? false);
-    }
-  }, [settings]);
+    if (!settings) return;
+    const normalized = normalizeAppSettings(settings);
+    setAppForm({
+      ...normalized,
+      theme: serializeThemePreference(themeFamily, mode),
+    });
+  }, [mode, settings, themeFamily]);
 
-  // API Keys state
-  const [apiKeys, setApiKeys] = useState({
-    openrouter: '',
-    serpapi: '',
-    theirstack: '',
-    apify: '',
+  useEffect(() => {
+    if (!integrations) return;
+    setIntegrationDrafts((current) => {
+      const next = { ...current };
+      for (const integration of integrations) {
+        if (!(integration.provider in next)) {
+          next[integration.provider] = "";
+        }
+      }
+      return next;
+    });
+  }, [integrations]);
+
+  function updateThemeSelection(next: Partial<{ mode: ThemeMode; themeFamily: ThemeFamily }>) {
+    const resolvedMode = next.mode ?? mode;
+    const resolvedThemeFamily = next.themeFamily ?? themeFamily;
+    setThemePreference(resolvedThemeFamily, resolvedMode);
+    setAppForm((current) => ({
+      ...current,
+      theme: serializeThemePreference(resolvedThemeFamily, resolvedMode),
+    }));
+  }
+
+  const saveAppMutation = useMutation({
+    mutationFn: (data: AppSettings) => settingsApi.updateSettings(data),
+    onSuccess: (response) => {
+      const normalized = normalizeAppSettings(response.data);
+      setAppForm(normalized);
+      const nextTheme = parseThemePreference(normalized.theme);
+      setThemePreference(nextTheme.themeFamily, nextTheme.mode);
+      toast("success", "Settings saved");
+      queryClient.invalidateQueries({ queryKey: ["settings", "app"] });
+    },
+    onError: () => toast("error", "Failed to save settings"),
   });
-  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
 
-  const toggleKeyVisibility = (key: string) => {
-    setShowKeys((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const saveApiKeysMutation = useMutation({
+  const saveSearchMutation = useMutation({
     mutationFn: async () => {
-      // API keys saved via settings endpoint
-      await settingsApi.updateSettings({ ...settings, api_keys: apiKeys } as Partial<AppSettings>);
-    },
-    onSuccess: () => toast('success', 'API keys saved'),
-    onError: () => toast('error', 'Failed to save API keys'),
-  });
+      const filters = parseFilters(searchEditor.filtersText);
+      const payload = {
+        name: searchEditor.name.trim(),
+        filters,
+        alert_enabled: searchEditor.alertEnabled,
+      };
 
-  // Settings mutation
-  const settingsMutation = useMutation({
-    mutationFn: (data: Partial<AppSettings>) => settingsApi.updateSettings(data),
+      if (searchEditor.id) {
+        return settingsApi.updateSearch(searchEditor.id, payload);
+      }
+
+      return settingsApi.createSearch(payload);
+    },
     onSuccess: () => {
-      toast('success', 'Settings updated');
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      toast("success", searchEditor.id ? "Search updated" : "Search created");
+      setSearchEditor(blankSearchEditor());
+      setSearchModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["settings", "searches"] });
     },
-    onError: () => toast('error', 'Failed to update settings'),
-  });
-
-  // Trigger all scrapers mutation
-  const triggerAllMutation = useMutation({
-    mutationFn: () => scraperApi.triggerScraper(),
-    onSuccess: () => {
-      toast('success', 'Scrapers triggered successfully');
-      queryClient.invalidateQueries({ queryKey: ['scraper', 'runs'] });
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Failed to save search";
+      toast("error", message);
     },
-    onError: () => toast('error', 'Failed to trigger scrapers'),
   });
-
-  const handleToggleNotifications = () => {
-    const next = !notifications;
-    setNotifications(next);
-    settingsMutation.mutate({ notifications_enabled: next });
-  };
-
-  const handleToggleAutoApply = () => {
-    const next = !autoApply;
-    setAutoApply(next);
-    settingsMutation.mutate({ auto_apply_enabled: next });
-  };
-
-  const handleToggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    settingsMutation.mutate({ theme: next });
-  };
-
-  // Saved search mutations
-  const [showAddSearch, setShowAddSearch] = useState(false);
-  const [newSearchName, setNewSearchName] = useState('');
-  const [newSearchFilters, setNewSearchFilters] = useState('');
-
-  const createSearchMutation = useMutation({
-    mutationFn: (data: { name: string; filters: Record<string, string>; alert_enabled: boolean }) =>
-      settingsApi.createSearch(data),
-    onSuccess: () => {
-      toast('success', 'Search saved');
-      setShowAddSearch(false);
-      setNewSearchName('');
-      setNewSearchFilters('');
-      queryClient.invalidateQueries({ queryKey: ['savedSearches'] });
-    },
-    onError: () => toast('error', 'Failed to save search'),
-  });
-
-  const [deletingSearchId, setDeletingSearchId] = useState<string | null>(null);
 
   const deleteSearchMutation = useMutation({
     mutationFn: (id: string) => settingsApi.deleteSearch(id),
     onSuccess: () => {
-      toast('success', 'Search deleted');
-      setDeletingSearchId(null);
-      queryClient.invalidateQueries({ queryKey: ['savedSearches'] });
+      toast("success", "Search deleted");
+      queryClient.invalidateQueries({ queryKey: ["settings", "searches"] });
     },
-    onError: () => {
-      toast('error', 'Failed to delete search');
-      setDeletingSearchId(null);
+    onError: () => toast("error", "Failed to delete search"),
+  });
+
+  const integrationUpsertMutation = useMutation({
+    mutationFn: async (provider: IntegrationStatus["provider"]) => {
+      const key = integrationDrafts[provider]?.trim();
+      if (!key) throw new Error("Enter an API key before saving");
+      return settingsApi.upsertIntegration(provider, key);
+    },
+    onSuccess: (_response, provider) => {
+      setIntegrationDrafts((current) => ({ ...current, [provider]: "" }));
+      toast("success", `${provider} connected`);
+      queryClient.invalidateQueries({ queryKey: ["settings", "integrations"] });
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Failed to save integration";
+      toast("error", message);
     },
   });
 
-  const handleCreateSearch = () => {
-    if (!newSearchName.trim()) return;
-    let filters: Record<string, string> = {};
-    if (newSearchFilters.trim()) {
-      try {
-        filters = JSON.parse(newSearchFilters);
-      } catch {
-        toast('error', 'Invalid JSON filters');
-        return;
-      }
-    }
-    createSearchMutation.mutate({ name: newSearchName.trim(), filters, alert_enabled: true });
-  };
-
-  const handleToggleSearchAlert = (search: SavedSearch) => {
-    settingsApi
-      .createSearch({ ...search, alert_enabled: !search.alert_enabled })
-      .then(() => queryClient.invalidateQueries({ queryKey: ['savedSearches'] }));
-  };
-
-  // Data management
-  const handleExport = async () => {
-    try {
-      const response = await adminApi.exportData();
-      const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `jobradar-export-${new Date().toISOString().split('T')[0]}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-      toast('success', 'Data exported successfully');
-    } catch {
-      toast('error', 'Failed to export data');
-    }
-  };
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-      await adminApi.importData(data);
-      toast('success', 'Data imported successfully');
-      queryClient.invalidateQueries();
-    } catch {
-      toast('error', 'Failed to import data. Check the file format.');
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
-
-  const clearDataMutation = useMutation({
-    mutationFn: async () => {
-      // Clear data not yet implemented on backend
-      await Promise.resolve();
+  const integrationDeleteMutation = useMutation({
+    mutationFn: (provider: IntegrationStatus["provider"]) => settingsApi.deleteIntegration(provider),
+    onSuccess: (_response, provider) => {
+      toast("success", `${provider} disconnected`);
+      queryClient.invalidateQueries({ queryKey: ["settings", "integrations"] });
     },
-    onSuccess: () => {
-      toast('success', 'All data cleared');
-      setShowClearConfirm(false);
-      queryClient.invalidateQueries();
-    },
-    onError: () => toast('error', 'Failed to clear data'),
+    onError: () => toast("error", "Failed to disconnect integration"),
   });
-
-  // Account management
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
   const changePasswordMutation = useMutation({
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    mutationFn: async (_data: { current_password: string; new_password: string }) => {
-      // Password change not yet implemented on backend
-      await Promise.resolve();
-    },
+    mutationFn: () => changePasswordApi(passwordForm.currentPassword, passwordForm.newPassword),
     onSuccess: () => {
-      toast('success', 'Password changed successfully');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      toast("success", "Password updated");
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     },
-    onError: () => toast('error', 'Failed to change password. Check your current password.'),
+    onError: () => toast("error", "Password update failed"),
   });
-
-  const handleChangePassword = () => {
-    if (!currentPassword || !newPassword) {
-      toast('error', 'Please fill in all password fields');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast('error', 'New passwords do not match');
-      return;
-    }
-    if (newPassword.length < 8) {
-      toast('error', 'Password must be at least 8 characters');
-      return;
-    }
-    changePasswordMutation.mutate({
-      current_password: currentPassword,
-      new_password: newPassword,
-    });
-  };
 
   const deleteAccountMutation = useMutation({
-    mutationFn: async () => {
-      // Account deletion not yet implemented on backend
-      await Promise.resolve();
-    },
-    onSuccess: async () => {
-      toast('success', 'Account deleted');
-      await logout();
-      window.location.href = '/login';
-    },
-    onError: () => toast('error', 'Failed to delete account'),
+    mutationFn: () => deleteAccountApi(),
+    onSuccess: () => toast("success", "Account deletion requested"),
+    onError: () => toast("error", "Account deletion failed"),
   });
 
-  if (loadingSettings) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-text-primary">Settings</h1>
-        </div>
-        <SettingsSkeleton />
-      </div>
-    );
+  const clearDataMutation = useMutation({
+    mutationFn: () => adminApi.clearData(),
+    onSuccess: (response) => {
+      toast("success", `Cleared ${response.data.rows_deleted} rows`);
+      queryClient.invalidateQueries();
+    },
+    onError: () => toast("error", "Failed to clear data"),
+  });
+
+  async function handleExport() {
+    try {
+      const response = await adminApi.exportData();
+      const blob = response.data;
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `jobradar-export-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      toast("success", "Export started");
+    } catch {
+      toast("error", "Failed to export data");
+    }
   }
 
+  function openSearchEditor(search?: SavedSearch) {
+    if (!search) {
+      setSearchEditor(blankSearchEditor());
+    } else {
+      setSearchEditor({
+        id: search.id,
+        name: search.name,
+        filtersText: JSON.stringify(search.filters ?? {}, null, 2),
+        alertEnabled: search.alert_enabled,
+      });
+    }
+    setSearchModalOpen(true);
+  }
+
+  function submitPasswordChange() {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast("error", "Passwords do not match");
+      return;
+    }
+    changePasswordMutation.mutate();
+  }
+
+  const clearDataReady = clearConfirm.trim().toLowerCase() === "clear";
+  const deleteAccountReady = deleteConfirm.trim().toLowerCase() === "delete";
+
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="text-xs font-medium text-text-muted tracking-tight">
-          Preferences
+    <div className="flex h-full flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
+      <SettingsPageHeader
+        onSave={() => saveAppMutation.mutate(appForm)}
+        isSaving={saveAppMutation.isPending}
+      />
+
+      <div className="flex flex-col gap-6 md:flex-row">
+        <SettingsTabNav
+          className="w-full shrink-0 md:w-64"
+          tabs={SETTINGS_TABS}
+          activeTab={activeTab}
+          onSelect={setActiveTab}
+        />
+
+        <div className="min-w-0 flex-1 space-y-6 pb-12">
+          <SettingsTabPanels
+            activeTab={activeTab}
+            userEmail={user?.email}
+            displayName={user?.display_name}
+            mode={mode}
+            themeFamily={themeFamily}
+            appForm={appForm}
+            passwordForm={passwordForm}
+            integrations={integrations}
+            searches={searches}
+            searchesLoading={searchesLoading}
+            integrationsLoading={integrationsLoading}
+            integrationDrafts={integrationDrafts}
+            clearConfirm={clearConfirm}
+            deleteConfirm={deleteConfirm}
+            clearReady={clearDataReady}
+            deleteReady={deleteAccountReady}
+            clearPending={clearDataMutation.isPending}
+            deletePending={deleteAccountMutation.isPending}
+            passwordPending={changePasswordMutation.isPending}
+            savingProvider={integrationUpsertMutation.variables ?? null}
+            deletingProvider={integrationDeleteMutation.variables ?? null}
+            onModeChange={(nextMode) => updateThemeSelection({ mode: nextMode })}
+            onThemeFamilyChange={(nextFamily) => updateThemeSelection({ themeFamily: nextFamily })}
+            onNotificationsChange={(checked) =>
+              setAppForm((current) => ({ ...current, notifications_enabled: checked }))
+            }
+            onAutoApplyChange={(checked) =>
+              setAppForm((current) => ({ ...current, auto_apply_enabled: checked }))
+            }
+            onCurrentPasswordChange={(value) =>
+              setPasswordForm((current) => ({ ...current, currentPassword: value }))
+            }
+            onNewPasswordChange={(value) =>
+              setPasswordForm((current) => ({ ...current, newPassword: value }))
+            }
+            onConfirmPasswordChange={(value) =>
+              setPasswordForm((current) => ({ ...current, confirmPassword: value }))
+            }
+            onPasswordSubmit={submitPasswordChange}
+            onIntegrationDraftChange={(provider, value) =>
+              setIntegrationDrafts((current) => ({ ...current, [provider]: value }))
+            }
+            onIntegrationSave={(provider) => integrationUpsertMutation.mutate(provider)}
+            onIntegrationDelete={(provider) => integrationDeleteMutation.mutate(provider)}
+            onCreateSearch={() => openSearchEditor()}
+            onEditSearch={(search) => openSearchEditor(search)}
+            onToggleSearch={(search) =>
+              settingsApi
+                .updateSearch(search.id, { alert_enabled: !search.alert_enabled })
+                .then(() => {
+                  toast("success", "Search updated");
+                  queryClient.invalidateQueries({ queryKey: ["settings", "searches"] });
+                })
+                .catch(() => toast("error", "Failed to update search"))
+            }
+            onDeleteSearch={(search) => deleteSearchMutation.mutate(search.id)}
+            onClearConfirmChange={setClearConfirm}
+            onDeleteConfirmChange={setDeleteConfirm}
+            onExport={handleExport}
+            onClear={() => clearDataMutation.mutate()}
+            onDelete={() => deleteAccountMutation.mutate()}
+          />
         </div>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-text-primary">
-          Settings
-        </h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* App Settings */}
-        <Card>
-          <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2 mb-2">
-            <GearSix size={16} weight="bold" className="text-accent-primary" />
-            App Settings
-          </h2>
-          <div className="divide-y divide-border">
-            <ToggleRow
-              icon={
-                theme === 'dark' ? (
-                  <Moon size={18} weight="bold" />
-                ) : (
-                  <Sun size={18} weight="bold" />
-                )
-              }
-              label="Dark Mode"
-              description={theme === 'dark' ? 'Dark theme enabled' : 'Light theme enabled'}
-              enabled={theme === 'dark'}
-              onToggle={handleToggleTheme}
-            />
-            <ToggleRow
-              icon={
-                notifications ? (
-                  <Bell size={18} weight="bold" />
-                ) : (
-                  <BellSlash size={18} weight="bold" />
-                )
-              }
-              label="Notifications"
-              description="Receive alerts for new matches and updates"
-              enabled={notifications}
-              onToggle={handleToggleNotifications}
-            />
-            <ToggleRow
-              icon={
-                autoApply ? (
-                  <Lightning size={18} weight="bold" />
-                ) : (
-                  <LightningSlash size={18} weight="bold" />
-                )
-              }
-              label="Auto-Apply"
-              description="Automatically apply to high-match jobs"
-              enabled={autoApply}
-              onToggle={handleToggleAutoApply}
-            />
-          </div>
-        </Card>
-
-        {/* API Keys */}
-        <Card>
-          <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2 mb-4">
-            <Key size={16} weight="bold" className="text-accent-primary" />
-            API Keys
-          </h2>
-          <div className="space-y-3">
-            {(['openrouter', 'serpapi', 'theirstack', 'apify'] as const).map((key) => (
-              <div key={key} className="space-y-1">
-                <label className="text-xs font-medium text-text-muted uppercase tracking-wide">
-                  {key === 'openrouter' ? 'OpenRouter' : key === 'serpapi' ? 'SerpAPI' : key === 'theirstack' ? 'TheirStack' : 'Apify'}
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    type={showKeys[key] ? 'text' : 'password'}
-                    placeholder={`Enter ${key} API key`}
-                    value={apiKeys[key]}
-                    onChange={(e) => setApiKeys((prev) => ({ ...prev, [key]: e.target.value }))}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => toggleKeyVisibility(key)}
-                    className="px-2 text-text-muted hover:text-text-primary transition-colors"
-                  >
-                    {showKeys[key] ? (
-                      <EyeSlash size={16} weight="bold" />
-                    ) : (
-                      <Eye size={16} weight="bold" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            ))}
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => saveApiKeysMutation.mutate()}
-              loading={saveApiKeysMutation.isPending}
-              icon={<FloppyDisk size={14} weight="bold" />}
-            >
-              Save API Keys
-            </Button>
-          </div>
-        </Card>
-
-        {/* Data Management */}
-        <Card>
-          <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2 mb-4">
-            <Database size={16} weight="bold" className="text-accent-primary" />
-            Data Management
-          </h2>
-          <div className="space-y-3">
-            <Button
-              variant="secondary"
-              className="w-full justify-start"
-              onClick={handleExport}
-              icon={<DownloadSimple size={16} weight="bold" />}
-            >
-              Export All Data (JSON)
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleImport}
-              className="hidden"
-            />
-            <Button
-              variant="secondary"
-              className="w-full justify-start"
-              onClick={() => fileInputRef.current?.click()}
-              icon={<UploadSimple size={16} weight="bold" />}
-            >
-              Import Data
-            </Button>
-            <Button
-              variant="danger"
-              className="w-full justify-start"
-              onClick={() => setShowClearConfirm(true)}
-              icon={<Trash size={16} weight="bold" />}
-            >
-              Clear All Data
-            </Button>
-          </div>
-        </Card>
-
-        {/* Scraper Controls */}
-        <Card className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-              <Play size={16} weight="bold" className="text-accent-primary" />
-              Scraper Controls
-            </h2>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => triggerAllMutation.mutate()}
-              loading={triggerAllMutation.isPending}
-              icon={<Play size={14} weight="bold" />}
-            >
-              Run All Scrapers
-            </Button>
-          </div>
-          <ScraperControlPanel />
-        </Card>
-
-        {/* Saved Searches */}
-        <Card className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-              <BookmarkSimple size={16} weight="bold" className="text-accent-primary" />
-              Saved Searches
-            </h2>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowAddSearch(true)}
-              icon={<Plus size={14} weight="bold" />}
-            >
-              Add Search
-            </Button>
-          </div>
-          {loadingSearches ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 py-3">
-                  <Skeleton variant="rect" className="w-full h-10" />
-                </div>
-              ))}
-            </div>
-          ) : !searches || searches.length === 0 ? (
-            <EmptyState
-              icon={<BookmarkSimple size={32} weight="bold" />}
-              title="No saved searches"
-              description="Save your frequently used search queries for quick access"
-              action={{ label: 'Add Search', onClick: () => setShowAddSearch(true) }}
-            />
-          ) : (
-            <div className="divide-y divide-border/50">
-              {searches.map((search) => (
-                <SavedSearchCard
-                  key={search.id}
-                  search={search}
-                  onToggleAlert={() => handleToggleSearchAlert(search)}
-                  onDelete={() => {
-                    setDeletingSearchId(search.id);
-                    deleteSearchMutation.mutate(search.id);
-                  }}
-                  isDeleting={deletingSearchId === search.id && deleteSearchMutation.isPending}
-                />
-              ))}
-            </div>
-          )}
-        </Card>
-
-        {/* Account */}
-        <Card className="lg:col-span-2">
-          <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2 mb-4">
-            <Lock size={16} weight="bold" className="text-accent-primary" />
-            Account
-          </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-sm font-medium text-text-secondary mb-3">Change Password</h3>
-              <div className="space-y-3">
-                <Input
-                  type="password"
-                  label="Current Password"
-                  placeholder="Enter current password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                />
-                <Input
-                  type="password"
-                  label="New Password"
-                  placeholder="Enter new password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
-                <Input
-                  type="password"
-                  label="Confirm New Password"
-                  placeholder="Confirm new password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  error={confirmPassword && newPassword !== confirmPassword ? 'Passwords do not match' : undefined}
-                />
-                <Button
-                  variant="primary"
-                  onClick={handleChangePassword}
-                  loading={changePasswordMutation.isPending}
-                  disabled={!currentPassword || !newPassword || !confirmPassword}
-                  icon={<Lock size={14} weight="bold" />}
-                >
-                  Update Password
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-medium text-text-secondary mb-3">Danger Zone</h3>
-              <div className="p-4 border border-accent-danger/30 rounded-[var(--radius-md)] bg-accent-danger/5">
-                <div className="flex items-start gap-3">
-                  <Warning
-                    size={18}
-                    weight="fill"
-                    className="text-accent-danger shrink-0 mt-0.5"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-text-primary">Delete Account</p>
-                    <p className="text-xs text-text-muted mt-1 mb-3">
-                      Permanently delete your account and all associated data. This action cannot be undone.
-                    </p>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => setShowDeleteAccount(true)}
-                      icon={<UserMinus size={14} weight="bold" />}
-                    >
-                      Delete Account
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Add Search Modal */}
-      <Modal open={showAddSearch} onClose={() => setShowAddSearch(false)} title="Add Saved Search" size="sm">
-        <div className="space-y-4">
-          <Input
-            label="Search Name"
-            placeholder="e.g., Remote React Senior"
-            value={newSearchName}
-            onChange={(e) => setNewSearchName(e.target.value)}
-          />
-          <Input
-            label="Filters (JSON, optional)"
-            placeholder='e.g., {"remote_type": "remote", "q": "react"}'
-            value={newSearchFilters}
-            onChange={(e) => setNewSearchFilters(e.target.value)}
-          />
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setShowAddSearch(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleCreateSearch}
-              loading={createSearchMutation.isPending}
-              disabled={!newSearchName.trim()}
-            >
-              Save
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Clear Data Confirmation Modal */}
-      <Modal open={showClearConfirm} onClose={() => setShowClearConfirm(false)} title="Clear All Data" size="sm">
-        <div className="space-y-4">
-          <div className="flex items-start gap-3">
-            <Warning size={20} weight="fill" className="text-accent-danger shrink-0 mt-0.5" />
-            <p className="text-sm text-text-secondary">
-              This will permanently delete all your jobs, applications, documents, and settings.
-              This action cannot be undone.
-            </p>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setShowClearConfirm(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              onClick={() => clearDataMutation.mutate()}
-              loading={clearDataMutation.isPending}
-            >
-              Clear All Data
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Delete Account Confirmation Modal */}
-      <Modal open={showDeleteAccount} onClose={() => setShowDeleteAccount(false)} title="Delete Account" size="sm">
-        <div className="space-y-4">
-          <div className="flex items-start gap-3">
-            <Warning size={20} weight="fill" className="text-accent-danger shrink-0 mt-0.5" />
-            <p className="text-sm text-text-secondary">
-              Are you sure you want to delete your account? All your data, including saved jobs,
-              applications, and documents will be permanently removed. This cannot be undone.
-            </p>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setShowDeleteAccount(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              onClick={() => deleteAccountMutation.mutate()}
-              loading={deleteAccountMutation.isPending}
-            >
-              Delete My Account
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <SettingsSearchEditorModal
+        open={searchModalOpen}
+        searchEditor={searchEditor}
+        saving={saveSearchMutation.isPending}
+        onClose={() => setSearchModalOpen(false)}
+        onNameChange={(value) =>
+          setSearchEditor((current) => ({
+            ...current,
+            name: value,
+          }))
+        }
+        onFiltersChange={(value) =>
+          setSearchEditor((current) => ({
+            ...current,
+            filtersText: value,
+          }))
+        }
+        onAlertEnabledChange={(value) =>
+          setSearchEditor((current) => ({
+            ...current,
+            alertEnabled: value,
+          }))
+        }
+        onSave={() => saveSearchMutation.mutate()}
+      />
     </div>
   );
 }

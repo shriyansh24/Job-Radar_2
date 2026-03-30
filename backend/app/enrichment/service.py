@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 
@@ -68,37 +68,37 @@ class EnrichmentService:
             enrichment = await self._llm_enrich(job, clean_description)
 
             # 2. Persist cleaned description and enrichment payload only after success.
-            job.description_clean = clean_description  # type: ignore[attr-defined]
-            job.description_markdown = markdown_description  # type: ignore[attr-defined]
-            job.summary_ai = enrichment.get("summary")  # type: ignore[attr-defined]
-            job.skills_required = enrichment.get("skills_required", [])  # type: ignore[attr-defined]
-            job.skills_nice_to_have = enrichment.get("skills_nice_to_have", [])  # type: ignore[attr-defined]
-            job.tech_stack = enrichment.get("tech_stack", [])  # type: ignore[attr-defined]
-            job.red_flags = enrichment.get("red_flags", [])  # type: ignore[attr-defined]
-            job.green_flags = enrichment.get("green_flags", [])  # type: ignore[attr-defined]
+            job.description_clean = clean_description
+            job.description_markdown = markdown_description
+            job.summary_ai = enrichment.get("summary")
+            job.skills_required = enrichment.get("skills_required", [])
+            job.skills_nice_to_have = enrichment.get("skills_nice_to_have", [])
+            job.tech_stack = enrichment.get("tech_stack", [])
+            job.red_flags = enrichment.get("red_flags", [])
+            job.green_flags = enrichment.get("green_flags", [])
 
             # 3. Extract salary if not present
             if not getattr(job, "salary_min", None) and not getattr(job, "salary_max", None):
                 sal = enrichment.get("salary_estimate")
                 if sal and isinstance(sal, dict):
-                    job.salary_min = sal.get("min")  # type: ignore[attr-defined]
-                    job.salary_max = sal.get("max")  # type: ignore[attr-defined]
-                    job.salary_period = sal.get("period", "annual")  # type: ignore[attr-defined]
+                    job.salary_min = sal.get("min")
+                    job.salary_max = sal.get("max")
+                    job.salary_period = sal.get("period", "annual")
 
             # 4. Determine experience level if missing
             if not getattr(job, "experience_level", None):
-                job.experience_level = enrichment.get("experience_level")  # type: ignore[attr-defined]
-                job.seniority_score = enrichment.get("seniority_score")  # type: ignore[attr-defined]
+                job.experience_level = enrichment.get("experience_level")
+                job.seniority_score = enrichment.get("seniority_score")
 
-            job.is_enriched = True  # type: ignore[attr-defined]
-            job.enriched_at = datetime.now(UTC)  # type: ignore[attr-defined]
+            job.is_enriched = True
+            job.enriched_at = datetime.now(UTC)
             return job
         except Exception:
             for field, value in snapshot.items():
                 setattr(job, field, value)
             raise
 
-    async def _llm_enrich(self, job: object, description_clean: str) -> dict:
+    async def _llm_enrich(self, job: object, description_clean: str) -> dict[str, Any]:
         """Call LLM to extract structured info from job description."""
         title = getattr(job, "title", "")
         company = getattr(job, "company_name", "")
@@ -137,12 +137,12 @@ Return ONLY valid JSON, no markdown."""
             raise EnrichmentError("LLM enrichment returned an empty response")
 
         try:
-            return json.loads(response)
+            return cast(dict[str, Any], json.loads(response))
         except json.JSONDecodeError:
             match = re.search(r"\{.*\}", response, re.DOTALL)
             if match:
                 try:
-                    return json.loads(match.group())
+                    return cast(dict[str, Any], json.loads(match.group()))
                 except json.JSONDecodeError:
                     pass
             logger.warning("llm_json_parse_failed", response_preview=response[:200])

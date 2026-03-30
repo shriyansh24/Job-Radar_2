@@ -1,0 +1,11 @@
+# Default review owner until the repository has a broader maintainer map.
+* @shriyansh24
+
+/backend/ @shriyansh24
+/frontend/ @shriyansh24
+/docs/current-state/ @shriyansh24
+/docs/repo-hardening/ @shriyansh24
+/.github/workflows/ @shriyansh24
+/docker-compose.yml @shriyansh24
+/docker-compose.dev.yml @shriyansh24
+/.env.example @shriyansh24

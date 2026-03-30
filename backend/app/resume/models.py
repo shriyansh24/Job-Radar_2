@@ -19,7 +19,7 @@ class ResumeVersion(Base):
     filename: Mapped[str | None] = mapped_column(String(200))
     file_path: Mapped[str | None] = mapped_column(Text)
     parsed_text: Mapped[str | None] = mapped_column(Text)
-    parsed_structured: Mapped[dict | None] = mapped_column(JSONB)
+    parsed_structured: Mapped[dict[str, object] | None] = mapped_column(JSONB)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

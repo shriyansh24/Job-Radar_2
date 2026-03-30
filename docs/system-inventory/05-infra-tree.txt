@@ -1,0 +1,71 @@
+# Infrastructure And Runtime Tree
+
+Historical note: this is an archived infra/runtime snapshot, not the live runtime or GitHub automation map.
+
+Do not use this file as the current source of truth for compose topology, workflow inventory, or local startup guidance.
+
+Use these docs instead:
+- `docs/current-state/00-index.md`
+- `docs/current-state/05-ops-and-ci.md`
+- `docs/repo-hardening/00-index.md`
+- `docs/repo-hardening/03-runtime-truth-matrix.md`
+
+Root scope: `D:/jobradar-v2/infra` plus root-level operational/runtime files and workflow automation.
+
+## Infra / Runtime Tree
+
+```text
+D:/jobradar-v2
+|- infra/
+|  `- redis/
+|     `- tls/.gitkeep               # Placeholder path for optional Redis TLS certs
+|- .github/
+|  |- workflows/
+|  |  |- ci.yml                     # Main backend/frontend validation workflow
+|  |  |- codeql.yml                 # CodeQL security scanning
+|  |  `- dependency-review.yml      # Dependency diff review gate
+|  `- dependabot.yml                # Automated dependency update config
+|- docker-compose.yml               # Base runtime topology: backend, frontend, postgres, redis
+|- docker-compose.dev.yml           # Dev override: bind mounts, reload, dev commands
+|- backend/
+|  |- Dockerfile                    # Backend image and startup command
+|  |- .dockerignore                 # Backend build exclusions
+|  `- start-dev.cjs                 # Backend dev launch wrapper
+|- frontend/
+|  |- Dockerfile                    # Frontend build/dev/Nginx image
+|  |- .dockerignore                 # Frontend build exclusions
+|  `- start-dev.cjs                 # Frontend dev launch wrapper
+|- Makefile                         # Local operational command surface
+|- .env.example                     # Runtime env template
+|- README.md                        # Human local/prod-ish setup guide
+|- CLAUDE.md                        # Additional operational conventions
+|- AGENTS.md                        # Repo-specific model/operator instructions
+|- PROJECT_STATUS.md                # Status summary used in repo operations
+|- DECISIONS.md                     # Architecture decisions with runtime impact
+|- SECURITY.md                      # Security policy/documentation
+`- THIRD_PARTY_CODE.md              # Third-party code disclosure
+```
+
+## Runtime / Deployment Classification
+
+| Path | Classification | Purpose |
+|---|---|---|
+| `D:/jobradar-v2/docker-compose.yml` | Operational source | Base service topology for local/container runtime |
+| `D:/jobradar-v2/docker-compose.dev.yml` | Operational source | Dev overlay for hot reload and bind mounts |
+| `D:/jobradar-v2/backend/Dockerfile` | Operational source | Backend container build and startup |
+| `D:/jobradar-v2/frontend/Dockerfile` | Operational source | Frontend dev/build/proxy/Nginx container build |
+| `D:/jobradar-v2/.github/workflows/ci.yml` | Operational source | CI validation pipeline |
+| `D:/jobradar-v2/.github/workflows/codeql.yml` | Operational source | Static security scanning |
+| `D:/jobradar-v2/.github/workflows/dependency-review.yml` | Operational source | Dependency diff policy |
+| `D:/jobradar-v2/.env.example` | Operational source | Intended env contract template |
+| `D:/jobradar-v2/infra/redis/tls/.gitkeep` | Support placeholder | Empty placeholder, not active certificate configuration |
+| `D:/jobradar-v2/README.md` | Support/admin | Human instructions, but not fully aligned with compose/config truth |
+
+## Notable Absences
+
+- No Terraform modules
+- No Helm charts
+- No Kubernetes manifests
+- No production deployment workflow
+- No separate worker deployment manifest
+- No secret-management or environment-layer directory beyond `.env.example`

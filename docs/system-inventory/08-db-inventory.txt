@@ -1,0 +1,145 @@
+# Database Inventory
+
+Historical note: this is an archived database inventory snapshot, not the live DB/runtime authority.
+
+Do not use this file as the current source of truth for runtime DB assumptions, migration safety, or schema completeness.
+
+Use these docs instead:
+- `docs/current-state/00-index.md`
+- `docs/current-state/02-backend.md`
+- `docs/current-state/05-ops-and-ci.md`
+- `docs/repo-hardening/03-runtime-truth-matrix.md`
+
+Root scope: database artifacts distributed across `D:/jobradar-v2/backend`, plus runtime config references.
+
+## Bootstrap And Session Handling
+
+| File Path | Purpose | Public Interface | Entities / Tables Touched | Key Notes | Risk Notes |
+|---|---|---|---|---|---|
+| `D:/jobradar-v2/backend/app/config.py` | Defines DB URL and runtime DB settings | `settings.database_url` from `JR_DATABASE_URL` | All tables indirectly | Default is async PostgreSQL on port 5432 | Runtime docs disagree on port/version/credentials |
+| `D:/jobradar-v2/backend/app/database.py` | Creates async engine and session factory | `engine`, `async_session_factory`, `Base` | All ORM tables | Postgres uses `pool_size=20`, `max_overflow=40`, `pool_pre_ping=True`, `pool_recycle=3600`; `expire_on_commit=False` | Pooling behavior differs from SQLite test path |
+| `D:/jobradar-v2/backend/app/dependencies.py` | Yields one `AsyncSession` per request | `get_db()` | All tables via routers/services | Session lifecycle is centralized, transaction lifecycle is not | Call-order bugs are possible because commits happen in services |
+| `D:/jobradar-v2/backend/app/migrations/env.py` | Alembic bootstrap and metadata import hub | Offline/online migration runners | All model-bearing tables | Imports every model-bearing module so `Base.metadata` is complete | Missing model imports here would silently desync migrations |
+| `D:/jobradar-v2/backend/tests/conftest.py` | Test DB override | Dependency override for `get_db()` | All ORM tables in tests | Creates/drops schema from metadata in in-memory SQLite | Bypasses Alembic and Postgres-only behavior |
+
+## Migration System
+
+### Revision Shape
+
+- Base line:
+  - `001_create_users_table.py`
+  - `002_create_all_tables.py`
+  - `003_merge_v1_features.py`
+  - `aaba1d3f957f_create_scrape_targets_and_scrape_.py`
+  - `503ca7a300d9_add_indexes_to_scrape_attempts.py`
+  - `45613a5a2f78_add_job_lifecycle_columns_and_tier_.py`
+  - `e5d40ea7c9db_migrate_career_pages_to_scrape_targets_.py`
+  - `20260321_db_audit_fixes.py`
+- Branches after `20260321_db_audit_fixes.py`:
+  - `004_create_email_logs.py`
+  - `20260323_add_contacts_and_referral_requests.py`
+  - `20260323_add_resume_archetypes.py`
+  - `20260323_create_dedup_feedback.py`
+  - `20260323_form_learning_tables.py`
+- Merge:
+  - `7021f28ab5e0_merge_heads.py`
+- Post-merge:
+  - `005_create_p2_tables.py`
+  - `20260323_add_user_integration_secrets.py`
+
+### Migration Files
+
+| File Path | Purpose | Entities / Tables Touched | Key Columns / Relations | Risk Notes |
+|---|---|---|---|---|
+| `D:/jobradar-v2/backend/app/migrations/versions/001_create_users_table.py` | Initial auth table | `users` | User PK and unique email | Low by itself |
+| `D:/jobradar-v2/backend/app/migrations/versions/002_create_all_tables.py` | Creates original core schema | `jobs`, `saved_searches`, `scraper_runs`, `career_pages`, `user_profiles`, `resume_versions`, `applications`, `application_status_history`, `auto_apply_profiles`, `auto_apply_rules`, `auto_apply_runs`, `cover_letters`, `interview_sessions`, `salary_cache`, `companies`, `source_registry`, `source_check_log` | Original FK base and pgvector/search-related SQL | Production capabilities exceed SQLite test path |
+| `D:/jobradar-v2/backend/app/migrations/versions/003_merge_v1_features.py` | Adds v1 feature tables and alters existing ones | `notifications`, `canonical_jobs`, `raw_job_sources`, `followup_reminders`, `query_templates`, `expansion_rules`, `query_performance`, plus `companies`, `source_registry`, `user_profiles`, `saved_searches` | Adds query-expansion and source-health related state | Important branch point |
+| `D:/jobradar-v2/backend/app/migrations/versions/aaba1d3f957f_create_scrape_targets_and_scrape_.py` | Adds target-driven scraping schema | `scrape_targets`, `scrape_attempts` | FKs from attempts to runs/targets | Important scraper transition |
+| `D:/jobradar-v2/backend/app/migrations/versions/503ca7a300d9_add_indexes_to_scrape_attempts.py` | Adds scraper attempt indexes | `scrape_attempts` | Run/target index coverage | Low |
+| `D:/jobradar-v2/backend/app/migrations/versions/45613a5a2f78_add_job_lifecycle_columns_and_tier_.py` | Adds lifecycle fields and target linkage | `jobs`, `scraper_runs` | `jobs.source_target_id -> scrape_targets.id`, lifecycle columns, tier counters | Important for job freshness logic |
+| `D:/jobradar-v2/backend/app/migrations/versions/e5d40ea7c9db_migrate_career_pages_to_scrape_targets_.py` | Data migration from career pages to target model | `career_pages`, `scrape_targets` | Raw SQL/data migration | Replay safety should be verified on clean DB |
+| `D:/jobradar-v2/backend/app/migrations/versions/20260321_db_audit_fixes.py` | Audit-driven schema corrections | `users`, `jobs`, `scrape_attempts`, FK/column fixes | Token-version and timezone-related fixes | High-value correctness migration |
+| `D:/jobradar-v2/backend/app/migrations/versions/004_create_email_logs.py` | Adds email processing log table | `email_logs` | Links to users/applications | Branched before merge |
+| `D:/jobradar-v2/backend/app/migrations/versions/20260323_add_contacts_and_referral_requests.py` | Adds networking tables | `contacts`, `referral_requests` | Contact/job/application-adjacent relationships | Branched before merge |
+| `D:/jobradar-v2/backend/app/migrations/versions/20260323_add_resume_archetypes.py` | Adds resume archetypes | `resume_archetypes` | User-owned archetype rows | Branched before merge |
+| `D:/jobradar-v2/backend/app/migrations/versions/20260323_create_dedup_feedback.py` | Adds dedup review table | `dedup_feedback` | `job_a_id`, `job_b_id`, `user_id` | Branched before merge |
+| `D:/jobradar-v2/backend/app/migrations/versions/20260323_form_learning_tables.py` | Adds learned form-mapping tables | `field_mapping_rules`, `application_dedup` | Unique `(ats_provider, field_label_hash)` and `(user_id, job_id)` logic | Branched before merge |
+| `D:/jobradar-v2/backend/app/migrations/versions/7021f28ab5e0_merge_heads.py` | Merge revision | No schema changes | Consolidates branch heads | Indicates prior divergence |
+| `D:/jobradar-v2/backend/app/migrations/versions/005_create_p2_tables.py` | Consolidates later feature tables | `resume_archetypes`, `field_mapping_rules`, `application_dedup`, `dedup_feedback`, `email_logs`, `contacts`, `referral_requests`, `ml_model_artifacts`, `application_outcomes`, `company_insights`, plus `users` alterations | Recreates several branched-table concepts and adds outcomes/model artifacts | Highest replay-risk migration because it overlaps earlier branch work |
+| `D:/jobradar-v2/backend/app/migrations/versions/20260323_add_user_integration_secrets.py` | Adds integration-secret storage | `user_integration_secrets` | Unique `(user_id, provider)` | Sensitive because secrets are stored in DB |
+
+## ORM Models, Tables, And Relationships
+
+| File Path | Purpose | Entities / Tables Touched | Key Columns / Relations | Risk Notes |
+|---|---|---|---|---|
+| `D:/jobradar-v2/backend/app/auth/models.py` | Auth/user entity | `users` | UUID PK; unique `email`; `token_version`; timezone-aware timestamps | Auth/session changes ripple across stack |
+| `D:/jobradar-v2/backend/app/profile/models.py` | User profile entity | `user_profiles` | Unique `user_id -> users.id`; stores resume text, search config, answer bank, UI settings | Large JSON-like data surface |
+| `D:/jobradar-v2/backend/app/settings/models.py` | Saved searches and integration secrets | `saved_searches`, `user_integration_secrets` | `saved_searches.user_id -> users.id`; unique `(user_id, provider)` for secrets | `secret_value` stored in DB; masking only happens on read |
+| `D:/jobradar-v2/backend/app/jobs/models.py` | Core job entity | `jobs` | String SHA-256 PK; `user_id -> users.id`; `source_target_id -> scrape_targets.id`; relation to applications; indexes on user/source/scraped_at/match_score/dedup hash; lifecycle columns | `jobs.id` is not UUID; Postgres-only search/vector behavior is partially migration-defined |
+| `D:/jobradar-v2/backend/app/pipeline/models.py` | Application workflow entities | `applications`, `application_status_history` | `applications.job_id -> jobs.id` with `SET NULL`; `resume_version_id -> resume_versions.id`; `cover_letter_id -> cover_letters.id`; status history cascades from application | Status/timestamp lifecycle is business-critical |
+| `D:/jobradar-v2/backend/app/resume/models.py` | Resume versions | `resume_versions` | User-owned uploaded/tailored resumes | Used both directly and through vault |
+| `D:/jobradar-v2/backend/app/resume/archetypes.py` | Resume archetypes plus service layer | `resume_archetypes` | User-owned archetype records | Mixed model + service module increases discovery cost |
+| `D:/jobradar-v2/backend/app/copilot/models.py` | Cover letter persistence | `cover_letters` | `user_id -> users.id`; `job_id -> jobs.id` with `SET NULL` | Domain name does not obviously signal persistence role |
+| `D:/jobradar-v2/backend/app/interview/models.py` | Interview sessions | `interview_sessions` | `user_id -> users.id`; `job_id -> jobs.id` with `SET NULL` | Stores generated content and scores |
+| `D:/jobradar-v2/backend/app/salary/models.py` | Salary cache | `salary_cache` | User-scoped cached research | Cache invalidation not visible at schema layer |
+| `D:/jobradar-v2/backend/app/analytics/models.py` | ML artifact persistence | `ml_model_artifacts` | `user_id -> users.id`; composite index `(user_id, model_name)` | ML training lifecycle not fully obvious from schema alone |
+| `D:/jobradar-v2/backend/app/companies/models.py` | Company registry | `companies` | Canonical company record; no hard FK from jobs | Jobs and companies are string-linked, not FK-linked |
+| `D:/jobradar-v2/backend/app/canonical_jobs/models.py` | Canonicalized job rollup | `canonical_jobs`, `raw_job_sources` | `raw_job_sources.canonical_job_id -> canonical_jobs.id` cascade; `raw_job_sources.job_id -> jobs.id` `SET NULL` | Tied to source health and staleness workers |
+| `D:/jobradar-v2/backend/app/networking/models.py` | Contacts and referrals | `contacts`, `referral_requests` | `contacts.user_id -> users.id`; `referral_requests.contact_id -> contacts.id` cascade; `referral_requests.job_id -> jobs.id` cascade | Company normalization remains soft |
+| `D:/jobradar-v2/backend/app/email/models.py` | Email processing logs | `email_logs` | `user_id -> users.id`; `matched_application_id -> applications.id` `SET NULL` | Inbound parsing quality affects downstream transitions |
+| `D:/jobradar-v2/backend/app/notifications/models.py` | User notifications | `notifications` | `user_id -> users.id`; indexed `created_at` | Simple but high fan-out utility table |
+| `D:/jobradar-v2/backend/app/followup/models.py` | Follow-up reminders | `followup_reminders` | `application_id -> applications.id` cascade | Worker-driven lifecycle |
+| `D:/jobradar-v2/backend/app/outcomes/models.py` | Outcomes and company insights | `application_outcomes`, `company_insights` | `application_outcomes.application_id` unique FK to `applications.id`; `company_insights` unique `(user_id, company_name)` | One-outcome-per-application assumption is structural |
+| `D:/jobradar-v2/backend/app/scraping/models.py` | Scraper runs, targets, attempts | `scraper_runs`, `scrape_targets`, `scrape_attempts` | Attempts link to runs/targets; targets carry schedule/quarantine/ATS metadata; multiple indexes on scheduling and attempts | Most operationally sensitive persistence area |
+| `D:/jobradar-v2/backend/app/scraping/dedup_feedback.py` | Dedup review feedback | `dedup_feedback` | `job_a_id`, `job_b_id -> jobs.id`; `user_id -> users.id`; pair/user indexes | Used for manual review/training feedback |
+| `D:/jobradar-v2/backend/app/auto_apply/models.py` | Auto-apply core entities | `auto_apply_profiles`, `auto_apply_rules`, `auto_apply_runs` | Profiles to rules; runs optionally link to jobs/rules | External automation depends on this state staying consistent |
+| `D:/jobradar-v2/backend/app/auto_apply/form_learning.py` | Learned form mappings and dedup | `field_mapping_rules`, `application_dedup` | Unique `(ats_provider, field_label_hash)`; unique `(user_id, job_id)` | Mixed model + service module raises maintenance risk |
+| `D:/jobradar-v2/backend/app/search_expansion/models.py` | Search expansion persistence | `query_templates`, `expansion_rules`, `query_performance` | User-scoped search expansion records | API/service layer does not fully use these tables yet |
+| `D:/jobradar-v2/backend/app/source_health/models.py` | Source registry and check logs | `source_registry`, `source_check_log` | Unique `source_name`; registry-to-log one-to-many | Worker-generated metrics drive the data |
+| `D:/jobradar-v2/backend/app/enrichment/models.py` | Placeholder | none | No ORM entities | Feature persistence lives elsewhere |
+| `D:/jobradar-v2/backend/app/vault/models.py` | Placeholder | none | No ORM entities | Route names imply storage that is actually owned by resume/copilot models |
+
+## Discoverable Indexes And Constraints
+
+| Table | Discoverable Index / Constraint | Note |
+|---|---|---|
+| `jobs` | `idx_jobs_user`, `idx_jobs_source`, `idx_jobs_scraped_at`, `idx_jobs_match_score`, `idx_jobs_dedup` | Core list/search performance path |
+| `application_outcomes` | Unique on `application_id` | Enforces one outcome per application |
+| `field_mapping_rules` | Unique `uq_field_mapping_provider_hash` | Prevents duplicate learned mappings |
+| `application_dedup` | Unique `uq_application_dedup_user_job` | Prevents duplicate dedup rows for a user/job pair |
+| `user_integration_secrets` | Unique `uq_user_integration_provider` | One secret per provider per user |
+| `scrape_targets` | `idx_targets_schedule`, `idx_targets_ats`, `idx_targets_active` | Scheduler/target selection support |
+| `scrape_attempts` | `idx_attempts_run`, `idx_attempts_target` | Attempt history lookup support |
+
+## Repository / Query Layer Reality
+
+| Area | Status |
+|---|---|
+| Dedicated repositories | None found |
+| Query logic location | `backend/app/*/service.py` and worker modules |
+| Transaction handling | Service-local `db.commit()` and `db.refresh()` calls |
+| Cross-module writes | Common in `email/service.py`, `pipeline/service.py`, `scraping/service.py`, `auto_apply` orchestration, and workers |
+| Best examples of direct data-access modules | `jobs/service.py`, `pipeline/service.py`, `settings/service.py`, `scraping/service.py`, `canonical_jobs/service.py`, `outcomes/service.py`, `source_health/service.py` |
+
+## Seed And Fixture Data
+
+| File Path | Purpose | Entities / Tables Touched | Risk Notes |
+|---|---|---|---|
+| `D:/jobradar-v2/backend/seed_data.py` | Seed script for local/demo bootstrap | Creates or updates `users`, `user_profiles`, optional `resume_versions` | Useful for local boot, not a full dataset seed |
+| `D:/jobradar-v2/backend/tests/fixtures` | Scraper fixtures | No relational seed dump; provider payload fixtures only | Good for scraping contract tests, not DB state seeding |
+
+## Transaction And Session Notes
+
+- Each request gets an `AsyncSession` from `get_db()`.
+- Services usually own commit boundaries themselves.
+- Workers also perform direct commits.
+- There is no explicit unit-of-work abstraction across multi-service workflows.
+- Because `expire_on_commit=False`, post-commit objects remain usable without automatic reload.
+
+## Database Risk Notes
+
+1. `005_create_p2_tables.py` overlaps several branch-specific migrations and is the biggest clean-replay risk.
+2. Postgres production behavior is richer than the SQLite test path, especially around indexes, JSON/array semantics, and pgvector/search features.
+3. Integration secrets are stored in the DB, not just referenced externally.
+4. Several important relationships remain soft links by company name/domain rather than foreign keys.
+5. Search expansion persistence exists at the model layer but is only partially surfaced at the API/service layer.

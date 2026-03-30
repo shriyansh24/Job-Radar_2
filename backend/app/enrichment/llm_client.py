@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, cast
 
 import httpx
 import structlog
@@ -86,7 +86,7 @@ class LLMClient:
         choices = data.get("choices", [])
         if not choices:
             return ""
-        return choices[0].get("message", {}).get("content", "")
+        return cast(str, choices[0].get("message", {}).get("content", ""))
 
     # -----------------------------------------------------------------
     # JSON convenience

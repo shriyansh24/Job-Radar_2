@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analytics.predictor import MatchPredictor
 from app.analytics.schemas import (
+    AnalyticsPatternsResponse,
     DailyStats,
     FeatureContributionSchema,
     FunnelStageData,
@@ -67,6 +68,15 @@ async def get_funnel(
 ) -> list[FunnelStageData]:
     svc = AnalyticsService(db)
     return await svc.get_funnel(user.id)
+
+
+@router.get("/patterns", response_model=AnalyticsPatternsResponse)
+async def get_patterns(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AnalyticsPatternsResponse:
+    svc = AnalyticsService(db)
+    return await svc.get_patterns(user.id)
 
 
 @router.post("/predict/{job_id}", response_model=PredictionResponse)

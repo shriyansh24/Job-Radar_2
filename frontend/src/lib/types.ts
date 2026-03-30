@@ -6,8 +6,7 @@ export interface User {
   created_at: string;
 }
 
-export interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
+export interface AuthSessionResponse {
+  authenticated: boolean;
   token_type: string;
 }

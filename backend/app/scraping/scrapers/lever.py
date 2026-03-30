@@ -45,6 +45,8 @@ class LeverScraper(BaseScraper):
                     description_raw=item.get("descriptionPlain", ""),
                     experience_level=self._normalize_experience(cats.get("commitment")),
                     job_type=cats.get("commitment"),
+                    ats_job_id=str(item.get("id")) if item.get("id") is not None else None,
+                    ats_provider=self.source_name,
                 )
             )
         return jobs[:limit]

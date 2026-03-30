@@ -1,157 +1,87 @@
-import {
-  Archive,
-  Briefcase,
-  Buildings,
-  ChartBar,
-  ChatsCircle,
-  Crosshair,
-  CurrencyDollar,
-  FileText,
-  GearSix,
-  GitMerge,
-  Heartbeat,
-  Kanban,
-  Lightning,
-  MagnifyingGlassPlus,
-  ShieldCheck,
-  SquaresFour,
-} from "@phosphor-icons/react";
-import { useQueryClient } from "@tanstack/react-query";
+import { TerminalWindow } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import { NavLink } from "react-router-dom";
-import { analyticsApi } from "../../api/analytics";
-import { jobsApi } from "../../api/jobs";
-import { pipelineApi } from "../../api/pipeline";
+
+import {
+  prefetchWorkspaceRoute,
+  workspaceSections,
+} from "../../lib/navigation";
 import { cn } from "../../lib/utils";
 import { useUIStore } from "../../store/useUIStore";
 
-const mainNav = [
-  { to: "/", icon: SquaresFour, label: "Dashboard" },
-  { to: "/jobs", icon: Briefcase, label: "Job Board" },
-  { to: "/pipeline", icon: Kanban, label: "Pipeline" },
-  { to: "/auto-apply", icon: Lightning, label: "Auto Apply" },
-];
-
-const toolsNav = [
-  { to: "/resume", icon: FileText, label: "Resume" },
-  { to: "/interview", icon: ChatsCircle, label: "Interview" },
-  { to: "/salary", icon: CurrencyDollar, label: "Salary" },
-  { to: "/vault", icon: Archive, label: "Vault" },
-  { to: "/analytics", icon: ChartBar, label: "Analytics" },
-];
-
-const adminNav = [
-  { to: "/settings", icon: GearSix, label: "Settings" },
-  { to: "/companies", icon: Buildings, label: "Companies" },
-  { to: "/sources", icon: Heartbeat, label: "Sources" },
-  { to: "/canonical-jobs", icon: GitMerge, label: "Canonical Jobs" },
-  { to: "/search-expansion", icon: MagnifyingGlassPlus, label: "Search Expansion" },
-  { to: "/targets", icon: Crosshair, label: "Targets" },
-  { to: "/admin", icon: ShieldCheck, label: "Admin" },
-];
-
-const navSections = [
-  { items: mainNav },
-  { label: "Tools", items: toolsNav },
-  { label: "Manage", items: adminNav },
-];
+const sectionTitles: Record<string, string> = {
+  Home: "Core Command",
+  Discover: "Discovery",
+  Execute: "Execution",
+  Prepare: "AI Tools",
+  Intelligence: "Intelligence",
+  Operations: "System Data",
+};
 
 export default function Sidebar() {
-  const collapsed = useUIStore((s) => s.sidebarCollapsed);
+  const collapsed = useUIStore((state) => state.sidebarCollapsed);
   const queryClient = useQueryClient();
-
-  const prefetchMap: Record<string, () => void> = {
-    '/': () => queryClient.prefetchQuery({
-      queryKey: ['analytics', 'overview'],
-      queryFn: () => analyticsApi.overview().then((r) => r.data),
-      staleTime: 5 * 60 * 1000,
-    }),
-    '/jobs': () => queryClient.prefetchQuery({
-      queryKey: ['jobs', { page: 1, page_size: 20, sort_by: 'scraped_at', sort_order: 'desc' }],
-      queryFn: () => jobsApi.list({ page: 1, page_size: 20, sort_by: 'scraped_at', sort_order: 'desc' }).then((r) => r.data),
-      staleTime: 5 * 60 * 1000,
-    }),
-    '/pipeline': () => queryClient.prefetchQuery({
-      queryKey: ['pipeline'],
-      queryFn: () => pipelineApi.pipeline().then((r) => r.data),
-      staleTime: 5 * 60 * 1000,
-    }),
-    '/analytics': () => {
-      queryClient.prefetchQuery({
-        queryKey: ['analytics', 'overview'],
-        queryFn: () => analyticsApi.overview().then((r) => r.data),
-        staleTime: 5 * 60 * 1000,
-      });
-      queryClient.prefetchQuery({
-        queryKey: ['analytics', 'daily'],
-        queryFn: () => analyticsApi.daily(30).then((r) => r.data),
-        staleTime: 5 * 60 * 1000,
-      });
-    },
-  };
 
   return (
     <aside
       className={cn(
-        "min-h-[100dvh] border-r border-border flex flex-col transition-[width] duration-[var(--transition-normal)]",
-        collapsed ? "w-[4.25rem]" : "w-60",
-        "bg-[var(--sidebar-bg)]"
+        "fixed left-0 top-[var(--header-height)] z-40 hidden h-[calc(100dvh-var(--header-height))] border-r-2 border-border bg-[var(--sidebar-bg)] xl:flex xl:flex-col",
+        collapsed ? "w-[var(--sidebar-width-collapsed)]" : "w-[var(--sidebar-width)]"
       )}
     >
-      <div className="h-14 flex items-center px-4 border-b border-border">
-        <h1
-          className={cn(
-            "font-semibold tracking-tight text-text-primary",
-            collapsed ? "text-center text-sm w-full" : "text-sm"
-          )}
-        >
-          {collapsed ? (
-            <span className="font-mono text-accent-primary font-bold">JR</span>
+      <div className="border-b-2 border-border px-4 py-5">
+        <div className="flex items-start gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center border-2 border-border bg-foreground text-background">
+            <TerminalWindow size={18} weight="bold" />
+          </div>
+          {!collapsed ? (
+            <div className="min-w-0">
+              <h2 className="font-display text-xl font-black uppercase tracking-[-0.06em] text-foreground">
+                JobRadar
+              </h2>
+            </div>
           ) : (
-            <span className="flex items-baseline gap-1.5">
-              <span className="tracking-[-0.02em]">JobRadar</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-accent-primary/10 text-accent-primary font-medium">
-                v2
-              </span>
-            </span>
+            <span className="sr-only">JobRadar command center navigation</span>
           )}
-        </h1>
+        </div>
       </div>
-      <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-5">
-        {navSections.map((section, i) => (
-          <div key={i}>
-            {section.label && !collapsed && (
-              <div className="label px-3 mb-1.5">{section.label}</div>
-            )}
-            {collapsed && i > 0 && (
-              <div className="mx-3 mb-2 h-px bg-border" />
-            )}
-            <div className="space-y-0.5">
-              {section.items.map(({ to, icon: Icon, label }) => (
+
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+        {workspaceSections.map((section) => (
+          <div key={section.label} className="space-y-2">
+            {!collapsed ? (
+              <div className="label px-2">{sectionTitles[section.label] ?? section.label}</div>
+            ) : null}
+            <div className="space-y-1">
+              {section.items.map(({ path, icon: Icon, label }) => (
                 <NavLink
-                  key={to}
-                  to={to}
-                  onMouseEnter={() => prefetchMap[to]?.()}
+                  key={path}
+                  to={path}
+                  onMouseEnter={() => prefetchWorkspaceRoute(path, queryClient)}
                   className={({ isActive }) =>
                     cn(
-                      "group relative flex items-center gap-3 px-3 py-2 rounded-[var(--radius-md)] text-[13px] transition-[background-color,color] duration-[var(--transition-fast)]",
+                      "group hard-press flex items-center gap-3 border-2 px-3 py-3 transition-[transform,box-shadow,background-color,color,border-color]",
+                      collapsed ? "justify-center" : "justify-start",
                       isActive
-                        ? "bg-accent-primary/8 text-accent-primary font-medium sidebar-active-indicator"
-                        : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
+                        ? "border-border bg-[var(--sidebar-item-active-bg)] text-[var(--sidebar-item-active-text)]"
+                        : "border-transparent bg-transparent text-text-secondary hover:border-border hover:bg-[var(--sidebar-item-hover)] hover:text-foreground"
                     )
                   }
                 >
                   <motion.span
                     aria-hidden="true"
                     className="inline-flex shrink-0"
-                    whileHover={{ x: 2 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    whileHover={{ x: collapsed ? 0 : 2 }}
+                    transition={{ type: "spring", stiffness: 320, damping: 22 }}
                   >
                     <Icon size={18} weight="bold" />
                   </motion.span>
-                  {!collapsed && (
-                    <span className="truncate">{label}</span>
-                  )}
+                  {!collapsed ? (
+                    <span className="truncate font-mono text-[11px] font-bold uppercase tracking-[0.18em]">
+                      {label}
+                    </span>
+                  ) : null}
                 </NavLink>
               ))}
             </div>

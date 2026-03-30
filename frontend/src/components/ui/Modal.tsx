@@ -41,7 +41,7 @@ export default function Modal({ open, onClose, title, children, size = 'md', cla
       {open ? (
         <motion.div
           ref={overlayRef}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(9,9,11,0.72)] p-4 backdrop-blur-[2px]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -52,7 +52,7 @@ export default function Modal({ open, onClose, title, children, size = 'md', cla
         >
           <motion.div
             className={cn(
-              "w-full bg-bg-secondary border border-border rounded-[var(--radius-xl)] shadow-[var(--shadow-lg)] max-h-[85vh] flex flex-col",
+              "flex max-h-[85vh] w-full flex-col rounded-none border-2 border-border bg-card shadow-[var(--shadow-lg)]",
               sizes[size],
               className
             )}
@@ -62,20 +62,25 @@ export default function Modal({ open, onClose, title, children, size = 'md', cla
             transition={{ type: "spring", stiffness: 260, damping: 22 }}
           >
             {title && (
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h2 className="text-lg font-semibold text-text-primary">
-                  {title}
-                </h2>
+              <div className="flex items-center justify-between border-b-2 border-border px-5 py-4">
+                <div className="space-y-1">
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                    Overlay
+                  </div>
+                  <h2 className="font-display text-xl font-black uppercase tracking-[-0.05em] text-text-primary">
+                    {title}
+                  </h2>
+                </div>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-[var(--radius-md)] text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-[background-color,color,transform] duration-[var(--transition-fast)] active:translate-y-[1px]"
+                  className="hard-press border-2 border-border bg-background p-2 text-text-muted shadow-[var(--shadow-xs)] hover:text-text-primary"
                   aria-label="Close modal"
                 >
                   <X size={18} weight="bold" />
                 </button>
               </div>
             )}
-            <div className="flex-1 overflow-auto p-6">{children}</div>
+            <div className="flex-1 overflow-auto p-5 sm:p-6">{children}</div>
           </motion.div>
         </motion.div>
       ) : null}

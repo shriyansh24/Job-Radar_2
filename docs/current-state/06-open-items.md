@@ -1,42 +1,31 @@
 # Open Items - JobRadar V2
 
 ## Blocking Bugs
-- None verified in the current `2026-03-23` full validation pass.
+- None verified in the current `2026-03-27` cleanup pass.
 
-## Fixed Structural Gaps (2026-03-23)
-- All 10 P2 DB tables created via consolidation migration `005`
-- `email` and `outcomes` routers mounted in `main.py` (23 routers total)
-- `ir_schema.py`, `renderer.py` recovered; `professional.html` template created
-- `users.created_at`/`updated_at` fixed to `timestamp with time zone`
-- Ruff clean, 716 backend tests pass
+## Fixed Structural Gaps (2026-03-27)
+- Reference-first frontend migration shipped across all routed pages.
+- Shared shell, navigation, tokens, and page grammar now follow the reference-first command-center system.
+- `SearchExpansion`, `Resume Studio`, `Compensation`, `Settings`, `Admin`, and `Targets` now align to the live backend contracts used by the app.
+- Vault update integration coverage was added and passes in the targeted backend suite.
+- Local Postgres schema was upgraded to Alembic `head` so the settings/integration surfaces match the current app.
 
-## Remaining Frontend Gaps
-- No API modules or pages for: email, networking, outcomes, copilot chat
-- No-op stubs: change password, delete account, clear data (no backend endpoints)
-- API keys collected in Settings/Onboarding but never persisted to backend
-- Auto-apply run/pause/applySingle defined but no UI triggers
-- Semantic search endpoint exists but not wired into Job Board
+## Repo-Local Closure
+- The reference-first frontend, queue-backed runtime, recovered auto-apply execution path, resume preview/export flow, interview prep bundles, analytics patterns, and hybrid search path are all live and validated in repo-local scope.
+- Branch-era variants that were not promoted are archived as historical alternatives rather than left as active live-scope gaps.
 
 ## Non-Blocking Residuals
-- Vitest still prints `--localstorage-file was provided without a valid path` warnings during frontend tests.
-- Repo-wide strict backend mypy is still deferred; the current CI gate is intentionally scoped to `app/auth/service.py`, `app/config.py`, `app/shared/middleware.py`, `app/scraping/deduplication.py`, and `app/scraping/port.py`.
+- No blocking residual is currently tied to the frontend sweep; additional browser captures are incremental QA rather than a missing validation gate.
+- Migration replay now has a dedicated GitHub workflow and a canonical migration-ops runbook, and targeted downgrade coverage now exists for the base `002` lineage, the ATS-identity migration slice, and the focused `005_create_p2_tables` regression suite.
+- Scheduler isolation is now queue-backed through ARQ, and queue telemetry now includes depth, oldest-job age, alert state, truthful `retry_exhausted` final-failure logs, and request/job correlation on queue-triggered operator paths.
+- The latest full backend validation run keeps every `app/` module at or above `50%` coverage and brings overall backend coverage to `71.24%`.
+- Auth lifecycle logging now carries request correlation and normalized reason codes through the main app log stream; dedicated audit routing is deployment-specific follow-through rather than a missing repo-local feature.
 
-## Coverage TODOs
-- `backend/app/auto_apply/ats_detector.py`, `backend/app/auto_apply/ats_filler.py`, `backend/app/auto_apply/orchestrator.py`, `backend/app/auto_apply/portal_config.py`, `backend/app/auto_apply/question_engine.py`, `backend/app/auto_apply/service.py`, `backend/app/auto_apply/validator.py`, and `backend/app/auto_apply/workday_filler.py` remain below `50%` coverage.
-- `backend/app/canonical_jobs/service.py`, `backend/app/companies/service.py`, `backend/app/copilot/prompts.py`, and `backend/app/copilot/service.py` remain below `50%` coverage.
-- `backend/app/enrichment/llm_client.py`, `backend/app/enrichment/tfidf.py`, `backend/app/interview/evaluator.py`, `backend/app/nlp/core.py`, and `backend/app/nlp/cover_letter.py` remain below `50%` coverage.
-- `backend/app/resume/council.py`, `backend/app/resume/gap_analyzer.py`, `backend/app/resume/service.py`, and `backend/app/salary/service.py` remain below `50%` coverage.
-- `backend/app/scraping/ops.py`, `backend/app/scraping/router.py`, `backend/app/scraping/scrapers/adaptive_parser.py`, `backend/app/scraping/scrapers/ai_scraper.py`, `backend/app/scraping/scrapers/apify.py`, `backend/app/scraping/scrapers/career_page.py`, `backend/app/scraping/scrapers/detail_extractor.py`, `backend/app/scraping/scrapers/greenhouse.py`, `backend/app/scraping/scrapers/jobspy.py`, `backend/app/scraping/scrapers/scrapling.py`, `backend/app/scraping/scrapers/serpapi.py`, and `backend/app/scraping/scrapers/theirstack.py` remain below `50%` coverage.
-- `backend/app/source_health/service.py` also remains below `50%` coverage, along with zero-covered migration and worker modules that are excluded from the immediate execution queue but still need future direct tests.
-
-## Deferred Feature Work
-- Resume PDF generation and additional template flows
-- Saved-search alerts UI and related UX
-- Further parser tuning for difficult JS-heavy career pages
-- End-to-end Playwright coverage
-- Longer-term vendoring/repackaging decisions for scraper dependencies
-- Rebase feat/p2-polish-advanced onto current main
+## External Or Non-Goal Follow-Through
+- Provider-backed ATS submission flows, destructive admin operations, and seeded-data-heavy PDF fidelity remain environment-specific validation concerns rather than missing repo-local implementation.
+- Further parser tuning for difficult JS-heavy career pages remains an ongoing quality-improvement area, not a live-scope contradiction.
+- Long-window queue alert routing, dashboards, and dedicated auth audit sinks depend on deployment/log-routing infrastructure outside this repository.
 
 ## Historical Planning Material
 - Future design notes live in `docs/research/`.
-- Feature spec reference preserved in Claude memory (`reference_spec_features.md`).
+- Feature spec reference is preserved in Claude memory.

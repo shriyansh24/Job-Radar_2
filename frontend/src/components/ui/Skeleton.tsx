@@ -11,9 +11,9 @@ export default function Skeleton({ className, variant = 'rect', width, height }:
   return (
     <div
       className={cn(
-        'animate-pulse bg-bg-tertiary',
-        variant === 'text' && 'h-4 rounded-[var(--radius-sm)]',
-        variant === 'rect' && 'rounded-[var(--radius-md)]',
+        'skeleton border border-border/40',
+        variant === 'text' && 'h-4 rounded-none',
+        variant === 'rect' && 'rounded-none',
         variant === 'circle' && 'rounded-full',
         className
       )}
@@ -24,7 +24,7 @@ export default function Skeleton({ className, variant = 'rect', width, height }:
 
 export function SkeletonCard() {
   return (
-    <div className="bg-bg-secondary border border-border rounded-[var(--radius-lg)] p-4 space-y-3">
+    <div className="space-y-3 border-2 border-border bg-card p-4 shadow-[var(--shadow-sm)]">
       <Skeleton variant="text" className="w-3/4" />
       <Skeleton variant="text" className="w-1/2" />
       <Skeleton variant="rect" className="w-full h-20" />

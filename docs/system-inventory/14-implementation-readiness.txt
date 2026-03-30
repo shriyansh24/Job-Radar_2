@@ -1,0 +1,181 @@
+# Implementation Readiness
+
+Historical inventory note:
+- This file captures readiness concerns from the earlier system-inventory pass.
+- Use it as a risk register, not as the live state source of truth.
+- `docs/current-state/*` and the repo-hardening evidence ledger should win when the status has been revalidated since this snapshot.
+
+## Overall Readiness Summary
+
+- Frontend readiness: medium
+- Backend readiness: medium
+- DB readiness: low-to-medium
+- Infra readiness: low-to-medium
+
+The repo is well-instrumented enough to begin refactoring, but not yet safe for broad cross-layer migration work without first resolving contract drift and environment truth drift.
+
+## Frontend Readiness
+
+### Safe To Modify First
+
+- `D:/jobradar-v2/frontend/src/components/ui`
+- Most of `D:/jobradar-v2/frontend/src/components/system`
+- Pure presentational domain widgets such as:
+  - `components/jobs/JobCard.tsx`
+  - `components/jobs/ScoreGauge.tsx`
+  - `components/pipeline/ApplicationCard.tsx`
+- Token refinements in `frontend/src/index.css` if class/token names stay compatible
+
+### Must Be Preserved
+
+- Route table and auth gating in `frontend/src/App.tsx`
+- Session bootstrap behavior in `frontend/src/store/useAuthStore.ts`
+- Theme persistence and `.dark` root behavior in `frontend/src/store/useUIStore.ts`
+- Query-key behavior around jobs, pipeline, settings, targets, notifications
+- Current workspace groupings in `frontend/src/lib/navigation.tsx`
+
+### Test First Before Frontend Migration
+
+1. `frontend/src/tests/app/App.auth-boundary.test.tsx`
+2. `frontend/src/tests/pages/JobBoard.page.test.tsx`
+3. `frontend/src/tests/pages/Pipeline.page.test.tsx`
+4. `frontend/src/tests/pages/Settings.page.test.tsx`
+5. `frontend/src/tests/pages/targets/Targets.page.test.tsx`
+6. Ops route suites under `frontend/src/tests/pages/`, especially `Admin.page.test.tsx`, `Companies.page.test.tsx`, `SearchExpansion.page.test.tsx`, and `Sources.page.test.tsx`
+
+### Frontend Blockers
+
+1. API contract drift in search expansion, salary, resume tailoring, scraper responses, admin/source-health, and vault updates
+2. Large route files mixing data access, mutation invalidation, layout composition, and local state
+3. No central query-key registry
+
+## Backend Readiness
+
+### Safe To Modify First
+
+- Shared pure helpers under `backend/app/shared` and `backend/app/nlp` when behavior is covered by tests
+- Schema/read-only analytics reporting functions with matching integration tests
+- Non-runtime-critical support scripts in `backend/scripts`
+
+### Must Be Preserved
+
+- Auth cookie + refresh semantics in `backend/app/auth`
+- API prefix and router registration shape in `backend/app/main.py`
+- Scheduler registration behavior in `backend/app/workers/scheduler.py` until deliberately redesigned
+- Direct service-layer data-access pattern unless a repository layer is introduced systematically
+- `jobs.id` as SHA-256 string key
+- Timezone-aware datetime behavior from recent DB audit fixes
+
+### Test First Before Backend Migration
+
+1. `backend/tests/integration/test_auth_api.py`
+2. `backend/tests/integration/test_jobs_api.py`
+3. `backend/tests/integration/test_pipeline_api.py`
+4. `backend/tests/integration/test_settings_api.py`
+5. `backend/tests/integration/scraping/test_scraping_service.py`
+6. `backend/tests/unit/jobs/test_job_model.py`
+7. `backend/tests/contracts/models/test_sqlalchemy_model_contracts.py`
+8. `backend/tests/security/test_api_security.py`
+
+### Backend Blockers
+
+1. Dedicated scheduler runtime exists in the current worktree, but broader worker/process isolation is still partial
+2. Scraping/auto-apply/browser automation are high-side-effect subsystems
+3. Vault router/service mismatch is an active correctness problem
+4. Some frontend wrappers rely on backend response shapes that are not currently true
+
+## Database Readiness
+
+### Safe To Modify First
+
+- Additive reporting indexes after Postgres replay validation
+- Clearly isolated new tables with fresh migrations
+- Model docs and schema assertions that do not change live behavior
+
+### Must Be Preserved
+
+- Current Alembic lineage until clean replay is validated
+- `jobs` lifecycle columns and `source_target_id`
+- Unique constraints on:
+  - `application_outcomes.application_id`
+  - `field_mapping_rules`
+  - `application_dedup`
+  - `user_integration_secrets`
+- Existing user/job/application foreign-key structure
+
+### Test First Before DB Migration
+
+1. Full Alembic replay on clean Postgres
+2. `backend/tests/migrations/test_alembic_revisions.py`
+3. `backend/tests/infra/test_database.py`
+4. `backend/tests/contracts/models/test_sqlalchemy_model_contracts.py`
+5. `backend/tests/unit/jobs/test_job_model.py`
+6. Scraping model tests under `backend/tests/unit/scraping`
+
+### DB Blockers
+
+1. `005_create_p2_tables.py` overlap risk
+2. Postgres-vs-SQLite behavior gap
+3. Soft company relationships make normalization migrations harder
+4. Search expansion tables exist without a fully aligned API/UI contract
+
+## Infra Readiness
+
+### Safe To Modify First
+
+- CI workflow documentation and additive checks
+- Compose comments/docs and env template reconciliation
+- Frontend dev proxy correction
+
+### Must Be Preserved
+
+- Current four-service compose topology unless intentionally redesigned
+- Backend startup requirement to reach a migrated DB
+- Frontend `/api` proxy behavior for containerized runtime
+- Local ports already used by developers unless migration is coordinated
+
+### Test First Before Infra Changes
+
+1. Compose boot of backend + frontend + postgres + redis
+2. Backend health endpoint from compose
+3. Frontend API connectivity in base compose and dev overlay
+4. Backend migration-on-start behavior
+5. GitHub Actions `ci.yml` parity with local commands
+
+### Infra Blockers
+
+1. README / CLAUDE / compose / `.env.example` drift
+2. Frontend dev proxy mismatch in containerized mode
+3. Scheduler duplication risk if backend is scaled
+4. No deployment automation or production infra-as-code source
+
+## What Blocks Major UI Migrations
+
+1. Unresolved frontend/backend API drift
+2. Heavy stateful route files with mixed responsibilities
+3. Lack of contract snapshots for the operations pages
+4. Unclear status of residual/dead frontend support modules
+
+## What Blocks Major Backend Migrations
+
+1. Unverified clean migration replay
+2. Dedicated scheduler runtime reduces API coupling, but broader worker/process isolation is still incomplete
+3. Scraping and auto-apply operational complexity
+4. SQLite-heavy tests for a Postgres-first runtime
+
+## Recommended First Migration Sequence
+
+1. Reconcile API contracts:
+   - search expansion
+   - resume tailor
+   - salary
+   - scraper responses
+   - vault updates
+2. Reconcile environment truth:
+   - compose
+   - README
+   - CLAUDE
+   - `.env.example`
+3. Run a clean Postgres migration replay from revision `001`.
+4. Add or update integration tests around the corrected contracts.
+5. Only then start structural frontend or backend refactors.

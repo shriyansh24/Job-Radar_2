@@ -1,0 +1,98 @@
+# System Inventory Overview
+
+Historical status: archived inventory snapshot.
+
+Do not treat this file or this directory as live operational truth. These system-inventory files are preserved for forensic context, branch-era analysis, and repo archaeology.
+
+Use these docs instead when you need current truth:
+- `docs/current-state/00-index.md`
+- `docs/current-state/05-ops-and-ci.md`
+- `docs/repo-hardening/00-index.md`
+- `docs/repo-hardening/03-runtime-truth-matrix.md`
+
+Root: `D:/jobradar-v2`
+Inventory date: `2026-03-24`
+
+## Executive Summary
+
+`jobradar-v2` is a full-stack job-search and career-operations system built as:
+
+- a React 19 + Vite SPA in `D:/jobradar-v2/frontend`
+- a single FastAPI application in `D:/jobradar-v2/backend`
+- a PostgreSQL-first async SQLAlchemy persistence layer with Alembic migrations inside the backend repo
+- a Docker Compose local runtime with Postgres and Redis, plus CI workflows in `.github/workflows`
+
+The backend is a modular monolith. Each major domain generally follows `router.py` + `service.py` + `models.py` + `schemas.py`, but persistence is handled directly inside services and workers rather than through a repository or unit-of-work layer. The most operationally sensitive subsystems are scraping, auto-apply, resume/council/LLM features, and the in-process scheduler started from the API lifespan.
+
+The frontend is a route-heavy Career OS workspace. It uses TanStack Query for server state, Zustand for auth/UI state, a CSS-variable token system in `frontend/src/index.css`, and a protected shell defined by `frontend/src/App.tsx`, `frontend/src/components/layout/AuthGuard.tsx`, and `frontend/src/components/layout/AppShell.tsx`.
+
+## Major Subsystems
+
+| Subsystem | Primary Paths | Role | Source Of Truth |
+|---|---|---|---|
+| Frontend application | `D:/jobradar-v2/frontend/src/App.tsx`, `D:/jobradar-v2/frontend/src/pages`, `D:/jobradar-v2/frontend/src/components` | Browser UI, routing, server-state orchestration, theme, interaction flows | Frontend source files plus `D:/jobradar-v2/frontend/system.md` |
+| Backend API | `D:/jobradar-v2/backend/app/main.py`, `D:/jobradar-v2/backend/app/*/router.py`, `D:/jobradar-v2/backend/app/*/service.py` | HTTP API, orchestration, business logic, auth, background scheduling | Backend app packages |
+| Database layer | `D:/jobradar-v2/backend/app/database.py`, `D:/jobradar-v2/backend/app/*/models.py`, `D:/jobradar-v2/backend/app/migrations` | Async DB engine, ORM mapping, migrations, seed bootstrap | Alembic migrations plus model modules |
+| Scraping and automation | `D:/jobradar-v2/backend/app/scraping`, `D:/jobradar-v2/backend/app/auto_apply`, `D:/jobradar-v2/backend/app/workers` | Job ingestion, target scheduling, browser automation, learned mappings, periodic jobs | Scraping/auto-apply services, workers, migrations |
+| Infrastructure and runtime | `D:/jobradar-v2/docker-compose.yml`, `D:/jobradar-v2/docker-compose.dev.yml`, `D:/jobradar-v2/backend/Dockerfile`, `D:/jobradar-v2/frontend/Dockerfile`, `.github/workflows` | Local/dev container topology, CI validation, runtime environment | Compose files, Dockerfiles, workflow YAML |
+
+## High-Level Architecture
+
+1. The browser loads the SPA from Vite dev server or Nginx-built frontend container.
+2. `frontend/src/main.tsx` mounts `App`, which creates the `QueryClient`, router, global error boundary, toast layer, and protected route shell.
+3. Frontend pages call `frontend/src/api/client.ts`, an axios client configured with `withCredentials: true` and refresh-on-401 behavior against `/api/v1/auth/refresh`.
+4. FastAPI boots from `backend/app/main.py`, registers all routers under `settings.api_prefix` (`/api/v1`), and starts APScheduler in the same process.
+5. Routers depend on `get_db()` and `get_current_user()` from `backend/app/dependencies.py`.
+6. Services query SQLAlchemy models directly through an `AsyncSession`. Commits are generally issued inside the service method or worker.
+7. Data persists to PostgreSQL in the primary runtime path. SQLite exists mainly as a test fallback and local compatibility path.
+8. Redis is provisioned in Compose and referenced by config, but core request middleware such as API rate limiting is still in-memory rather than Redis-backed.
+
+## How The Stack Connects
+
+- Frontend to backend:
+  - Base API path is `/api/v1`.
+  - Auth is cookie-first with bearer-token compatibility on the backend.
+  - TanStack Query keys are page-local; there is no central query-key registry.
+- Backend to database:
+  - `backend/app/database.py` creates the async engine and session factory.
+  - Alembic bootstraps metadata through `backend/app/migrations/env.py`.
+  - Models are distributed across domain packages, not centralized in one `db/` directory.
+- Backend to runtime services:
+  - Postgres and Redis are defined in `docker-compose.yml`.
+  - APScheduler jobs run inside the API process and invoke worker modules directly.
+  - Scraping and auto-apply can also invoke browser-dependent adapters and external network targets.
+- CI/CD:
+  - GitHub Actions validate backend lint/tests/security and frontend audit/lint/tests/build.
+  - No deployment workflow, Terraform, Helm, or Kubernetes manifests were found.
+
+## Biggest Risks
+
+1. Scheduler coupling: `backend/app/main.py` starts APScheduler inside the API process, so multi-instance deployments would duplicate scheduled jobs unless externalized.
+2. Runtime drift: `README.md`, `CLAUDE.md`, `.env.example`, and `docker-compose.yml` disagree on local Postgres version, port, and credentials.
+3. Contract drift: the frontend currently calls endpoints or response shapes that do not align with the backend in several places, especially search expansion, salary, resume tailoring, scraper responses, and vault updates.
+4. Migration replay uncertainty: the Alembic history contains branch/merge consolidation and duplicated table-creation intent around `005_create_p2_tables.py`.
+5. Postgres-vs-SQLite mismatch: tests mostly use in-memory SQLite metadata setup, while production behavior depends on Postgres features, indexes, and pgvector/search SQL introduced in migrations.
+6. Sensitive automation paths: scraping and auto-apply depend on external sites, browser tooling, anti-bot behavior, and long side-effect chains.
+
+## Biggest Unknowns
+
+- Whether the current Alembic chain can be replayed from revision `001` to `head` on a clean Postgres instance without manual intervention.
+- Whether Redis-backed or distributed worker execution was planned but not completed.
+- Whether `email/webhook` is intended for a third-party inbound provider or only internal/manual use, because the route shape and auth model are not externally obvious.
+- Whether vault update endpoints are currently exercised successfully, since the router exposes methods missing from `backend/app/vault/service.py`.
+- Whether company identity should remain string-linked or be normalized to hard foreign keys.
+
+## Recommended Safe Refactor / Migration Next Step
+
+1. Freeze the current contract baseline:
+   - backend integration tests
+   - frontend API wrappers
+   - endpoint-by-endpoint response snapshots for drift-prone modules
+2. Reconcile environment truth:
+   - Compose
+   - README
+   - `.env.example`
+   - backend config defaults
+3. Validate the full Alembic history on clean Postgres before any schema refactor.
+4. Separate scheduler/worker ownership from API serving before introducing replicas or substantial infra changes.
+5. Tackle frontend/backend contract mismatches before visual or domain rewrites, because those mismatches are already live breakpoints.

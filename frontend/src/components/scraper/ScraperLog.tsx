@@ -113,11 +113,11 @@ export default function ScraperLog() {
   }, [logs, paused]);
 
   const typeColors: Record<string, string> = {
-    scraper_started: "text-blue-400",
-    job_found: "text-green-400",
-    scraper_completed: "text-green-300",
-    scraper_error: "text-red-400",
-    error: "text-red-400",
+    scraper_started: "text-[var(--color-accent-info)]",
+    job_found: "text-[var(--color-accent-secondary)]",
+    scraper_completed: "text-[var(--color-accent-secondary)]",
+    scraper_error: "text-[var(--color-accent-danger)]",
+    error: "text-[var(--color-accent-danger)]",
     info: "text-text-muted",
   };
 
@@ -133,7 +133,7 @@ export default function ScraperLog() {
           transform: `translate(${pos.x}px, ${pos.y}px)`,
           touchAction: "none",
         }}
-        className="fixed bottom-4 right-4 z-40 flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-lg)] bg-bg-secondary border border-border shadow-lg text-sm text-text-secondary hover:text-text-primary transition-colors select-none cursor-grab active:cursor-grabbing"
+        className="fixed bottom-4 right-4 z-40 flex items-center gap-1.5 rounded-[var(--radius-lg)] border-2 border-border bg-bg-secondary px-3 py-2 text-sm text-text-secondary transition-colors select-none cursor-grab hover:text-text-primary active:cursor-grabbing shadow-none"
       >
         <DotsSixVertical size={12} className="text-text-muted shrink-0" />
         <CaretDown size={14} className={open ? "rotate-180 transition-transform" : "transition-transform"} />
@@ -153,7 +153,7 @@ export default function ScraperLog() {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 right-0 z-50 w-full max-w-lg h-64 border-t border-l border-border rounded-tl-[var(--radius-lg)] bg-bg-secondary shadow-2xl flex flex-col"
+            className="fixed bottom-0 right-0 z-50 flex h-64 w-full max-w-lg flex-col rounded-tl-[var(--radius-lg)] border-l-2 border-t-2 border-border bg-bg-secondary shadow-none"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-3 py-2 border-b border-border">

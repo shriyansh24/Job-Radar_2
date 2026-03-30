@@ -13,9 +13,20 @@ class ResumeVersionResponse(BaseModel):
     label: str | None = None
     filename: str | None = None
     parsed_text: str | None = None
-    parsed_structured: dict | None = None
+    parsed_structured: dict[str, object] | None = None
     is_default: bool
     created_at: datetime
+
+
+class ResumeTemplateResponse(BaseModel):
+    id: str
+    name: str
+    description: str
+
+
+class ResumePreviewResponse(BaseModel):
+    template_id: str
+    html: str
 
 
 # ---------------------------------------------------------------------------
@@ -163,3 +174,23 @@ class CoverLetterGenerateResponse(BaseModel):
     reading_level: str = ""
     tone_used: str = ""
     company_context_used: bool = False
+
+
+# ---------------------------------------------------------------------------
+# ATS Validation
+# ---------------------------------------------------------------------------
+
+
+class ATSCheckResult(BaseModel):
+    field: str
+    passed: bool
+    message: str
+    details: dict[str, object] | None = None
+
+
+class ATSValidationResult(BaseModel):
+    score: int = Field(ge=0, le=100)
+    passed: bool
+    checks: list[ATSCheckResult] = []
+    warnings: list[str] = []
+    extracted_text_length: int = 0

@@ -63,12 +63,12 @@ export default function NotificationBell() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-[var(--radius-md)] hover:bg-bg-tertiary text-text-secondary transition-[background-color,color] duration-[var(--transition-fast)]"
+        className="hard-press relative inline-flex size-10 items-center justify-center border-2 border-border bg-background text-text-secondary shadow-[var(--shadow-xs)] hover:text-text-primary"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
       >
         <Bell size={18} weight={unreadCount > 0 ? "fill" : "bold"} />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-primary px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center border-2 border-border bg-accent-primary px-1 font-mono text-[10px] font-bold text-primary-foreground">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -81,16 +81,16 @@ export default function NotificationBell() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-12 z-50 w-80 max-h-96 overflow-auto rounded-[var(--radius-lg)] border border-border bg-bg-secondary shadow-xl"
+            className="absolute right-0 top-12 z-50 max-h-96 w-[min(22rem,calc(100vw-1.5rem))] overflow-auto border-2 border-border bg-card shadow-[var(--shadow-lg)]"
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <span className="text-sm font-medium text-text-primary">
+            <div className="flex items-center justify-between border-b-2 border-border px-4 py-3">
+              <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-primary">
                 Notifications
               </span>
               {unreadCount > 0 && (
                 <button
                   onClick={() => markAllRead.mutate()}
-                  className="text-xs text-accent-primary hover:underline"
+                  className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-accent-primary hover:text-accent-primary-hover"
                 >
                   Mark all read
                 </button>
@@ -102,13 +102,13 @@ export default function NotificationBell() {
                 No notifications
               </div>
             ) : (
-              <ul className="divide-y divide-border">
+              <ul className="divide-y-2 divide-border/20">
                 {items.map((n: Notification) => (
                   <li
                     key={n.id}
                     className={cn(
-                      "flex items-start gap-3 px-4 py-3 hover:bg-bg-tertiary/50 transition-colors cursor-pointer",
-                      !n.read && "bg-accent-primary/5"
+                      "cursor-pointer px-4 py-3 transition-colors hover:bg-[var(--color-bg-hover)]",
+                      !n.read && "bg-[var(--color-accent-primary-subtle)]"
                     )}
                     onClick={() => {
                       if (!n.read) markRead.mutate(n.id);
@@ -118,29 +118,34 @@ export default function NotificationBell() {
                       }
                     }}
                   >
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className={cn(
-                          "text-sm truncate",
-                          n.read ? "text-text-secondary" : "text-text-primary font-medium"
-                        )}
-                      >
-                        {n.title}
-                      </p>
-                      {n.body && (
-                        <p className="text-xs text-text-muted mt-0.5 line-clamp-2">
-                          {n.body}
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="mt-0.5 h-3 w-3 border-2 border-border bg-transparent">
+                        {!n.read ? <div className="pulse-dot h-full w-full bg-accent-primary" /> : null}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={cn(
+                            "truncate text-sm uppercase tracking-[-0.03em]",
+                            n.read ? "text-text-secondary" : "font-semibold text-text-primary"
+                          )}
+                        >
+                          {n.title}
                         </p>
-                      )}
+                        {n.body && (
+                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-text-muted">
+                            {n.body}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-1 shrink-0">
+                    <div className="mt-3 flex gap-1">
                       {!n.read && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             markRead.mutate(n.id);
                           }}
-                          className="p-1 rounded hover:bg-bg-tertiary text-text-muted"
+                          className="hard-press border-2 border-border bg-background p-1 text-text-muted shadow-[var(--shadow-xs)]"
                           title="Mark as read"
                         >
                           <Check size={14} />
@@ -151,7 +156,7 @@ export default function NotificationBell() {
                           e.stopPropagation();
                           deleteNotif.mutate(n.id);
                         }}
-                        className="p-1 rounded hover:bg-bg-tertiary text-text-muted"
+                        className="hard-press border-2 border-border bg-background p-1 text-text-muted shadow-[var(--shadow-xs)]"
                         title="Delete"
                       >
                         <Trash size={14} />

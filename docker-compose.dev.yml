@@ -5,9 +5,61 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./backend:/app
-    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     environment:
       JR_DEBUG: "true"
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+    command: ["python", "-m", "app.runtime.scheduler"]
+    environment:
+      JR_DEBUG: "true"
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+      JR_SCHEDULER_READY_MARKER: /tmp/jobradar-scheduler.ready
+
+  worker-scraping:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+    command: ["python", "-m", "app.runtime.arq_worker", "scraping"]
+    environment:
+      JR_DEBUG: "true"
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+      JR_WORKER_ROLE: scraping
+      JR_WORKER_READY_MARKER: /tmp/jobradar-worker-scraping.ready
+
+  worker-analysis:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+    command: ["python", "-m", "app.runtime.arq_worker", "analysis"]
+    environment:
+      JR_DEBUG: "true"
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+      JR_WORKER_ROLE: analysis
+      JR_WORKER_READY_MARKER: /tmp/jobradar-worker-analysis.ready
+
+  worker-ops:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+    command: ["python", "-m", "app.runtime.arq_worker", "ops"]
+    environment:
+      JR_DEBUG: "true"
+      JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
+      JR_WORKER_ROLE: ops
+      JR_WORKER_READY_MARKER: /tmp/jobradar-worker-ops.ready
 
   frontend:
     build:
@@ -17,5 +69,14 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    ports: ["5173:5173"]
-    command: npm run dev -- --host 0.0.0.0
+    ports: !override
+      - "5173:5173"
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8000
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:5173/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s

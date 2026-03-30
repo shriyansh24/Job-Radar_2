@@ -7,6 +7,9 @@ dist/
 build/
 .coverage
 htmlcov/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
 *.egg-info/
 pgdata/
 .ruff_cache/
@@ -26,6 +29,7 @@ backend/downloaded_files/
 codeql-alerts.json
 .cursor/
 current_ui_screenshots/
+output/
 job_radar_v2_folder_tree*.txt
 v2_*_files.txt
 v2_full_tree.txt

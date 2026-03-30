@@ -39,9 +39,9 @@ class ResumeArchetype(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     target_role_type: Mapped[str | None] = mapped_column(String(200))
-    base_ir_json: Mapped[dict | None] = mapped_column(JSONB)
-    emphasis_sections: Mapped[list | None] = mapped_column(JSONB)
-    keyword_priorities: Mapped[list | None] = mapped_column(JSONB)
+    base_ir_json: Mapped[dict[str, object] | None] = mapped_column(JSONB)
+    emphasis_sections: Mapped[list[str] | None] = mapped_column(JSONB)
+    keyword_priorities: Mapped[list[str] | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -70,7 +70,7 @@ class ArchetypeResponse(BaseModel):
     name: str
     description: str | None = None
     target_role_type: str | None = None
-    base_ir_json: dict | None = None
+    base_ir_json: dict[str, object] | None = None
     emphasis_sections: list[str] | None = None
     keyword_priorities: list[str] | None = None
     created_at: datetime
@@ -158,7 +158,8 @@ class ArchetypeService:
                 ResumeArchetype.user_id == user_id,
             )
         )
-        if result.rowcount == 0:  # type: ignore[union-attr]
+        rowcount = getattr(result, "rowcount", 0)
+        if rowcount == 0:
             raise NotFoundError(detail=f"Archetype {archetype_id} not found")
         await self.db.commit()
         logger.info(
@@ -244,10 +245,11 @@ def _score_archetype(
         arch_tokens |= _tokenize(arch.target_role_type)
 
     # Add base IR text (limited)
-    ir = arch.base_ir_json or {}
-    ir_text = ir.get("text", "")
-    if ir_text:
-        arch_tokens |= _tokenize(ir_text[:2000])
+        ir = arch.base_ir_json or {}
+        raw_ir_text = ir.get("text", "")
+        ir_text = raw_ir_text if isinstance(raw_ir_text, str) else ""
+        if ir_text:
+            arch_tokens |= _tokenize(ir_text[:2000])
 
     if not arch_tokens or not job_tokens:
         return 0.0, "Insufficient data for scoring"

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Mapping
+from contextlib import AbstractAsyncContextManager
+from typing import Any
 
 import structlog
 
@@ -12,7 +15,7 @@ from app.scraping.service import ScrapingService
 logger = structlog.get_logger()
 
 
-async def run_scheduled_scrape(ctx: dict | None = None) -> None:
+async def run_scheduled_scrape(ctx: Mapping[str, Any] | None = None) -> None:
     """Background job: run all configured scrapers for each saved search query."""
     settings = Settings()
     async with async_session_factory() as db:
@@ -44,13 +47,14 @@ async def run_scheduled_scrape(ctx: dict | None = None) -> None:
                         found=result.jobs_found,
                         new=result.jobs_new,
                     )
-        except Exception as e:
-            logger.error("scheduled_scrape_failed", error=str(e))
+        except Exception:
+            logger.exception("scheduled_scrape_failed")
+            raise
         finally:
             await service.close()
 
 
-async def run_career_page_scrape(ctx: dict | None = None) -> None:
+async def run_career_page_scrape(ctx: Mapping[str, Any] | None = None) -> None:
     """Background job: scrape configured career page targets."""
     settings = Settings()
     async with async_session_factory() as db:
@@ -71,6 +75,7 @@ async def run_career_page_scrape(ctx: dict | None = None) -> None:
             ).all()
 
             scraper = CareerPageScraper(settings)
+            failed_targets: list[str] = []
 
             for target in targets:
                 try:
@@ -78,21 +83,28 @@ async def run_career_page_scrape(ctx: dict | None = None) -> None:
                     target.last_success_at = datetime.now(UTC)
                     target.consecutive_failures = 0
                     logger.info("career_page_scraped", url=target.url, jobs=len(jobs))
-                except Exception as e:
+                except Exception:
+                    failed_targets.append(target.url)
                     target.consecutive_failures += 1
                     target.last_failure_at = datetime.now(UTC)
-                    logger.error("career_page_scrape_failed", url=target.url, error=str(e))
+                    logger.exception("career_page_scrape_failed", url=target.url)
 
             await db.commit()
             await scraper.close()
-        except Exception as e:
-            logger.error("career_page_worker_failed", error=str(e))
+            if failed_targets:
+                raise RuntimeError(
+                    "Career page scrape failures recorded for: "
+                    + ", ".join(sorted(failed_targets))
+                )
+        except Exception:
+            logger.exception("career_page_worker_failed")
+            raise
 
 
 async def run_target_batch_job(
     source_kind: str = "career_page",
     batch_size: int = 50,
-    ctx: dict | None = None,
+    ctx: Mapping[str, Any] | None = None,
 ) -> None:
     """Background job: run the tier-based target pipeline for due targets.
 
@@ -137,7 +149,7 @@ async def run_target_batch_job(
             try:
                 from app.scraping.execution.browser_pool import BrowserPool
 
-                browser_pool = BrowserPool()
+                browser_pool: Any = BrowserPool()
             except ImportError:
                 browser_pool = _NoOpBrowserPool()
 
@@ -174,19 +186,25 @@ async def run_target_batch_job(
             finally:
                 await service.close()
 
-        except Exception as e:
-            logger.error("target_batch_job_failed", source_kind=source_kind, error=str(e))
+        except Exception:
+            logger.exception("target_batch_job_failed", source_kind=source_kind)
+            raise
 
 
 class _NoOpBrowserPool:
     """Stub browser pool used when the real BrowserPool (Chunk 4) is not available."""
 
     class _NoOpContext:
-        async def __aenter__(self):
+        async def __aenter__(self) -> None:
             return None
 
-        async def __aexit__(self, *args):
-            pass
+        async def __aexit__(self, *args: object) -> None:
+            return None
 
-    def acquire(self, tier: int, domain: str):
+    def acquire(
+        self,
+        tier: int,
+        domain: str,
+    ) -> AbstractAsyncContextManager[None]:
+        _ = (tier, domain)
         return self._NoOpContext()

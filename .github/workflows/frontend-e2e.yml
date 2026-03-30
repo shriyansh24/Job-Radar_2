@@ -1,0 +1,164 @@
+name: Frontend E2E Smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main, "codex/**"]
+  schedule:
+    - cron: "0 11 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-e2e-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend-e2e-smoke:
+    name: frontend-e2e-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      JR_DEBUG: "true"
+      JR_SECRET_KEY: ci-local-secret
+      JR_DATABASE_URL: postgresql+asyncpg://test:test@127.0.0.1:5432/test
+      JR_REDIS_URL: redis://127.0.0.1:6379/0
+      JR_CORS_ORIGINS: '["http://127.0.0.1:5173","http://localhost:5173"]'
+      JR_TRUSTED_HOSTS: '["127.0.0.1","localhost","test"]'
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:5173
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          pip install uv
+          uv sync --frozen
+
+      - name: Replay Alembic migrations
+        working-directory: backend
+        run: uv run alembic upgrade head
+
+      - name: Start backend API
+        working-directory: backend
+        run: |
+          nohup uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/backend.log" 2>&1 &
+
+      - name: Start scraping worker
+        working-directory: backend
+        run: |
+          nohup env JR_WORKER_READY_MARKER="$RUNNER_TEMP/worker-scraping.ready" uv run python -m app.runtime.arq_worker scraping > "$RUNNER_TEMP/worker-scraping.log" 2>&1 &
+
+      - name: Start analysis worker
+        working-directory: backend
+        run: |
+          nohup env JR_WORKER_READY_MARKER="$RUNNER_TEMP/worker-analysis.ready" uv run python -m app.runtime.arq_worker analysis > "$RUNNER_TEMP/worker-analysis.log" 2>&1 &
+
+      - name: Start ops worker
+        working-directory: backend
+        run: |
+          nohup env JR_WORKER_READY_MARKER="$RUNNER_TEMP/worker-ops.ready" uv run python -m app.runtime.arq_worker ops > "$RUNNER_TEMP/worker-ops.log" 2>&1 &
+
+      - name: Start queue-backed scheduler
+        working-directory: backend
+        run: |
+          nohup env JR_SCHEDULER_READY_MARKER="$RUNNER_TEMP/scheduler.ready" uv run python -m app.runtime.scheduler > "$RUNNER_TEMP/scheduler.log" 2>&1 &
+
+      - name: Wait for backend API
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --silent --show-error --fail http://127.0.0.1:8000/docs > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend API did not become ready in time." >&2
+          exit 1
+
+      - name: Wait for scheduler heartbeat
+        run: |
+          for attempt in $(seq 1 60); do
+            if cd backend && uv run python -m app.runtime.healthcheck scheduler; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Scheduler did not report a live heartbeat in time." >&2
+          exit 1
+
+      - name: Wait for worker heartbeats
+        run: |
+          for attempt in $(seq 1 60); do
+            if cd backend && \
+              uv run python -m app.runtime.healthcheck worker scraping && \
+              uv run python -m app.runtime.healthcheck worker analysis && \
+              uv run python -m app.runtime.healthcheck worker ops; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "One or more workers did not report a live heartbeat in time." >&2
+          exit 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browser
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright suites
+        working-directory: frontend
+        run: npm run e2e
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-e2e-artifacts
+          path: |
+            frontend/playwright-report
+            frontend/test-results/e2e
+            ${{ runner.temp }}/backend.log
+            ${{ runner.temp }}/scheduler.log
+            ${{ runner.temp }}/worker-scraping.log
+            ${{ runner.temp }}/worker-analysis.log
+            ${{ runner.temp }}/worker-ops.log

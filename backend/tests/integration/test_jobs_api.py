@@ -20,7 +20,7 @@ async def _register_and_login(client: AsyncClient) -> str:
         "/api/v1/auth/login",
         json={"email": email, "password": "testpassword123"},
     )
-    return resp.json()["access_token"]
+    return resp.cookies["jr_access_token"]
 
 
 def _auth(token: str) -> dict:
@@ -151,3 +151,60 @@ async def test_export_jobs_json(client: AsyncClient, db_session: AsyncSession):
     )
     assert resp.status_code == 200
     assert "application/json" in resp.headers["content-type"]
+
+
+@pytest.mark.asyncio
+async def test_semantic_search_returns_ranked_job_results(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    token = await _register_and_login(client)
+    me_resp = await client.get("/api/v1/auth/me", headers=_auth(token))
+    resolved_user_id = uuid.UUID(me_resp.json()["id"])
+
+    db_session.add_all(
+        [
+            Job(
+                id="semantic-1",
+                user_id=resolved_user_id,
+                source="test",
+                title="Platform Engineer",
+                company_name="Acme",
+                status="new",
+            ),
+            Job(
+                id="semantic-2",
+                user_id=resolved_user_id,
+                source="test",
+                title="Backend Engineer",
+                company_name="Beta",
+                status="new",
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    async def _fake_search(self, query: str, user_id: uuid.UUID, limit: int = 20, offset: int = 0):
+        assert query == "python platform"
+        assert user_id == resolved_user_id
+        assert limit == 10
+        assert offset == 0
+        from app.search.hybrid import HybridSearchResult
+
+        return [
+            HybridSearchResult(job_id="semantic-2", rrf_score=0.9, bm25_rank=1),
+            HybridSearchResult(job_id="semantic-1", rrf_score=0.6, bm25_rank=2),
+        ]
+
+    monkeypatch.setattr("app.jobs.service.HybridSearchService.search", _fake_search)
+
+    resp = await client.post(
+        "/api/v1/jobs/search/semantic",
+        headers=_auth(token),
+        json={"query": "python platform", "limit": 10},
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert [item["id"] for item in data] == ["semantic-2", "semantic-1"]

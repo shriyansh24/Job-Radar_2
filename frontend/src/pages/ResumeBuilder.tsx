@@ -1,25 +1,16 @@
-import {
-  Clock,
-  FileText,
-  Sparkle,
-  Star,
-  Trash,
-  UploadSimple,
-  UsersThree,
-} from "@phosphor-icons/react";
+import { FileText, Sparkle, Star, UploadSimple, UsersThree } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { jobsApi, type Job } from "../api/jobs";
 import { resumeApi, type ResumeVersion } from "../api/resume";
-import Badge from "../components/ui/Badge";
-import Button from "../components/ui/Button";
-import Card from "../components/ui/Card";
-import EmptyState from "../components/ui/EmptyState";
-import Modal from "../components/ui/Modal";
-import { SkeletonCard } from "../components/ui/Skeleton";
-import Select from "../components/ui/Select";
+import { ResumeBuilderCouncilWorkspace } from "../components/resume-builder/ResumeBuilderCouncilWorkspace";
+import { ResumeBuilderPreviewModal } from "../components/resume-builder/ResumeBuilderPreviewModal";
+import { ResumeBuilderTailorWorkspace } from "../components/resume-builder/ResumeBuilderTailorWorkspace";
+import { ResumeBuilderUploadWorkspace } from "../components/resume-builder/ResumeBuilderUploadWorkspace";
+import { ResumeBuilderVersionsWorkspace } from "../components/resume-builder/ResumeBuilderVersionsWorkspace";
+import { MetricStrip } from "../components/system/MetricStrip";
+import { PageHeader } from "../components/system/PageHeader";
 import Tabs from "../components/ui/Tabs";
 import { toast } from "../components/ui/toastService";
 
@@ -27,274 +18,221 @@ const tabs = [
   { id: "upload", label: "Upload", icon: <UploadSimple size={14} weight="bold" /> },
   { id: "versions", label: "Versions", icon: <FileText size={14} weight="bold" /> },
   { id: "tailor", label: "Tailor", icon: <Sparkle size={14} weight="fill" /> },
-  { id: "council", label: "AI Council", icon: <UsersThree size={14} weight="bold" /> },
-];
+  { id: "council", label: "Council", icon: <UsersThree size={14} weight="bold" /> },
+] as const;
+
+type SelectOption = {
+  value: string;
+  label: string;
+};
 
 export default function ResumeBuilder() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('upload');
-  const [selectedResume, setSelectedResume] = useState<string>('');
-  const [selectedJob, setSelectedJob] = useState<string>('');
+  const [activeTab, setActiveTab] = useState("upload");
+  const [selectedResume, setSelectedResume] = useState("");
+  const [selectedJob, setSelectedJob] = useState("");
   const [showPreview, setShowPreview] = useState<ResumeVersion | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
   const { data: versions, isLoading } = useQuery({
-    queryKey: ['resume-versions'],
-    queryFn: () => resumeApi.listVersions().then((r) => r.data),
+    queryKey: ["resume-versions"],
+    queryFn: () => resumeApi.listVersions().then((response) => response.data),
+  });
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ["resume-templates"],
+    queryFn: () => resumeApi.listTemplates().then((response) => response.data),
+  });
+
+  const { data: previewData, isLoading: previewLoading } = useQuery({
+    queryKey: ["resume-preview", showPreview?.id, selectedTemplateId],
+    queryFn: () =>
+      resumeApi.preview(showPreview!.id, selectedTemplateId).then((response) => response.data),
+    enabled: !!showPreview && !!selectedTemplateId,
   });
 
   const { data: jobs } = useQuery({
-    queryKey: ['jobs', 'all'],
-    queryFn: () => jobsApi.list({ page_size: 100 }).then((r) => r.data),
+    queryKey: ["jobs", "all"],
+    queryFn: () => jobsApi.list({ page_size: 100 }).then((response) => response.data),
   });
 
   const uploadMutation = useMutation({
     mutationFn: (file: File) => resumeApi.upload(file),
     onSuccess: () => {
-      toast('success', 'Resume uploaded');
-      queryClient.invalidateQueries({ queryKey: ['resume-versions'] });
+      toast("success", "Resume uploaded");
+      queryClient.invalidateQueries({ queryKey: ["resume-versions"] });
     },
-    onError: () => toast('error', 'Upload failed'),
+    onError: () => toast("error", "Upload failed"),
   });
 
   const tailorMutation = useMutation({
     mutationFn: () => resumeApi.tailor(selectedResume, selectedJob),
-    onSuccess: () => toast('success', 'Resume tailored (preview ready)'),
-    onError: () => toast('error', 'Tailoring failed'),
+    onSuccess: () => toast("success", "Resume tailored"),
+    onError: () => toast("error", "Tailoring failed"),
   });
 
   const councilMutation = useMutation({
-    mutationFn: () => resumeApi.council(selectedResume),
-    onSuccess: () => toast('success', 'Council evaluation complete'),
-    onError: () => toast('error', 'Evaluation failed'),
+    mutationFn: () => resumeApi.council(selectedResume, selectedJob || undefined),
+    onSuccess: () => toast("success", "Council review complete"),
+    onError: () => toast("error", "Evaluation failed"),
   });
 
-  const onDrop = useCallback((accepted: File[]) => {
-    const file = accepted[0];
-    if (file) uploadMutation.mutate(file);
-  }, [uploadMutation]);
+  const exportMutation = useMutation({
+    mutationFn: () => {
+      if (!showPreview || !selectedTemplateId) {
+        throw new Error("Preview selection missing");
+      }
+      return resumeApi.exportVersion(showPreview.id, selectedTemplateId);
+    },
+    onSuccess: (response) => {
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      const contentDisposition = response.headers["content-disposition"] ?? "";
+      const filenameMatch = /filename="([^"]+)"/.exec(contentDisposition);
+      link.href = blobUrl;
+      link.download = filenameMatch?.[1] ?? `${showPreview?.filename ?? "resume"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+      toast("success", "Resume export ready");
+    },
+    onError: () => toast("error", "PDF export unavailable"),
+  });
+
+  useEffect(() => {
+    if (!templates.length) {
+      return;
+    }
+    setSelectedTemplateId((current) =>
+      templates.some((template) => template.id === current) ? current : templates[0].id
+    );
+  }, [templates]);
+
+  const onDrop = useCallback(
+    (accepted: File[]) => {
+      const file = accepted[0];
+      if (file) uploadMutation.mutate(file);
+    },
+    [uploadMutation]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'application/pdf': ['.pdf'], 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'] },
+    accept: {
+      "application/pdf": [".pdf"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+    },
     maxFiles: 1,
   });
 
-  const jobOptions = (jobs?.items || []).map((j: Job) => ({
-    value: j.id,
-    label: `${j.title} - ${j.company_name || 'Unknown'}`,
+  const jobOptions: SelectOption[] = (jobs?.items || []).map((job: Job) => ({
+    value: job.id,
+    label: `${job.title} - ${job.company_name || "Unknown"}`,
   }));
 
-  const resumeOptions = (versions || []).map((v: ResumeVersion) => ({
-    value: v.id,
-    label: v.filename ?? 'Untitled resume',
+  const resumeOptions: SelectOption[] = (versions || []).map((version: ResumeVersion) => ({
+    value: version.id,
+    label: version.filename ?? "Untitled resume",
   }));
+
+  const tailorResult = tailorMutation.data?.data ?? null;
+
+  const metrics = useMemo(
+    () => [
+      { key: "versions", label: "Versions", value: (versions?.length ?? 0).toLocaleString(), hint: "Loaded resumes.", icon: <FileText size={18} weight="bold" /> },
+      {
+        key: "defaults",
+        label: "Default set",
+        value: `${versions?.filter((version) => version.is_default).length ?? 0}`,
+        hint: "Current baseline.",
+        icon: <Star size={18} weight="fill" />,
+        tone: "success" as const,
+      },
+      { key: "jobs", label: "Jobs", value: `${jobs?.items.length ?? 0}`, hint: "Target roles.", icon: <Sparkle size={18} weight="bold" /> },
+      {
+        key: "selection",
+        label: "Selection",
+        value: selectedResume ? "Ready" : "None",
+        hint: "Resume selected.",
+        icon: <UsersThree size={18} weight="bold" />,
+      },
+    ],
+    [jobs?.items.length, selectedResume, versions]
+  );
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-text-primary">Resume Builder</h1>
+      <PageHeader
+        className="hero-panel"
+        eyebrow="Prepare"
+        title="Resume Builder"
+        description="Upload resumes, manage versions, tailor drafts, and review council scores."
+      />
 
-      <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+      <MetricStrip items={metrics} />
 
-      {activeTab === 'upload' && (
-        <Card padding="none">
-          <div
-            {...getRootProps()}
-            className={`flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-[var(--radius-lg)] cursor-pointer transition-colors ${
-              isDragActive ? 'border-accent-primary bg-accent-primary/5' : 'border-border hover:border-border-focus'
-            }`}
-          >
-            <input {...getInputProps()} />
-            <UploadSimple size={40} weight="bold" className="text-text-muted mb-4" />
-            <p className="text-base text-text-primary font-medium">
-              {isDragActive ? 'Drop your resume here' : 'Drag & drop your resume here'}
-            </p>
-            <p className="text-sm text-text-secondary mt-1">or click to browse</p>
-            <p className="text-xs text-text-muted mt-3">Supports PDF, DOCX, TXT</p>
-            {uploadMutation.isPending && (
-              <p className="text-sm text-accent-primary mt-3 animate-pulse">Uploading...</p>
-            )}
-            {uploadMutation.isSuccess && (
-              <p className="text-sm text-accent-success mt-3">Upload complete!</p>
-            )}
-          </div>
-        </Card>
-      )}
+      <Tabs tabs={tabs.map((tab) => ({ ...tab }))} activeTab={activeTab} onChange={setActiveTab} />
 
-      {activeTab === 'versions' && (
-        <div className="space-y-4">
-          {/* Resume Versions List */}
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
-            </div>
-          ) : !versions || versions.length === 0 ? (
-            <EmptyState
-              icon={<FileText size={40} weight="bold" />}
-              title="No resumes yet"
-              description="Upload a resume to get started with tailoring and evaluation"
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {versions.map((v: ResumeVersion) => (
-                <Card key={v.id} hover onClick={() => setShowPreview(v)}>
-                  <div className="flex items-start gap-3">
-                    <FileText size={24} weight="bold" className="text-accent-primary shrink-0 mt-0.5" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-text-primary truncate">
-                          {v.filename ?? 'Untitled resume'}
-                        </p>
-                        {v.is_default && (
-                          <Badge variant="success" size="sm">
-                            <Star size={10} weight="fill" className="mr-0.5" />
-                            Default
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-text-muted flex items-center gap-1 mt-1">
-                        <Clock size={10} weight="bold" />
-                        {format(new Date(v.created_at), 'PP')}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {activeTab === "upload" ? (
+        <ResumeBuilderUploadWorkspace
+          rootProps={getRootProps()}
+          inputProps={getInputProps()}
+          isDragActive={isDragActive}
+          uploadPending={uploadMutation.isPending}
+          uploadSuccess={uploadMutation.isSuccess}
+          versionCount={versions?.length ?? 0}
+          selectedResume={selectedResume}
+        />
+      ) : null}
 
-      {activeTab === 'tailor' && (
-        <Card>
-          <div className="space-y-4">
-            <p className="text-sm text-text-secondary">
-              Select a resume and a job to generate a tailored version optimized for the position.
-            </p>
-            <Select
-              label="Resume Version"
-              options={resumeOptions}
-              value={selectedResume}
-              onChange={(e) => setSelectedResume(e.target.value)}
-              placeholder="Select a resume..."
-            />
-            <Select
-              label="Target Job"
-              options={jobOptions}
-              value={selectedJob}
-              onChange={(e) => setSelectedJob(e.target.value)}
-              placeholder="Select a job..."
-            />
-            <Button
-              variant="primary"
-              loading={tailorMutation.isPending}
-              disabled={!selectedResume || !selectedJob}
-              onClick={() => tailorMutation.mutate()}
-              icon={<Sparkle size={14} weight="fill" />}
-            >
-              Tailor Resume
-            </Button>
+      {activeTab === "versions" ? (
+        <ResumeBuilderVersionsWorkspace
+          isLoading={isLoading}
+          versions={versions}
+          onPreview={setShowPreview}
+        />
+      ) : null}
 
-            {tailorMutation.data && (
-              <div className="mt-4 space-y-4">
-                <Card>
-                  <h3 className="text-sm font-medium text-text-secondary mb-2">Tailored Resume</h3>
-                  <pre className="text-xs text-text-primary whitespace-pre-wrap font-mono max-h-80 overflow-auto">
-                    {tailorMutation.data.data.tailored_text}
-                  </pre>
-                </Card>
-                {tailorMutation.data.data.suggestions.length > 0 && (
-                  <Card>
-                    <h3 className="text-sm font-medium text-text-secondary mb-2">Suggestions</h3>
-                    <ul className="space-y-1.5">
-                      {tailorMutation.data.data.suggestions.map((s: string, i: number) => (
-                        <li key={i} className="text-sm text-text-primary flex items-start gap-2">
-                          <span className="text-accent-primary mt-0.5 shrink-0">&#8226;</span>
-                          {s}
-                        </li>
-                      ))}
-                    </ul>
-                  </Card>
-                )}
-                {tailorMutation.data.data.sections_modified.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="text-xs text-text-muted">Sections modified:</span>
-                    {tailorMutation.data.data.sections_modified.map((s: string) => (
-                      <Badge key={s} variant="info" size="sm">{s}</Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
+      {activeTab === "tailor" ? (
+        <ResumeBuilderTailorWorkspace
+          resumeOptions={resumeOptions}
+          jobOptions={jobOptions}
+          selectedResume={selectedResume}
+          selectedJob={selectedJob}
+          onResumeChange={setSelectedResume}
+          onJobChange={setSelectedJob}
+          tailorPending={tailorMutation.isPending}
+          onTailor={() => tailorMutation.mutate()}
+          tailorResult={tailorResult}
+        />
+      ) : null}
 
-      {activeTab === 'council' && (
-        <Card>
-          <div className="space-y-4">
-            <p className="text-sm text-text-secondary">
-              Get your resume evaluated by multiple AI models for comprehensive feedback.
-            </p>
-            <Select
-              label="Resume Version"
-              options={resumeOptions}
-              value={selectedResume}
-              onChange={(e) => setSelectedResume(e.target.value)}
-              placeholder="Select a resume..."
-            />
-            <Button
-              variant="primary"
-              loading={councilMutation.isPending}
-              disabled={!selectedResume}
-              onClick={() => councilMutation.mutate()}
-              icon={<UsersThree size={14} weight="bold" />}
-            >
-              Get AI Evaluation
-            </Button>
+      {activeTab === "council" ? (
+        <ResumeBuilderCouncilWorkspace
+          resumeOptions={resumeOptions}
+          jobOptions={jobOptions}
+          selectedResume={selectedResume}
+          selectedJob={selectedJob}
+          onResumeChange={setSelectedResume}
+          onJobChange={setSelectedJob}
+          councilPending={councilMutation.isPending}
+          onRunCouncil={() => councilMutation.mutate()}
+          councilResult={councilMutation.data?.data ?? null}
+        />
+      ) : null}
 
-            {councilMutation.data && (
-              <div className="mt-4 space-y-3">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-accent-primary">
-                    {(councilMutation.data.data.overall_score ?? 0).toFixed(1)}
-                  </p>
-                  <p className="text-sm text-text-muted">Average Score</p>
-                </div>
-                {councilMutation.data.data.evaluations.map((s: { model: string; score: number; feedback: string }) => (
-                  <Card key={s.model} padding="sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-text-primary">{s.model}</span>
-                      <Badge variant={s.score >= 8 ? 'success' : s.score >= 5 ? 'warning' : 'danger'}>
-                        {s.score}/10
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-text-secondary">{s.feedback}</p>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
-
-      {/* Preview Modal */}
-      <Modal
-        open={!!showPreview}
+      <ResumeBuilderPreviewModal
+        showPreview={showPreview}
+        templates={templates}
+        selectedTemplateId={selectedTemplateId}
+        onTemplateChange={setSelectedTemplateId}
+        previewData={previewData}
+        previewLoading={previewLoading}
+        exportLoading={exportMutation.isPending}
         onClose={() => setShowPreview(null)}
-        title={showPreview?.filename ?? "Resume Preview"}
-        size="lg"
-      >
-        {showPreview?.parsed_text ? (
-          <pre className="text-sm text-text-primary whitespace-pre-wrap font-mono">
-            {showPreview.parsed_text}
-          </pre>
-        ) : (
-          <div className="flex items-center gap-3 text-text-muted">
-            <Trash size={16} weight="bold" />
-            <span className="text-sm">No text extracted from this resume yet.</span>
-          </div>
-        )}
-      </Modal>
+        onExport={() => exportMutation.mutate()}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 import { cn } from '../../lib/utils';
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -8,23 +8,31 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, className, ...props }, ref) => {
+    const generatedId = useId();
+    const textareaId = props.id ?? generatedId;
+
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-text-secondary mb-1.5">
+          <label
+            htmlFor={textareaId}
+            className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted"
+          >
             {label}
           </label>
         )}
         <textarea
           ref={ref}
+          id={textareaId}
           className={cn(
-            'w-full bg-bg-tertiary border border-border rounded-[var(--radius-md)] px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none transition-colors duration-[var(--transition-fast)] focus:border-border-focus focus:ring-1 focus:ring-border-focus resize-y min-h-[80px]',
-            error && 'border-accent-danger focus:border-accent-danger focus:ring-accent-danger',
+            'min-h-[96px] w-full resize-y border-2 border-border bg-[var(--color-bg-secondary)] px-3 py-3 text-sm text-text-primary placeholder:text-text-muted outline-none transition-[border-color,box-shadow,background-color,color] duration-[var(--transition-fast)] focus:border-border-focus focus:bg-[var(--color-bg-elevated)] focus:shadow-[var(--shadow-blue)] aria-invalid:border-[var(--color-accent-danger)] aria-invalid:shadow-none',
+            error && 'border-accent-danger focus:border-accent-danger focus:shadow-none',
             className
           )}
+          aria-invalid={error ? true : props["aria-invalid"]}
           {...props}
         />
-        {error && <p className="mt-1 text-xs text-accent-danger">{error}</p>}
+        {error && <p className="mt-1 text-[11px] font-medium text-accent-danger">{error}</p>}
       </div>
     );
   }

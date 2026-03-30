@@ -13,16 +13,16 @@ export default function StatCard({ title, value, icon, change, className }: Stat
   return (
     <div
       className={clsx(
-        "bg-bg-secondary border border-border rounded-[var(--radius-xl)] p-6 shadow-[var(--shadow-sm)]",
+        "border-2 border-border bg-card p-5 shadow-[var(--shadow-sm)]",
         className
       )}
     >
       <div className="flex items-center justify-between mb-3">
-        <span className="text-text-muted text-sm font-medium">{title}</span>
+        <span className="command-label">{title}</span>
         <span className="text-text-muted">{icon}</span>
       </div>
       <div className="flex items-end gap-3">
-        <span className="text-2xl font-semibold text-text-primary font-mono">
+        <span className="mono-num text-3xl font-bold text-text-primary">
           {value}
         </span>
         {change && (

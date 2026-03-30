@@ -1,111 +1,248 @@
-import { ArrowClockwise, Play } from "@phosphor-icons/react";
+import {
+  ArrowClockwise,
+  Lightning,
+  MagnifyingGlass,
+  Pulse,
+  Warning,
+} from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { scraperApi, type ScraperRun } from "../../api/scraper";
+import type { ComponentProps } from "react";
 
-const statusColors: Record<string, string> = {
-  completed: "bg-green-500/10 text-green-400",
-  running: "bg-blue-500/10 text-blue-400",
-  failed: "bg-red-500/10 text-red-400",
+import { scraperApi, type ScraperRun, type ScraperRunResult, type TriggerBatchResult } from "../../api/scraper";
+import { StateBlock } from "../system/StateBlock";
+import { Surface } from "../system/Surface";
+import Badge from "../ui/Badge";
+import Button from "../ui/Button";
+import { toast } from "../ui/toastService";
+
+const STATUS_VARIANTS: Record<string, ComponentProps<typeof Badge>["variant"]> = {
+  completed: "success",
+  completed_with_errors: "warning",
+  running: "info",
+  failed: "danger",
 };
+
+function formatRunLabel(source: string) {
+  if (source === "batch_trigger") {
+    return "Target batch";
+  }
+  if (source === "manual_trigger") {
+    return "Manual target run";
+  }
+  if (source.includes(",")) {
+    return "Profile query sweep";
+  }
+  return source.replace(/_/g, " ");
+}
+
+function formatStatus(status: string) {
+  return status.replace(/_/g, " ");
+}
+
+function formatTimestamp(value: string | null) {
+  if (!value) return "Not recorded";
+  return new Date(value).toLocaleString();
+}
+
+function summarizeSearchSweep(result: ScraperRunResult) {
+  const results = result.results ?? [];
+  const jobsFound = results.reduce((sum, item) => sum + (item.jobs_found ?? 0), 0);
+  const errors = results.filter((item) => item.error).length;
+  return { jobsFound, errors };
+}
 
 export default function ScraperControlPanel() {
   const queryClient = useQueryClient();
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["scraper", "runs"],
-    queryFn: () => scraperApi.runs().then((r) => r.data),
+    queryFn: () => scraperApi.runs().then((response) => response.data),
     refetchInterval: 15_000,
   });
 
-  const [triggeringSource, setTriggeringSource] = useState<string | null>(null);
+  const triggerSearchMutation = useMutation({
+    mutationFn: () => scraperApi.triggerScraper().then((response) => response.data),
+    onSuccess: (result: ScraperRunResult) => {
+      const summary = summarizeSearchSweep(result);
+      toast(
+        "success",
+        summary.errors
+          ? `Search sweep finished with ${summary.errors} source errors`
+          : `Search sweep finished - ${summary.jobsFound} jobs found`
+      );
+      void queryClient.invalidateQueries({ queryKey: ["scraper", "runs"] });
+    },
+    onError: () => toast("error", "Search sweep failed"),
+  });
 
-  const triggerMutation = useMutation({
-    mutationFn: (source: string) => {
-      setTriggeringSource(source);
-      return scraperApi.triggerScraper();
+  const triggerBatchMutation = useMutation({
+    mutationFn: () => scraperApi.triggerBatch().then((response) => response.data),
+    onSuccess: (result: TriggerBatchResult) => {
+      toast(
+        "success",
+        `Batch completed - ${result.jobs_found} jobs found across ${result.targets_attempted} targets`
+      );
+      void queryClient.invalidateQueries({ queryKey: ["scraper", "runs"] });
+      void queryClient.invalidateQueries({ queryKey: ["targets"] });
     },
-    onSuccess: () => {
-      setTriggeringSource(null);
-      queryClient.invalidateQueries({ queryKey: ["scraper", "runs"] });
-    },
-    onError: () => {
-      setTriggeringSource(null);
-    },
+    onError: () => toast("error", "Batch trigger failed"),
   });
 
   const runs = data ?? [];
-  const isRunning = runs.some((r) => r.status === "running");
-
-  // Group runs by source, take latest per source
-  const latestBySource = new Map<string, ScraperRun>();
-  for (const run of runs) {
-    if (!latestBySource.has(run.source) || run.started_at > latestBySource.get(run.source)!.started_at) {
-      latestBySource.set(run.source, run);
-    }
-  }
+  const runningCount = runs.filter((run) => run.status === "running").length;
+  const failedCount = runs.filter(
+    (run) => run.status === "failed" || run.status === "completed_with_errors" || !!run.error_message
+  ).length;
+  const latestCompletedRun = runs.find((run) => run.completed_at) ?? null;
+  const recentRuns = runs.slice(0, 5);
 
   return (
-    <div className="border border-border rounded-[var(--radius-lg)] bg-bg-secondary">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <h3 className="text-sm font-medium text-text-primary">Scraper Status</h3>
-        <button
-          onClick={() => refetch()}
-          className="p-1.5 rounded-[var(--radius-md)] hover:bg-bg-tertiary text-text-secondary transition-colors"
-          title="Refresh"
-        >
-          <ArrowClockwise size={16} weight="bold" className={isLoading ? "animate-spin" : ""} />
-        </button>
+    <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-1">
+          <div className="command-label">Operator</div>
+          <h2 className="font-headline text-2xl font-black uppercase tracking-tight">
+            Scraper activity
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Run the live search sweep or the target batch.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => void refetch()}
+            loading={isLoading}
+            icon={<ArrowClockwise size={14} weight="bold" />}
+          >
+            Refresh
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => triggerSearchMutation.mutate()}
+            loading={triggerSearchMutation.isPending}
+            icon={<MagnifyingGlass size={14} weight="bold" />}
+          >
+            Run search sweep
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => triggerBatchMutation.mutate()}
+            loading={triggerBatchMutation.isPending}
+            icon={<Lightning size={14} weight="bold" />}
+          >
+            Run target batch
+          </Button>
+        </div>
       </div>
 
-      {isRunning && (
-        <div className="px-4 py-2 bg-blue-500/5 border-b border-border flex items-center gap-2 text-xs text-blue-400">
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-          Scraper is running...
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="brutal-panel px-4 py-3">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+            Recent runs
+          </p>
+          <p className="mt-3 text-2xl font-black uppercase tracking-[-0.05em] text-text-primary">
+            {runs.length}
+          </p>
         </div>
-      )}
+        <div className="brutal-panel px-4 py-3">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+            Running now
+          </p>
+          <p className="mt-3 text-2xl font-black uppercase tracking-[-0.05em] text-text-primary">
+            {runningCount}
+          </p>
+        </div>
+        <div className="brutal-panel px-4 py-3">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+            Latest completion
+          </p>
+          <p className="mt-3 text-sm text-text-primary">
+            {latestCompletedRun ? formatTimestamp(latestCompletedRun.completed_at) : "No completed runs"}
+          </p>
+        </div>
+      </div>
 
-      <div className="divide-y divide-border">
-        {Array.from(latestBySource.entries()).map(([source, run]) => {
-          const isTriggeringThis = triggeringSource === source && triggerMutation.isPending;
-          return (
-            <div key={source} className="flex items-center justify-between px-4 py-2.5 text-sm">
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="font-medium text-text-primary capitalize w-24 truncate">
-                  {source}
-                </span>
-                <span
-                  className={`px-2 py-0.5 rounded text-xs font-medium ${
-                    statusColors[run.status] ?? "bg-bg-tertiary text-text-muted"
-                  }`}
-                >
-                  {run.status}
-                </span>
+      <div className="mt-5 space-y-3">
+        {recentRuns.length === 0 && !isLoading ? (
+          <StateBlock
+            tone="muted"
+            icon={<Pulse size={18} weight="bold" />}
+            title="No runs recorded"
+            description="Use the control actions above to start a profile-query sweep or a target batch."
+          />
+        ) : (
+          recentRuns.map((run: ScraperRun) => (
+            <div
+              key={run.id}
+              className="brutal-panel flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between"
+            >
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-black uppercase tracking-[-0.03em] text-text-primary">
+                    {formatRunLabel(run.source)}
+                  </span>
+                  <Badge variant={STATUS_VARIANTS[run.status] ?? "default"}>
+                    {formatStatus(run.status)}
+                  </Badge>
+                  {run.error_message ? (
+                    <Badge variant="warning">attention</Badge>
+                  ) : null}
+                </div>
+                <p className="text-xs text-text-muted">
+                  Started {formatTimestamp(run.started_at)}
+                  {run.completed_at ? ` • Finished ${formatTimestamp(run.completed_at)}` : ""}
+                </p>
+                {run.error_message ? (
+                  <div className="mt-2 flex items-start gap-2 text-sm text-accent-warning">
+                    <Warning size={14} weight="bold" className="mt-0.5 shrink-0" />
+                    <span>{run.error_message}</span>
+                  </div>
+                ) : null}
               </div>
-              <div className="flex items-center gap-4 text-xs text-text-muted shrink-0">
-                <span>{run.jobs_found} found</span>
-                <span>{run.jobs_new} new</span>
-                {run.duration_seconds != null && <span>{run.duration_seconds}s</span>}
-                <span>{new Date(run.started_at).toLocaleTimeString()}</span>
-                <button
-                  onClick={() => triggerMutation.mutate(source)}
-                  disabled={isTriggeringThis || run.status === "running"}
-                  className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-bg-tertiary text-text-secondary hover:bg-accent-primary/10 hover:text-accent-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  title="Run Now"
-                >
-                  <Play size={10} weight="bold" className={isTriggeringThis ? "animate-pulse" : ""} />
-                  {isTriggeringThis ? "Running..." : "Run Now"}
-                </button>
+
+              <div className="grid grid-cols-2 gap-2 text-xs text-text-secondary sm:grid-cols-4">
+                <div>
+                  <div className="font-mono font-bold uppercase tracking-[0.16em] text-text-muted">
+                    Found
+                  </div>
+                  <div className="mt-1 text-sm text-text-primary">{run.jobs_found}</div>
+                </div>
+                <div>
+                  <div className="font-mono font-bold uppercase tracking-[0.16em] text-text-muted">
+                    New
+                  </div>
+                  <div className="mt-1 text-sm text-text-primary">{run.jobs_new}</div>
+                </div>
+                <div>
+                  <div className="font-mono font-bold uppercase tracking-[0.16em] text-text-muted">
+                    Updated
+                  </div>
+                  <div className="mt-1 text-sm text-text-primary">{run.jobs_updated}</div>
+                </div>
+                <div>
+                  <div className="font-mono font-bold uppercase tracking-[0.16em] text-text-muted">
+                    Duration
+                  </div>
+                  <div className="mt-1 text-sm text-text-primary">
+                    {run.duration_seconds != null ? `${run.duration_seconds}s` : "-"}
+                  </div>
+                </div>
               </div>
             </div>
-          );
-        })}
-
-        {latestBySource.size === 0 && !isLoading && (
-          <div className="px-4 py-6 text-center text-sm text-text-muted">
-            No scraper runs yet
-          </div>
+          ))
         )}
+
+        {failedCount > 0 ? (
+          <p className="text-xs text-accent-warning">
+            {failedCount} recent run{failedCount === 1 ? "" : "s"} finished with errors.
+          </p>
+        ) : null}
       </div>
-    </div>
+    </Surface>
   );
 }
