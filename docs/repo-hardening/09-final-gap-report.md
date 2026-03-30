@@ -17,7 +17,7 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `docs/repo-hardening/05-implementation-traceability-matrix.md`
   - `docs/research/00-index.md`
 - Why it matters:
-  - the previously ambiguous `feat/p1-core-value` recovery story is now explicit: adopted slices are live on `codex/ui-changes`, and non-promoted branch-era variants are archived as historical alternatives rather than left as active live-scope ambiguity.
+  - the previously ambiguous `feat/p1-core-value` recovery story is now explicit: adopted slices are live on `main`, and non-promoted branch-era variants are archived as historical alternatives rather than left as active live-scope ambiguity.
 
 ### 2. Runtime truth is aligned for repo-local operation
 - Status: `CLOSED_FOR_REPO_SCOPE`

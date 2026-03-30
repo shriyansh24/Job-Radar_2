@@ -1,10 +1,10 @@
 # JobRadar V2 - Project Status
 
-> Last updated: 2026-03-27
+> Last updated: 2026-03-30
 > Canonical live state lives in `docs/current-state/00-index.md`.
 
 ## Snapshot
-- Active workspace branch: `codex/ui-changes`
+- Active workspace branch: `main`
 - Compose-first local runtime is the current repo baseline
 - Dedicated scheduler runtime is live alongside the API process
 - Queue-backed ARQ worker services are now live for `scraping`, `analysis`, and `ops`
@@ -20,11 +20,12 @@
 - Representative browser captures live under `.claude/ui-captures/`
 
 ## What Is Currently True
-- The reference-first frontend is the active UI direction on `codex/ui-changes`.
+- The reference-first frontend is the active UI direction on `main`.
 - The main routed app is validated locally through frontend lint, frontend tests, browser/e2e, frontend build, and targeted backend integration coverage.
 - `docs/current-state/` and `docs/audit/` are the live authority layers.
 - `docs/repo-hardening/` is the active normalization and traceability trail.
 - `feat/p1-core-value` remains a selective recovery source rather than a merge target.
+- `codex/ui-changes` is merged and closed; its adopted frontend/runtime/test/doc work now lives on `main`.
 
 ## External Or Optional Follow-Through
 - Repo-wide backend mypy remains a targeted CI gate rather than a full-program strict-type contract.
