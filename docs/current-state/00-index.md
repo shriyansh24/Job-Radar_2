@@ -10,7 +10,8 @@
 5. `04-data-and-scraping.md`
 6. `05-ops-and-ci.md`
 7. `06-open-items.md`
-8. `../audit/00-index.md`
+8. `07-system-analysis.md`
+9. `../audit/00-index.md`
 
 ## Current Status At A Glance
 - Reference-first UI migration is implemented in this workspace using the external UI repo as the visual authority and the current repo as the behavior authority.
@@ -54,6 +55,7 @@
 | `04-data-and-scraping.md` | Data model, scraper platform, and scheduler state |
 | `05-ops-and-ci.md` | Local commands, Docker, CI, dependency checks, workflow state |
 | `06-open-items.md` | Deferred work, structural gaps, and non-bug residuals |
+| `07-system-analysis.md` | Exhaustive repository/system analysis (directories, files, flow, branch deltas) |
 | `../audit/00-index.md` | Verified bug ledger and stale-audit tracking |
 | `../research/00-index.md` | Future design and roadmap material |
 
