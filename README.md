@@ -21,11 +21,11 @@ JobRadar V2 is a full-stack job-search and career-operations workspace. It combi
 - Backend: FastAPI, SQLAlchemy async, PostgreSQL, Alembic, `uv`
 - Runtime: compose-first local stack with Postgres, Redis, one-shot migrations, API, dedicated scheduler, queue-specific ARQ workers (`scraping`, `analysis`, `ops`), and frontend
 - Browser validation: committed Playwright coverage under `frontend/e2e/` plus broader screenshot sweeps under `.claude/ui-captures/`
-- Selective P1 recovery already live on this branch: queue-backed worker runtime, ATS identity persistence on scraped jobs, recovered auto-apply execution and operator controls, richer interview prep bundles, bounded hybrid semantic search, live analytics pattern surfaces, resume preview/export flows, and the digest-worker follow-through on the ops lane
+- Selective P1 recovery is now live on `main`: queue-backed worker runtime, ATS identity persistence on scraped jobs, recovered auto-apply execution and operator controls, richer interview prep bundles, bounded hybrid semantic search, live analytics pattern surfaces, resume preview/export flows, and the digest-worker follow-through on the ops lane
 
 ## Current Branch Strategy
-- `main` is the baseline/default branch.
-- `codex/ui-changes` is the active workspace branch for the current frontend and repo-hardening work.
+- `main` is the canonical active and default branch.
+- `codex/ui-changes` was the final broad integration branch and is now merged into `main`.
 - `feat/p1-core-value` is a selective recovery source, not a blind-merge target.
 - Historical and retained branch decisions are tracked in `docs/repo-hardening/04-branch-disposition.md`.
 

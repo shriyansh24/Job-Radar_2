@@ -84,8 +84,8 @@ It intentionally avoids a file-by-file inventory because that level of detail dr
 - External ATS/browser/provider behavior cannot be fully made deterministic in local automated coverage.
 
 ## Branch Context
-- `main` is the stable branch to merge back into and becomes the canonical active branch once the final PR lands.
-- `codex/ui-changes` is the audited broad integration branch carrying frontend, backend, docs, runtime, test, and CI hardening work.
+- `main` is the canonical active branch.
+- `codex/ui-changes` was the audited broad integration branch that carried frontend, backend, docs, runtime, test, and CI hardening work before merging into `main`.
 - `feat/p1-core-value` is not a merge target; it remains a capability-recovery source that has already been mined selectively.
 
 ## Validation Note

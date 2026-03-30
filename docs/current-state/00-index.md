@@ -1,6 +1,6 @@
 # Current State Index - JobRadar V2
 
-> Last updated: 2026-03-27
+> Last updated: 2026-03-30
 
 ## Read Order
 1. `00-index.md`
@@ -15,7 +15,7 @@
 
 ## Current Status At A Glance
 - Reference-first UI migration is implemented in this workspace using the external UI repo as the visual authority and the current repo as the behavior authority.
-- Active branch in this workspace: `codex/ui-changes`.
+- Active branch in this workspace: `main`.
 - Full backend pytest now passes locally with coverage on the current branch.
 - Frontend lint, test, and build pass locally after the latest frontend decomposition and copy cleanup pass.
 - Committed browser coverage now includes auth/shell smoke, shell navigation, responsive shell behavior, route-family outcomes, communications/setup flows, prepare/intelligence/outcomes flows, operations/admin/data flows, profile/settings/auth roundtrips, resume preview/export, and route-family 8-mode theme assertions under `frontend/e2e/`.

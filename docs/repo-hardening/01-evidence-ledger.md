@@ -30,7 +30,6 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 
 ### Branches Worth Mining
 - `main`
-- `codex/ui-changes`
 - `feat/p1-core-value`
 - `ui-overhaul-design`
 - remote history/provenance:
@@ -91,9 +90,9 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 
 | Status | Branch | Evidence | Finding |
 |---|---|---|---|
-| `DOCUMENTED` | `feat/p1-core-value` | local tip `cc907ec`; PR #13 metadata plus selective recovery on `codex/ui-changes` | Still contains unique P0/P1 capability work not in `main` or fully on `codex/ui-changes`, but ATS identity persistence, hybrid search, interview prep, the auto-apply execution path, digest-worker follow-through, and some pipeline ergonomics are no longer branch-only |
+| `DOCUMENTED` | `feat/p1-core-value` | local tip `cc907ec`; PR #13 metadata plus selective recovery merged through `codex/ui-changes` into `main` | Still contains unique historical P0/P1 capability work that was not promoted, but ATS identity persistence, hybrid search, interview prep, the auto-apply execution path, digest-worker follow-through, and some pipeline ergonomics are no longer branch-only |
 | `DOCUMENTED` | `origin/feat/p2-polish-advanced` | PR #17 metadata and current branch topology | Useful as provenance for P2 capability history, but current tip appears converged into `main`; not a unique live-code branch anymore |
-| `DOCUMENTED` | `codex/ui-changes` | live branch history from `3ae5eac` through `5ef1c0a` | This is the unique UI overhaul and hardening line with theme-family runtime, shell/page decomposition, runtime split, CSRF hardening, and committed browser coverage |
+| `DOCUMENTED` | `codex/ui-changes` | merged branch history from `3ae5eac` through `57659cd`, merged to `main` as `c779af2` | This was the unique UI overhaul and hardening line with theme-family runtime, shell/page decomposition, runtime split, CSRF hardening, and committed browser coverage; it is now provenance, not an active branch |
 | `DOCUMENTED` | `ui-overhaul-design` | branch-only commits visible in local history | Historical UI spike with unique docs/components, but not the selected live UI line |
 
 ## Source-Of-Truth Matrix

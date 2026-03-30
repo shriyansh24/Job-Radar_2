@@ -9,8 +9,8 @@ Show what P0, P1, and P2 were supposed to deliver, what is actually present now,
 - Last validation basis: GitHub PR metadata for PRs `#12`, `#13`, `#17`, local branch history, and direct file inspection on `2026-03-27`
 
 ## Interpretation Rules
-- `main` is treated as the stable merged backend/P2 baseline.
-- `codex/ui-changes` is treated as the live UI and current workspace baseline.
+- `main` is treated as the stable merged backend/P2 baseline and the current active branch.
+- `codex/ui-changes` is treated as merged provenance for the UI/runtime hardening program, not as a live branch.
 - `feat/p1-core-value` is treated as a selective port source, not as a merge candidate.
 - A capability is only marked `shipped` when the code exists on the current branch tip, not because a PR body claimed it.
 
