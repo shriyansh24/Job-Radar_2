@@ -57,9 +57,10 @@ async def persist_jobs(
             new_count += 1
 
     try:
-        await db.commit()
+        await db.flush()
     except Exception as exc:
         logger.error("persist_jobs_failed", error=str(exc))
         await db.rollback()
+        raise
 
     return new_count, updated_count

@@ -16,7 +16,7 @@
 - Enrichment: HTML cleaning, markdown conversion, LLM extraction, salary/experience enrichment, a live single-job enrichment API path, and a queue-backed batch trigger on the analysis lane
 - Interview: question generation, stage-aware prep bundles, company research / role analysis, answer evaluation, persisted interview sessions
 - Search and dedup: hybrid semantic ranking via `backend/app/search/hybrid.py`, freshness scoring via `backend/app/enrichment/freshness.py`, normalization-aware dedup via `backend/app/scraping/normalization.py` + `deduplication.py`, and ATS identity persistence on `jobs` via `ats_job_id`, `ats_provider`, and `ats_composite_key`
-- Scraping: ATS registry, scheduler, tier routing, page crawling, adapter registry, browser pool
+- Scraping: ATS registry, scheduler, tier routing, page crawling, conditional request cache handling, Protego-based `robots.txt` policy, adapter registry, browser pool, and target-batch persistence across ATS/fetch/browser paths
 - Runtime topology: API process via `backend/app/main.py`, dedicated scheduler process via `backend/app/runtime/scheduler.py`, ARQ queue services via `backend/app/runtime/arq_worker.py`, and compose-managed Postgres/Redis; scheduler now enqueues jobs onto `scraping`, `analysis`, and `ops`
 - Workers: scraping, enrichment, follow-up/notification support, scheduled job registration, queue registry ownership, queue-specific ARQ worker services, retry-aware queue lifecycle logging, and a live `daily_digest` worker on the `ops` lane
 

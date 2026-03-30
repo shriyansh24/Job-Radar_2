@@ -89,6 +89,31 @@ async def test_fetch_closes_scraper_on_exception():
 
 
 @pytest.mark.asyncio
+async def test_fetch_sets_additional_headers():
+    """fetch() should pass conditional headers to the scraper session."""
+    mock_resp = MagicMock()
+    mock_resp.text = "ok"
+    mock_resp.status_code = 304
+    mock_resp.headers = {"ETag": '"abc"'}
+    mock_resp.url = "https://example.com"
+
+    mock_scraper = MagicMock()
+    mock_scraper.get.return_value = mock_resp
+    mock_scraper.headers = {}
+
+    with patch("app.scraping.execution.cloudscraper_fetcher.cs") as mock_cs:
+        mock_cs.create_scraper.return_value = mock_scraper
+
+        f = CloudscraperFetcher()
+        await f.fetch(
+            "https://example.com",
+            headers={"If-None-Match": '"abc"'},
+        )
+
+    assert mock_scraper.headers["If-None-Match"] == '"abc"'
+
+
+@pytest.mark.asyncio
 async def test_health_check_returns_true():
     f = CloudscraperFetcher()
     assert await f.health_check() is True
