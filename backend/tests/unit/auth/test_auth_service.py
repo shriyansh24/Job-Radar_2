@@ -8,33 +8,22 @@ import pytest
 from fastapi import Response
 
 import app.auth.service as auth_service
-from app.auth.service import (
-    change_password,
-    clear_auth_cookies,
-    create_access_token,
-    create_refresh_token,
-    decode_refresh_token,
-    decode_token_payload,
-    hash_password,
-    normalize_auth_reason,
-    verify_password,
-)
 from app.shared.errors import AuthError
 
 
 def test_hash_and_verify_password():
     password = "securepassword123"
-    hashed = hash_password(password)
+    hashed = auth_service.hash_password(password)
     assert hashed != password
-    assert verify_password(password, hashed)
-    assert not verify_password("wrongpassword", hashed)
+    assert auth_service.verify_password(password, hashed)
+    assert not auth_service.verify_password("wrongpassword", hashed)
 
 
 def test_create_access_token():
-    token = create_access_token("test-user-id", token_version=3)
+    token = auth_service.create_access_token("test-user-id", token_version=3)
     assert isinstance(token, str)
     assert len(token) > 0
-    payload = decode_token_payload(token, expected_type="access")
+    payload = auth_service.decode_token_payload(token, expected_type="access")
     assert payload["sub"] == "test-user-id"
     assert payload["ver"] == 3
     assert payload["jti"]
@@ -42,25 +31,28 @@ def test_create_access_token():
 
 def test_create_and_decode_refresh_token():
     user_id = "test-user-id"
-    token = create_refresh_token(user_id, token_version=1)
-    decoded_id = decode_refresh_token(token)
+    token = auth_service.create_refresh_token(user_id, token_version=1)
+    decoded_id = auth_service.decode_refresh_token(token)
     assert decoded_id == user_id
-    payload = decode_token_payload(token, expected_type="refresh")
+    payload = auth_service.decode_token_payload(token, expected_type="refresh")
     assert payload["ver"] == 1
 
 
 def test_normalize_auth_reason_prefers_known_aliases() -> None:
-    assert normalize_auth_reason("Invalid token type") == "invalid_token_type"
-    assert normalize_auth_reason("Refresh token required") == "refresh_token_required"
+    assert auth_service.normalize_auth_reason("Invalid token type") == "invalid_token_type"
+    assert auth_service.normalize_auth_reason("Refresh token required") == "refresh_token_required"
 
 
 def test_normalize_auth_reason_falls_back_to_slugified_code() -> None:
-    assert normalize_auth_reason("Token issuer drift detected") == "token_issuer_drift_detected"
+    assert (
+        auth_service.normalize_auth_reason("Token issuer drift detected")
+        == "token_issuer_drift_detected"
+    )
 
 
 def test_decode_invalid_refresh_token():
     with pytest.raises(AuthError):
-        decode_refresh_token("invalid-token")
+        auth_service.decode_refresh_token("invalid-token")
 
 
 @pytest.mark.asyncio
@@ -72,11 +64,16 @@ async def test_change_password_logs_success_without_sensitive_fields(
     db = SimpleNamespace(commit=AsyncMock(), refresh=AsyncMock())
     user = SimpleNamespace(
         id=uuid4(),
-        password_hash=hash_password("securepassword123"),
+        password_hash=auth_service.hash_password("securepassword123"),
         token_version=0,
     )
 
-    updated_user = await change_password(db, user, "securepassword123", "newsecurepassword456")
+    updated_user = await auth_service.change_password(
+        db,
+        user,
+        "securepassword123",
+        "newsecurepassword456",
+    )
 
     assert updated_user is user
     logger.info.assert_called_once()
@@ -98,12 +95,17 @@ async def test_change_password_logs_failure_without_sensitive_fields(
     db = SimpleNamespace(commit=AsyncMock(), refresh=AsyncMock())
     user = SimpleNamespace(
         id=uuid4(),
-        password_hash=hash_password("securepassword123"),
+        password_hash=auth_service.hash_password("securepassword123"),
         token_version=0,
     )
 
     with pytest.raises(AuthError):
-        await change_password(db, user, "wrongpassword", "newsecurepassword456")
+        await auth_service.change_password(
+            db,
+            user,
+            "wrongpassword",
+            "newsecurepassword456",
+        )
 
     logger.warning.assert_called_once()
     event_name = logger.warning.call_args.args[0]
@@ -123,7 +125,7 @@ def test_clear_auth_cookies_logs_session_clear_without_sensitive_fields(
     response = Response()
     user_id = str(uuid4())
 
-    clear_auth_cookies(response, reason="logout", user_id=user_id)
+    auth_service.clear_auth_cookies(response, reason="logout", user_id=user_id)
 
     logger.info.assert_called_once()
     event_name = logger.info.call_args.args[0]

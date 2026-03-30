@@ -7,7 +7,6 @@ from httpx import AsyncClient
 
 import app.auth.service as auth_service
 import app.shared.middleware as shared_middleware
-from app.shared.middleware import api_rate_limiter
 
 
 @pytest.mark.asyncio
@@ -511,7 +510,7 @@ async def test_security_headers_present(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_login_rate_limited(client: AsyncClient):
-    await api_rate_limiter.clear()
+    await shared_middleware.api_rate_limiter.clear()
     await client.post(
         "/api/v1/auth/register",
         json={"email": "ratelimit@example.com", "password": "securepassword123"},
@@ -526,4 +525,4 @@ async def test_login_rate_limited(client: AsyncClient):
 
     assert last_response is not None
     assert last_response.status_code == 429
-    await api_rate_limiter.clear()
+    await shared_middleware.api_rate_limiter.clear()
