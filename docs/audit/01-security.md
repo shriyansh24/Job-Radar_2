@@ -1,8 +1,8 @@
 # Security Audit - JobRadar V2
 
-## SEC-01 - CRITICAL: Live API Keys in `.env`
-- **File:** `backend/.env`
-- **Detail:** Verified clean. The repository does not track `.env` secrets in this clone; only `.env.example` is present in Git.
+## SEC-01 - CRITICAL: Live API Keys in local environment files
+- **File:** `.env.example`
+- **Detail:** Verified clean. The repository does not track live secret files in Git; only the placeholder configuration in `.env.example` is committed.
 - **Fix:** Keep secrets out of Git and build contexts, and use placeholders or secret managers for shared environments.
 - **Status:** VERIFIED_CLEAN
 
