@@ -18,9 +18,10 @@
 - No blocking residual is currently tied to the frontend sweep; additional browser captures are incremental QA rather than a missing validation gate.
 - Migration replay now has a dedicated GitHub workflow and a canonical migration-ops runbook, and targeted downgrade coverage now exists for the base `002` lineage, the ATS-identity migration slice, and the focused `005_create_p2_tables` regression suite.
 - Scheduler isolation is now queue-backed through ARQ, and queue telemetry now includes depth, oldest-job age, alert state, truthful `retry_exhausted` final-failure logs, and request/job correlation on queue-triggered operator paths.
-- The latest full backend validation run keeps every `app/` module at or above `50%` coverage and brings overall backend coverage to `71.24%`.
+- The latest coverage-bearing backend validation run keeps every `app/` module at or above `50%` coverage and brings overall backend coverage to `71.24%`; the latest full-suite rerun now sits at `1094 passed, 1 skipped`.
 - Auth lifecycle logging now carries request correlation and normalized reason codes through the main app log stream; dedicated audit routing is deployment-specific follow-through rather than a missing repo-local feature.
 - Target-batch scraping now applies conditional requests, enforces `robots.txt` policy on non-ATS targets, falls back cleanly when pagination times out, and has deterministic parser fixtures for selector-based, JSON-LD, embedded-state, and JS-shell career pages.
+- Google OAuth credentials are now split from general JWT signing through `JR_CREDENTIAL_ENCRYPTION_KEY` and `JR_JWT_SIGNING_KEY`, Gmail sync persists partial-message failure state instead of reporting false health, and targets with scrape history can no longer be destructively deleted from the operator UI.
 
 ## External Or Non-Goal Follow-Through
 - Provider-backed ATS submission flows, destructive admin operations, and seeded-data-heavy PDF fidelity remain environment-specific validation concerns rather than missing repo-local implementation.

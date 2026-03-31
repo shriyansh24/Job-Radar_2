@@ -14,7 +14,7 @@
 
 ## SEC-03 - CRITICAL: Default Secret Key Not Blocked
 - **Files:** `backend/app/config.py`, `backend/app/main.py`
-- **Detail:** Fixed. The backend now aborts startup when `JR_SECRET_KEY` is still the default and `JR_DEBUG` is false.
+- **Detail:** Fixed. The backend now aborts startup when the effective JWT signing key is still the default and `JR_DEBUG` is false, requires `JR_CREDENTIAL_ENCRYPTION_KEY` outside debug mode, and rejects production configs that reuse the same material for both signing and stored-provider-secret encryption.
 - **Evidence:** `backend/tests/infra/test_runtime_config.py`
 - **Status:** FIXED
 

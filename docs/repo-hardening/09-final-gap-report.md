@@ -6,7 +6,7 @@ Record the major unresolved risks and deferred work that remain after the curren
 ## Source-Of-Truth Status
 - Status: `REPO_SCOPE_CLOSED`
 - Scope: external or deployment-level follow-through after repo-local hardening closure
-- Last validation basis: evidence ledger, runtime truth matrix, traceability matrix, and local validation on `2026-03-27`
+- Last validation basis: evidence ledger, runtime truth matrix, traceability matrix, and local validation on `2026-03-31`
 
 ## Repo-Internal Closure State
 
@@ -27,7 +27,7 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `CLAUDE.md`
   - `.env.example`
 - Why it matters:
-  - compose-first runtime, ARQ worker topology, health probes, queue pressure/alert semantics, and request/job correlation on queue-triggered operator paths are now reflected consistently in code and docs.
+  - compose-first runtime, ARQ worker topology, health probes, queue pressure/alert semantics, request/job correlation on queue-triggered operator paths, and the split between JWT signing keys and provider-secret encryption keys are now reflected consistently in code and docs.
   - the integrations model now truthfully covers both API-key and OAuth providers, and Gmail-first sync is part of the repo-local runtime rather than a deferred concept.
 
 ### 3. Test taxonomy and browser coverage are aligned to committed scope
