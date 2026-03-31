@@ -6,7 +6,7 @@ Document where the major runtime flows log today, where failures surface, and wh
 ## Source-Of-Truth Status
 - Status: `DOCUMENTED_WORKING_SET`
 - Scope: backend/runtime observability, failure handling, and blind spots
-- Last validation basis: direct inspection of backend startup, middleware, worker scheduler, auth, frontend API client behavior, and current CI/runtime docs on `2026-03-27`
+- Last validation basis: direct inspection of backend startup, middleware, worker scheduler, auth, Gmail sync/runtime behavior, frontend API client behavior, and current CI/runtime docs on `2026-03-31`
 
 ## Runtime Flow Map
 
@@ -72,12 +72,15 @@ Document where the major runtime flows log today, where failures surface, and wh
   - `gmail_worker_user_failed`
   - `gmail_worker_completed`
   - `gmail_sync_completed`
+  - `gmail_sync_message_failed`
   - `email_duplicate_skipped`
   - integration state fields `last_validated_at`, `last_synced_at`, and `last_error`
 - Failure behavior:
   - missing Google OAuth env configuration fails the connect flow loudly
   - invalid or expired tokens surface as Google OAuth errors and are persisted back onto the integration state
-  - per-user Gmail worker failures are isolated and logged so one bad account does not abort the full scheduled run
+  - true Gmail auth failures recommend token refresh, while transport/5xx/429 failures are classified as retryable API errors instead of being flattened into generic OAuth failures
+  - per-user Gmail worker failures are logged, persisted to integration health, and raise back into ARQ when the failure is retryable so the scheduler does not silently claim a clean ops-lane pass
+  - per-message Gmail failures now increment `messages_failed` and persist `last_error` instead of masking partial-sync degradation as a healthy sync
   - low-confidence Gmail signals degrade to review-required notifications rather than silent pipeline transitions
 - Current gap:
   - there is still no dedicated auth/audit sink or deployment-routed alerting for Gmail failures beyond the app log stream and integration-state metadata

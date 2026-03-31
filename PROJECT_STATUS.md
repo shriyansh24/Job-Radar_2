@@ -1,10 +1,11 @@
 # JobRadar V2 - Project Status
 
-> Last updated: 2026-03-30
+> Last updated: 2026-03-31
 > Canonical live state lives in `docs/current-state/00-index.md`.
 
 ## Snapshot
-- Active workspace branch: `main`
+- Canonical active branch: `main`
+- Current implementation branch for the forward-program follow-through: `codex/forward-program`
 - Compose-first local runtime is the current repo baseline
 - Dedicated scheduler runtime is live alongside the API process
 - Queue-backed ARQ worker services are now live for `scraping`, `analysis`, and `ops`
@@ -22,7 +23,7 @@
 
 ## What Is Currently True
 - The reference-first frontend is the active UI direction on `main`.
-- The main routed app is validated locally through frontend lint, frontend tests, browser/e2e, frontend build, and targeted backend integration coverage.
+- The main routed app is validated locally through frontend lint, frontend tests, frontend build, full backend pytest, and the committed browser/e2e suite against the Docker-backed stack.
 - `docs/current-state/` and `docs/audit/` are the live authority layers.
 - `docs/repo-hardening/` is the active normalization and traceability trail.
 - `feat/p1-core-value` remains a selective recovery source rather than a merge target.

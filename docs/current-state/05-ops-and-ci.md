@@ -58,6 +58,7 @@
 - `cd frontend && npm run e2e`
 - `cd frontend && npm run build`
 - `cd frontend && npm run e2e` now reuses a live backend on `127.0.0.1:8000` when present; otherwise `frontend/playwright.config.ts` invokes `scripts/start_playwright_backend.py`, which runs `alembic upgrade head`, boots the API, and fails early if Postgres or Redis are unreachable or misconfigured.
+- `cd frontend && $env:PLAYWRIGHT_BASE_URL='http://127.0.0.1:3000'; npx playwright test` is the compose-backed browser verification path when the Docker frontend/backend are already running and you want the browser suite to target the actual containerized app instead of a host-local Vite server.
 
 ### Browser QA
 - Start backend and frontend locally.
@@ -118,5 +119,6 @@
 - Queue enqueue/dequeue logs now emit queue depth and retry metadata, retryable jobs raise real ARQ `Retry` with scheduled backoff, and non-retryable or final failures log `retry_exhausted` truthfully.
 - Gmail sync now emits repo-local lifecycle logs through `google_integration_connected`, `gmail_worker_started`, `gmail_worker_skipped`, `gmail_worker_user_failed`, `gmail_worker_completed`, `gmail_sync_completed`, and `email_duplicate_skipped`. Alert routing for those signals is still deployment-owned.
 - Worker isolation is queue-backed and compose-visible; queue telemetry now includes depth, oldest-job age, pressure, alert state, truthful retry exhaustion, worker-lane counters, and request/job correlation on queue-triggered operator paths. Request lifecycle logs also now carry route identity and authenticated user context when available. The remaining follow-through is mostly deployment-level alert routing and dashboards rather than missing repo-local runtime ownership.
-- The latest full local backend validation run on `2026-03-27` completed at `1025 passed, 1 skipped` with backend coverage at `71.24%` and no `app/` module below `50%` coverage.
+- The latest coverage-bearing backend validation run on `2026-03-27` completed at `1025 passed, 1 skipped` with backend coverage at `71.24%` and no `app/` module below `50%` coverage.
+- The latest full local backend rerun on `2026-03-31` completed at `1094 passed, 1 skipped`; the latest Docker-backed Playwright rerun on the same date completed at `14 passed`.
 - Backend dependency auditing now runs through `scripts/run_backend_dependency_audit.py`, which applies the checked-in reviewed exception policy from `backend/pip-audit-policy.json` instead of burying CVE ignores inline in workflow YAML.

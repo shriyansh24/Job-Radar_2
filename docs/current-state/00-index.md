@@ -1,6 +1,6 @@
 # Current State Index - JobRadar V2
 
-> Last updated: 2026-03-30
+> Last updated: 2026-03-31
 
 ## Read Order
 1. `00-index.md`
@@ -15,8 +15,8 @@
 
 ## Current Status At A Glance
 - Reference-first UI migration is implemented in this workspace using the external UI repo as the visual authority and the current repo as the behavior authority.
-- Active branch in this workspace: `main`.
-- Full backend pytest now passes locally with coverage on the current branch.
+- Canonical active branch is `main`; current implementation follow-through may land on feature branches before merge.
+- Full backend pytest now passes locally on the current branch, including the latest Gmail/security/runtime hardening batch.
 - Frontend lint, test, and build pass locally after the latest frontend decomposition and copy cleanup pass.
 - Committed browser coverage now includes auth/shell smoke, shell navigation, responsive shell behavior, route-family outcomes, communications/setup flows, prepare/intelligence/outcomes flows, operations/admin/data flows, profile/settings/auth roundtrips, resume preview/export, and route-family 8-mode theme assertions under `frontend/e2e/`.
 - The current authenticated browser sweep is up to date, and representative screenshots now live in `.claude/ui-captures/`.
@@ -30,14 +30,16 @@
 - `cd backend && uv run pytest --cov=app --cov-report=json:coverage.json tests/`
 - `cd backend && uv run alembic current`
 - `cd backend && uv run alembic upgrade head`
-- Latest local result on `2026-03-27`: `1025 passed, 1 skipped` with backend coverage at `71.24%`
+- Latest coverage-bearing result on `2026-03-27`: `1025 passed, 1 skipped` with backend coverage at `71.24%`
+- Latest full-suite rerun on `2026-03-31`: `1094 passed, 1 skipped`
 
 ### Frontend
 - `cd frontend && npm run lint`
 - `cd frontend && npm run test -- --run`
 - `cd frontend && npm run e2e`
 - `cd frontend && npm run build`
-- Latest local result: lint, full test suite, and production build pass after the current frontend decomposition and copy cleanup pass. The committed Playwright lane now owns backend API startup as well, reusing `127.0.0.1:8000` when an API is already running and otherwise failing fast if the local Postgres/Redis contract is not reachable.
+- Latest local result on `2026-03-31`: lint passes, Vitest passes at `37` files / `76` tests, the production build passes, and the committed Playwright lane passes at `14` browser tests against the Docker-backed frontend/backend runtime.
+- The committed Playwright lane now owns backend API startup when needed, reuses `127.0.0.1:8000` when an API is already running, and can also be pointed at the compose frontend with `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000` for Docker-backed verification.
 
 ### Browser QA
 - Start the local frontend dev server for manual sweeps; the committed Playwright lane now boots or reuses the backend API on its own.
