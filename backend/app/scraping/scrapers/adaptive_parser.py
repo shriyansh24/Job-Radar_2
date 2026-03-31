@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
+from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urljoin
 
@@ -17,6 +18,25 @@ from bs4 import BeautifulSoup, Tag
 logger = structlog.get_logger()
 JsonObject = dict[str, Any]
 JobListing = dict[str, str | None]
+
+ANTI_BOT_MARKERS = (
+    "checking your browser",
+    "cloudflare",
+    "cf-browser-verification",
+    "ray id",
+    "enable javascript and cookies",
+    "just a moment",
+)
+
+
+@dataclass(frozen=True)
+class ParserDiagnosis:
+    """Explain which adaptive path matched a career page fixture."""
+
+    strategy: str
+    jobs_found: int
+    signals: tuple[str, ...] = ()
+    notes: tuple[str, ...] = ()
 
 ADAPTIVE_SELECTORS = [
     ".job-listing",
@@ -66,6 +86,71 @@ class AdaptiveCareerParser:
             return self._dedupe(results)
 
         return self._dedupe(self._extract_heuristic(soup))
+
+    def diagnose(self) -> ParserDiagnosis:
+        """Classify the page shape without changing extraction behavior.
+
+        The diagnostics are used by fixture-based regression tests so we can
+        tell the difference between a real parser miss, a JavaScript shell, and
+        an anti-bot challenge page.
+        """
+        soup = BeautifulSoup(self.html, "html.parser")
+
+        selector_hits = self._extract_by_selectors(soup)
+        if selector_hits:
+            return ParserDiagnosis(
+                strategy="selector",
+                jobs_found=len(selector_hits),
+                signals=("selector_match",),
+            )
+
+        json_ld_hits = self._extract_json_ld(soup)
+        if json_ld_hits:
+            return ParserDiagnosis(
+                strategy="json_ld",
+                jobs_found=len(json_ld_hits),
+                signals=("json_ld_match",),
+            )
+
+        embedded_hits = self._extract_embedded_jobs(soup)
+        if embedded_hits:
+            return ParserDiagnosis(
+                strategy="embedded_state",
+                jobs_found=len(embedded_hits),
+                signals=("embedded_state_match",),
+            )
+
+        heuristic_hits = self._dedupe(self._extract_heuristic(soup))
+        if heuristic_hits:
+            return ParserDiagnosis(
+                strategy="heuristic",
+                jobs_found=len(heuristic_hits),
+                signals=("heuristic_match",),
+            )
+
+        challenge_signals = self._anti_bot_signals(soup)
+        if challenge_signals:
+            return ParserDiagnosis(
+                strategy="anti_bot_challenge",
+                jobs_found=0,
+                signals=challenge_signals,
+            )
+
+        if self._looks_like_js_shell(soup):
+            return ParserDiagnosis(
+                strategy="js_shell_blank",
+                jobs_found=0,
+                signals=("js_shell",),
+                notes=("No structured job payloads or selectable job cards were found.",),
+            )
+
+        return ParserDiagnosis(
+            strategy="no_job_signal",
+            jobs_found=0,
+            notes=(
+                "No adaptive parser path matched and no obvious challenge markers were found.",
+            ),
+        )
 
     def _extract_by_selectors(self, soup: BeautifulSoup) -> list[JobListing]:
         listings: list[JobListing] = []
@@ -442,3 +527,39 @@ class AdaptiveCareerParser:
                 )
 
         return listings
+
+    @staticmethod
+    def _anti_bot_signals(soup: BeautifulSoup) -> tuple[str, ...]:
+        text = soup.get_text(" ", strip=True).lower()
+        signals = [marker for marker in ANTI_BOT_MARKERS if marker in text]
+
+        for script in soup.find_all("script"):
+            payload = (script.string or script.get_text() or "").lower()
+            if "_cf_chl_opt" in payload and "cloudflare" not in signals:
+                signals.append("cloudflare")
+            if "turnstile" in payload and "cf-browser-verification" not in signals:
+                signals.append("cf-browser-verification")
+
+        return tuple(dict.fromkeys(signals))
+
+    @staticmethod
+    def _looks_like_js_shell(soup: BeautifulSoup) -> bool:
+        if soup.find(id="__next") is not None:
+            return True
+        if soup.find(id="__nuxt") is not None:
+            return True
+        if soup.find(attrs={"data-reactroot": True}) is not None:
+            return True
+
+        script_text = " ".join(
+            (script.string or script.get_text() or "") for script in soup.find_all("script")
+        ).lower()
+        js_shell_markers = (
+            "__next_data__",
+            "__nuxt__",
+            "window.__initial_state__",
+            "fetch('/api/",
+            'fetch("/api/',
+            "renderjobs",
+        )
+        return any(marker in script_text for marker in js_shell_markers)

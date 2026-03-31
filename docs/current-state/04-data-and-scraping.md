@@ -28,6 +28,7 @@
 - Scheduler intervals are clamped to positive minimums.
 - Circuit-breaker timing uses a high-resolution monotonic clock path and deterministic regression coverage.
 - Adaptive parser fixture coverage now includes selector-driven pages, JSON-LD-only pages, JS-shell blanks, and embedded hydration/state payloads so parser regressions are evidence-driven.
+- Adaptive parser diagnostics now classify fixture outcomes by extraction path or anti-bot / JS-shell signal, so the remaining source-quality work can be isolated from real parser regressions.
 - The queue-backed runtime no longer schedules a separate legacy career-page worker outside the target-batch pipeline; conditional requests, robots policy, and adaptive parsing now share one authoritative career-page execution path.
 
 ## Operational Notes
@@ -40,3 +41,4 @@
 - No known blocking scraper or database bugs remain after the latest verified pass.
 - Queue-backed scraping/runtime ownership is implemented locally. The remaining follow-through is deployment-level alert routing and dashboards rather than missing repo-local scraper/runtime behavior.
 - Remaining parser work is source-specific render and anti-bot recovery on difficult JS-heavy sites; the base target-batch execution path, adaptive parser baselines, conditional requests, and robots policy are now live and locally validated.
+- The remaining parser work is now backed by a deterministic fixture matrix that distinguishes selector, JSON-LD, embedded-state, JS-shell, and Cloudflare-challenge pages; anything beyond that is source-specific render or provider-side behavior rather than an unclassified parser gap.

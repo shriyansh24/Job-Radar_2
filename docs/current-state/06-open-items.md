@@ -21,11 +21,13 @@
 - The latest coverage-bearing backend validation run keeps every `app/` module at or above `50%` coverage and brings overall backend coverage to `71.24%`; the latest full-suite rerun now sits at `1094 passed, 1 skipped`.
 - Auth lifecycle logging now carries request correlation and normalized reason codes through the main app log stream; dedicated audit routing is deployment-specific follow-through rather than a missing repo-local feature.
 - Target-batch scraping now applies conditional requests, enforces `robots.txt` policy on non-ATS targets, falls back cleanly when pagination times out, and has deterministic parser fixtures for selector-based, JSON-LD, embedded-state, and JS-shell career pages.
+- Target-batch scraping now also has a deterministic parser diagnosis matrix that separates selector, JSON-LD, embedded-state, JS-shell, and Cloudflare challenge outcomes, so remaining quality work can be classified instead of hand-waved.
 - Google OAuth credentials are now split from general JWT signing through `JR_CREDENTIAL_ENCRYPTION_KEY` and `JR_JWT_SIGNING_KEY`, Gmail sync persists partial-message failure state instead of reporting false health, and targets with scrape history can no longer be destructively deleted from the operator UI.
 
 ## External Or Non-Goal Follow-Through
 - Provider-backed ATS submission flows, destructive admin operations, and seeded-data-heavy PDF fidelity remain environment-specific validation concerns rather than missing repo-local implementation.
 - Further parser tuning for difficult JS-heavy career pages remains an ongoing source-specific quality-improvement area, not a missing base execution feature. The remaining work is render/anti-bot recovery on specific sites rather than absent conditional requests, robots policy, target-batch persistence, or baseline adaptive-parser support for structured/hydrated job data.
+- The parser harness now proves which pages are structured vs. JS-shell vs. anti-bot challenge pages; the unresolved work is source-specific render recovery and provider-side blockage on specific sites, not missing fixture coverage.
 - Long-window queue alert routing, dashboards, and dedicated auth audit sinks depend on deployment/log-routing infrastructure outside this repository.
 - Gmail-first integration is now live in repo scope. Remaining Google follow-through is explicitly out of current live scope: Calendar integration, Drive integration, and any `googleworkspace/cli`/`gws`-based workflow.
 

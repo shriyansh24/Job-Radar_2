@@ -87,6 +87,7 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 | `DOCUMENTED` | Frontend test topology | `frontend/src/tests/`, `frontend/e2e/` | The frontend now has role-based unit and browser lanes, but several page and component suites still cover multiple behaviors inside one file |
 | `FIXED` | Backend test topology | `backend/tests/{contracts,infra,integration,migrations,security,unit,workers}` plus `backend/tests/README.md` | The backend layout is now role-based and the flat `unit/` root has been drained; the remaining subsystem buckets are intentional rather than undocumented drift |
 | `FIXED` | Committed browser/e2e lane exists | `frontend/playwright.config.ts`, `frontend/e2e/README.md`, and checked-in specs under `smoke/`, `flows/`, and `theme-matrix/` | Browser QA is no longer manual-only and the route-family matrix now covers the routed frontend families across all 8 theme combinations |
+| `FIXED` | Adaptive parser fixture harness exists | `backend/app/scraping/scrapers/adaptive_parser.py`, `backend/tests/unit/scraping/test_adaptive_parser_diagnostics.py` | Selector, JSON-LD, embedded-state, JS-shell, and Cloudflare-challenge fixtures are now classified deterministically instead of collapsing every miss into the same “zero jobs” bucket |
 | `DOCUMENTED` | Coverage expectations are uneven | backend gate uses `--cov-fail-under=60`; frontend gate uses `40` statement coverage | The repo still needs an explicit rationale for why frontend quality policy is materially lower |
 
 ## Verified Branch And Phase Leads

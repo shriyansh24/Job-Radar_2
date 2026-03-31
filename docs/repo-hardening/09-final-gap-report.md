@@ -57,4 +57,5 @@ Record the major unresolved risks and deferred work that remain after the curren
 - GitHub branch-protection enforcement for the documented required checks is configured outside the repo and is not proven by files alone.
 - Dedicated auth audit routing, alert routing, and long-window queue monitoring depend on deployment and log-routing decisions in addition to the repo-local logging that now exists.
 - Deployment-level queue alerting and dashboarding remain external even though the repo now emits healthier runtime signals and CI validates the queue-backed topology.
+- The scraper/parser side now has a deterministic fixture matrix that separates selector, JSON-LD, embedded-state, JS-shell, and Cloudflare-challenge outcomes; the remaining work is source-specific render recovery and anti-bot handling on difficult sites, not missing fixture coverage.
 - Google Workspace breadth beyond Gmail-first remains intentionally out of repo-local live scope: Calendar, Drive, and any `googleworkspace/cli`/`gws` workflow are follow-on product decisions, not hidden gaps in the current shipped implementation.
