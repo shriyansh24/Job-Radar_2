@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./backend:/app
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     environment:
       JR_DEBUG: "true"
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
@@ -16,7 +16,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./backend:/app
-    command: ["python", "-m", "app.runtime.scheduler"]
+    command: ["uv", "run", "python", "-m", "app.runtime.scheduler"]
     environment:
       JR_DEBUG: "true"
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
@@ -28,7 +28,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./backend:/app
-    command: ["python", "-m", "app.runtime.arq_worker", "scraping"]
+    command: ["uv", "run", "python", "-m", "app.runtime.arq_worker", "scraping"]
     environment:
       JR_DEBUG: "true"
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
@@ -41,7 +41,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./backend:/app
-    command: ["python", "-m", "app.runtime.arq_worker", "analysis"]
+    command: ["uv", "run", "python", "-m", "app.runtime.arq_worker", "analysis"]
     environment:
       JR_DEBUG: "true"
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
@@ -54,7 +54,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./backend:/app
-    command: ["python", "-m", "app.runtime.arq_worker", "ops"]
+    command: ["uv", "run", "python", "-m", "app.runtime.arq_worker", "ops"]
     environment:
       JR_DEBUG: "true"
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'

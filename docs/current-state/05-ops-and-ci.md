@@ -20,13 +20,15 @@
 ### Infrastructure
 - `docker compose up -d` is the canonical full-stack compose runtime
 - Base compose now owns `postgres`, `redis`, `migrate`, `backend`, `scheduler`, `worker-scraping`, `worker-analysis`, `worker-ops`, and `frontend`
+- The base compose file is the local-development baseline, so backend-based services set `JR_DEBUG=true`. That keeps cookie/runtime validation aligned with plain `http://localhost` instead of forcing production-only secure-cookie behavior into the local stack.
 - `docker compose -f docker-compose.yml -f docker-compose.dev.yml up backend scheduler worker-scraping worker-analysis worker-ops frontend` is the bind-mounted dev overlay for Uvicorn, the dedicated scheduler process, queue-specific ARQ workers, and Vite on top of the base compose services
+- Backend-based compose services now invoke `uv run ...` explicitly in both the base file and the dev overlay rather than relying on a hidden image entrypoint contract. This keeps `backend`, `migrate`, `scheduler`, and the worker lanes executable even when compose overrides the image command.
 - The dev overlay now publishes only `5173:5173`, health-checks `http://127.0.0.1:5173/`, and sets `VITE_API_PROXY_TARGET=http://backend:8000` so the frontend container can proxy `/api` traffic to the backend container instead of incorrectly looping back to itself.
 - Redis is provisioned in the compose baseline and is now the active queue backbone for background execution.
 - The live runtime shape is: scheduler enqueues named jobs to ARQ queues `scraping`, `analysis`, and `ops`; queue-specific worker services consume those queues.
 - The scheduler now writes a Redis-backed heartbeat key and owns the `daily_digest`, `saved_search_alerts`, and `gmail_sync` schedules on the ops lane.
 - Career-page targets now run only through the `target_batch_career_page` ARQ job on the scraping lane; the older standalone `career_page_scrape` scheduler path was removed so conditional requests, robots policy, and adaptive parsing all share one authoritative execution path.
-- Compose healthchecks now use runtime healthcheck commands against the live scheduler and worker surfaces rather than ready-marker files.
+- Compose healthchecks now use `uv run python -m app.runtime.healthcheck ...` against the live scheduler and worker surfaces rather than ready-marker files or raw interpreters that bypass the container environment.
 - `backend/app/runtime/worker.py` remains as a manual one-shot/debug runner, not the scheduled execution path.
 - Gmail-first integration is disabled unless the Google OAuth env vars are configured. The repo-local runtime knobs are:
   - `JR_FRONTEND_BASE_URL`
