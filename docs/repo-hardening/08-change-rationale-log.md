@@ -148,3 +148,56 @@ Record why major repo-hardening decisions were made, what alternatives were reje
   - `docs/repo-hardening/01-evidence-ledger.md`
 - Remaining risk:
   - source-specific render recovery is still external to the parser itself; the harness only makes that boundary explicit
+
+### Admin runtime summary for queue pressure and worker visibility
+- Status: `FIXED`
+- Changed because:
+  - deployment follow-through needed a repo-owned way to inspect queue pressure, queue alerts, worker lane counts, and auth audit sink configuration without inventing a separate monitoring platform
+  - the Admin page already existed as the operator surface, so the smallest useful fix was to add runtime visibility there rather than create a new dashboard silo
+- Alternatives considered:
+  - add a new standalone admin dashboard or depend entirely on deployment-side tooling
+- Why rejected:
+  - a new dashboard would duplicate the existing operator surface and push the real signal out of the repo
+  - deployment-only tooling would leave the repo blind in local and CI contexts
+- Files touched:
+  - `backend/app/admin/service.py`
+  - `backend/app/admin/router.py`
+  - `backend/app/runtime/worker_metrics.py`
+  - `frontend/src/api/admin.ts`
+  - `frontend/src/pages/Admin.tsx`
+  - `frontend/src/components/admin/AdminRuntimePanel.tsx`
+  - `backend/tests/unit/admin/test_admin_service.py`
+  - `backend/tests/integration/test_admin_api.py`
+  - `frontend/src/tests/pages/Admin.page.test.tsx`
+  - `docs/current-state/05-ops-and-ci.md`
+  - `docs/current-state/06-open-items.md`
+  - `docs/repo-hardening/07-observability-and-failure-map.md`
+  - `docs/repo-hardening/09-final-gap-report.md`
+- Remaining risk:
+  - queue alert routing and long-window dashboarding are still deployment-owned follow-through, not repo-local monitoring
+
+### Configurable Redis-backed auth audit sink
+- Status: `FIXED`
+- Changed because:
+  - auth lifecycle events needed a dedicated sink that could be enabled without assuming deployment-owned logging existed
+  - auth failures and state transitions should be visible as structured audit events rather than only as API responses
+- Alternatives considered:
+  - write auth events only to logs
+  - make the sink always-on and require Redis in every environment
+- Why rejected:
+  - logs alone are easy to miss and hard to query for audit history
+  - always-on Redis would turn a repo-owned observability path into an environment failure source
+- Files touched:
+  - `backend/app/config.py`
+  - `backend/app/shared/audit_sink.py`
+  - `backend/app/auth/router.py`
+  - `backend/app/auth/service.py`
+  - `backend/tests/unit/shared/test_audit_sink.py`
+  - `backend/tests/unit/auth/test_auth_service.py`
+  - `backend/tests/infra/test_runtime_config.py`
+  - `docs/current-state/05-ops-and-ci.md`
+  - `docs/current-state/06-open-items.md`
+  - `docs/repo-hardening/07-observability-and-failure-map.md`
+  - `docs/repo-hardening/09-final-gap-report.md`
+- Remaining risk:
+  - the sink is intentionally default-off, so deployments still need to opt in and route the stream to durable storage if they want long-term retention

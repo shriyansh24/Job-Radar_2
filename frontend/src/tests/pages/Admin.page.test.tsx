@@ -16,6 +16,25 @@ vi.mock("../../api/admin", () => ({
           application_count: 0,
         },
       }),
+    runtime: () =>
+      Promise.resolve({
+        data: {
+          status: "ok",
+          captured_at: "2026-03-31T12:00:00+00:00",
+          redis_connected: true,
+          queue_summary: {
+            overall_pressure: "nominal",
+            overall_alert: "clear",
+            queues: [],
+          },
+          worker_metrics: [],
+          auth_audit_sink: {
+            enabled: true,
+            stream_key: "jobradar:auth-audit",
+            maxlen: 1000,
+          },
+        },
+      }),
     sourceHealth: () => Promise.resolve({ data: [] }),
     reindex: () => Promise.resolve({ data: {} }),
     exportData: () => Promise.resolve({ data: new Blob(["{}"]) }),
@@ -44,5 +63,6 @@ describe("Admin", () => {
     });
 
     expect(screen.queryByRole("button", { name: /rebuild embeddings/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /runtime signals/i })).toBeInTheDocument();
   });
 });

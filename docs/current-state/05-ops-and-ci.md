@@ -42,6 +42,8 @@
   - Settings > Integrations > `Sync Gmail`
   - the scheduled `gmail_sync` worker job on the `ops` lane
 - The `worker-ops` lane now owns outbound Google OAuth + Gmail API traffic in addition to digest, alert, cleanup, and operator-support jobs.
+- The Admin page now includes a repo-owned runtime summary that surfaces queue depth, queue pressure, queue alerts, worker-lane counters, and the configured auth audit stream so operators can see the same queue state the scheduler and workers are using.
+- The auth audit stream is controlled by `JR_AUTH_AUDIT_STREAM_ENABLED`, `JR_AUTH_AUDIT_STREAM_KEY`, and `JR_AUTH_AUDIT_STREAM_MAXLEN`; when enabled, the sink is best-effort and does not block auth flows if Redis is unavailable.
 
 ## Validation Commands
 
@@ -102,6 +104,7 @@
 - `migration-safety.yml` replays Alembic on clean Postgres and runs the full `backend/tests/migrations/` lane.
 - `migration-safety.yml` now runs the full `backend/tests/migrations/` lane and uploads `alembic history --verbose` output on failure for replay debugging.
 - `codeql.yml` and `dependency-review.yml` remain enabled.
+- Auth lifecycle events now emit to a dedicated Redis-backed audit stream in addition to the structured log stream. The repo-owned piece is the sink emission and the Admin visibility of the configured stream; deployment-level routing for that stream is still external.
 
 ## Branch Protection Assumptions
 - Treat `main` as PR-only.
@@ -119,6 +122,7 @@
 - Queue enqueue/dequeue logs now emit queue depth and retry metadata, retryable jobs raise real ARQ `Retry` with scheduled backoff, and non-retryable or final failures log `retry_exhausted` truthfully.
 - Gmail sync now emits repo-local lifecycle logs through `google_integration_connected`, `gmail_worker_started`, `gmail_worker_skipped`, `gmail_worker_user_failed`, `gmail_worker_completed`, `gmail_sync_completed`, and `email_duplicate_skipped`. Alert routing for those signals is still deployment-owned.
 - Worker isolation is queue-backed and compose-visible; queue telemetry now includes depth, oldest-job age, pressure, alert state, truthful retry exhaustion, worker-lane counters, and request/job correlation on queue-triggered operator paths. Request lifecycle logs also now carry route identity and authenticated user context when available. The remaining follow-through is mostly deployment-level alert routing and dashboards rather than missing repo-local runtime ownership.
+- The Admin runtime summary now exposes queue state and worker metrics directly in the UI, so the remaining queue follow-through is long-window alert routing and deployment dashboards rather than missing repo-local visibility.
 - The latest coverage-bearing backend validation run on `2026-03-27` completed at `1025 passed, 1 skipped` with backend coverage at `71.24%` and no `app/` module below `50%` coverage.
 - The latest full local backend rerun on `2026-03-31` completed at `1094 passed, 1 skipped`; the latest Docker-backed Playwright rerun on the same date completed at `14 passed`.
 - Backend dependency auditing now runs through `scripts/run_backend_dependency_audit.py`, which applies the checked-in reviewed exception policy from `backend/pip-audit-policy.json` instead of burying CVE ignores inline in workflow YAML.

@@ -33,6 +33,7 @@ from app.auth.service import (
 )
 from app.config import settings
 from app.dependencies import get_current_user, get_db
+from app.shared.audit_sink import publish_auth_audit_event
 from app.shared.errors import AuthError
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -54,6 +55,12 @@ async def login(
     tokens = create_tokens(str(user.id), token_version=get_token_version(user))
     set_auth_cookies(response, tokens)
     log_auth_info(
+        "auth_login_succeeded",
+        user_id=str(user.id),
+        token_version=get_token_version(user),
+        auth_source="password",
+    )
+    await publish_auth_audit_event(
         "auth_login_succeeded",
         user_id=str(user.id),
         token_version=get_token_version(user),
@@ -100,11 +107,23 @@ async def refresh(
             reason=normalize_auth_reason(exc),
             auth_source=auth_source,
         )
+        await publish_auth_audit_event(
+            "auth_refresh_failed",
+            user_id=refresh_user_id,
+            reason=normalize_auth_reason(exc),
+            auth_source=auth_source,
+        )
         raise
 
     tokens = create_tokens(str(user.id), token_version=get_token_version(user))
     set_auth_cookies(response, tokens)
     log_auth_info(
+        "auth_refresh_succeeded",
+        user_id=str(user.id),
+        token_version=get_token_version(user),
+        auth_source=auth_source,
+    )
+    await publish_auth_audit_event(
         "auth_refresh_succeeded",
         user_id=str(user.id),
         token_version=get_token_version(user),
@@ -130,6 +149,12 @@ async def logout(
         token_version=get_token_version(current_user),
     )
     clear_auth_cookies(response, reason="logout", user=current_user)
+    await publish_auth_audit_event(
+        "auth_logout_succeeded",
+        user_id=str(current_user.id),
+        token_version=get_token_version(current_user),
+        auth_source="cookie",
+    )
     result = {"status": "ok"}
     return result
 
@@ -160,6 +185,7 @@ async def delete_account(
     await db.commit()
     log_auth_info("auth_account_deleted", user_id=user_id)
     clear_auth_cookies(response, reason="account_deleted", user_id=user_id)
+    await publish_auth_audit_event("auth_account_deleted", user_id=user_id)
 
 
 @router.get("/me", response_model=UserResponse)

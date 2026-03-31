@@ -56,7 +56,7 @@ Document where the major runtime flows log today, where failures surface, and wh
     - `auth_password_change_failed`
     - `auth_session_cleared`
 - Current gap:
-  - auth logs now inherit request IDs from middleware-bound contextvars and carry normalized `reason` codes, but there is still no separate security audit sink beyond the app log stream
+  - auth logs now inherit request IDs from middleware-bound contextvars and carry normalized `reason` codes, and the repo can emit a separate Redis-backed auth audit stream when configured
 
 ### Google integration and Gmail sync
 - Files:
@@ -132,13 +132,14 @@ Document where the major runtime flows log today, where failures surface, and wh
   - retry metadata including retryability, retry remaining, and scheduled backoff
   - truthful `retry_exhausted` logging for non-retryable or final failures
 - Current gap:
-  - scheduler and worker readiness now come from live runtime healthcheck probes instead of sentinel files, but there is still no sustained queue-depth alerting or long-window throughput view
-  - queue lifecycle is now explicit and includes queue depth, queue alert state, worker counters, and retry metadata, but deployment-level dashboards and alert routing still live outside the repo
+  - scheduler and worker readiness now come from live runtime healthcheck probes instead of sentinel files, but there is still no sustained long-window throughput view or deployment-owned alert routing
+  - queue lifecycle is now explicit and includes queue depth, queue alert state, worker counters, retry metadata, and a repo-owned Admin runtime summary, but deployment-level dashboards still live outside the repo
 
 ## Current Blind Spots
 - Real external ATS/browser submission flows still depend on manual validation rather than deterministic in-repo browser tests.
 - Scheduler job execution semantics are now explicit and health-backed, but queue throughput trend monitoring and alert routing are still deployment concerns.
 - Auth logs are now explicit and request-correlated, but they are not separated into a dedicated audit sink.
+- Auth logs are now explicit and request-correlated, and they can also emit to a dedicated Redis-backed audit stream when configured; deployment routing for that stream is still external.
 - Gmail sync emits structured lifecycle logs and integration error state, but long-window alert routing and dashboards remain deployment-owned.
 
 ## Existing Positive Controls
@@ -153,4 +154,4 @@ Document where the major runtime flows log today, where failures surface, and wh
 ## Hardening Direction
 1. Add job-level worker logging only where it improves diagnosis without flooding logs.
 2. Keep scheduler process health separate from API readiness in docs, compose, and CI.
-3. Keep normalized reason-code and request-correlation discipline consistent across future auth paths and queue-dispatched jobs, then add audit-sink discipline before claiming the auth surface is fully observable.
+3. Keep normalized reason-code and request-correlation discipline consistent across future auth paths and queue-dispatched jobs, and extend the auth audit stream routing if deployment needs a separate destination.

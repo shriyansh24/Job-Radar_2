@@ -4,15 +4,25 @@ import json
 import platform
 import sys
 import uuid
+from datetime import UTC, datetime
 from importlib import import_module
+from typing import Any, cast
 
 import structlog
 from sqlalchemy import delete, func, inspect, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import Base
 from app.jobs.models import Job
 from app.pipeline.models import Application, ApplicationStatusHistory
+from app.runtime.queue import (
+    derive_overall_alert,
+    derive_overall_pressure,
+    get_queue_pool,
+    get_queue_snapshots,
+)
+from app.runtime.worker_metrics import COUNTER_FIELDS, worker_metrics_key
 from app.scraping.models import ScrapeAttempt, ScraperRun, ScrapeTarget
 
 logger = structlog.get_logger()
@@ -67,6 +77,86 @@ class AdminService:
             "job_count": job_count,
             "application_count": app_count,
         }
+
+    async def runtime_status(self) -> dict:
+        captured_at = datetime.now(UTC).isoformat()
+        runtime: dict[str, object] = {
+            "status": "ok",
+            "captured_at": captured_at,
+            "redis_connected": False,
+            "queue_summary": {
+                "overall_pressure": "nominal",
+                "overall_alert": "clear",
+                "queues": [],
+            },
+            "worker_metrics": [],
+            "auth_audit_sink": {
+                "enabled": settings.auth_audit_stream_enabled,
+                "stream_key": settings.auth_audit_stream_key,
+                "maxlen": settings.auth_audit_stream_maxlen,
+            },
+        }
+
+        try:
+            queue_pool = await get_queue_pool()
+            await queue_pool.ping()
+            runtime["redis_connected"] = True
+
+            snapshots = await get_queue_snapshots(queue_pool)
+            queue_rows = [
+                {
+                    "queue_name": snapshot.queue_name,
+                    "queue_depth": snapshot.queue_depth,
+                    "queue_pressure": snapshot.queue_pressure,
+                    "oldest_job_age_seconds": snapshot.oldest_job_age_seconds,
+                    "queue_alert": snapshot.queue_alert,
+                }
+                for snapshot in snapshots.values()
+            ]
+            queue_pressures = {
+                snapshot.queue_name: snapshot.queue_pressure for snapshot in snapshots.values()
+            }
+            queue_alerts = {
+                snapshot.queue_name: snapshot.queue_alert for snapshot in snapshots.values()
+            }
+            runtime["queue_summary"] = {
+                "overall_pressure": derive_overall_pressure(queue_pressures),
+                "overall_alert": derive_overall_alert(queue_alerts),
+                "queues": queue_rows,
+            }
+
+            worker_rows: list[dict[str, object]] = []
+            for role in ("scraping", "analysis", "ops"):
+                raw_fields = cast(
+                    dict[object, object],
+                    await cast(Any, queue_pool).hgetall(worker_metrics_key(role)),
+                )
+                if not raw_fields:
+                    continue
+                worker_row: dict[str, object] = {
+                    "role": role,
+                    "available": True,
+                }
+                for field_name in ("queue_name", "queue_pressure", "queue_alert"):
+                    if field_name in raw_fields:
+                        value = raw_fields[field_name]
+                        worker_row[field_name] = (
+                            value.decode() if isinstance(value, bytes) else value
+                        )
+                for field_name in ("queue_depth", "oldest_job_age_seconds", *COUNTER_FIELDS):
+                    if field_name in raw_fields:
+                        value = raw_fields[field_name]
+                        worker_row[field_name] = int(
+                            value.decode() if isinstance(value, bytes) else value
+                        )
+                worker_rows.append(worker_row)
+            runtime["worker_metrics"] = worker_rows
+        except Exception as exc:
+            runtime["status"] = "degraded"
+            runtime["runtime_error"] = str(exc)
+            logger.warning("admin_runtime_status_degraded", error=str(exc))
+
+        return runtime
 
     async def reindex(self, user_id: uuid.UUID) -> dict:
         count = (

@@ -79,6 +79,11 @@ class Settings(BaseSettings):
     )
     google_gmail_sync_max_messages: int = 25
 
+    # Auth audit sink
+    auth_audit_stream_enabled: bool = False
+    auth_audit_stream_key: str = "jobradar:auth-audit"
+    auth_audit_stream_maxlen: int = 1000
+
     # Intel GPU acceleration (optional - requires openvino or ipex)
     intel_gpu_enabled: bool = False
     openvino_cache_dir: str = ""
@@ -173,6 +178,11 @@ def validate_runtime_settings(settings: Settings) -> None:
         raise RuntimeError("JR_LOGIN_RATE_LIMIT_PER_MINUTE must be greater than zero.")
     if settings.google_gmail_sync_max_messages <= 0:
         raise RuntimeError("JR_GOOGLE_GMAIL_SYNC_MAX_MESSAGES must be greater than zero.")
+    if settings.auth_audit_stream_enabled:
+        if not settings.auth_audit_stream_key.strip():
+            raise RuntimeError("JR_AUTH_AUDIT_STREAM_KEY must not be empty when enabled.")
+        if settings.auth_audit_stream_maxlen <= 0:
+            raise RuntimeError("JR_AUTH_AUDIT_STREAM_MAXLEN must be greater than zero.")
 
 
 settings = Settings()
