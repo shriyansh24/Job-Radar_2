@@ -25,6 +25,7 @@
 - Redis is provisioned in the compose baseline and is now the active queue backbone for background execution.
 - The live runtime shape is: scheduler enqueues named jobs to ARQ queues `scraping`, `analysis`, and `ops`; queue-specific worker services consume those queues.
 - The scheduler now writes a Redis-backed heartbeat key and owns the `daily_digest`, `saved_search_alerts`, and `gmail_sync` schedules on the ops lane.
+- Career-page targets now run only through the `target_batch_career_page` ARQ job on the scraping lane; the older standalone `career_page_scrape` scheduler path was removed so conditional requests, robots policy, and adaptive parsing all share one authoritative execution path.
 - Compose healthchecks now use runtime healthcheck commands against the live scheduler and worker surfaces rather than ready-marker files.
 - `backend/app/runtime/worker.py` remains as a manual one-shot/debug runner, not the scheduled execution path.
 - Gmail-first integration is disabled unless the Google OAuth env vars are configured. The repo-local runtime knobs are:

@@ -35,6 +35,8 @@ def test_create_scheduler_registers_daily_digest() -> None:
 
     assert "daily_digest" in job_ids
     assert "gmail_sync" in job_ids
+    assert "target_batch_career_page" in job_ids
+    assert "career_page_scrape" not in job_ids
 
 
 def test_log_job_event_includes_dispatch_result(monkeypatch: pytest.MonkeyPatch) -> None:

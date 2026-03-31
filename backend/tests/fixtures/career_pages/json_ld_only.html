@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acme Corp Careers</title>
+</head>
+<body>
+  <main>
+    <div id="career-root"></div>
+  </main>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "JobPosting",
+        "title": "Senior Software Engineer",
+        "description": "Build resilient distributed systems.",
+        "jobLocation": {
+          "@type": "Place",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "San Francisco",
+            "addressRegion": "CA",
+            "addressCountry": "US"
+          }
+        },
+        "identifier": {
+          "@type": "PropertyValue",
+          "value": "SSE-2026-001"
+        }
+      },
+      {
+        "@type": "JobPosting",
+        "title": "Product Designer",
+        "description": "Design our hiring and candidate experience surfaces.",
+        "jobLocationType": "TELECOMMUTE",
+        "identifier": {
+          "@type": "PropertyValue",
+          "value": "PD-2026-002"
+        }
+      }
+    ]
+  }
+  </script>
+</body>
+</html>

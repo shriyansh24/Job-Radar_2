@@ -25,7 +25,6 @@ from app.workers.phase7a_worker import (
     run_source_health_checks as run_phase7a_source_health,
 )
 from app.workers.scraping_worker import (
-    run_career_page_scrape,
     run_scheduled_scrape,
     run_target_batch_job,
 )
@@ -48,10 +47,21 @@ class RegisteredJob:
     max_tries: int
 
 
-async def increment_worker_counter(*args: object, **kwargs: object) -> int | None:
+async def increment_worker_counter(
+    redis: Any,
+    *,
+    role: str,
+    counter_name: str,
+    health_interval_seconds: int,
+) -> int | None:
     from app.runtime.worker_metrics import increment_worker_counter as _increment_worker_counter
 
-    return await _increment_worker_counter(*args, **kwargs)
+    return await _increment_worker_counter(
+        redis,
+        role=role,
+        counter_name=counter_name,
+        health_interval_seconds=health_interval_seconds,
+    )
 
 
 def _job_log_fields(ctx: dict[str, Any], *, queue_name: str) -> dict[str, Any]:
@@ -161,15 +171,6 @@ async def _run_scheduled_scrape(ctx: dict[str, Any]) -> None:
         queue_name=SCRAPING_QUEUE,
         ctx=ctx,
         callback=lambda: run_scheduled_scrape(ctx=ctx),
-    )
-
-
-async def _run_career_page_scrape(ctx: dict[str, Any]) -> None:
-    await _run_with_lifecycle(
-        job_name="career_page_scrape",
-        queue_name=SCRAPING_QUEUE,
-        ctx=ctx,
-        callback=lambda: run_career_page_scrape(ctx=ctx),
     )
 
 
@@ -315,13 +316,6 @@ REGISTERED_JOBS: dict[str, RegisteredJob] = {
         name="scheduled_scrape",
         queue_name=SCRAPING_QUEUE,
         runner=_run_scheduled_scrape,
-        timeout_seconds=1800,
-        max_tries=2,
-    ),
-    "career_page_scrape": RegisteredJob(
-        name="career_page_scrape",
-        queue_name=SCRAPING_QUEUE,
-        runner=_run_career_page_scrape,
         timeout_seconds=1800,
         max_tries=2,
     ),

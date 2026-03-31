@@ -96,15 +96,6 @@ def create_scheduler() -> AsyncIOScheduler:
         replace_existing=True,
     )
 
-    # Career pages: every 12 hours
-    scheduler.add_job(
-        enqueue_registered_job,
-        IntervalTrigger(hours=12),
-        id="career_page_scrape",
-        kwargs={"job_name": "career_page_scrape"},
-        replace_existing=True,
-    )
-
     # Enrichment: every 30 minutes
     scheduler.add_job(
         enqueue_registered_job,

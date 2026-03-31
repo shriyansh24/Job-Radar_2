@@ -15,7 +15,9 @@ def test_registered_job_ids_are_sorted_and_include_core_jobs() -> None:
     assert "auto_apply_batch" in job_ids
     assert "daily_digest" in job_ids
     assert "gmail_sync" in job_ids
+    assert "target_batch_career_page" in job_ids
     assert "target_batch_watchlist" in job_ids
+    assert "career_page_scrape" not in job_ids
 
 
 @pytest.mark.asyncio
