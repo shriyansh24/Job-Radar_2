@@ -1,13 +1,15 @@
-# JobRadar V2: Completion Program Gap Analysis & Implementation Roadmap
+# JobRadar V2: Completion Program Gap Analysis & Strategic Future Bets
 
 ## Context
-Shriyansh has a comprehensive "JobRadar V2 Repository Completion Program" document (10 sections, ~8,000 words) that describes the full vision for a local-first job search OS. Before implementing it, we need to understand: (1) what's already built, (2) what's still open/stale/unresolved, (3) what overlaps with existing work, and (4) what the doc missed that competitors have.
+Shriyansh has a comprehensive "JobRadar V2 Repository Completion Program" document (10 sections, ~8,000 words) that describes the full vision for a local-first job search OS. This file is a comparative analysis of that document versus the repository as it exists now: (1) what was already built, (2) what remained outside live scope at the time of analysis, (3) what would have duplicated existing work, and (4) what strategic future opportunities the original document did not cover.
 
-This plan is the result of an exhaustive audit of every directory in the repo, all docs, the audit ledger, the research index, PROJECT_STATUS.md, and competitive web research across 30+ job search platforms.
+It is not the active live backlog. The current live operational truth and remaining repo-local items are tracked in `docs/current-state/06-open-items.md` and `docs/audit/00-index.md`.
+
+This analysis is the result of an exhaustive audit of every directory in the repo, all docs, the audit ledger, the research index, PROJECT_STATUS.md, and competitive web research across 30+ job search platforms.
 
 ---
 
-## PART 1: What Has NOT Been Implemented (Doc vs. Repo Delta)
+## PART 1: Historical Doc vs. Repo Delta (Not Live Backlog)
 
 ### Section 1 — Scraper Engine: Rust Sidecar
 
@@ -21,7 +23,7 @@ This plan is the result of an exhaustive audit of every directory in the repo, a
 | robots.txt parsing + Protego | **DONE** | Non-ATS target batches now evaluate `robots.txt` with Protego and block disallowed fetches before execution |
 | User-Agent rotation pool | **PARTIAL** | camoufox/nodriver handle UA rotation at browser level, not HTTP level |
 | Cross-compile CI for 3 platforms | **NOT STARTED** | No Rust CI at all |
-| Site discovery via Google dorking | **NOT IMPLEMENTED** | Targets are manually added via admin API |
+| Site discovery via Google dorking | **NOT IMPLEMENTED** | Operator-managed target creation is live on `/targets`; discovery automation remains future scope rather than a missing live feature |
 | `scrape_targets` health monitoring dashboard | **PARTIAL** | `source_health` module exists with monitoring, but no dedicated scrape-target failure alerting UI |
 | 1,400 sites / 30-min staggered batch scheduling | **NOT AT SCALE** | Scheduler + ARQ workers exist, but not tested at 1,400-site scale with staggered batches |
 
@@ -106,7 +108,7 @@ This plan is the result of an exhaustive audit of every directory in the repo, a
 
 ---
 
-## PART 2: Open / Stale / Unresolved Items
+## PART 2: Historical / Strategic Items Outside Live Repo Scope
 
 ### Audit Ledger: 4 STALE Items
 These are items from the original 44-issue audit that no longer match the live code path:
@@ -116,7 +118,7 @@ These are items from the original 44-issue audit that no longer match the live c
 | SC-03 | CRIT | Circuit breaker stuck in half-open | Code path changed; CB timing now uses monotonic clock with regression tests (FIX-06) |
 | SC-05 | HIGH | EventBus.publish() — one dead subscriber blocks all | EventBus pattern may have been refactored or removed |
 | SC-07 | HIGH | Simhash threshold too aggressive — false positive dedup | Dedup now uses ATS composite key as primary; SimHash is secondary |
-| SC-14 | LOW | Apify scraper: 65 lines, never used | Dead code — should be removed or explicitly archived |
+| SC-14 | LOW | Apify scraper: 65 lines, never used | Historical stale-item reference; not an active live backlog item |
 
 ### Deferred Work Items (from audit)
 | ID | Feature | Status |
@@ -173,6 +175,8 @@ Based on web research across 30+ job search platforms (Teal, Huntr, Simplify, Jo
 
 ### High-Leverage Missing Features
 
+These are product-expansion opportunities, not missing committed live functionality.
+
 | Feature | Why It Matters | Effort |
 |---------|---------------|--------|
 | **Ghost Job Detection Score** | Platform already has `first_seen`/`last_seen`/disappearance data. Add a scoring surface: posting age, repost count, company hiring signals. Jobright monetizes this. No consumer tool has it natively. | Low |
@@ -194,12 +198,14 @@ The doc correctly identifies: Rust sidecar (performance), Google Workspace (prod
 
 ---
 
-## PART 5: Prioritized Implementation Recommendation
+## PART 5: Optional Future Opportunities (Not Active Live Backlog)
+
+The live repo-local backlog is intentionally narrow in `docs/current-state/06-open-items.md`. The tiers below are preserved as optional follow-on work if scope is reopened; they are not current committed implementation obligations.
 
 ### Tier 0 — Already Done (Skip)
 - ATS detection, scraping infrastructure, ARQ scheduler, auto-apply adapters, resume pipeline, interview prep, salary, networking, email, analytics, pipeline, CSRF, structured logging, security headers, test taxonomy, docs system
 
-### Tier 1 — Low-Effort High-Value (Do First)
+### Tier 1 — Low-Effort High-Value Future Bets
 1. Ghost job detection score (scoring surface on existing data)
 2. Resume version → conversion analytics (wire pipeline outcomes to resume versions)
 3. ATS keyword match score per application (expose numeric score before submit)
@@ -208,7 +214,7 @@ The doc correctly identifies: Rust sidecar (performance), Google Workspace (prod
 6. Visa sponsorship filter (USCIS public data cross-reference)
 7. Career accomplishment journal (structured input capture)
 
-### Tier 2 — Medium-Effort from Doc (Do Next)
+### Tier 2 — Medium-Effort Follow-On Work If Scope Reopens
 1. YAML prompt registry + versioning migration
 2. Broader Google Workspace follow-through (Calendar, Drive, or `googleworkspace/cli` adoption beyond the live Gmail-first scope)
 3. LLM cost/token tracking and logging
@@ -216,9 +222,8 @@ The doc correctly identifies: Rust sidecar (performance), Google Workspace (prod
 5. Unseen question review UI flow (present LLM answers for approval before submit)
 6. Parser tuning for difficult JS-heavy career pages and source-specific anti-bot recovery
 7. Alert delivery depth beyond in-app saved-search notifications
-8. Remove dead code (Apify scraper SC-14)
 
-### Tier 3 — High-Effort from Doc (Strategic)
+### Tier 3 — High-Effort Strategic Follow-On Work
 1. Rust sidecar binary for high-throughput scraping
 2. promptfoo evaluation harness with golden test sets
 3. Site discovery automation (Google dorking, BuiltWith)
@@ -227,7 +232,7 @@ The doc correctly identifies: Rust sidecar (performance), Google Workspace (prod
 6. DOCX resume export format
 7. iCIMS adapter
 
-### Tier 4 — High-Effort Competitive (Optional Differentiation)
+### Tier 4 — High-Effort Competitive Differentiation
 1. LinkedIn profile optimizer
 2. Referral finder ("who do I know here")
 3. Company hiring signal feed (WARN Act, SEC, Crunchbase)
