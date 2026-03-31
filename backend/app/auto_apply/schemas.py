@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AutoApplyProfileCreate(BaseModel):
@@ -50,12 +50,12 @@ class RuleCreate(BaseModel):
     name: str | None = None
     priority: int = 0
     min_match_score: float | None = None
-    required_keywords: list[str] = []
-    excluded_keywords: list[str] = []
-    required_companies: list[str] = []
-    excluded_companies: list[str] = []
-    experience_levels: list[str] = []
-    remote_types: list[str] = []
+    required_keywords: list[str] = Field(default_factory=list)
+    excluded_keywords: list[str] = Field(default_factory=list)
+    required_companies: list[str] = Field(default_factory=list)
+    excluded_companies: list[str] = Field(default_factory=list)
+    experience_levels: list[str] = Field(default_factory=list)
+    remote_types: list[str] = Field(default_factory=list)
 
 
 class RuleUpdate(BaseModel):
@@ -76,12 +76,12 @@ class RuleResponse(BaseModel):
     is_active: bool
     priority: int
     min_match_score: float | None = None
-    required_keywords: list[str] = []
-    excluded_keywords: list[str] = []
-    required_companies: list[str] = []
-    excluded_companies: list[str] = []
-    experience_levels: list[str] = []
-    remote_types: list[str] = []
+    required_keywords: list[str] = Field(default_factory=list)
+    excluded_keywords: list[str] = Field(default_factory=list)
+    required_companies: list[str] = Field(default_factory=list)
+    excluded_companies: list[str] = Field(default_factory=list)
+    experience_levels: list[str] = Field(default_factory=list)
+    remote_types: list[str] = Field(default_factory=list)
     created_at: datetime
 
 
@@ -93,9 +93,11 @@ class RunResult(BaseModel):
     rule_id: uuid.UUID | None = None
     status: str
     ats_provider: str | None = None
-    fields_filled: dict = {}
-    fields_missed: list[str] = []
-    screenshots: list[str] = []
+    fields_filled: dict[str, str] = Field(default_factory=dict)
+    fields_missed: list[str] = Field(default_factory=list)
+    review_required: bool = False
+    review_items: list[str] = Field(default_factory=list)
+    screenshots: list[str] = Field(default_factory=list)
     error_message: str | None = None
     started_at: datetime | None = None
     completed_at: datetime | None = None

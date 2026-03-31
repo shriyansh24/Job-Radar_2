@@ -4,19 +4,26 @@ import Badge from "../ui/Badge";
 import { statusVariant } from "./autoApplyUtils";
 
 export function RunRow({ run }: { run: AutoApplyRun }) {
+  const jobLabel = run.job_id ? `${run.job_id.slice(0, 8)}...` : "Unlinked job";
+
   return (
     <div className="border-t-2 border-[var(--color-text-primary)] px-4 py-4 first:border-t-0 sm:px-5">
       <div className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(100px,1fr))]">
         <div className="min-w-0">
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">Job</div>
-          <div className="mt-1 truncate text-sm font-semibold text-text-primary">{run.job_id.slice(0, 8)}...</div>
+          <div className="mt-1 truncate text-sm font-semibold text-text-primary">{jobLabel}</div>
         </div>
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">Status</div>
-          <div className="mt-1">
+          <div className="mt-1 flex flex-wrap gap-2">
             <Badge variant={statusVariant(run.status)} size="sm">
               {run.status}
             </Badge>
+            {run.review_required ? (
+              <Badge variant="warning" size="sm">
+                review required
+              </Badge>
+            ) : null}
           </div>
         </div>
         <div>
@@ -45,6 +52,19 @@ export function RunRow({ run }: { run: AutoApplyRun }) {
           </div>
         </div>
       </div>
+      {run.review_items.length ? (
+        <div className="mt-3 rounded-none border-2 border-border bg-bg-tertiary p-3">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">Review items</div>
+          <ul className="mt-2 space-y-1 text-sm text-text-secondary">
+            {run.review_items.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {run.error_message ? (
+        <p className="mt-3 text-sm text-[var(--color-accent-danger)]">{run.error_message}</p>
+      ) : null}
     </div>
   );
 }

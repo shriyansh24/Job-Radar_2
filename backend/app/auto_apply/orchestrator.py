@@ -16,6 +16,7 @@ from app.auto_apply.engine import RuleEngine
 from app.auto_apply.field_mapper import FieldMapper
 from app.auto_apply.form_extractor import FormExtractor
 from app.auto_apply.greenhouse_adapter import GreenhouseBrowserAdapter
+from app.auto_apply.lever_adapter import ApplicationResult as LeverApplicationResult
 from app.auto_apply.lever_adapter import LeverAPIAdapter
 from app.auto_apply.models import AutoApplyProfile, AutoApplyRule, AutoApplyRun
 from app.auto_apply.safety import SafetyLayer
@@ -65,6 +66,13 @@ class AutoApplyOrchestrator:
         )
         self.db.add(run)
         await self.db.flush()
+
+        if profile.user_id is None:
+            run.status = "failed"
+            run.error_message = "Auto-apply profile is missing a user_id"
+            run.completed_at = datetime.now(UTC)
+            await self.db.commit()
+            return run
 
         apply_url = job.source_url
         if not apply_url:
@@ -156,7 +164,7 @@ class AutoApplyOrchestrator:
         lever_target: tuple[str, str],
         profile: AutoApplyProfile,
         resume_path: str | None,
-    ):
+    ) -> LeverApplicationResult:
         company_slug, posting_id = lever_target
         adapter = LeverAPIAdapter()
         return await adapter.apply(
@@ -200,11 +208,11 @@ class AutoApplyOrchestrator:
                     await page.wait_for_load_state("networkidle")
 
                 if run.ats_provider == "greenhouse":
-                    adapter = GreenhouseBrowserAdapter(
+                    greenhouse_adapter = GreenhouseBrowserAdapter(
                         form_extractor=FormExtractor(),
                         field_mapper=FieldMapper(self.db, ats_provider="greenhouse"),
                     )
-                    result = await adapter.apply(
+                    greenhouse_result = await greenhouse_adapter.apply(
                         page,
                         self._build_profile_payload(profile),
                         resume_path=resume_path,
@@ -213,29 +221,41 @@ class AutoApplyOrchestrator:
                     return await self._finish_run_from_adapter_result(
                         run,
                         job,
-                        result,
+                        greenhouse_result,
                         submitted=False,
                     )
 
                 if run.ats_provider == "workday":
-                    adapter = WorkdayBrowserAdapter(page, profile)
-                    result = await adapter.apply(resume_path=resume_path)
-                    run.fields_filled = result.fields_filled
-                    run.fields_missed = result.fields_missed
+                    workday_adapter = WorkdayBrowserAdapter(page, profile)
+                    workday_result = await workday_adapter.apply(resume_path=resume_path)
+                    run.fields_filled = workday_result.fields_filled
+                    run.fields_missed = workday_result.fields_missed
+                    run.review_items = self._merge_review_items(
+                        workday_result.review_items,
+                        run.fields_missed,
+                        workday_result.needs_confirmation,
+                    )
                     run.screenshots = self._persist_screenshots(
                         run.id,
-                        screenshots=result.screenshots,
+                        screenshots=workday_result.screenshots,
                     )
-                    run.status = self.REVIEW_COMPLETE_STATUS if result.success else "failed"
-                    run.error_message = result.error
+                    run.status = (
+                        self.REVIEW_COMPLETE_STATUS if workday_result.success else "failed"
+                    )
+                    run.error_message = workday_result.error
                     run.completed_at = datetime.now(UTC)
                     await self.db.commit()
                     return run
 
                 filler = GenericATSFiller(page, profile, self.llm)
-                result = await filler.fill_form()
-                run.fields_filled = result["filled"]
-                run.fields_missed = result["missed"]
+                filler_result = await filler.fill_form()
+                run.fields_filled = filler_result["filled"]
+                run.fields_missed = filler_result["missed"]
+                run.review_items = self._merge_review_items(
+                    filler_result.get("review_items", []),
+                    run.fields_missed,
+                    True,
+                )
                 screenshot = await page.screenshot(full_page=True)
                 run.screenshots = self._persist_screenshots(run.id, screenshots=[screenshot])
                 run.status = self.REVIEW_COMPLETE_STATUS
@@ -260,6 +280,11 @@ class AutoApplyOrchestrator:
     ) -> AutoApplyRun:
         run.fields_filled = getattr(result, "fields_filled", {}) or {}
         run.fields_missed = getattr(result, "fields_missed", []) or []
+        run.review_items = self._merge_review_items(
+            getattr(result, "review_items", []),
+            run.fields_missed,
+            getattr(result, "needs_confirmation", False),
+        )
         run.error_message = getattr(result, "error", None)
 
         screenshots: list[bytes] = []
@@ -281,6 +306,28 @@ class AutoApplyOrchestrator:
 
         await self.db.commit()
         return run
+
+    @staticmethod
+    def _merge_review_items(
+        review_items: list[str] | None,
+        fields_missed: list[str] | None,
+        needs_confirmation: bool,
+    ) -> list[str]:
+        merged: list[str] = []
+
+        if needs_confirmation:
+            merged.append("Manual confirmation required before final submission.")
+
+        for item in review_items or []:
+            if item not in merged:
+                merged.append(item)
+
+        for field in fields_missed or []:
+            message = f"Provide value for '{field}'"
+            if message not in merged:
+                merged.append(message)
+
+        return merged
 
     async def _record_application(
         self,

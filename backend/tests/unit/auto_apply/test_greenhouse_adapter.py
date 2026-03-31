@@ -159,6 +159,40 @@ class TestGreenhouseApply:
         )
         assert result.success is True
 
+    @pytest.mark.asyncio
+    async def test_unclassified_custom_question_is_flagged_for_review(self) -> None:
+        extractor = AsyncMock()
+        extractor.extract_fields = AsyncMock(
+            return_value=[
+                FormField(
+                    label="Do you now or will you in the future require sponsorship?",
+                    field_type="text",
+                    required=True,
+                    aria_role="textbox",
+                    locator_desc="#custom_q2",
+                )
+            ]
+        )
+        classifier = AsyncMock()
+        classifier.classify = AsyncMock(return_value=None)
+
+        adapter = GreenhouseBrowserAdapter(
+            form_extractor=extractor,
+            field_mapper=classifier,
+            human_typing=False,
+        )
+
+        result = await adapter.apply(
+            _make_mock_page(extra_selectors={"#custom_q2": True}),
+            {"first_name": "Jane", "email": "jane@example.com"},
+        )
+
+        assert (
+            "Review custom question "
+            "'Do you now or will you in the future require sponsorship?'"
+            in result.review_items
+        )
+
 
 class TestHumanTyping:
     @pytest.mark.asyncio

@@ -74,6 +74,7 @@ class GreenhouseBrowserAdapter:
     ) -> ApplicationResult:
         filled: dict[str, str] = {}
         missed: list[str] = []
+        review_items: list[str] = []
 
         for selector, profile_key in self.FIELD_MAP.items():
             value = self._lookup_profile_value(profile, profile_key)
@@ -104,9 +105,14 @@ class GreenhouseBrowserAdapter:
                 missed.append("cover_letter")
 
         if self.form_extractor and self.field_mapper:
-            custom_filled, custom_missed = await self._handle_custom_questions(page, profile)
+            (
+                custom_filled,
+                custom_missed,
+                custom_review_items,
+            ) = await self._handle_custom_questions(page, profile)
             filled.update(custom_filled)
             missed.extend(custom_missed)
+            review_items.extend(custom_review_items)
 
         screenshot = await page.screenshot(full_page=True)
         logger.info(
@@ -123,6 +129,7 @@ class GreenhouseBrowserAdapter:
             needs_confirmation=True,
             fields_filled=filled,
             fields_missed=missed,
+            review_items=self._merge_review_items(review_items, missed),
         )
 
     async def _upload_resume(self, page: Page, resume_path: str) -> bool:
@@ -147,9 +154,10 @@ class GreenhouseBrowserAdapter:
 
     async def _handle_custom_questions(
         self, page: Page, profile: dict[str, Any]
-    ) -> tuple[dict[str, str], list[str]]:
+    ) -> tuple[dict[str, str], list[str], list[str]]:
         filled: dict[str, str] = {}
         missed: list[str] = []
+        review_items: list[str] = []
 
         assert self.form_extractor is not None  # noqa: S101
         assert self.field_mapper is not None  # noqa: S101
@@ -158,7 +166,7 @@ class GreenhouseBrowserAdapter:
             fields = await self.form_extractor.extract_fields(page)
         except Exception as exc:
             logger.warning("auto_apply_greenhouse_custom_field_extraction_failed", error=str(exc))
-            return filled, missed
+            return filled, missed, review_items
 
         standard_selectors = set(self.FIELD_MAP) | set(self.RESUME_SELECTORS) | set(
             self.COVER_LETTER_SELECTORS
@@ -176,22 +184,26 @@ class GreenhouseBrowserAdapter:
                     field_label=field.label,
                     error=str(exc),
                 )
+                review_items.append(f"Review custom question '{field.label}'")
                 continue
 
             if not semantic_key:
+                review_items.append(f"Review custom question '{field.label}'")
                 continue
 
             value = self._lookup_profile_value(profile, semantic_key)
             if not value:
                 missed.append(field.label)
+                review_items.append(f"Provide value for '{field.label}'")
                 continue
 
             if await self._fill_dynamic_field(page, field, value):
                 filled[field.label] = value
             else:
                 missed.append(field.label)
+                review_items.append(f"Provide value for '{field.label}'")
 
-        return filled, missed
+        return filled, missed, review_items
 
     async def _fill_dynamic_field(self, page: Page, field: FormField, value: str) -> bool:
         locator = page.locator(field.locator_desc)
@@ -238,3 +250,11 @@ class GreenhouseBrowserAdapter:
         for char in text:
             delay = random.randint(self.min_type_delay, self.max_type_delay)
             await locator.type(char, delay=delay)
+
+    @staticmethod
+    def _merge_review_items(items: list[str], missed: list[str]) -> list[str]:
+        merged: list[str] = []
+        for item in [*items, *[f"Provide value for '{field}'" for field in missed]]:
+            if item not in merged:
+                merged.append(item)
+        return merged

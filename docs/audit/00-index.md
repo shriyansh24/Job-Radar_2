@@ -94,7 +94,7 @@
 
 | ID | Feature | Phase | Segment |
 |----|---------|-------|---------|
-| DEF-01 | Resume PDF generation + templates | Phase D | backend |
+| DEF-01 | Resume PDF generation + templates | DONE - resume preview, template coverage, and PDF export are live; remaining template breadth is normal product iteration, not deferred backlog | backend |
 | DEF-03 | Targets add/edit/delete career page UI | DONE - operator CRUD is live on `/targets` with page/detail validation | frontend |
 | DEF-04 | Saved Search Alerts UI + scheduler trigger | DONE - saved searches now expose alert status, manual checks, worker notifications, and scheduled alert runs | frontend |
 | DEF-06 | Conditional requests (ETag/If-Modified-Since) | DONE - fetcher tiers now send `If-None-Match` / `If-Modified-Since` from `scrape_targets` cache metadata and refresh cache headers after successful fetches | scraper |

@@ -118,7 +118,7 @@ async def list_runs(
 ) -> list[RunResult]:
     svc = AutoApplyService(db)
     items = await svc.list_runs(user.id)
-    return [RunResult.model_validate(r) for r in items]
+    return [svc.serialize_run(r) for r in items]
 
 
 @router.post("/run")

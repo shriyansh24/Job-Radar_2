@@ -4,9 +4,13 @@ export const CHIP =
 export function statusVariant(status: string): "success" | "danger" | "warning" | "info" | "default" {
   switch (status) {
     case "completed":
+    case "success":
+    case "submitted":
       return "success";
+    case "filled":
     case "failed":
-      return "danger";
+      return status === "failed" ? "danger" : "warning";
+    case "queued":
     case "pending":
       return "warning";
     case "running":

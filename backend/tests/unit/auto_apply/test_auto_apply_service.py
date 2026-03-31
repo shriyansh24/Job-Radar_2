@@ -80,6 +80,8 @@ async def test_apply_single_executes_orchestrator(db_session, monkeypatch):
     assert result["status"] == "filled"
     assert result["job_id"] == job.id
     assert result["run_id"] == str(fake_run.id)
+    assert result["review_required"] is True
+    assert "Manual confirmation required before final submission." in result["review_items"]
 
 
 @pytest.mark.asyncio
@@ -123,3 +125,28 @@ async def test_get_stats_counts_filled_and_running(db_session):
     assert stats["successful"] == 2
     assert stats["pending"] == 1
     assert stats["failed"] == 1
+
+
+@pytest.mark.asyncio
+async def test_serialize_run_exposes_review_queue_details(db_session):
+    user = await _make_user(db_session, "review@example.com")
+    run = AutoApplyRun(
+        user_id=user.id,
+        job_id="job-review-1",
+        status="filled",
+        fields_filled={"email": "jane@example.com"},
+        fields_missed=["LinkedIn Profile"],
+        review_items=["Review custom question 'Work authorization'"],
+    )
+    db_session.add(run)
+    await db_session.commit()
+
+    service = AutoApplyService(db_session)
+    payload = service.serialize_run(run)
+
+    assert payload.review_required is True
+    assert payload.review_items == [
+        "Manual confirmation required before final submission.",
+        "Review custom question 'Work authorization'",
+        "Provide value for 'LinkedIn Profile'",
+    ]

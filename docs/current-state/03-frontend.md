@@ -27,7 +27,7 @@
 - `Login` is now a lean auth surface instead of a marketing-style two-column screen.
 - `Settings` is a cleaner operator page with smaller extracted sections, fewer dead imports, and the live settings/data flows intact.
 - `Dashboard`, `Jobs`, `Pipeline`, and `Copilot` have been stripped of the most obvious generated copy and fake system commentary.
-- `AutoApply` now exposes real operator controls for refresh, pause, and run-now instead of a passive status-only surface.
+- `AutoApply` now exposes real operator controls for refresh, pause, and run-now instead of a passive status-only surface, and the latest-run/history panels surface review-note diagnostics for missed fields and manual-confirmation prompts.
 - `Pipeline` now renders `rejected` and `withdrawn` stages and supports bounded drag/drop transitions that respect the workflow transition map.
 - `SearchExpansion` now uses the live backend expansion endpoint instead of a fake template inventory.
 - `Resume Studio` consumes the backend `ResumeTailorResponse` contract directly and now exposes live template preview plus PDF export through the resume API.
@@ -47,6 +47,7 @@
 - The current validated route-family browser pass also covers Auto Apply operator controls, the updated pipeline board flow, live analytics patterns, and the resume preview/export flow.
 - Settings coverage now also includes the Google Gmail integration card and manual sync path on top of the existing saved-search and API-key provider coverage.
 - Frontend test suites now live under `frontend/src/tests/` with `app/`, `api/`, `components/`, `hooks/`, `pages/`, and `support/` lanes.
+- Additional targeted local result on `2026-03-30`: the `AutoApply` page test now covers persisted review-note diagnostics, idle-vs-triggered run handling, and null-safe run rendering, and `npm run build` remained green after the updated operator contract landed.
 
 ## Non-Blocking Residual
 - Route-by-route visual polish remains iterative work on some larger surfaces, but no blocking frontend issue is currently known from the latest validated pass.
