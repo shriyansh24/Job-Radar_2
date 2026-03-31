@@ -114,6 +114,28 @@ class ApplySingleRequest(BaseModel):
     job_id: str
 
 
+class AutoApplyTriggerResponse(BaseModel):
+    status: str
+    message: str
+    runs_created: int | None = None
+    run_ids: list[str] | None = None
+
+
+class ApplySingleResponse(BaseModel):
+    status: str
+    job_id: str
+    run_id: str | None = None
+    message: str
+    review_required: bool = False
+    review_items: list[str] = Field(default_factory=list)
+
+
+class AutoApplyPauseResponse(BaseModel):
+    status: str
+    message: str
+    rules_paused: int = 0
+
+
 class FieldMappingRuleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

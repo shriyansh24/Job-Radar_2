@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
 
 import structlog
 from sqlalchemy import func, select
@@ -10,8 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auto_apply.models import AutoApplyProfile, AutoApplyRule, AutoApplyRun
 from app.auto_apply.orchestrator import AutoApplyOrchestrator
 from app.auto_apply.schemas import (
+    ApplySingleResponse,
+    AutoApplyPauseResponse,
     AutoApplyProfileCreate,
     AutoApplyProfileUpdate,
+    AutoApplyTriggerResponse,
     RuleCreate,
     RuleUpdate,
     RunResult,
@@ -151,10 +153,13 @@ class AutoApplyService:
             completed_at=run.completed_at,
         )
 
-    async def trigger_run(self, user_id: uuid.UUID) -> dict[str, Any]:
+    async def trigger_run(self, user_id: uuid.UUID) -> AutoApplyTriggerResponse:
         profile = await self._get_active_profile(user_id)
         if profile is None:
-            return {"status": "idle", "message": "No active auto-apply profile"}
+            return AutoApplyTriggerResponse(
+                status="idle",
+                message="No active auto-apply profile",
+            )
 
         active_rule_count = await self.db.scalar(
             select(func.count()).where(
@@ -163,26 +168,29 @@ class AutoApplyService:
             )
         )
         if not active_rule_count:
-            return {"status": "idle", "message": "No active auto-apply rules"}
+            return AutoApplyTriggerResponse(
+                status="idle",
+                message="No active auto-apply rules",
+            )
 
         orchestrator = self._build_orchestrator()
         runs = await orchestrator.run_batch(user_id)
         logger.info("auto_apply_trigger_run", user_id=str(user_id), runs=len(runs))
-        return {
-            "status": "completed" if runs else "idle",
-            "message": "Auto-apply batch executed" if runs else "No jobs matched active rules",
-            "runs_created": len(runs),
-            "run_ids": [str(run.id) for run in runs],
-        }
+        return AutoApplyTriggerResponse(
+            status="completed" if runs else "idle",
+            message="Auto-apply batch executed" if runs else "No jobs matched active rules",
+            runs_created=len(runs),
+            run_ids=[str(run.id) for run in runs],
+        )
 
-    async def apply_single(self, job_id: str, user_id: uuid.UUID) -> dict[str, Any]:
+    async def apply_single(self, job_id: str, user_id: uuid.UUID) -> ApplySingleResponse:
         profile = await self._get_active_profile(user_id)
         if profile is None:
-            return {
-                "status": "idle",
-                "job_id": job_id,
-                "message": "No active auto-apply profile",
-            }
+            return ApplySingleResponse(
+                status="idle",
+                job_id=job_id,
+                message="No active auto-apply profile",
+            )
 
         job = await self.db.scalar(
             select(Job).where(
@@ -191,10 +199,15 @@ class AutoApplyService:
             )
         )
         if job is None:
-            return {"status": "not_found", "job_id": job_id, "message": "Job not found"}
+            return ApplySingleResponse(
+                status="not_found",
+                job_id=job_id,
+                message="Job not found",
+            )
 
         orchestrator = self._build_orchestrator()
         run = await orchestrator.apply_to_job(job, profile, allow_first_time_ats=True)
+        review_items = self._review_items_for_run(run)
         logger.info(
             "auto_apply_single",
             job_id=job_id,
@@ -202,16 +215,16 @@ class AutoApplyService:
             run_id=str(run.id),
             status=run.status,
         )
-        return {
-            "status": run.status,
-            "job_id": job_id,
-            "run_id": str(run.id),
-            "message": self._message_for_run(run.status, run.error_message),
-            "review_required": bool(self._review_items_for_run(run)),
-            "review_items": self._review_items_for_run(run),
-        }
+        return ApplySingleResponse(
+            status=run.status,
+            job_id=job_id,
+            run_id=str(run.id),
+            message=self._message_for_run(run.status, run.error_message),
+            review_required=bool(review_items),
+            review_items=review_items,
+        )
 
-    async def pause(self, user_id: uuid.UUID) -> dict[str, Any]:
+    async def pause(self, user_id: uuid.UUID) -> AutoApplyPauseResponse:
         rules = (
             await self.db.scalars(
                 select(AutoApplyRule).where(
@@ -225,11 +238,11 @@ class AutoApplyService:
 
         await self.db.commit()
         logger.info("auto_apply_pause", user_id=str(user_id), rules_paused=len(rules))
-        return {
-            "status": "paused",
-            "message": "Auto-apply paused",
-            "rules_paused": len(rules),
-        }
+        return AutoApplyPauseResponse(
+            status="paused",
+            message="Auto-apply paused",
+            rules_paused=len(rules),
+        )
 
     async def get_stats(self, user_id: uuid.UUID) -> dict[str, int]:
         # Total runs
@@ -301,10 +314,12 @@ class AutoApplyService:
         return error_message or f"Run ended with status '{status}'"
 
     def _review_items_for_run(self, run: AutoApplyRun) -> list[str]:
+        if run.status != "filled":
+            return []
+
         review_items: list[str] = []
 
-        if run.status == "filled":
-            review_items.append("Manual confirmation required before final submission.")
+        review_items.append("Manual confirmation required before final submission.")
 
         for item in run.review_items or []:
             if item not in review_items:

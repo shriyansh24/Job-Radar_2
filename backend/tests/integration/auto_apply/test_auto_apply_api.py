@@ -147,6 +147,56 @@ async def test_apply_single_runs_against_owned_job(
 
 
 @pytest.mark.asyncio
+async def test_apply_single_failed_run_does_not_expose_review_queue(
+    client: AsyncClient,
+    db_session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user_id, token = await _register_and_login(client)
+    profile = AutoApplyProfile(user_id=user_id, name="Primary", is_active=True)
+    job = Job(
+        id="auto-apply-job-002",
+        user_id=user_id,
+        source="lever",
+        title="Automation Engineer",
+        company_name="Acme",
+        status="new",
+    )
+    db_session.add_all([profile, job])
+    await db_session.commit()
+
+    fake_run = SimpleNamespace(
+        id=uuid.uuid4(),
+        status="failed",
+        error_message="Blocked by: duplicate",
+        fields_missed=["duplicate"],
+        review_items=["Blocked by duplicate safety check"],
+    )
+    fake_orchestrator = SimpleNamespace(apply_to_job=AsyncMock(return_value=fake_run))
+    monkeypatch.setattr(
+        AutoApplyService,
+        "_build_orchestrator",
+        lambda self: fake_orchestrator,
+    )
+
+    response = await client.post(
+        "/api/v1/auto-apply/apply-single",
+        headers=_auth(token),
+        json={"job_id": job.id},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "failed",
+        "job_id": job.id,
+        "run_id": str(fake_run.id),
+        "message": "Blocked by: duplicate",
+        "review_required": False,
+        "review_items": [],
+    }
+
+
+@pytest.mark.asyncio
 async def test_pause_deactivates_only_current_users_active_rules(
     client: AsyncClient,
     db_session,
