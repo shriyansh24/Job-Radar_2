@@ -7,18 +7,12 @@ import { resumeApi, type ResumeVersion } from "../api/resume";
 import { vaultApi } from "../api/vault";
 import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader } from "../components/system/PageHeader";
-import { SplitWorkspace } from "../components/system/SplitWorkspace";
-import { StateBlock } from "../components/system/StateBlock";
-import { Surface } from "../components/system/Surface";
-import Button from "../components/ui/Button";
-import EmptyState from "../components/ui/EmptyState";
-import Input from "../components/ui/Input";
-import Modal from "../components/ui/Modal";
-import { SkeletonCard } from "../components/ui/Skeleton";
 import Tabs from "../components/ui/Tabs";
-import Textarea from "../components/ui/Textarea";
 import { toast } from "../components/ui/toastService";
-import { VaultCoverLetterCard, VaultResumeCard, VaultUploadSurface } from "../components/vault/VaultPanels";
+import { VaultCoverLettersTab } from "../components/vault/VaultCoverLettersTab";
+import { VaultEditModal } from "../components/vault/VaultEditModal";
+import { VaultPreviewModal } from "../components/vault/VaultPreviewModal";
+import { VaultResumesTab } from "../components/vault/VaultResumesTab";
 
 const TABS = [
   { id: "resumes", label: "Resumes", icon: <FileText size={14} weight="bold" /> },
@@ -194,154 +188,38 @@ export default function DocumentVault() {
       <Tabs tabs={TABS.map((tab) => ({ ...tab }))} activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === "resumes" ? (
-        <SplitWorkspace
-          primary={
-            <div className="space-y-6">
-              <VaultUploadSurface
-                getRootProps={getRootProps as unknown as () => Record<string, unknown>}
-                getInputProps={getInputProps as unknown as () => Record<string, unknown>}
-                isDragActive={isDragActive}
-                uploading={uploadMutation.isPending}
-              />
-
-              {resumesLoading ? (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {Array.from({ length: 3 }).map((_, index) => (
-                    <SkeletonCard key={index} />
-                  ))}
-                </div>
-              ) : !resumes || resumes.length === 0 ? (
-                <Surface tone="default" padding="lg" radius="xl" className="brutal-panel">
-                  <EmptyState
-                    icon={<FileText size={40} weight="bold" />}
-                    title="No resumes"
-                    description="Upload a resume to start the vault."
-                  />
-                </Surface>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {resumes.map((resume) => (
-                    <VaultResumeCard
-                      key={resume.id}
-                      resume={resume}
-                      onPreview={() => setPreviewResume(resume)}
-                      onEdit={() => handleEditResume(resume)}
-                      onDelete={() => deleteResumeMutation.mutate(resume.id)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          }
-          secondary={
-            <div className="space-y-4">
-              <StateBlock
-                tone="neutral"
-                icon={<FileText size={18} weight="bold" />}
-                title="Vault role"
-                description="Keep source material stable while downstream surfaces generate variants."
-              />
-            </div>
-          }
+        <VaultResumesTab
+          resumes={resumes}
+          resumesLoading={resumesLoading}
+          getRootProps={getRootProps}
+          getInputProps={getInputProps}
+          isDragActive={isDragActive}
+          uploading={uploadMutation.isPending}
+          onPreview={setPreviewResume}
+          onEdit={handleEditResume}
+          onDelete={(resumeId) => deleteResumeMutation.mutate(resumeId)}
         />
       ) : null}
 
       {activeTab === "cover-letters" ? (
-        <SplitWorkspace
-          primary={
-            lettersLoading ? (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <SkeletonCard key={index} />
-                ))}
-              </div>
-            ) : !coverLetters || coverLetters.length === 0 ? (
-              <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
-                <EmptyState
-                  icon={<Scroll size={40} weight="bold" />}
-                  title="No cover letters"
-                  description="Generate a letter in Copilot and it will appear here."
-                />
-              </Surface>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {coverLetters.map((letter) => (
-                  <VaultCoverLetterCard
-                    key={letter.id}
-                    letter={letter}
-                    onEdit={() => handleEditCoverLetter(letter)}
-                    onDelete={() => deleteCoverLetterMutation.mutate(letter.id)}
-                  />
-                ))}
-              </div>
-            )
-          }
-          secondary={
-            <div className="space-y-4">
-              <StateBlock
-                tone="warning"
-                icon={<Scroll size={18} weight="bold" />}
-                title="Draft behavior"
-                description="Letter drafts stay editable here before reuse."
-              />
-            </div>
-          }
+        <VaultCoverLettersTab
+          coverLetters={coverLetters}
+          lettersLoading={lettersLoading}
+          onEdit={handleEditCoverLetter}
+          onDelete={(letterId) => deleteCoverLetterMutation.mutate(letterId)}
         />
       ) : null}
 
-      <Modal
-        open={!!previewResume}
-        onClose={() => setPreviewResume(null)}
-        title={previewResume?.filename ?? "Resume preview"}
-        size="lg"
-      >
-        {previewResume?.parsed_text ? (
-          <pre className="whitespace-pre-wrap font-mono text-sm text-text-primary">{previewResume.parsed_text}</pre>
-        ) : (
-          <div className="flex items-center justify-center gap-3 py-8 text-text-muted">
-            <FileText size={20} weight="bold" />
-            <span className="text-sm">No parsed text available yet.</span>
-          </div>
-        )}
-      </Modal>
+      <VaultPreviewModal resume={previewResume} onClose={() => setPreviewResume(null)} />
 
-      <Modal
-        open={!!editingItem}
+      <VaultEditModal
+        editingItem={editingItem}
+        editValue={editValue}
+        editorPending={editorPending}
         onClose={closeEditor}
-        title={editingItem?.kind === "resume" ? "Edit resume label" : "Edit cover letter"}
-        size="lg"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-text-secondary">
-            {editingItem?.kind === "resume" ? "Rename the resume label." : "Update the saved cover letter."}
-          </p>
-          {editingItem?.kind === "resume" ? (
-            <Input
-              label="Label"
-              aria-label="Resume label"
-              value={editValue}
-              onChange={(event) => setEditValue(event.target.value)}
-              placeholder="Optional label"
-            />
-          ) : (
-            <Textarea
-              label="Content"
-              aria-label="Cover letter content"
-              value={editValue}
-              onChange={(event) => setEditValue(event.target.value)}
-              className="min-h-[240px]"
-            />
-          )}
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={closeEditor} disabled={editorPending}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveEdit} loading={editorPending}>
-              Save
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onEditValueChange={setEditValue}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 }
