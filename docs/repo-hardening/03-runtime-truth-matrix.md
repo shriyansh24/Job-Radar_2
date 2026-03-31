@@ -44,6 +44,7 @@ Crosswalk the actual runtime behavior against the docs that currently describe i
 ## Live Background Runtime Topology
 - Scheduler remains its own runtime entrypoint.
 - Scheduled jobs enqueue onto ARQ queues: `scraping`, `analysis`, and `ops`.
+- Career-page scheduling now flows only through `target_batch_career_page`; the older standalone `career_page_scrape` path is no longer part of the active runtime.
 - The scheduler writes a Redis-backed heartbeat key and owns the `daily_digest` schedule on the ops lane.
 - Queue-specific worker services consume those queues instead of the scheduler spawning one-shot worker subprocesses directly.
 - Worker health is exposed through ARQ `health_check_key` surfaces, and compose plus CI now probe those runtime healthcheck commands instead of relying on sentinel files.

@@ -25,6 +25,38 @@ def test_adaptive_parser_extracts_job_cards() -> None:
     assert jobs[0]["url"] == "https://example.com/jobs/ts-001/apply"
 
 
+def test_adaptive_parser_extracts_json_ld_job_postings() -> None:
+    parser = AdaptiveCareerParser(
+        html=_fixture("json_ld_only.html"),
+        company_name="Acme Corp",
+        base_url="https://example.com/careers",
+    )
+
+    jobs = parser.extract()
+
+    assert len(jobs) == 2
+    assert jobs[0]["title"] == "Senior Software Engineer"
+    assert jobs[0]["location"] == "San Francisco, CA, US"
+    assert jobs[1]["title"] == "Product Designer"
+    assert jobs[1]["location"] == "Remote"
+
+
+def test_adaptive_parser_extracts_jobs_from_embedded_state_payloads() -> None:
+    parser = AdaptiveCareerParser(
+        html=_fixture("js_hydrated_jobs.html"),
+        company_name="DynamicCo",
+        base_url="https://jobs.dynamicco.example",
+    )
+
+    jobs = parser.extract()
+
+    assert len(jobs) == 2
+    assert jobs[0]["title"] == "Platform Engineer"
+    assert jobs[0]["url"] == "https://jobs.dynamicco.example/jobs/platform-engineer"
+    assert jobs[1]["title"] == "Security Analyst"
+    assert jobs[1]["location"] == "Chicago, IL"
+
+
 def test_adaptive_parser_returns_no_jobs_for_js_shell() -> None:
     parser = AdaptiveCareerParser(
         html=_fixture("js_heavy_blank.html"),

@@ -4,12 +4,19 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from app.scraping.port import ScrapedJob
+
+FIXTURE_DIR = Path(__file__).resolve().parents[2] / "fixtures" / "career_pages"
+
+
+def _fixture(name: str) -> str:
+    return (FIXTURE_DIR / name).read_text(encoding="utf-8")
 
 
 def _mock_service():
@@ -309,6 +316,87 @@ async def test_browser_target_acquires_pool_and_persists():
 
     pool.acquire.assert_called_once()
     assert results["targets_succeeded"] == 1
+
+
+@pytest.mark.asyncio
+async def test_js_shell_escalates_to_browser_and_parses_real_rendered_jobs():
+    from app.scraping.control.tier_router import ExecutionPlan, Step
+
+    svc = _mock_service()
+    target = _target(ats_vendor=None, source_kind="career_page", start_tier=1, max_tier=2)
+
+    fetch_binding = SimpleNamespace(method="fetch", is_browser=False)
+    browser_binding = SimpleNamespace(method="render", is_browser=True)
+    fetch_fn = AsyncMock(
+        return_value=SimpleNamespace(
+            status_code=200,
+            html=_fixture("js_heavy_blank.html"),
+            headers={},
+            content_hash="blank-shell",
+            duration_ms=75,
+        )
+    )
+    browser_fn = AsyncMock(
+        return_value=SimpleNamespace(
+            status_code=200,
+            html=_fixture("js_hydrated_jobs.html"),
+            content_hash="hydrated-shell",
+            duration_ms=900,
+        )
+    )
+    registry = MagicMock()
+    registry.get.side_effect = lambda name: {
+        "cloudscraper": fetch_binding,
+        "scrapling_stealth": browser_binding,
+    }[name]
+    registry.resolve.side_effect = lambda name: (
+        MagicMock(),
+        {
+            "cloudscraper": fetch_fn,
+            "scrapling_stealth": browser_fn,
+        }[name],
+    )
+
+    pool_cm = MagicMock()
+    pool_cm.__aenter__ = AsyncMock(return_value=None)
+    pool_cm.__aexit__ = AsyncMock(return_value=False)
+    pool = MagicMock()
+    pool.acquire.return_value = pool_cm
+
+    plan = ExecutionPlan(
+        primary_tier=1,
+        max_tier=2,
+        primary_step=Step(tier=1, scraper_name="cloudscraper", timeout_s=1),
+        fallback_chain=(
+            Step(
+                tier=2,
+                scraper_name="scrapling_stealth",
+                timeout_s=1,
+                browser_required=True,
+            ),
+        ),
+        rate_policy="generic",
+    )
+
+    with (
+        patch("app.scraping.control.tier_router.TierRouter.route", return_value=plan),
+        patch("app.scraping.service.evaluate_robots", _robots_allowed()),
+        patch("app.scraping.service.persist_jobs", AsyncMock(return_value=(2, 0))) as persist_jobs,
+    ):
+        results = await svc.run_target_batch(
+            targets=[target],
+            run_id=uuid.uuid4(),
+            adapter_registry=registry,
+            browser_pool=pool,
+        )
+
+    assert results["targets_succeeded"] == 1
+    assert results["targets_failed"] == 0
+    assert results["jobs_found"] == 2
+    fetch_fn.assert_awaited_once()
+    browser_fn.assert_awaited_once()
+    pool.acquire.assert_called_once()
+    persist_jobs.assert_awaited_once()
 
 
 @pytest.mark.asyncio

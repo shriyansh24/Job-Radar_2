@@ -27,7 +27,8 @@
 - Target batches now persist discovered jobs from ATS, fetcher, and browser paths instead of only recording attempts.
 - Scheduler intervals are clamped to positive minimums.
 - Circuit-breaker timing uses a high-resolution monotonic clock path and deterministic regression coverage.
-- Adaptive parser fixture coverage now includes selector-driven pages and JS-shell blanks so parser regressions are evidence-driven.
+- Adaptive parser fixture coverage now includes selector-driven pages, JSON-LD-only pages, JS-shell blanks, and embedded hydration/state payloads so parser regressions are evidence-driven.
+- The queue-backed runtime no longer schedules a separate legacy career-page worker outside the target-batch pipeline; conditional requests, robots policy, and adaptive parsing now share one authoritative career-page execution path.
 
 ## Operational Notes
 - Historical implementation/inventory context now lives in `docs/system-inventory/` and `docs/repo-hardening/`.
@@ -38,4 +39,4 @@
 ## Current Assessment
 - No known blocking scraper or database bugs remain after the latest verified pass.
 - Queue-backed scraping/runtime ownership is implemented locally. The remaining follow-through is deployment-level alert routing and dashboards rather than missing repo-local scraper/runtime behavior.
-- Remaining parser work is source-specific render and anti-bot recovery on difficult JS-heavy sites; the base target-batch execution path, conditional requests, and robots policy are now live and locally validated.
+- Remaining parser work is source-specific render and anti-bot recovery on difficult JS-heavy sites; the base target-batch execution path, adaptive parser baselines, conditional requests, and robots policy are now live and locally validated.

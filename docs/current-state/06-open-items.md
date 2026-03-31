@@ -20,11 +20,11 @@
 - Scheduler isolation is now queue-backed through ARQ, and queue telemetry now includes depth, oldest-job age, alert state, truthful `retry_exhausted` final-failure logs, and request/job correlation on queue-triggered operator paths.
 - The latest full backend validation run keeps every `app/` module at or above `50%` coverage and brings overall backend coverage to `71.24%`.
 - Auth lifecycle logging now carries request correlation and normalized reason codes through the main app log stream; dedicated audit routing is deployment-specific follow-through rather than a missing repo-local feature.
-- Target-batch scraping now applies conditional requests, enforces `robots.txt` policy on non-ATS targets, falls back cleanly when pagination times out, and has deterministic parser fixtures for selector-based and JS-shell pages.
+- Target-batch scraping now applies conditional requests, enforces `robots.txt` policy on non-ATS targets, falls back cleanly when pagination times out, and has deterministic parser fixtures for selector-based, JSON-LD, embedded-state, and JS-shell career pages.
 
 ## External Or Non-Goal Follow-Through
 - Provider-backed ATS submission flows, destructive admin operations, and seeded-data-heavy PDF fidelity remain environment-specific validation concerns rather than missing repo-local implementation.
-- Further parser tuning for difficult JS-heavy career pages remains an ongoing source-specific quality-improvement area, not a missing base execution feature. The remaining work is render/anti-bot recovery on specific sites rather than absent conditional requests, robots policy, or target-batch persistence.
+- Further parser tuning for difficult JS-heavy career pages remains an ongoing source-specific quality-improvement area, not a missing base execution feature. The remaining work is render/anti-bot recovery on specific sites rather than absent conditional requests, robots policy, target-batch persistence, or baseline adaptive-parser support for structured/hydrated job data.
 - Long-window queue alert routing, dashboards, and dedicated auth audit sinks depend on deployment/log-routing infrastructure outside this repository.
 - Gmail-first integration is now live in repo scope. Remaining Google follow-through is explicitly out of current live scope: Calendar integration, Drive integration, and any `googleworkspace/cli`/`gws`-based workflow.
 
