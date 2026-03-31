@@ -159,7 +159,8 @@ jobradar-v2/
 ## GitHub And Safety
 - GitHub Actions currently cover `Repository Validation`, `Docs Validation`, `Migration Safety`, `Dependency Review`, `CodeQL`, and the dedicated browser check `Frontend E2E Smoke / frontend-e2e-smoke`.
 - Backend dependency auditing runs through `scripts/run_backend_dependency_audit.py` and the reviewed exception policy in `backend/pip-audit-policy.json` so CVE exceptions are explicit, dated, and checked in instead of hidden inside workflow YAML.
-- Treat `main` as PR-only.
+- `main` is now enforced as PR-only with `1` approving review, stale-review dismissal, conversation resolution, admin enforcement, and strict required checks for `Backend quality and security checks`, `Backend test suite`, `Frontend audit and lint`, `Frontend tests and build`, `CodeQL (python)`, `CodeQL (javascript-typescript)`, and `Frontend E2E Smoke / frontend-e2e-smoke`.
+- `Docs Validation`, `Migration Safety`, and `Dependency Review` remain enabled, but they are not unconditional branch-protection checks because they do not emit in every change shape.
 - Keep docs, tests, and runtime-truth updates in the same batch as behavior changes.
 - Keep ARQ queue-topology claims, worker-service claims, and retry-policy changes in `docs/current-state/05-ops-and-ci.md`.
 - Do not treat `docs/research/` as committed scope unless it is explicitly promoted into `docs/current-state/` and the relevant front-door docs.

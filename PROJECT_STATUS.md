@@ -54,7 +54,8 @@
 ## Current Hardening Posture
 - Runtime/doc truth is materially reconciled around the compose-first baseline.
 - Current docs now distinguish the live queue-backed runtime from deployment-only follow-through instead of treating ARQ as a future-only target.
-- GitHub protections now include `Repository Validation`, `Docs Validation`, `Migration Safety`, `Dependency Review`, `CodeQL`, and `Frontend E2E Smoke / frontend-e2e-smoke`.
+- GitHub `main` protection is now enforced with PR-only merges, `1` approving review, stale-review dismissal, conversation resolution, admin enforcement, and strict required checks for `Backend quality and security checks`, `Backend test suite`, `Frontend audit and lint`, `Frontend tests and build`, `CodeQL (python)`, `CodeQL (javascript-typescript)`, and `Frontend E2E Smoke / frontend-e2e-smoke`.
+- `Docs Validation`, `Migration Safety`, and `Dependency Review` remain enabled workflow lanes, but they are not unconditional required checks on `main`.
 - Remaining branch-era `feat/p1-core-value` variants are now treated as explicit adopt-or-archive decisions rather than open-ended live-scope ambiguity.
 
 ## Intentional Non-Goals In Live Scope

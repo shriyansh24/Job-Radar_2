@@ -26,9 +26,9 @@
 - The Admin page now surfaces queue pressure, queue alerts, worker-lane counters, the configured auth audit stream, recent queue telemetry samples, queue alert events, and recent auth audit events so operators can inspect repo-owned runtime history without leaving the app.
 
 ## External Or Non-Goal Follow-Through
-- Provider-backed ATS submission flows, destructive admin operations, and seeded-data-heavy PDF fidelity remain environment-specific validation concerns rather than missing repo-local implementation.
+- Provider-backed ATS submission flows, destructive admin operations, and seeded-data-heavy PDF fidelity remain environment-specific validation concerns rather than missing repo-local implementation. Use `docs/repo-hardening/13-environment-validation.md` as the canonical validation runbook.
 - Further parser tuning for difficult JS-heavy career pages remains an ongoing source-specific quality-improvement area, not a missing base execution feature. The remaining work is render/anti-bot recovery on specific sites rather than absent conditional requests, robots policy, target-batch persistence, or baseline adaptive-parser support for structured/hydrated job data.
-- The parser harness now proves which pages are structured vs. JS-shell vs. anti-bot challenge pages; the unresolved work is source-specific render recovery and provider-side blockage on specific sites, not missing fixture coverage.
+- The parser harness now proves which pages are structured vs. JS-shell vs. anti-bot challenge pages; the unresolved work is source-specific render recovery and provider-side blockage on specific sites, not missing fixture coverage. Use `docs/repo-hardening/13-environment-validation.md` to classify those cases consistently.
 - Long-window queue alert routing and deployment dashboards still depend on deployment/log-routing infrastructure outside this repository, but the repo now emits queue-alert state, queue history, queue alert transitions, and auth audit history through the Admin runtime summary and Redis-backed streams when configured.
 - Gmail-first integration is now live in repo scope. Remaining Google follow-through is explicitly out of current live scope: Calendar integration, Drive integration, and any `googleworkspace/cli`/`gws`-based workflow.
 
