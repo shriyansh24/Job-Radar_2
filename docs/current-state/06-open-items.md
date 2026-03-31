@@ -26,6 +26,7 @@
 - Provider-backed ATS submission flows, destructive admin operations, and seeded-data-heavy PDF fidelity remain environment-specific validation concerns rather than missing repo-local implementation.
 - Further parser tuning for difficult JS-heavy career pages remains an ongoing source-specific quality-improvement area, not a missing base execution feature. The remaining work is render/anti-bot recovery on specific sites rather than absent conditional requests, robots policy, or target-batch persistence.
 - Long-window queue alert routing, dashboards, and dedicated auth audit sinks depend on deployment/log-routing infrastructure outside this repository.
+- Gmail-first integration is now live in repo scope. Remaining Google follow-through is explicitly out of current live scope: Calendar integration, Drive integration, and any `googleworkspace/cli`/`gws`-based workflow.
 
 ## Historical Planning Material
 - Future design notes live in `docs/research/`.

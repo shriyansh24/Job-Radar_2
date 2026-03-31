@@ -15,6 +15,7 @@ from app.workers.enrichment_worker import (
     run_enrichment_batch,
     run_tfidf_scoring,
 )
+from app.workers.gmail_worker import run_gmail_sync
 from app.workers.maintenance_worker import run_cleanup, run_source_health_check
 from app.workers.phase7a_worker import (
     run_followup_reminders,
@@ -300,6 +301,15 @@ async def _run_daily_digest(ctx: dict[str, Any]) -> None:
     )
 
 
+async def _run_gmail_sync(ctx: dict[str, Any]) -> None:
+    await _run_with_lifecycle(
+        job_name="gmail_sync",
+        queue_name=OPS_QUEUE,
+        ctx=ctx,
+        callback=lambda: run_gmail_sync(ctx=ctx),
+    )
+
+
 REGISTERED_JOBS: dict[str, RegisteredJob] = {
     "scheduled_scrape": RegisteredJob(
         name="scheduled_scrape",
@@ -403,6 +413,13 @@ REGISTERED_JOBS: dict[str, RegisteredJob] = {
         name="daily_digest",
         queue_name=OPS_QUEUE,
         runner=_run_daily_digest,
+        timeout_seconds=1800,
+        max_tries=2,
+    ),
+    "gmail_sync": RegisteredJob(
+        name="gmail_sync",
+        queue_name=OPS_QUEUE,
+        runner=_run_gmail_sync,
         timeout_seconds=1800,
         max_tries=2,
     ),

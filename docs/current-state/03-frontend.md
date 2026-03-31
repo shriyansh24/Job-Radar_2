@@ -33,7 +33,7 @@
 - `Resume Studio` consumes the backend `ResumeTailorResponse` contract directly and now exposes live template preview plus PDF export through the resume API.
 - `Compensation` uses the backend salary percentile and offer-evaluation contract directly.
 - `Analytics` now consumes the live analytics patterns endpoint alongside the overview, funnel, source, and skill datasets.
-- `Settings` persists workspace settings, saved searches, integrations, password changes, account deletion, and data clear actions against real backend endpoints, including saved-search alert status and manual check execution.
+- `Settings` persists workspace settings, saved searches, integrations, password changes, account deletion, and data clear actions against real backend endpoints, including saved-search alert status and manual check execution. The Integrations panel now includes a Google Gmail card with connect/reconnect, manual sync, disconnect, account-email, scopes, last-sync, and last-error state alongside the existing API-key-backed providers.
 - `DocumentVault` edit flows are wired through the live PATCH endpoints.
 - `Admin` and source-health surfaces now read the current backend status and diagnostics shape instead of stale frontend assumptions.
 - `Targets` now exposes manual career-page create/edit/delete flows alongside bulk import, batch controls, and per-target trigger/release actions.
@@ -45,6 +45,7 @@
 - `cd frontend && npm run build`
 - Authenticated browser QA was rerun after the decomposition/copy-cleanup pass, covering the routed app with representative captures in `.claude/ui-captures/`.
 - The current validated route-family browser pass also covers Auto Apply operator controls, the updated pipeline board flow, live analytics patterns, and the resume preview/export flow.
+- Settings coverage now also includes the Google Gmail integration card and manual sync path on top of the existing saved-search and API-key provider coverage.
 - Frontend test suites now live under `frontend/src/tests/` with `app/`, `api/`, `components/`, `hooks/`, `pages/`, and `support/` lanes.
 
 ## Non-Blocking Residual
@@ -53,3 +54,4 @@
 ## Current Assessment
 - No blocking frontend bugs are currently known from the verified local pass.
 - The shared system layer is the frontend source of truth for layout, typography, spacing, shell posture, and tokenized surfaces.
+- Gmail-derived communications still land in the existing email intelligence surfaces; the frontend does not expose or promise a general inbox client.

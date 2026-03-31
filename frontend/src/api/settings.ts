@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { API_BASE_URL } from '../lib/constants';
 
 export interface SavedSearch {
   id: string;
@@ -27,12 +28,32 @@ export interface AppSettings {
   auto_apply_enabled: boolean;
 }
 
+export type IntegrationProvider = 'openrouter' | 'serpapi' | 'theirstack' | 'apify' | 'google';
+export type IntegrationAuthType = 'api_key' | 'oauth';
+export type IntegrationConnectionStatus = 'connected' | 'not_configured' | 'needs_reconnect' | 'sync_error';
+
 export interface IntegrationStatus {
-  provider: 'openrouter' | 'serpapi' | 'theirstack' | 'apify';
+  provider: IntegrationProvider;
+  auth_type: IntegrationAuthType;
   connected: boolean;
-  status: 'connected' | 'not_configured';
+  status: IntegrationConnectionStatus;
   masked_value: string | null;
+  account_email: string | null;
+  scopes: string[];
   updated_at: string | null;
+  last_validated_at: string | null;
+  last_synced_at: string | null;
+  last_error: string | null;
+}
+
+export interface GmailSyncResult {
+  provider: 'google';
+  messages_seen: number;
+  messages_processed: number;
+  duplicates_skipped: number;
+  signals_detected: number;
+  transitions_applied: number;
+  last_synced_at: string | null;
 }
 
 export const settingsApi = {
@@ -52,11 +73,15 @@ export const settingsApi = {
   listIntegrations: () =>
     apiClient.get<IntegrationStatus[]>('/settings/integrations'),
   upsertIntegration: (
-    provider: IntegrationStatus['provider'],
+    provider: Exclude<IntegrationProvider, 'google'>,
     apiKey: string
   ) => apiClient.put<IntegrationStatus>(`/settings/integrations/${provider}`, { api_key: apiKey }),
-  deleteIntegration: (provider: IntegrationStatus['provider']) =>
+  deleteIntegration: (provider: IntegrationProvider) =>
     apiClient.delete(`/settings/integrations/${provider}`),
+  buildGoogleConnectUrl: (returnTo = "/settings?tab=integrations") =>
+    `${API_BASE_URL}/settings/integrations/google/connect?return_to=${encodeURIComponent(returnTo)}`,
+  syncGoogleIntegration: () =>
+    apiClient.post<GmailSyncResult>('/settings/integrations/google/sync'),
   getSettings: () =>
     apiClient.get<AppSettings>('/settings/app'),
   updateSettings: (data: Partial<AppSettings>) =>

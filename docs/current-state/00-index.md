@@ -21,6 +21,7 @@
 - Committed browser coverage now includes auth/shell smoke, shell navigation, responsive shell behavior, route-family outcomes, communications/setup flows, prepare/intelligence/outcomes flows, operations/admin/data flows, profile/settings/auth roundtrips, resume preview/export, and route-family 8-mode theme assertions under `frontend/e2e/`.
 - The current authenticated browser sweep is up to date, and representative screenshots now live in `.claude/ui-captures/`.
 - Local Postgres schema was upgraded from Alembic revision `005` to `head` during QA so the settings/integration surfaces match the current schema.
+- Settings integrations are no longer API-key-only: Google OAuth is now a live provider, and Gmail-first sync feeds the existing email and pipeline modules through both operator-triggered sync and the scheduled `gmail_sync` job on the `ops` worker lane.
 - The audit ledger remains `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
 
 ## Latest Validation Snapshot
@@ -36,10 +37,10 @@
 - `cd frontend && npm run test -- --run`
 - `cd frontend && npm run e2e`
 - `cd frontend && npm run build`
-- Latest local result: lint, full test suite, and production build pass after the current frontend decomposition and copy cleanup pass.
+- Latest local result: lint, full test suite, and production build pass after the current frontend decomposition and copy cleanup pass. The committed Playwright lane now owns backend API startup as well, reusing `127.0.0.1:8000` when an API is already running and otherwise failing fast if the local Postgres/Redis contract is not reachable.
 
 ### Browser QA
-- Start the local backend and frontend dev servers.
+- Start the local frontend dev server for manual sweeps; the committed Playwright lane now boots or reuses the backend API on its own.
 - Authenticate through `/login`.
 - Sweep every authenticated route on desktop, tablet, and phone.
 - Capture representative screenshots into `.claude/ui-captures/`.
@@ -67,3 +68,4 @@
 - Treat `05-ops-and-ci.md` as the canonical runtime-status page for the live ARQ queue topology, worker services, and deployment-facing follow-through.
 - The current workspace includes the reference-first frontend migration: shared shell, responsive navigation, light/dark parity, backend-aligned settings/admin/resume/salary/search-expansion surfaces, decomposed page families, and a completed browser-verified cleanup pass over the main routed surfaces.
 - The current routed app now includes live analytics pattern panels plus backend-backed resume template preview and PDF export flows on the main branch, not just branch-only recovery code.
+- Gmail-first Google integration is part of the current live scope; Calendar, Drive, and `googleworkspace/cli` are not.

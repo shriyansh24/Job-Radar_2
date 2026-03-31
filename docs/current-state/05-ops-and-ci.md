@@ -24,14 +24,27 @@
 - The dev overlay now publishes only `5173:5173`, health-checks `http://127.0.0.1:5173/`, and sets `VITE_API_PROXY_TARGET=http://backend:8000` so the frontend container can proxy `/api` traffic to the backend container instead of incorrectly looping back to itself.
 - Redis is provisioned in the compose baseline and is now the active queue backbone for background execution.
 - The live runtime shape is: scheduler enqueues named jobs to ARQ queues `scraping`, `analysis`, and `ops`; queue-specific worker services consume those queues.
-- The scheduler now writes a Redis-backed heartbeat key and owns the `daily_digest` schedule on the ops lane.
+- The scheduler now writes a Redis-backed heartbeat key and owns the `daily_digest`, `saved_search_alerts`, and `gmail_sync` schedules on the ops lane.
 - Compose healthchecks now use runtime healthcheck commands against the live scheduler and worker surfaces rather than ready-marker files.
 - `backend/app/runtime/worker.py` remains as a manual one-shot/debug runner, not the scheduled execution path.
+- Gmail-first integration is disabled unless the Google OAuth env vars are configured. The repo-local runtime knobs are:
+  - `JR_FRONTEND_BASE_URL`
+  - `JR_GOOGLE_OAUTH_CLIENT_ID`
+  - `JR_GOOGLE_OAUTH_CLIENT_SECRET`
+  - `JR_GOOGLE_OAUTH_REDIRECT_URI`
+  - `JR_GOOGLE_GMAIL_SYNC_QUERY`
+  - `JR_GOOGLE_GMAIL_SYNC_MAX_MESSAGES`
+- Operator-owned Gmail sync paths are:
+  - Settings > Integrations > `Connect Google`
+  - Settings > Integrations > `Sync Gmail`
+  - the scheduled `gmail_sync` worker job on the `ops` lane
+- The `worker-ops` lane now owns outbound Google OAuth + Gmail API traffic in addition to digest, alert, cleanup, and operator-support jobs.
 
 ## Validation Commands
 
 ### Backend
 - `cd backend && uv run pytest tests/integration/test_auth_api.py tests/integration/test_settings_api.py tests/integration/test_admin_api.py tests/integration/test_vault_api.py`
+- `cd backend && uv run pytest tests/integration/test_settings_api.py tests/unit/settings/test_settings_service.py tests/unit/email/test_email_service_gmail.py tests/unit/email/test_gmail_sync.py tests/unit/email/test_google_oauth.py tests/unit/email/test_gmail_client.py`
 - `cd backend && uv run pytest tests/infra/test_runtime_config.py tests/infra/test_queue_runtime_compose.py tests/workers/test_queue_runtime.py tests/workers/test_arq_worker_runtime.py tests/workers/test_job_registry_runtime.py tests/workers/test_scheduler_runtime.py tests/workers/scraping/test_scrape_scheduler.py`
 - `cd backend && uv run pytest tests/workers/test_worker_runtime.py`
 - `cd backend && uv run pytest tests/integration/auto_apply/test_auto_apply_api.py tests/integration/scraping/test_scraping_identity.py tests/workers/test_digest_worker.py tests/migrations/test_job_ats_identity_migration.py tests/migrations/test_scrape_target_identity_migrations.py`
@@ -41,6 +54,7 @@
 - `cd frontend && npm run test -- --run`
 - `cd frontend && npm run e2e`
 - `cd frontend && npm run build`
+- `cd frontend && npm run e2e` now reuses a live backend on `127.0.0.1:8000` when present; otherwise `frontend/playwright.config.ts` invokes `scripts/start_playwright_backend.py`, which runs `alembic upgrade head`, boots the API, and fails early if Postgres or Redis are unreachable or misconfigured.
 
 ### Browser QA
 - Start backend and frontend locally.
@@ -99,6 +113,7 @@
 - Compose-first local runtime is the repo default; older manual `jobradar-postgres` flows are now treated as legacy local overrides.
 - Scheduler and worker readiness now come from runtime healthcheck probes against the live queue surfaces rather than ready-marker files; the scheduler heartbeat also lives in Redis so compose and CI can probe the real runtime state.
 - Queue enqueue/dequeue logs now emit queue depth and retry metadata, retryable jobs raise real ARQ `Retry` with scheduled backoff, and non-retryable or final failures log `retry_exhausted` truthfully.
+- Gmail sync now emits repo-local lifecycle logs through `google_integration_connected`, `gmail_worker_started`, `gmail_worker_skipped`, `gmail_worker_user_failed`, `gmail_worker_completed`, `gmail_sync_completed`, and `email_duplicate_skipped`. Alert routing for those signals is still deployment-owned.
 - Worker isolation is queue-backed and compose-visible; queue telemetry now includes depth, oldest-job age, pressure, alert state, truthful retry exhaustion, worker-lane counters, and request/job correlation on queue-triggered operator paths. Request lifecycle logs also now carry route identity and authenticated user context when available. The remaining follow-through is mostly deployment-level alert routing and dashboards rather than missing repo-local runtime ownership.
 - The latest full local backend validation run on `2026-03-27` completed at `1025 passed, 1 skipped` with backend coverage at `71.24%` and no `app/` module below `50%` coverage.
 - Backend dependency auditing now runs through `scripts/run_backend_dependency_audit.py`, which applies the checked-in reviewed exception policy from `backend/pip-audit-policy.json` instead of burying CVE ignores inline in workflow YAML.

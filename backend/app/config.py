@@ -66,6 +66,16 @@ class Settings(BaseSettings):
     ]
     trusted_hosts: list[str] = ["localhost", "127.0.0.1", "backend", "test"]
     operator_emails: list[str] = []
+    frontend_base_url: str = "http://localhost:5173"
+
+    # Google / Gmail
+    google_oauth_client_id: str = ""
+    google_oauth_client_secret: str = ""
+    google_oauth_redirect_uri: str = "http://localhost:8000/api/v1/settings/integrations/google/callback"
+    google_gmail_sync_query: str = (
+        "newer_than:30d -category:promotions -category:social -category:forums"
+    )
+    google_gmail_sync_max_messages: int = 25
 
     # Intel GPU acceleration (optional - requires openvino or ipex)
     intel_gpu_enabled: bool = False
@@ -137,6 +147,8 @@ def validate_runtime_settings(settings: Settings) -> None:
         raise RuntimeError("JR_API_RATE_LIMIT_PER_MINUTE must be greater than zero.")
     if settings.login_rate_limit_per_minute <= 0:
         raise RuntimeError("JR_LOGIN_RATE_LIMIT_PER_MINUTE must be greater than zero.")
+    if settings.google_gmail_sync_max_messages <= 0:
+        raise RuntimeError("JR_GOOGLE_GMAIL_SYNC_MAX_MESSAGES must be greater than zero.")
 
 
 settings = Settings()

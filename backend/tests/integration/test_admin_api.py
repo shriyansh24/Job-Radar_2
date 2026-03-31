@@ -33,6 +33,22 @@ def _auth(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
+def _not_configured_integration(provider: str, *, auth_type: str = "api_key") -> dict[str, object]:
+    return {
+        "provider": provider,
+        "auth_type": auth_type,
+        "connected": False,
+        "status": "not_configured",
+        "masked_value": None,
+        "account_email": None,
+        "scopes": [],
+        "updated_at": None,
+        "last_validated_at": None,
+        "last_synced_at": None,
+        "last_error": None,
+    }
+
+
 @pytest.mark.asyncio
 async def test_admin_health_is_public(client: AsyncClient) -> None:
     response = await client.get("/api/v1/admin/health")
@@ -180,13 +196,13 @@ async def test_admin_clear_data_only_wipes_current_user_data(
     assert cleared.json()["status"] == "ok"
     assert cleared.json()["rows_deleted"] >= 1
     assert my_searches.json() == []
-    assert my_integrations.json()[0] == {
-        "provider": "openrouter",
-        "connected": False,
-        "status": "not_configured",
-        "masked_value": None,
-        "updated_at": None,
-    }
+    assert my_integrations.json() == [
+        _not_configured_integration("openrouter"),
+        _not_configured_integration("serpapi"),
+        _not_configured_integration("theirstack"),
+        _not_configured_integration("apify"),
+        _not_configured_integration("google", auth_type="oauth"),
+    ]
     assert json.loads(my_export.text) == {"jobs": [], "applications": []}
     assert my_profile.status_code == 200
     assert [job["id"] for job in json.loads(other_export.text)["jobs"]] == ["keep-job-1"]

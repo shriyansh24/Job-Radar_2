@@ -11,6 +11,7 @@
 ## Key Runtime Areas
 - Auth: cookie-based access and refresh flow with revocation, CSRF protection on unsafe cookie-auth requests, trusted-host enforcement, rate limiting, request-correlated lifecycle logs, route-aware request completion logs, and normalized reason codes for register/login/refresh/logout/password-change/session-clear/account-delete paths
 - Auto-apply: field learning, Workday adapter, recovered form extraction, Greenhouse/Lever adapters, a pre-flight safety layer, live batch/single service wiring, worker-level batch execution, and operator-facing run/pause/list/stats API coverage are all part of the live repo-local flow
+- Settings and integrations: saved-search CRUD plus alert metadata, API-key-backed providers (`openrouter`, `serpapi`, `theirstack`, `apify`), and Google OAuth-backed Gmail integration with account email, scopes, sync status, last-validated, last-synced, and last-error state
 - Resume: upload parsing supports `.pdf`, `.docx`, `.tex`, and `.txt` into persisted structured IR payloads; tailoring, ATS validation, council review, cover-letter generation, HTML/PDF rendering, template preview, and PDF export are live on the branch
 - Jobs: SHA-256 string IDs, enrichment fields, lifecycle tracking, application relationship via `selectin`
 - Enrichment: HTML cleaning, markdown conversion, LLM extraction, salary/experience enrichment, a live single-job enrichment API path, and a queue-backed batch trigger on the analysis lane
@@ -18,7 +19,8 @@
 - Search and dedup: hybrid semantic ranking via `backend/app/search/hybrid.py`, freshness scoring via `backend/app/enrichment/freshness.py`, normalization-aware dedup via `backend/app/scraping/normalization.py` + `deduplication.py`, and ATS identity persistence on `jobs` via `ats_job_id`, `ats_provider`, and `ats_composite_key`
 - Scraping: ATS registry, scheduler, tier routing, page crawling, conditional request cache handling, Protego-based `robots.txt` policy, adapter registry, browser pool, and target-batch persistence across ATS/fetch/browser paths
 - Runtime topology: API process via `backend/app/main.py`, dedicated scheduler process via `backend/app/runtime/scheduler.py`, ARQ queue services via `backend/app/runtime/arq_worker.py`, and compose-managed Postgres/Redis; scheduler now enqueues jobs onto `scraping`, `analysis`, and `ops`
-- Workers: scraping, enrichment, follow-up/notification support, scheduled job registration, queue registry ownership, queue-specific ARQ worker services, retry-aware queue lifecycle logging, and a live `daily_digest` worker on the `ops` lane
+- Email: webhook and Gmail-synced inbound messages both flow through a shared inbound abstraction, duplicate suppression now prefers provider/message identity when available, email logs persist source provenance (`source_provider`, `source_message_id`, `source_thread_id`, `source_received_at`), and low-confidence Gmail signals downgrade to review-required notifications instead of silently transitioning pipeline state
+- Workers: scraping, enrichment, follow-up/notification support, scheduled job registration, queue registry ownership, queue-specific ARQ worker services, retry-aware queue lifecycle logging, and live `daily_digest` plus `gmail_sync` jobs on the `ops` lane
 
 ## Runtime Invariants
 - Runtime `DateTime` columns should be timezone-aware.
@@ -49,6 +51,7 @@
 - Backend tests now use explicit `contracts/`, `infra/`, `integration/`, `migrations/`, `security/`, `unit/`, and `workers/` directories under `backend/tests/`.
 - Auth lifecycle events now emit structured logs without credential/token payloads and inherit request correlation from middleware-bound request IDs.
 - Dirty-worktree recovery coverage now also exists for `backend/tests/unit/search/test_hybrid_search.py`, `backend/tests/unit/search/test_freshness.py`, `backend/tests/unit/search/test_normalization.py`, `backend/tests/unit/interview/test_interview_contextual_service.py`, `backend/tests/workers/test_queue_runtime.py`, and `backend/tests/workers/test_arq_worker_runtime.py`.
+- Gmail-first integration coverage now exists for Google OAuth helper behavior, settings/integration connect+sync routes, Gmail client parsing, Gmail sync refresh/retry handling, Gmail email-provenance/duplicate semantics, and `gmail_sync` scheduler/worker registration under `backend/tests/integration/test_settings_api.py`, `backend/tests/unit/settings/test_settings_service.py`, `backend/tests/unit/email/test_email_service_gmail.py`, `backend/tests/unit/email/test_gmail_sync.py`, `backend/tests/unit/email/test_google_oauth.py`, `backend/tests/unit/email/test_gmail_client.py`, and the worker runtime suites.
 
 ## Entry Points
 - App bootstrap: `backend/app/main.py`

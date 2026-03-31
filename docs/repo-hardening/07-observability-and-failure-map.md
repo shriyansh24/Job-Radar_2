@@ -58,6 +58,30 @@ Document where the major runtime flows log today, where failures surface, and wh
 - Current gap:
   - auth logs now inherit request IDs from middleware-bound contextvars and carry normalized `reason` codes, but there is still no separate security audit sink beyond the app log stream
 
+### Google integration and Gmail sync
+- Files:
+  - `backend/app/integrations/google_oauth.py`
+  - `backend/app/email/gmail_sync.py`
+  - `backend/app/workers/gmail_worker.py`
+  - `backend/app/settings/router.py`
+  - `backend/app/email/service.py`
+- Signals:
+  - `google_integration_connected`
+  - `gmail_worker_started`
+  - `gmail_worker_skipped`
+  - `gmail_worker_user_failed`
+  - `gmail_worker_completed`
+  - `gmail_sync_completed`
+  - `email_duplicate_skipped`
+  - integration state fields `last_validated_at`, `last_synced_at`, and `last_error`
+- Failure behavior:
+  - missing Google OAuth env configuration fails the connect flow loudly
+  - invalid or expired tokens surface as Google OAuth errors and are persisted back onto the integration state
+  - per-user Gmail worker failures are isolated and logged so one bad account does not abort the full scheduled run
+  - low-confidence Gmail signals degrade to review-required notifications rather than silent pipeline transitions
+- Current gap:
+  - there is still no dedicated auth/audit sink or deployment-routed alerting for Gmail failures beyond the app log stream and integration-state metadata
+
 ### Migration lifecycle
 - Files:
   - `backend/app/migrations/env.py`
@@ -112,6 +136,7 @@ Document where the major runtime flows log today, where failures surface, and wh
 - Real external ATS/browser submission flows still depend on manual validation rather than deterministic in-repo browser tests.
 - Scheduler job execution semantics are now explicit and health-backed, but queue throughput trend monitoring and alert routing are still deployment concerns.
 - Auth logs are now explicit and request-correlated, but they are not separated into a dedicated audit sink.
+- Gmail sync emits structured lifecycle logs and integration error state, but long-window alert routing and dashboards remain deployment-owned.
 
 ## Existing Positive Controls
 - `request_completed` structured logs exist.

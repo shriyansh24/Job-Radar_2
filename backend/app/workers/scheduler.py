@@ -150,6 +150,15 @@ def create_scheduler() -> AsyncIOScheduler:
         replace_existing=True,
     )
 
+    # Gmail sync: every 30 minutes
+    scheduler.add_job(
+        enqueue_registered_job,
+        IntervalTrigger(minutes=30),
+        id="gmail_sync",
+        kwargs={"job_name": "gmail_sync"},
+        replace_existing=True,
+    )
+
     # Source health: every 4 hours
     scheduler.add_job(
         enqueue_registered_job,

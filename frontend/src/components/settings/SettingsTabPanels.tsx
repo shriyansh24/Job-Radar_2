@@ -1,4 +1,4 @@
-import type { AppSettings, IntegrationStatus, SavedSearch } from "../../api/settings";
+import type { AppSettings, IntegrationProvider, IntegrationStatus, SavedSearch } from "../../api/settings";
 import type { ThemeFamily, ThemeMode } from "../../store/useUIStore";
 import {
   SettingsAppearanceSection,
@@ -40,6 +40,7 @@ type SettingsTabPanelsProps = {
   passwordPending: boolean;
   savingProvider: IntegrationStatus["provider"] | null;
   deletingProvider: IntegrationStatus["provider"] | null;
+  syncingGoogle: boolean;
   onModeChange: (mode: ThemeMode) => void;
   onThemeFamilyChange: (themeFamily: ThemeFamily) => void;
   onNotificationsChange: (checked: boolean) => void;
@@ -48,9 +49,11 @@ type SettingsTabPanelsProps = {
   onNewPasswordChange: (value: string) => void;
   onConfirmPasswordChange: (value: string) => void;
   onPasswordSubmit: () => void;
-  onIntegrationDraftChange: (provider: string, value: string) => void;
-  onIntegrationSave: (provider: IntegrationStatus["provider"]) => void;
-  onIntegrationDelete: (provider: IntegrationStatus["provider"]) => void;
+  onIntegrationDraftChange: (provider: IntegrationProvider, value: string) => void;
+  onIntegrationSave: (provider: Exclude<IntegrationProvider, "google">) => void;
+  onIntegrationDelete: (provider: IntegrationProvider) => void;
+  onGoogleConnect: () => void;
+  onGoogleSync: () => void;
   onCreateSearch: () => void;
   onEditSearch: (search: SavedSearch) => void;
   onToggleSearch: (search: SavedSearch) => void;
@@ -86,6 +89,7 @@ function SettingsTabPanels({
   passwordPending,
   savingProvider,
   deletingProvider,
+  syncingGoogle,
   onModeChange,
   onThemeFamilyChange,
   onNotificationsChange,
@@ -97,6 +101,8 @@ function SettingsTabPanels({
   onIntegrationDraftChange,
   onIntegrationSave,
   onIntegrationDelete,
+  onGoogleConnect,
+  onGoogleSync,
   onCreateSearch,
   onEditSearch,
   onToggleSearch,
@@ -160,8 +166,11 @@ function SettingsTabPanels({
         onDraftChange={onIntegrationDraftChange}
         onSave={onIntegrationSave}
         onDelete={onIntegrationDelete}
+        onConnectGoogle={onGoogleConnect}
+        onSyncGoogle={onGoogleSync}
         savingProvider={savingProvider}
         deletingProvider={deletingProvider}
+        syncingGoogle={syncingGoogle}
       />
     );
   }
