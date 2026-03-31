@@ -1,7 +1,5 @@
 import {
   ArrowClockwise,
-  CaretLeft,
-  CaretRight,
   CheckCircle,
   Crosshair,
   Plus,
@@ -17,14 +15,12 @@ import { PageHeader } from "../components/system/PageHeader";
 import { StateBlock } from "../components/system/StateBlock";
 import { Surface } from "../components/system/Surface";
 import { CareerPageModal, type CareerPageDraft } from "../components/targets/CareerPageModal";
+import { TargetsFiltersPanel, type TargetsFilters } from "../components/targets/TargetsFiltersPanel";
+import { TargetsListPanel } from "../components/targets/TargetsListPanel";
 import Button from "../components/ui/Button";
-import EmptyState from "../components/ui/EmptyState";
-import Select from "../components/ui/Select";
 import { toast } from "../components/ui/toastService";
 import { TargetDetail } from "../components/targets/TargetDetail";
 import { TargetImportModal } from "../components/targets/TargetImportModal";
-import { TargetRow } from "../components/targets/TargetRow";
-import { TargetRowSkeleton } from "../components/targets/TargetRowSkeleton";
 
 const pageSize = 50;
 
@@ -44,11 +40,7 @@ export default function Targets() {
   const [careerPageModalOpen, setCareerPageModalOpen] = useState(false);
   const [careerPageDraft, setCareerPageDraft] = useState<CareerPageDraft>(blankCareerPageDraft());
   const [page, setPage] = useState(0);
-  const [filters, setFilters] = useState<{
-    priority_class: string;
-    ats_vendor: string;
-    status: string;
-  }>({
+  const [filters, setFilters] = useState<TargetsFilters>({
     priority_class: "",
     ats_vendor: "",
     status: "",
@@ -243,139 +235,44 @@ export default function Targets() {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
         <ScraperControlPanel />
-
-        <Surface tone="default" padding="lg" radius="xl" className="hero-panel">
-          <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-1">
-            <Select
-              value={filters.priority_class}
-              onChange={(event) => {
-                setFilters((current) => ({ ...current, priority_class: event.target.value }));
-                setPage(0);
-              }}
-              options={[
-                { value: "watchlist", label: "Watchlist" },
-                { value: "hot", label: "Hot" },
-                { value: "warm", label: "Warm" },
-                { value: "cool", label: "Cool" },
-              ]}
-              placeholder="All priorities"
-              label="Priority"
-            />
-            <Select
-              value={filters.ats_vendor}
-              onChange={(event) => {
-                setFilters((current) => ({ ...current, ats_vendor: event.target.value }));
-                setPage(0);
-              }}
-              options={[
-                { value: "greenhouse", label: "Greenhouse" },
-                { value: "lever", label: "Lever" },
-                { value: "ashby", label: "Ashby" },
-                { value: "workday", label: "Workday" },
-                { value: "unknown", label: "Unknown" },
-              ]}
-              placeholder="All vendors"
-              label="ATS vendor"
-            />
-            <Select
-              value={filters.status}
-              onChange={(event) => {
-                setFilters((current) => ({ ...current, status: event.target.value }));
-                setPage(0);
-              }}
-              options={[
-                { value: "enabled", label: "Enabled" },
-                { value: "disabled", label: "Disabled" },
-                { value: "quarantined", label: "Quarantined" },
-              ]}
-              placeholder="All statuses"
-              label="Status"
-            />
-          </div>
-        </Surface>
+        <TargetsFiltersPanel
+          filters={filters}
+          onPriorityChange={(value) => {
+            setFilters((current) => ({ ...current, priority_class: value }));
+            setPage(0);
+          }}
+          onVendorChange={(value) => {
+            setFilters((current) => ({ ...current, ats_vendor: value }));
+            setPage(0);
+          }}
+          onStatusChange={(value) => {
+            setFilters((current) => ({ ...current, status: value }));
+            setPage(0);
+          }}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]">
-        <Surface tone="default" padding="none" radius="xl" className="brutal-panel overflow-hidden">
-          <div className="border-b-2 border-border px-5 py-4">
-            <div className="flex items-baseline justify-between gap-3">
-              <div>
-                <div className="text-sm font-black uppercase tracking-[-0.03em] text-text-primary">
-                  Targets
-                </div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  <span className="font-mono text-text-secondary">{list.length}</span> of {totalCount} shown
-                </div>
-              </div>
-              <div className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                Page {page + 1}
-              </div>
-            </div>
-          </div>
-
-          <div className="min-h-[420px]">
-            {isError ? (
-              <div className="p-8 text-center text-sm text-accent-danger">
-                Failed to load targets. Please try again.
-              </div>
-            ) : isLoading ? (
-              Array.from({ length: 10 }).map((_, index) => <TargetRowSkeleton key={index} />)
-            ) : list.length === 0 ? (
-              <div className="p-6">
-                <EmptyState
-                  icon={<Crosshair size={40} weight="bold" />}
-                  title="No targets found"
-                  description="Import targets or adjust your filters"
-                  action={{ label: "Add Career Page", onClick: openCreateCareerPage }}
-                />
-              </div>
-            ) : (
-              list.map((target) => (
-                <TargetRow
-                  key={target.id}
-                  target={target}
-                  isSelected={target.id === selectedId}
-                  onClick={() => setSelectedId(target.id === selectedId ? null : target.id)}
-                  onToggleEnabled={(enabled) =>
-                    toggleEnabledMutation.mutate({ id: target.id, enabled })
-                  }
-                />
-              ))
-            )}
-          </div>
-
-          <div className="flex items-center justify-between border-t-2 border-border px-5 py-3">
-            <span className="text-xs text-text-muted">
-              Page <span className="font-mono text-text-secondary">{page + 1}</span>
-            </span>
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={page === 0}
-                onClick={() => {
-                  setPage((current) => current - 1);
-                  window.scrollTo(0, 0);
-                }}
-                icon={<CaretLeft size={14} weight="bold" />}
-              >
-                Prev
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={!hasMore}
-                onClick={() => {
-                  setPage((current) => current + 1);
-                  window.scrollTo(0, 0);
-                }}
-                icon={<CaretRight size={14} weight="bold" />}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </Surface>
+        <TargetsListPanel
+          targets={list}
+          totalCount={totalCount}
+          page={page}
+          isLoading={isLoading}
+          isError={isError}
+          hasMore={hasMore}
+          selectedId={selectedId}
+          onCreateCareerPage={openCreateCareerPage}
+          onSelectTarget={(id) => setSelectedId(id === selectedId ? null : id)}
+          onToggleEnabled={(id, enabled) => toggleEnabledMutation.mutate({ id, enabled })}
+          onPreviousPage={() => {
+            setPage((current) => current - 1);
+            window.scrollTo(0, 0);
+          }}
+          onNextPage={() => {
+            setPage((current) => current + 1);
+            window.scrollTo(0, 0);
+          }}
+        />
 
         <Surface tone="default" padding="none" radius="xl" className="hero-panel overflow-hidden">
           {selectedId ? (
