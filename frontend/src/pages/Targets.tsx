@@ -6,175 +6,51 @@ import {
   UploadSimple,
   Warning,
 } from "@phosphor-icons/react";
-import { AxiosError } from "axios";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { scraperApi, type TargetListParams, type TargetWithAttempts } from "../api/scraper";
-import ScraperControlPanel from "../components/scraper/ScraperControlPanel";
-import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader } from "../components/system/PageHeader";
+import { MetricStrip } from "../components/system/MetricStrip";
 import { StateBlock } from "../components/system/StateBlock";
 import { Surface } from "../components/system/Surface";
-import { CareerPageModal, type CareerPageDraft } from "../components/targets/CareerPageModal";
-import { TargetsFiltersPanel, type TargetsFilters } from "../components/targets/TargetsFiltersPanel";
-import { TargetsListPanel } from "../components/targets/TargetsListPanel";
+import ScraperControlPanel from "../components/scraper/ScraperControlPanel";
 import Button from "../components/ui/Button";
-import { toast } from "../components/ui/toastService";
+import { CareerPageModal } from "../components/targets/CareerPageModal";
 import { TargetDetail } from "../components/targets/TargetDetail";
 import { TargetImportModal } from "../components/targets/TargetImportModal";
-
-const pageSize = 50;
-
-function getApiErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof AxiosError) {
-    const detail = error.response?.data?.detail;
-    if (typeof detail === "string" && detail.trim()) {
-      return detail;
-    }
-  }
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-  return fallback;
-}
-
-function blankCareerPageDraft(): CareerPageDraft {
-  return {
-    id: null,
-    url: "",
-    companyName: "",
-    enabled: true,
-  };
-}
+import { TargetsFiltersPanel } from "../components/targets/TargetsFiltersPanel";
+import { TargetsListPanel } from "../components/targets/TargetsListPanel";
+import { useTargetsPageController } from "../components/targets/useTargetsPageController";
 
 export default function Targets() {
-  const queryClient = useQueryClient();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [showImport, setShowImport] = useState(false);
-  const [careerPageModalOpen, setCareerPageModalOpen] = useState(false);
-  const [careerPageDraft, setCareerPageDraft] = useState<CareerPageDraft>(blankCareerPageDraft());
-  const [page, setPage] = useState(0);
-  const [filters, setFilters] = useState<TargetsFilters>({
-    priority_class: "",
-    ats_vendor: "",
-    status: "",
-  });
-
-  const apiParams: TargetListParams = {
-    limit: pageSize,
-    offset: page * pageSize,
-  };
-  if (filters.priority_class) apiParams.priority_class = filters.priority_class;
-  if (filters.ats_vendor) apiParams.ats_vendor = filters.ats_vendor;
-  if (filters.status === "enabled") apiParams.enabled = true;
-  if (filters.status === "disabled") apiParams.enabled = false;
-  if (filters.status === "quarantined") apiParams.quarantined = true;
-
-  const { data: targets, isLoading, isError } = useQuery({
-    queryKey: ["targets", apiParams],
-    queryFn: () => scraperApi.listTargets(apiParams).then((r) => r.data),
-    placeholderData: keepPreviousData,
-  });
-
-  const toggleEnabledMutation = useMutation({
-    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      scraperApi.updateTarget(id, { enabled }),
-    onSuccess: (_, vars) => {
-      toast("success", vars.enabled ? "Target enabled" : "Target disabled");
-      queryClient.invalidateQueries({ queryKey: ["targets"] });
-      if (selectedId) queryClient.invalidateQueries({ queryKey: ["target", selectedId] });
-    },
-    onError: () => toast("error", "Failed to update target"),
-  });
-
-  const createCareerPageMutation = useMutation({
-    mutationFn: (draft: CareerPageDraft) =>
-      scraperApi.createCareerPage({
-        url: draft.url,
-        company_name: draft.companyName || undefined,
-      }),
-    onSuccess: () => {
-      toast("success", "Career page created");
-      queryClient.invalidateQueries({ queryKey: ["targets"] });
-      setCareerPageModalOpen(false);
-      setCareerPageDraft(blankCareerPageDraft());
-    },
-    onError: (error) => toast("error", getApiErrorMessage(error, "Failed to create career page")),
-  });
-
-  const updateCareerPageMutation = useMutation({
-    mutationFn: (draft: CareerPageDraft) =>
-      scraperApi.updateCareerPage(draft.id!, {
-        url: draft.url,
-        company_name: draft.companyName || undefined,
-        enabled: draft.enabled,
-      }),
-    onSuccess: (_response, draft) => {
-      toast("success", "Career page updated");
-      queryClient.invalidateQueries({ queryKey: ["targets"] });
-      if (draft.id) {
-        queryClient.invalidateQueries({ queryKey: ["target", draft.id] });
-      }
-      setCareerPageModalOpen(false);
-      setCareerPageDraft(blankCareerPageDraft());
-    },
-    onError: (error) => toast("error", getApiErrorMessage(error, "Failed to update career page")),
-  });
-
-  const deleteCareerPageMutation = useMutation({
-    mutationFn: (id: string) => scraperApi.deleteCareerPage(id),
-    onSuccess: (_response, id) => {
-      toast("success", "Career page deleted");
-      queryClient.invalidateQueries({ queryKey: ["targets"] });
-      queryClient.removeQueries({ queryKey: ["target", id] });
-      if (selectedId === id) {
-        setSelectedId(null);
-      }
-      setCareerPageModalOpen(false);
-      setCareerPageDraft(blankCareerPageDraft());
-    },
-    onError: (error) => toast("error", getApiErrorMessage(error, "Failed to delete career page")),
-  });
-
-  const list = targets?.items ?? [];
-  const totalCount = targets?.total ?? 0;
-  const hasMore = list.length === pageSize;
-  const enabledCount = list.filter((target) => target.enabled).length;
-  const quarantinedCount = list.filter((target) => target.quarantined).length;
-  const vendors = new Set(list.map((target) => target.ats_vendor || "unknown"));
-
-  function openCreateCareerPage() {
-    setCareerPageDraft(blankCareerPageDraft());
-    setCareerPageModalOpen(true);
-  }
-
-  function openEditCareerPage(target: TargetWithAttempts) {
-    setCareerPageDraft({
-      id: target.id,
-      url: target.url,
-      companyName: target.company_name ?? "",
-      enabled: target.enabled,
-    });
-    setCareerPageModalOpen(true);
-  }
-
-  function submitCareerPage(draft: CareerPageDraft) {
-    if (draft.id) {
-      updateCareerPageMutation.mutate(draft);
-      return;
-    }
-    createCareerPageMutation.mutate(draft);
-  }
-
-  function requestCareerPageDelete(target: TargetWithAttempts) {
-    const confirmed = window.confirm(
-      `Delete the career page target for ${target.company_name ?? target.url}?`
-    );
-    if (!confirmed) {
-      return;
-    }
-    deleteCareerPageMutation.mutate(target.id);
-  }
+  const {
+    selectedId,
+    setSelectedId,
+    showImport,
+    setShowImport,
+    careerPageModalOpen,
+    careerPageDraft,
+    page,
+    setPage,
+    filters,
+    list,
+    totalCount,
+    hasMore,
+    enabledCount,
+    quarantinedCount,
+    vendors,
+    isLoading,
+    isError,
+    toggleEnabled,
+    openCreateCareerPage,
+    openEditCareerPage,
+    submitCareerPage,
+    requestCareerPageDelete,
+    deleteCareerPageById,
+    setPriorityClass,
+    setVendor,
+    setStatus,
+    closeCareerPageModal,
+    careerPageDeleting,
+    careerPageSaving,
+  } = useTargetsPageController();
 
   return (
     <div className="space-y-6">
@@ -251,18 +127,9 @@ export default function Targets() {
         <ScraperControlPanel />
         <TargetsFiltersPanel
           filters={filters}
-          onPriorityChange={(value) => {
-            setFilters((current) => ({ ...current, priority_class: value }));
-            setPage(0);
-          }}
-          onVendorChange={(value) => {
-            setFilters((current) => ({ ...current, ats_vendor: value }));
-            setPage(0);
-          }}
-          onStatusChange={(value) => {
-            setFilters((current) => ({ ...current, status: value }));
-            setPage(0);
-          }}
+          onPriorityChange={setPriorityClass}
+          onVendorChange={setVendor}
+          onStatusChange={setStatus}
         />
       </div>
 
@@ -277,7 +144,7 @@ export default function Targets() {
           selectedId={selectedId}
           onCreateCareerPage={openCreateCareerPage}
           onSelectTarget={(id) => setSelectedId(id === selectedId ? null : id)}
-          onToggleEnabled={(id, enabled) => toggleEnabledMutation.mutate({ id, enabled })}
+          onToggleEnabled={toggleEnabled}
           onPreviousPage={() => {
             setPage((current) => current - 1);
             window.scrollTo(0, 0);
@@ -295,7 +162,7 @@ export default function Targets() {
               onClose={() => setSelectedId(null)}
               onEditCareerPage={openEditCareerPage}
               onDeleteCareerPage={requestCareerPageDelete}
-              deletingCareerPage={deleteCareerPageMutation.isPending}
+              deletingCareerPage={careerPageDeleting}
             />
           ) : (
             <div className="p-5">
@@ -314,12 +181,9 @@ export default function Targets() {
       <CareerPageModal
         open={careerPageModalOpen}
         draft={careerPageDraft}
-        saving={createCareerPageMutation.isPending || updateCareerPageMutation.isPending}
-        deleting={deleteCareerPageMutation.isPending}
-        onClose={() => {
-          setCareerPageModalOpen(false);
-          setCareerPageDraft(blankCareerPageDraft());
-        }}
+        saving={careerPageSaving}
+        deleting={careerPageDeleting}
+        onClose={closeCareerPageModal}
         onSave={submitCareerPage}
         onDelete={
           careerPageDraft.id
@@ -328,7 +192,7 @@ export default function Targets() {
                   `Delete the career page target for ${draft.companyName || draft.url}?`
                 );
                 if (confirmed) {
-                  deleteCareerPageMutation.mutate(draft.id!);
+                  deleteCareerPageById(draft.id!);
                 }
               }
             : undefined
