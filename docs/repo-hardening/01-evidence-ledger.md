@@ -30,7 +30,6 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 
 ### Branches Worth Mining
 - `main`
-- `codex/ui-changes`
 - `feat/p1-core-value`
 - `ui-overhaul-design`
 - remote history/provenance:
@@ -70,6 +69,9 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 | `FIXED` | Current-state referenced a missing historical doc set | `docs/current-state/04-data-and-scraping.md` referenced a missing legacy superpowers doc set | The missing-path reference was removed from live docs |
 | `FIXED` | Current-state and system-inventory conflicted | `docs/system-inventory/13-open-questions.txt` treated resolved contract drift as open | Current-state remains authoritative and the inventory file now carries historical framing |
 | `FIXED` | Dev proxy previously did not match containerized dev | `frontend/vite.config.ts` proxies `/api` to `http://localhost:8000`; `docker-compose.dev.yml` runs the frontend inside a container | The dev overlay now sets `VITE_API_PROXY_TARGET=http://backend:8000`, publishes only `5173:5173`, and health-checks the actual Vite port |
+| `FIXED` | Compose command execution relied on image-entrypoint drift | `backend/Dockerfile` expected `uv run`, while base/dev compose overrode commands with bare `uvicorn` / `python` invocations | Base and dev compose now invoke `uv run ...` explicitly for `migrate`, `backend`, `scheduler`, and the worker services so the runtime contract is the same in image, base compose, and dev overlay |
+| `FIXED` | Base compose local runtime contradicted cookie-validation policy | Base compose booted backend services without `JR_DEBUG`, while runtime validation rejects insecure cookies when debug is false | The compose-first local stack now sets `JR_DEBUG=true` on backend-based services so `http://localhost` login remains valid in the documented local baseline |
+| `FIXED` | Scheduler and worker healthchecks bypassed the container runtime | Compose healthchecks called raw `python -m app.runtime.healthcheck ...`, which could not import `.venv` dependencies inside the container | Scheduler and worker probes now run through `uv run python -m app.runtime.healthcheck ...`, matching the live service runtime instead of a partial interpreter path |
 | `FIXED` | Browser lane did not exist in-repo | Browser QA was manual-only in `.claude/ui-captures/` | Playwright config and committed `frontend/e2e/{smoke,flows,theme-matrix,support}` suites now exist and are wired into GitHub Actions |
 | `FIXED` | CI job naming was too coarse | Generic frontend/backend jobs made failures hard to localize | Required checks now emit stable, specific job names for backend quality, backend tests, frontend quality, frontend build/tests, docs validation, migration safety, and browser smoke |
 | `FIXED` | CODEOWNERS / templates were absent | No `CODEOWNERS`, no issue or PR templates under `.github/` | CODEOWNERS plus PR and issue templates are now checked in as repo guardrails |
@@ -85,15 +87,16 @@ Capture verified contradictions, stale references, runtime conflicts, branch lea
 | `DOCUMENTED` | Frontend test topology | `frontend/src/tests/`, `frontend/e2e/` | The frontend now has role-based unit and browser lanes, but several page and component suites still cover multiple behaviors inside one file |
 | `FIXED` | Backend test topology | `backend/tests/{contracts,infra,integration,migrations,security,unit,workers}` plus `backend/tests/README.md` | The backend layout is now role-based and the flat `unit/` root has been drained; the remaining subsystem buckets are intentional rather than undocumented drift |
 | `FIXED` | Committed browser/e2e lane exists | `frontend/playwright.config.ts`, `frontend/e2e/README.md`, and checked-in specs under `smoke/`, `flows/`, and `theme-matrix/` | Browser QA is no longer manual-only and the route-family matrix now covers the routed frontend families across all 8 theme combinations |
+| `FIXED` | Adaptive parser fixture harness exists | `backend/app/scraping/scrapers/adaptive_parser.py`, `backend/tests/unit/scraping/test_adaptive_parser_diagnostics.py` | Selector, JSON-LD, embedded-state, JS-shell, and Cloudflare-challenge fixtures are now classified deterministically instead of collapsing every miss into the same “zero jobs” bucket |
 | `DOCUMENTED` | Coverage expectations are uneven | backend gate uses `--cov-fail-under=60`; frontend gate uses `40` statement coverage | The repo still needs an explicit rationale for why frontend quality policy is materially lower |
 
 ## Verified Branch And Phase Leads
 
 | Status | Branch | Evidence | Finding |
 |---|---|---|---|
-| `DOCUMENTED` | `feat/p1-core-value` | local tip `cc907ec`; PR #13 metadata plus selective recovery on `codex/ui-changes` | Still contains unique P0/P1 capability work not in `main` or fully on `codex/ui-changes`, but ATS identity persistence, hybrid search, interview prep, the auto-apply execution path, digest-worker follow-through, and some pipeline ergonomics are no longer branch-only |
+| `DOCUMENTED` | `feat/p1-core-value` | local tip `cc907ec`; PR #13 metadata plus selective recovery merged through `codex/ui-changes` into `main` | Still contains unique historical P0/P1 capability work that was not promoted, but ATS identity persistence, hybrid search, interview prep, the auto-apply execution path, digest-worker follow-through, and some pipeline ergonomics are no longer branch-only |
 | `DOCUMENTED` | `origin/feat/p2-polish-advanced` | PR #17 metadata and current branch topology | Useful as provenance for P2 capability history, but current tip appears converged into `main`; not a unique live-code branch anymore |
-| `DOCUMENTED` | `codex/ui-changes` | live branch history from `3ae5eac` through `5ef1c0a` | This is the unique UI overhaul and hardening line with theme-family runtime, shell/page decomposition, runtime split, CSRF hardening, and committed browser coverage |
+| `DOCUMENTED` | `codex/ui-changes` | merged branch history from `3ae5eac` through `57659cd`, merged to `main` as `c779af2` | This was the unique UI overhaul and hardening line with theme-family runtime, shell/page decomposition, runtime split, CSRF hardening, and committed browser coverage; it is now provenance, not an active branch |
 | `DOCUMENTED` | `ui-overhaul-design` | branch-only commits visible in local history | Historical UI spike with unique docs/components, but not the selected live UI line |
 
 ## Source-Of-Truth Matrix

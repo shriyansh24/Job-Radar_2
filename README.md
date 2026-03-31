@@ -1,6 +1,6 @@
 # JobRadar V2
 
-JobRadar V2 is a full-stack job-search and career-operations workspace. It combines direct job scraping, enrichment, pipeline tracking, interview prep, resume tooling, compensation analysis, vault management, and auto-apply support behind a single React frontend and FastAPI backend.
+JobRadar V2 is a full-stack job-search and career-operations workspace. It combines direct job scraping, enrichment, pipeline tracking, interview prep, resume tooling, compensation analysis, vault management, auto-apply support, and Gmail-first hiring-signal intake behind a single React frontend and FastAPI backend.
 
 ## Start Here
 - Live repo state: `docs/current-state/00-index.md`
@@ -20,12 +20,14 @@ JobRadar V2 is a full-stack job-search and career-operations workspace. It combi
 - Frontend: React 19, Vite 6, TypeScript, Tailwind CSS v4, Zustand, React Query
 - Backend: FastAPI, SQLAlchemy async, PostgreSQL, Alembic, `uv`
 - Runtime: compose-first local stack with Postgres, Redis, one-shot migrations, API, dedicated scheduler, queue-specific ARQ workers (`scraping`, `analysis`, `ops`), and frontend
+- Integrations: provider-typed settings surface with API-key providers plus Google OAuth for Gmail sync into the existing email and pipeline modules
+- Runtime observability: Redis-backed queue telemetry history, queue alert transitions, optional queue alert webhook routing, and Admin-visible auth audit events
 - Browser validation: committed Playwright coverage under `frontend/e2e/` plus broader screenshot sweeps under `.claude/ui-captures/`
-- Selective P1 recovery already live on this branch: queue-backed worker runtime, ATS identity persistence on scraped jobs, recovered auto-apply execution and operator controls, richer interview prep bundles, bounded hybrid semantic search, live analytics pattern surfaces, resume preview/export flows, and the digest-worker follow-through on the ops lane
+- Selective P1 recovery is now live on `main`: queue-backed worker runtime, ATS identity persistence on scraped jobs, recovered auto-apply execution and operator controls, richer interview prep bundles, bounded hybrid semantic search, live analytics pattern surfaces, resume preview/export flows, and the digest-worker follow-through on the ops lane
 
 ## Current Branch Strategy
-- `main` is the baseline/default branch.
-- `codex/ui-changes` is the active workspace branch for the current frontend and repo-hardening work.
+- `main` is the canonical active and default branch.
+- `codex/ui-changes` was the final broad integration branch and is now merged into `main`.
 - `feat/p1-core-value` is a selective recovery source, not a blind-merge target.
 - Historical and retained branch decisions are tracked in `docs/repo-hardening/04-branch-disposition.md`.
 
@@ -74,8 +76,20 @@ uv run python -m app.runtime.arq_worker analysis
 uv run python -m app.runtime.arq_worker ops
 ```
 
-The scheduler now enqueues named jobs onto ARQ queues `scraping`, `analysis`, and `ops`. Queue-specific worker services consume those queues directly instead of the scheduler spawning one-shot worker subprocesses. Treat [05-ops-and-ci.md](D:/jobradar-v2/docs/current-state/05-ops-and-ci.md) as the authoritative runtime-status page for current worker ownership, runtime health probes, and validation commands.
+The scheduler now enqueues named jobs onto ARQ queues `scraping`, `analysis`, and `ops`. Queue-specific worker services consume those queues directly instead of the scheduler spawning one-shot worker subprocesses. Treat [05-ops-and-ci.md](D:/jobradar-v2/docs/current-state/05-ops-and-ci.md) as the authoritative runtime-status page for current worker ownership, runtime health probes, telemetry history, and validation commands.
 Migration replay, rollback stance, and backfill guidance for the current tree are documented in [10-migration-ops.md](D:/jobradar-v2/docs/repo-hardening/10-migration-ops.md).
+
+### Gmail-First Integration Runtime
+If you want Gmail-derived hiring signals in the live email and pipeline surfaces, configure:
+- `JR_FRONTEND_BASE_URL`
+- `JR_GOOGLE_OAUTH_CLIENT_ID`
+- `JR_GOOGLE_OAUTH_CLIENT_SECRET`
+- `JR_GOOGLE_OAUTH_REDIRECT_URI`
+- `JR_GOOGLE_GMAIL_SYNC_QUERY`
+- `JR_GOOGLE_GMAIL_SYNC_MAX_MESSAGES`
+
+The Google integration is Gmail-first only. It adds OAuth-backed Gmail sync through the existing Settings > Integrations surface and the `gmail_sync` scheduled job on the `ops` worker lane. It does not turn the app into a general inbox client, and Calendar, Drive, and `googleworkspace/cli` remain out of live scope.
+Queue telemetry history and queue alert routing are also repo-owned now: the scheduler records Redis-backed queue samples and alert transitions, and the Admin runtime view reads that history back for operators.
 
 ### Host-Local Frontend
 ```bash
@@ -105,6 +119,8 @@ npm run test -- --run
 npm run e2e
 npm run build
 ```
+
+`npm run e2e` now owns the Vite server and will reuse an already-running backend API on `127.0.0.1:8000` when present. If no backend is running, Playwright will run `alembic upgrade head` and boot the API itself before the browser suite starts. That still requires reachable Postgres and Redis settings; the repo-local preflight will fail early with an actionable message instead of proxying browser requests into a dead backend.
 
 ### Browser QA
 - Keep broader screenshot captures in `.claude/ui-captures/`
@@ -143,10 +159,12 @@ jobradar-v2/
 ## GitHub And Safety
 - GitHub Actions currently cover `Repository Validation`, `Docs Validation`, `Migration Safety`, `Dependency Review`, `CodeQL`, and the dedicated browser check `Frontend E2E Smoke / frontend-e2e-smoke`.
 - Backend dependency auditing runs through `scripts/run_backend_dependency_audit.py` and the reviewed exception policy in `backend/pip-audit-policy.json` so CVE exceptions are explicit, dated, and checked in instead of hidden inside workflow YAML.
-- Treat `main` as PR-only.
+- `main` is now enforced as PR-only with `1` approving review, stale-review dismissal, conversation resolution, admin enforcement, and strict required checks for `Backend quality and security checks`, `Backend test suite`, `Frontend audit and lint`, `Frontend tests and build`, `CodeQL (python)`, `CodeQL (javascript-typescript)`, and `Frontend E2E Smoke / frontend-e2e-smoke`.
+- `Docs Validation`, `Migration Safety`, and `Dependency Review` remain enabled, but they are not unconditional branch-protection checks because they do not emit in every change shape.
 - Keep docs, tests, and runtime-truth updates in the same batch as behavior changes.
 - Keep ARQ queue-topology claims, worker-service claims, and retry-policy changes in `docs/current-state/05-ops-and-ci.md`.
 - Do not treat `docs/research/` as committed scope unless it is explicitly promoted into `docs/current-state/` and the relevant front-door docs.
+- Keep Google OAuth callback URL, Gmail sync cadence, and Gmail-first scope limits aligned across `.env.example`, current-state docs, and runtime code.
 
 ## Read Next
 - `docs/current-state/00-index.md`

@@ -20,18 +20,47 @@
 ### Infrastructure
 - `docker compose up -d` is the canonical full-stack compose runtime
 - Base compose now owns `postgres`, `redis`, `migrate`, `backend`, `scheduler`, `worker-scraping`, `worker-analysis`, `worker-ops`, and `frontend`
+- The base compose file is the local-development baseline, so backend-based services set `JR_DEBUG=true`. That keeps cookie/runtime validation aligned with plain `http://localhost` instead of forcing production-only secure-cookie behavior into the local stack.
 - `docker compose -f docker-compose.yml -f docker-compose.dev.yml up backend scheduler worker-scraping worker-analysis worker-ops frontend` is the bind-mounted dev overlay for Uvicorn, the dedicated scheduler process, queue-specific ARQ workers, and Vite on top of the base compose services
+- Backend-based compose services now invoke `uv run ...` explicitly in both the base file and the dev overlay rather than relying on a hidden image entrypoint contract. This keeps `backend`, `migrate`, `scheduler`, and the worker lanes executable even when compose overrides the image command.
 - The dev overlay now publishes only `5173:5173`, health-checks `http://127.0.0.1:5173/`, and sets `VITE_API_PROXY_TARGET=http://backend:8000` so the frontend container can proxy `/api` traffic to the backend container instead of incorrectly looping back to itself.
 - Redis is provisioned in the compose baseline and is now the active queue backbone for background execution.
 - The live runtime shape is: scheduler enqueues named jobs to ARQ queues `scraping`, `analysis`, and `ops`; queue-specific worker services consume those queues.
-- The scheduler now writes a Redis-backed heartbeat key and owns the `daily_digest` schedule on the ops lane.
-- Compose healthchecks now use runtime healthcheck commands against the live scheduler and worker surfaces rather than ready-marker files.
+- The scheduler now writes a Redis-backed heartbeat key and owns the `daily_digest`, `saved_search_alerts`, and `gmail_sync` schedules on the ops lane.
+- Career-page targets now run only through the `target_batch_career_page` ARQ job on the scraping lane; the older standalone `career_page_scrape` scheduler path was removed so conditional requests, robots policy, and adaptive parsing all share one authoritative execution path.
+- Compose healthchecks now use `uv run python -m app.runtime.healthcheck ...` against the live scheduler and worker surfaces rather than ready-marker files or raw interpreters that bypass the container environment.
 - `backend/app/runtime/worker.py` remains as a manual one-shot/debug runner, not the scheduled execution path.
+- Gmail-first integration is disabled unless the Google OAuth env vars are configured. The repo-local runtime knobs are:
+  - `JR_FRONTEND_BASE_URL`
+  - `JR_GOOGLE_OAUTH_CLIENT_ID`
+  - `JR_GOOGLE_OAUTH_CLIENT_SECRET`
+  - `JR_GOOGLE_OAUTH_REDIRECT_URI`
+  - `JR_GOOGLE_GMAIL_SYNC_QUERY`
+  - `JR_GOOGLE_GMAIL_SYNC_MAX_MESSAGES`
+- Operator-owned Gmail sync paths are:
+  - Settings > Integrations > `Connect Google`
+  - Settings > Integrations > `Sync Gmail`
+  - the scheduled `gmail_sync` worker job on the `ops` lane
+- The `worker-ops` lane now owns outbound Google OAuth + Gmail API traffic in addition to digest, alert, cleanup, and operator-support jobs.
+- The Admin page now includes a repo-owned runtime summary that surfaces queue depth, queue pressure, queue alerts, worker-lane counters, and the configured auth audit stream so operators can see the same queue state the scheduler and workers are using.
+- The Admin runtime summary now also includes recent queue telemetry samples, queue alert transition events, and recent auth audit events so operators can inspect the queue history and auth lifecycle without leaving the app.
+- Queue telemetry and queue alerts are written into Redis-backed streams by the scheduler runtime. The repo-owned keys are:
+  - `JR_QUEUE_TELEMETRY_STREAM_KEY`
+  - `JR_QUEUE_TELEMETRY_STREAM_MAXLEN`
+  - `JR_QUEUE_ALERT_STREAM_KEY`
+  - `JR_QUEUE_ALERT_STREAM_MAXLEN`
+  - `JR_QUEUE_ALERT_STATE_KEY`
+  - `JR_QUEUE_ALERT_WEBHOOK_URL`
+  - `JR_QUEUE_ALERT_WEBHOOK_TIMEOUT_SECONDS`
+  - `JR_ADMIN_RUNTIME_EVENT_LIMIT`
+- The auth audit stream is controlled by `JR_AUTH_AUDIT_STREAM_ENABLED`, `JR_AUTH_AUDIT_STREAM_KEY`, and `JR_AUTH_AUDIT_STREAM_MAXLEN`; when enabled, the sink is best-effort and does not block auth flows if Redis is unavailable.
+- The auth audit sink now feeds both the structured log stream and a Redis-backed audit stream when enabled; Admin runtime exposes the configured sink plus recent auth audit events so operators can see auth lifecycle transitions without grepping logs.
 
 ## Validation Commands
 
 ### Backend
 - `cd backend && uv run pytest tests/integration/test_auth_api.py tests/integration/test_settings_api.py tests/integration/test_admin_api.py tests/integration/test_vault_api.py`
+- `cd backend && uv run pytest tests/integration/test_settings_api.py tests/unit/settings/test_settings_service.py tests/unit/email/test_email_service_gmail.py tests/unit/email/test_gmail_sync.py tests/unit/email/test_google_oauth.py tests/unit/email/test_gmail_client.py`
 - `cd backend && uv run pytest tests/infra/test_runtime_config.py tests/infra/test_queue_runtime_compose.py tests/workers/test_queue_runtime.py tests/workers/test_arq_worker_runtime.py tests/workers/test_job_registry_runtime.py tests/workers/test_scheduler_runtime.py tests/workers/scraping/test_scrape_scheduler.py`
 - `cd backend && uv run pytest tests/workers/test_worker_runtime.py`
 - `cd backend && uv run pytest tests/integration/auto_apply/test_auto_apply_api.py tests/integration/scraping/test_scraping_identity.py tests/workers/test_digest_worker.py tests/migrations/test_job_ats_identity_migration.py tests/migrations/test_scrape_target_identity_migrations.py`
@@ -41,6 +70,8 @@
 - `cd frontend && npm run test -- --run`
 - `cd frontend && npm run e2e`
 - `cd frontend && npm run build`
+- `cd frontend && npm run e2e` now reuses a live backend on `127.0.0.1:8000` when present; otherwise `frontend/playwright.config.ts` invokes `scripts/start_playwright_backend.py`, which runs `alembic upgrade head`, boots the API, and fails early if Postgres or Redis are unreachable or misconfigured.
+- `cd frontend && $env:PLAYWRIGHT_BASE_URL='http://127.0.0.1:3000'; npx playwright test` is the compose-backed browser verification path when the Docker frontend/backend are already running and you want the browser suite to target the actual containerized app instead of a host-local Vite server.
 
 ### Browser QA
 - Start backend and frontend locally.
@@ -84,11 +115,26 @@
 - `migration-safety.yml` replays Alembic on clean Postgres and runs the full `backend/tests/migrations/` lane.
 - `migration-safety.yml` now runs the full `backend/tests/migrations/` lane and uploads `alembic history --verbose` output on failure for replay debugging.
 - `codeql.yml` and `dependency-review.yml` remain enabled.
+- Auth lifecycle events now emit to a dedicated Redis-backed audit stream in addition to the structured log stream. The repo-owned piece is the sink emission plus the Admin visibility of recent auth audit events and queue/runtime state; deployment-level routing for the stream remains external if durable long-window retention is desired.
 
-## Branch Protection Assumptions
-- Treat `main` as PR-only.
-- Require repository validation, dependency review, CodeQL, and `Frontend E2E Smoke / frontend-e2e-smoke` before merge.
-- Treat `Docs Validation` and `Migration Safety` as required path-scoped checks for doc/workflow/runtime and backend/migration changes respectively; if they must become unconditional required checks, convert them to always-run wrappers before tightening branch protection.
+## Branch Protection State
+- `main` is enforced as PR-only outside the repo.
+- The current enforced review policy on `main` is:
+  - `1` approving review
+  - stale-review dismissal
+  - conversation resolution
+  - admin enforcement
+  - no force pushes
+  - no branch deletion
+- The current enforced required checks on `main` are:
+  - `Backend quality and security checks`
+  - `Backend test suite`
+  - `Frontend audit and lint`
+  - `Frontend tests and build`
+  - `CodeQL (python)`
+  - `CodeQL (javascript-typescript)`
+  - `frontend-e2e-smoke`
+- `Docs Validation`, `Migration Safety`, and `Dependency Review` remain enabled workflow lanes, but they are not unconditional branch-protection checks because their trigger surfaces are narrower than the always-on validation lanes above.
 - Keep docs, tests, and runtime-truth updates in the same batch as behavior changes.
 - Do not make the required browser workflow path-filtered or matrix-shaped while branch protection depends on that exact emitted check name.
 
@@ -99,6 +145,9 @@
 - Compose-first local runtime is the repo default; older manual `jobradar-postgres` flows are now treated as legacy local overrides.
 - Scheduler and worker readiness now come from runtime healthcheck probes against the live queue surfaces rather than ready-marker files; the scheduler heartbeat also lives in Redis so compose and CI can probe the real runtime state.
 - Queue enqueue/dequeue logs now emit queue depth and retry metadata, retryable jobs raise real ARQ `Retry` with scheduled backoff, and non-retryable or final failures log `retry_exhausted` truthfully.
+- Gmail sync now emits repo-local lifecycle logs through `google_integration_connected`, `gmail_worker_started`, `gmail_worker_skipped`, `gmail_worker_user_failed`, `gmail_worker_completed`, `gmail_sync_completed`, and `email_duplicate_skipped`. Alert routing for those signals is still deployment-owned.
 - Worker isolation is queue-backed and compose-visible; queue telemetry now includes depth, oldest-job age, pressure, alert state, truthful retry exhaustion, worker-lane counters, and request/job correlation on queue-triggered operator paths. Request lifecycle logs also now carry route identity and authenticated user context when available. The remaining follow-through is mostly deployment-level alert routing and dashboards rather than missing repo-local runtime ownership.
-- The latest full local backend validation run on `2026-03-27` completed at `1025 passed, 1 skipped` with backend coverage at `71.24%` and no `app/` module below `50%` coverage.
+- The Admin runtime summary now exposes queue state and worker metrics directly in the UI, so the remaining queue follow-through is long-window alert routing and deployment dashboards rather than missing repo-local visibility.
+- The latest coverage-bearing backend validation run on `2026-03-27` completed at `1025 passed, 1 skipped` with backend coverage at `71.24%` and no `app/` module below `50%` coverage.
+- The latest full local backend rerun on `2026-03-31` completed at `1094 passed, 1 skipped`; the latest Docker-backed Playwright rerun on the same date completed at `14 passed`.
 - Backend dependency auditing now runs through `scripts/run_backend_dependency_audit.py`, which applies the checked-in reviewed exception policy from `backend/pip-audit-policy.json` instead of burying CVE ignores inline in workflow YAML.

@@ -6,6 +6,7 @@ import { toast } from "../components/ui/toastService";
 import { AdminDiagnosticsPanel } from "../components/admin/AdminDiagnosticsPanel";
 import { AdminHealthSummaryPanel } from "../components/admin/AdminHealthSummaryPanel";
 import { AdminMaintenanceActionsPanel } from "../components/admin/AdminMaintenanceActionsPanel";
+import { AdminRuntimePanel } from "../components/admin/AdminRuntimePanel";
 import { AdminSourceHealthTable } from "../components/admin/AdminSourceHealthTable";
 
 export default function Admin() {
@@ -23,6 +24,12 @@ export default function Admin() {
   const { data: diagnostics, isLoading: loadingDiagnostics } = useQuery({
     queryKey: ["admin", "diagnostics"],
     queryFn: () => adminApi.diagnostics().then((response) => response.data),
+  });
+
+  const { data: runtime, isLoading: loadingRuntime } = useQuery({
+    queryKey: ["admin", "runtime"],
+    queryFn: () => adminApi.runtime().then((response) => response.data),
+    refetchInterval: 30_000,
   });
 
   const { data: sources, isLoading: loadingSources } = useQuery({
@@ -162,6 +169,8 @@ export default function Admin() {
           />
         }
       />
+
+      <AdminRuntimePanel loading={loadingRuntime} runtime={runtime} />
 
       <AdminSourceHealthTable
         loading={loadingSources}

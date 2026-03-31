@@ -247,6 +247,41 @@ class TestScrapingServiceOrchestration:
         assert result.jobs_found == 1
         assert result.jobs_new == 1
 
+    @pytest.mark.asyncio
+    async def test_commits_persisted_jobs_when_run_record_creation_fails(self):
+        db = AsyncMock()
+        svc = ScrapingService(db, _settings())
+        _inject_scrapers(
+            svc,
+            {
+                "alpha": FakeScraper("alpha", [_job(title="Alpha Job", source="alpha")]),
+            },
+        )
+
+        with (
+            patch.object(
+                svc,
+                "_persist_jobs",
+                new_callable=AsyncMock,
+                return_value=(1, 0),
+            ),
+            patch.object(
+                svc,
+                "_create_run_record",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            patch.object(
+                svc,
+                "_complete_run_record",
+                new_callable=AsyncMock,
+            ),
+        ):
+            result = await svc.run_scrape(query="python")
+
+        assert result.jobs_new == 1
+        db.commit.assert_awaited_once()
+
 
 class TestComputeJobId:
     def test_stable_id(self):

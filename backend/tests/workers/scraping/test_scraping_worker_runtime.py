@@ -77,39 +77,3 @@ async def test_run_target_batch_job_reraises_batch_failure(
         "target_batch_job_failed",
         source_kind="career_page",
     )
-
-
-@pytest.mark.asyncio
-async def test_run_career_page_scrape_raises_summary_on_target_failure(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    logger = Mock()
-    target = SimpleNamespace(
-        url="https://example.com/jobs",
-        last_success_at=None,
-        consecutive_failures=0,
-        last_failure_at=None,
-    )
-    db = Mock()
-    db.scalars = AsyncMock(return_value=SimpleNamespace(all=lambda: [target]))
-    db.commit = AsyncMock()
-    scraper = Mock()
-    scraper.fetch_jobs = AsyncMock(side_effect=RuntimeError("page failed"))
-    scraper.close = AsyncMock()
-
-    @asynccontextmanager
-    async def _session_factory():
-        yield db
-
-    monkeypatch.setattr(scraping_worker, "async_session_factory", _session_factory)
-    monkeypatch.setattr(scraping_worker, "Settings", Mock(return_value=object()))
-    monkeypatch.setattr(scraping_worker, "CareerPageScraper", Mock(return_value=scraper))
-    monkeypatch.setattr(scraping_worker, "logger", logger)
-
-    with pytest.raises(RuntimeError, match="Career page scrape failures recorded"):
-        await scraping_worker.run_career_page_scrape()
-
-    scraper.close.assert_awaited_once()
-    db.commit.assert_awaited_once()
-    assert logger.exception.call_args_list[0].args[0] == "career_page_scrape_failed"
-    assert logger.exception.call_args_list[1].args[0] == "career_page_worker_failed"

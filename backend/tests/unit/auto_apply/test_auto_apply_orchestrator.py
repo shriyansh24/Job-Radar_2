@@ -144,5 +144,7 @@ async def test_apply_to_job_blocks_when_safety_fails(db_session):
     monkeypatch.undo()
 
     assert run.status == "failed"
+    assert run.fields_missed == []
+    assert run.review_items == []
     assert "duplicate" in (run.error_message or "")
     apply_mock.assert_not_awaited()

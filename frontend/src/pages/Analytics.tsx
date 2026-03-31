@@ -5,75 +5,15 @@ import {
   TrendUp,
 } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense } from "react";
-import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { analyticsApi } from "../api/analytics";
-import { AnalyticsPatternsPanel } from "../components/analytics/AnalyticsPatternsPanel";
+import { AnalyticsPrimaryColumn } from "../components/analytics/AnalyticsPrimaryColumn";
+import { AnalyticsSecondaryRail } from "../components/analytics/AnalyticsSecondaryRail";
 import Badge from "../components/ui/Badge";
-import EmptyState from "../components/ui/EmptyState";
-import Skeleton from "../components/ui/Skeleton";
 import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader } from "../components/system/PageHeader";
-import { SectionHeader } from "../components/system/SectionHeader";
 import { SplitWorkspace } from "../components/system/SplitWorkspace";
-import { Surface } from "../components/system/Surface";
-import { cn } from "../lib/utils";
-
-const Charts = lazy(() => import("../components/analytics/AnalyticsCharts"));
 const ANALYTICS_STALE_TIME = 10 * 60 * 1000;
-
-function ChartsSkeleton() {
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="border-2 border-border bg-card p-4 shadow-[var(--shadow-sm)]">
-          <Skeleton variant="text" className="mb-4 h-4 w-1/3" />
-          <Skeleton variant="rect" className="h-64 w-full" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SideStat({
-  label,
-  value,
-  hint,
-  icon,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  icon: ReactNode;
-  tone?: "default" | "success" | "warning";
-}) {
-  const toneClass = {
-    default: "bg-card",
-    success: "bg-[var(--color-accent-secondary-subtle)]",
-    warning: "bg-[var(--color-accent-warning-subtle)]",
-  }[tone];
-
-  return (
-    <Surface tone="default" padding="md" radius="xl" className={cn("h-full", toneClass)}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-            {label}
-          </div>
-          <div className="mt-3 text-3xl font-black tracking-[-0.05em] text-text-primary">
-            {value}
-          </div>
-          <p className="mt-2 text-sm leading-6 text-text-secondary">{hint}</p>
-        </div>
-        <div className="flex size-10 shrink-0 items-center justify-center border-2 border-border bg-background">
-          {icon}
-        </div>
-      </div>
-    </Surface>
-  );
-}
 
 export default function Analytics() {
   const { data: overview, isLoading: loadingOverview } = useQuery({
@@ -186,126 +126,24 @@ export default function Analytics() {
 
       <SplitWorkspace
         primary={
-          <div className="space-y-4">
-            <Surface tone="default" padding="lg" radius="xl">
-              <SectionHeader
-                title="Trend"
-                description="History, response rate, and source mix stay on one surface for quick comparison."
-                action={<Badge variant="info">Lazy loaded</Badge>}
-              />
-              <div className="mt-5">
-                <Suspense fallback={<ChartsSkeleton />}>
-                  <Charts daily={daily} funnel={funnel} sources={sources} skills={skills} />
-                </Suspense>
-              </div>
-            </Surface>
-
-            <AnalyticsPatternsPanel patterns={patterns} loading={patternsLoading} />
-
-            <Surface tone="subtle" padding="lg" radius="xl">
-              <SectionHeader
-                title="Skills pulse"
-                description="The most frequent skill signals coming back from recent jobs."
-                action={<Badge variant={skills?.length ? "success" : "default"}>{skills?.length ?? 0}</Badge>}
-              />
-              <div className="mt-4 flex flex-wrap gap-2">
-                {skills?.length ? (
-                  skills.slice(0, 8).map((skill) => (
-                    <span
-                      key={skill.skill}
-                      className="brutal-chip bg-[var(--color-bg-secondary)] text-text-primary"
-                    >
-                      {skill.skill}
-                    </span>
-                  ))
-                ) : (
-                  <EmptyState
-                    icon={<Briefcase size={32} weight="bold" />}
-                    title="No skill data yet"
-                    description="Once scrapers and saved searches have data, the skill pulse will appear here."
-                  />
-                )}
-              </div>
-            </Surface>
-          </div>
+          <AnalyticsPrimaryColumn
+            daily={daily}
+            funnel={funnel}
+            sources={sources}
+            skills={skills}
+            patterns={patterns}
+            patternsLoading={patternsLoading}
+          />
         }
         secondary={
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-              <SideStat
-                label="Interviews"
-                value={loadingOverview ? "..." : summary.total_interviews.toLocaleString()}
-                hint="Conversations already moving beyond first response."
-                icon={<TrendUp size={18} weight="bold" className="text-accent-success" />}
-                tone="success"
-              />
-              <SideStat
-                label="Offers"
-                value={loadingOverview ? "..." : summary.total_offers.toLocaleString()}
-                hint="Late-stage outcomes currently on the board."
-                icon={<Clock size={18} weight="bold" className="text-accent-warning" />}
-                tone="warning"
-              />
-            </div>
-
-            <Surface tone="default" padding="lg" radius="xl">
-              <SectionHeader
-                title="Source quality"
-                description="Live source quality and matching ratios for connected feeds."
-              />
-
-              {sources && sources.length ? (
-                <div className="mt-4 overflow-x-auto">
-                  <table className="min-w-full border-separate border-spacing-0">
-                    <thead>
-                      <tr className="text-left text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                        <th className="border-b-2 border-border py-3 pr-3">Source</th>
-                        <th className="border-b-2 border-border px-3 py-3 text-right">Jobs</th>
-                        <th className="border-b-2 border-border px-3 py-3 text-right">Quality</th>
-                        <th className="border-b-2 border-border pl-3 py-3 text-right">Match</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sources.map((source) => (
-                        <tr key={source.source} className="align-top">
-                          <td className="border-b-2 border-border py-4 pr-3 text-sm font-bold uppercase tracking-[-0.03em] text-text-primary">
-                            {source.source}
-                          </td>
-                          <td className="border-b-2 border-border px-3 py-4 text-right font-mono text-sm text-text-primary">
-                            {source.total_jobs}
-                          </td>
-                          <td className="border-b-2 border-border px-3 py-4 text-right font-mono text-sm">
-                            <span
-                              className={cn(
-                                source.quality_score >= 0.8
-                                  ? "text-accent-success"
-                                  : source.quality_score >= 0.5
-                                    ? "text-accent-warning"
-                                    : "text-accent-danger"
-                              )}
-                            >
-                              {(source.quality_score * 100).toFixed(0)}%
-                            </span>
-                          </td>
-                          <td className="border-b-2 border-border pl-3 py-4 text-right font-mono text-sm text-text-primary">
-                            {source.avg_match_score ? `${(source.avg_match_score * 100).toFixed(0)}%` : "-"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="mt-4">
-                  <EmptyState
-                    icon={<Briefcase size={34} weight="bold" />}
-                    title="No source quality yet"
-                    description="Once scrapers and saved searches have data, the quality table will appear here."
-                  />
-                </div>
-              )}
-            </Surface>
-          </div>
+          <AnalyticsSecondaryRail
+            loadingOverview={loadingOverview}
+            summary={{
+              total_interviews: summary.total_interviews,
+              total_offers: summary.total_offers,
+            }}
+            sources={sources}
+          />
         }
       />
     </div>

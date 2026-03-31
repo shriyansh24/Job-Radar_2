@@ -6,7 +6,7 @@ Record the major unresolved risks and deferred work that remain after the curren
 ## Source-Of-Truth Status
 - Status: `REPO_SCOPE_CLOSED`
 - Scope: external or deployment-level follow-through after repo-local hardening closure
-- Last validation basis: evidence ledger, runtime truth matrix, traceability matrix, and local validation on `2026-03-27`
+- Last validation basis: evidence ledger, runtime truth matrix, traceability matrix, and local validation on `2026-03-31`
 
 ## Repo-Internal Closure State
 
@@ -17,7 +17,7 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `docs/repo-hardening/05-implementation-traceability-matrix.md`
   - `docs/research/00-index.md`
 - Why it matters:
-  - the previously ambiguous `feat/p1-core-value` recovery story is now explicit: adopted slices are live on `codex/ui-changes`, and non-promoted branch-era variants are archived as historical alternatives rather than left as active live-scope ambiguity.
+  - the previously ambiguous `feat/p1-core-value` recovery story is now explicit: adopted slices are live on `main`, and non-promoted branch-era variants are archived as historical alternatives rather than left as active live-scope ambiguity.
 
 ### 2. Runtime truth is aligned for repo-local operation
 - Status: `CLOSED_FOR_REPO_SCOPE`
@@ -27,7 +27,9 @@ Record the major unresolved risks and deferred work that remain after the curren
   - `CLAUDE.md`
   - `.env.example`
 - Why it matters:
-  - compose-first runtime, ARQ worker topology, health probes, queue pressure/alert semantics, and request/job correlation on queue-triggered operator paths are now reflected consistently in code and docs.
+  - compose-first runtime, ARQ worker topology, health probes, queue pressure/alert semantics, request/job correlation on queue-triggered operator paths, and the split between JWT signing keys and provider-secret encryption keys are now reflected consistently in code and docs.
+  - the integrations model now truthfully covers both API-key and OAuth providers, and Gmail-first sync is part of the repo-local runtime rather than a deferred concept.
+  - the Admin runtime summary now exposes queue pressure, queue alerts, queue telemetry history, queue alert transitions, worker counters, and the configurable auth audit stream so operators can see the same runtime state the scheduler and workers are using.
 
 ### 3. Test taxonomy and browser coverage are aligned to committed scope
 - Status: `CLOSED_FOR_REPO_SCOPE`
@@ -46,6 +48,7 @@ Record the major unresolved risks and deferred work that remain after the curren
 - Evidence:
   - `.github/workflows/migration-safety.yml`
   - `docs/repo-hardening/10-migration-ops.md`
+  - `docs/repo-hardening/12-deployment-ops-runbook.md`
   - `backend/tests/migrations/test_alembic_revisions.py`
   - `backend/tests/migrations/test_job_ats_identity_migration.py`
   - `backend/tests/migrations/test_scrape_target_identity_migrations.py`
@@ -53,6 +56,8 @@ Record the major unresolved risks and deferred work that remain after the curren
   - clean replay, targeted downgrade checks, and operator guidance now exist together rather than as a mix of implicit local knowledge and workflow folklore.
 
 ## External Or Deployment Follow-Through
-- GitHub branch-protection enforcement for the documented required checks is configured outside the repo and is not proven by files alone.
-- Dedicated auth audit routing, alert routing, and long-window queue monitoring depend on deployment and log-routing decisions in addition to the repo-local logging that now exists.
-- Deployment-level queue alerting and dashboarding remain external even though the repo now emits healthier runtime signals and CI validates the queue-backed topology.
+- GitHub branch protection is now enforced outside the repo on `main` with PR review, conversation resolution, admin enforcement, and strict required checks. Ongoing maintenance of those settings remains an operational concern, not repo-local feature debt.
+- Dedicated auth audit routing, queue alert fanout, and long-window queue monitoring still depend on deployment and log-routing decisions in addition to the repo-local Redis histories that now exist.
+- Deployment-level queue alerting and dashboarding remain external even though the repo now emits healthier runtime signals, a dedicated auth audit stream, Redis-backed queue telemetry history, queue alert transitions, and a repo-owned runtime summary.
+- The scraper/parser side now has a deterministic fixture matrix that separates selector, JSON-LD, embedded-state, JS-shell, and Cloudflare-challenge outcomes; the remaining work is source-specific render recovery and anti-bot handling on difficult sites, not missing fixture coverage. The repo-owned handling path is documented in `docs/repo-hardening/13-environment-validation.md`.
+- Google Workspace breadth beyond Gmail-first remains intentionally out of repo-local live scope: Calendar, Drive, and any `googleworkspace/cli`/`gws` workflow are follow-on product decisions, not hidden gaps in the current shipped implementation.

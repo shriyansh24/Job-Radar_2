@@ -9,7 +9,6 @@ import structlog
 
 from app.config import Settings
 from app.database import async_session_factory
-from app.scraping.scrapers.career_page import CareerPageScraper
 from app.scraping.service import ScrapingService
 
 logger = structlog.get_logger()
@@ -52,53 +51,6 @@ async def run_scheduled_scrape(ctx: Mapping[str, Any] | None = None) -> None:
             raise
         finally:
             await service.close()
-
-
-async def run_career_page_scrape(ctx: Mapping[str, Any] | None = None) -> None:
-    """Background job: scrape configured career page targets."""
-    settings = Settings()
-    async with async_session_factory() as db:
-        try:
-            from datetime import UTC, datetime
-
-            from sqlalchemy import select
-
-            from app.scraping.models import ScrapeTarget
-
-            targets = (
-                await db.scalars(
-                    select(ScrapeTarget).where(
-                        ScrapeTarget.source_kind == "career_page",
-                        ScrapeTarget.enabled == True,  # noqa: E712
-                    )
-                )
-            ).all()
-
-            scraper = CareerPageScraper(settings)
-            failed_targets: list[str] = []
-
-            for target in targets:
-                try:
-                    jobs = await scraper.fetch_jobs(target.url)
-                    target.last_success_at = datetime.now(UTC)
-                    target.consecutive_failures = 0
-                    logger.info("career_page_scraped", url=target.url, jobs=len(jobs))
-                except Exception:
-                    failed_targets.append(target.url)
-                    target.consecutive_failures += 1
-                    target.last_failure_at = datetime.now(UTC)
-                    logger.exception("career_page_scrape_failed", url=target.url)
-
-            await db.commit()
-            await scraper.close()
-            if failed_targets:
-                raise RuntimeError(
-                    "Career page scrape failures recorded for: "
-                    + ", ".join(sorted(failed_targets))
-                )
-        except Exception:
-            logger.exception("career_page_worker_failed")
-            raise
 
 
 async def run_target_batch_job(

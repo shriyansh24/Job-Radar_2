@@ -1,4 +1,4 @@
-import { CheckCircle, PencilSimple, Trash } from "@phosphor-icons/react";
+import { ArrowClockwise, CheckCircle, PencilSimple, Trash } from "@phosphor-icons/react";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
 import Skeleton from "../ui/Skeleton";
@@ -8,13 +8,24 @@ import type { SavedSearch } from "../../api/settings";
 type SettingsSearchesSectionProps = {
   searches?: SavedSearch[] | null;
   loading: boolean;
+  checkingSearchId?: string | null;
   onCreate: () => void;
   onEdit: (search?: SavedSearch) => void;
   onToggle: (search: SavedSearch) => void;
+  onCheck: (search: SavedSearch) => void;
   onDelete: (search: SavedSearch) => void;
 };
 
-function SettingsSearchesSection({ searches, loading, onCreate, onEdit, onToggle, onDelete }: SettingsSearchesSectionProps) {
+function SettingsSearchesSection({
+  searches,
+  loading,
+  checkingSearchId,
+  onCreate,
+  onEdit,
+  onToggle,
+  onCheck,
+  onDelete,
+}: SettingsSearchesSectionProps) {
   return (
     <SettingsSection
       title="Saved searches"
@@ -41,15 +52,35 @@ function SettingsSearchesSection({ searches, loading, onCreate, onEdit, onToggle
                     </Badge>
                   </div>
                   <p className="max-w-3xl text-sm text-muted-foreground">{JSON.stringify(search.filters ?? {}, null, 2)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Last checked{" "}
-                    {search.last_checked_at
-                      ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(search.last_checked_at))
-                      : "Never checked"}
-                  </p>
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <p>
+                      Last checked{" "}
+                      {search.last_checked_at
+                        ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(search.last_checked_at))
+                        : "Never checked"}
+                    </p>
+                    <p>
+                      Last match{" "}
+                      {search.last_matched_at
+                        ? `${search.last_match_count} job${search.last_match_count === 1 ? "" : "s"} at ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(search.last_matched_at))}`
+                        : "No alert sent yet"}
+                    </p>
+                    {search.last_error ? (
+                      <p className="text-accent-danger">Last error: {search.last_error}</p>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => onCheck(search)}
+                    loading={checkingSearchId === search.id}
+                    disabled={!search.alert_enabled}
+                    icon={<ArrowClockwise size={16} weight="bold" />}
+                  >
+                    Check now
+                  </Button>
                   <Button variant="secondary" onClick={() => onToggle(search)} icon={<CheckCircle size={16} weight="bold" />}>
                     Toggle
                   </Button>

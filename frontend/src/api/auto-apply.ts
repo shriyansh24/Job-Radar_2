@@ -64,15 +64,30 @@ export interface AutoApplyRuleCreate {
 
 export interface AutoApplyRun {
   id: string;
-  job_id: string;
+  job_id: string | null;
   rule_id: string | null;
   status: string;
   ats_provider: string | null;
   fields_filled: Record<string, string>;
   fields_missed: string[];
+  review_required: boolean;
+  review_items: string[];
   error_message: string | null;
   started_at: string | null;
   completed_at: string | null;
+}
+
+export interface AutoApplyTriggerResponse {
+  status: string;
+  message: string;
+  runs_created?: number;
+  run_ids?: string[];
+}
+
+export interface AutoApplyPauseResponse {
+  status: string;
+  message?: string;
+  rules_paused?: number;
 }
 
 export const autoApplyApi = {
@@ -93,11 +108,11 @@ export const autoApplyApi = {
   getStats: () =>
     apiClient.get<AutoApplyStats>('/auto-apply/stats'),
   run: () =>
-    apiClient.post('/auto-apply/run'),
+    apiClient.post<AutoApplyTriggerResponse>('/auto-apply/run'),
   applySingle: (jobId: string) =>
     apiClient.post('/auto-apply/apply-single', { job_id: jobId }),
   runs: () =>
     apiClient.get<AutoApplyRun[]>('/auto-apply/runs'),
   pause: () =>
-    apiClient.post('/auto-apply/pause'),
+    apiClient.post<AutoApplyPauseResponse>('/auto-apply/pause'),
 };

@@ -55,4 +55,26 @@ describe("Search Expansion page", () => {
     expect(screen.getByText("frontend engineer")).toBeInTheDocument();
     expect(screen.getByText("react developer")).toBeInTheDocument();
   });
+
+  it("stores recent queries and replays them from the sidebar", async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<SearchExpansion />);
+
+    await user.clear(screen.getByPlaceholderText("senior frontend engineer"));
+    await user.type(
+      screen.getByPlaceholderText("senior frontend engineer"),
+      "react engineer"
+    );
+    await user.keyboard("{Enter}");
+
+    expect(
+      await screen.findByRole("button", { name: /react engineer/i })
+    ).toBeInTheDocument();
+
+    phase7aMocks.expand.mockClear();
+    await user.click(screen.getByRole("button", { name: /react engineer/i }));
+
+    expect(phase7aMocks.expand).toHaveBeenCalledWith("react engineer");
+  });
 });

@@ -18,6 +18,7 @@ class GenericATSFiller:
         self.llm = llm_client
         self.filled_fields: dict[str, str] = {}
         self.missed_fields: list[str] = []
+        self.review_items: list[str] = []
 
     async def fill_form(self) -> dict[str, Any]:
         """Detect form fields and fill them."""
@@ -34,6 +35,7 @@ class GenericATSFiller:
         return {
             "filled": self.filled_fields,
             "missed": self.missed_fields,
+            "review_items": self.review_items,
         }
 
     async def _detect_fields(self) -> list[dict[str, Any]]:
@@ -91,12 +93,19 @@ class GenericATSFiller:
 
         # For unknown fields, use LLM to figure out what to fill
         if self.llm and field["type"] not in ("file", "hidden", "submit"):
-            return await self._llm_fill(field)
+            value = await self._llm_fill(field)
+            if value:
+                self.review_items.append(f"Confirm generated answer for '{field['label']}'")
+            return value
 
         return None
 
     async def _llm_fill(self, field: dict[str, Any]) -> str | None:
         """Use LLM to determine appropriate field value."""
+        llm = self.llm
+        if llm is None:
+            return None
+
         prompt = (
             f"Given this application form field, what should I fill in?\n"
             f"Field label: {field['label']}\n"
@@ -105,12 +114,13 @@ class GenericATSFiller:
             f'Return ONLY the value to fill in, or "SKIP" if you can\'t determine it.'
         )
         try:
-            response = await self.llm.chat(
+            response = await llm.chat(
                 [{"role": "user", "content": prompt}], temperature=0.1, max_tokens=100
             )
-            if response.strip().upper() == "SKIP":
+            normalized = str(response).strip()
+            if normalized.upper() == "SKIP":
                 return None
-            return response.strip()
+            return normalized
         except Exception:
             return None
 
@@ -134,13 +144,13 @@ class GenericATSFiller:
         # Try aria-label
         aria = await element.get_attribute("aria-label")
         if aria:
-            return aria
+            return str(aria)
         # Try associated <label>
         el_id = await element.get_attribute("id")
         if el_id:
             label = await self.page.query_selector(f'label[for="{el_id}"]')
             if label:
-                return await label.inner_text()
+                return str(await label.inner_text())
         # Try parent label
-        parent_label: str = await element.evaluate('el => el.closest("label")?.innerText || ""')
-        return parent_label
+        parent_label = await element.evaluate('el => el.closest("label")?.innerText || ""')
+        return str(parent_label)

@@ -91,6 +91,7 @@ jobs:
           JR_DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
           JR_REDIS_URL: redis://127.0.0.1:6379/0
           JR_SECRET_KEY: ci-local-secret
+          JR_CREDENTIAL_ENCRYPTION_KEY: ci-integration-secret
           JR_CORS_ORIGINS: '["http://localhost:5173"]'
           JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","test"]'
 

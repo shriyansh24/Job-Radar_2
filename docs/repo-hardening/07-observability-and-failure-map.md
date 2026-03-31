@@ -6,7 +6,7 @@ Document where the major runtime flows log today, where failures surface, and wh
 ## Source-Of-Truth Status
 - Status: `DOCUMENTED_WORKING_SET`
 - Scope: backend/runtime observability, failure handling, and blind spots
-- Last validation basis: direct inspection of backend startup, middleware, worker scheduler, auth, frontend API client behavior, and current CI/runtime docs on `2026-03-27`
+- Last validation basis: direct inspection of backend startup, middleware, worker scheduler, auth, Gmail sync/runtime behavior, frontend API client behavior, and current CI/runtime docs on `2026-03-31`
 
 ## Runtime Flow Map
 
@@ -56,7 +56,34 @@ Document where the major runtime flows log today, where failures surface, and wh
     - `auth_password_change_failed`
     - `auth_session_cleared`
 - Current gap:
-  - auth logs now inherit request IDs from middleware-bound contextvars and carry normalized `reason` codes, but there is still no separate security audit sink beyond the app log stream
+  - auth logs now inherit request IDs from middleware-bound contextvars and carry normalized `reason` codes, and the repo can emit a separate Redis-backed auth audit stream when configured
+
+### Google integration and Gmail sync
+- Files:
+  - `backend/app/integrations/google_oauth.py`
+  - `backend/app/email/gmail_sync.py`
+  - `backend/app/workers/gmail_worker.py`
+  - `backend/app/settings/router.py`
+  - `backend/app/email/service.py`
+- Signals:
+  - `google_integration_connected`
+  - `gmail_worker_started`
+  - `gmail_worker_skipped`
+  - `gmail_worker_user_failed`
+  - `gmail_worker_completed`
+  - `gmail_sync_completed`
+  - `gmail_sync_message_failed`
+  - `email_duplicate_skipped`
+  - integration state fields `last_validated_at`, `last_synced_at`, and `last_error`
+- Failure behavior:
+  - missing Google OAuth env configuration fails the connect flow loudly
+  - invalid or expired tokens surface as Google OAuth errors and are persisted back onto the integration state
+  - true Gmail auth failures recommend token refresh, while transport/5xx/429 failures are classified as retryable API errors instead of being flattened into generic OAuth failures
+  - per-user Gmail worker failures are logged, persisted to integration health, and raise back into ARQ when the failure is retryable so the scheduler does not silently claim a clean ops-lane pass
+  - per-message Gmail failures now increment `messages_failed` and persist `last_error` instead of masking partial-sync degradation as a healthy sync
+  - low-confidence Gmail signals degrade to review-required notifications rather than silent pipeline transitions
+- Current gap:
+  - there is still no dedicated auth/audit sink or deployment-routed alerting for Gmail failures beyond the app log stream and integration-state metadata
 
 ### Migration lifecycle
 - Files:
@@ -105,13 +132,32 @@ Document where the major runtime flows log today, where failures surface, and wh
   - retry metadata including retryability, retry remaining, and scheduled backoff
   - truthful `retry_exhausted` logging for non-retryable or final failures
 - Current gap:
-  - scheduler and worker readiness now come from live runtime healthcheck probes instead of sentinel files, but there is still no sustained queue-depth alerting or long-window throughput view
-  - queue lifecycle is now explicit and includes queue depth, queue alert state, worker counters, and retry metadata, but deployment-level dashboards and alert routing still live outside the repo
+  - scheduler and worker readiness now come from live runtime healthcheck probes instead of sentinel files, but there is still no sustained long-window throughput view or deployment-owned alert routing
+  - queue lifecycle is now explicit and includes queue depth, queue alert state, worker counters, retry metadata, Redis-backed telemetry history, queue alert transitions, and a repo-owned Admin runtime summary, but deployment-level dashboards and durable external routing still live outside the repo
+
+### Repo-owned queue history and auth audit history
+- Files:
+  - `backend/app/runtime/telemetry.py`
+  - `backend/app/admin/service.py`
+  - `backend/app/shared/audit_sink.py`
+  - `frontend/src/components/admin/AdminRuntimePanel.tsx`
+- Signals:
+  - Redis-backed queue telemetry stream with recent samples
+  - Redis-backed queue alert transition stream
+  - optional queue alert webhook routing when configured
+  - readable auth audit history in Admin runtime
+- Failure behavior:
+  - queue telemetry capture is best-effort and tied to the live Redis pool rather than silently inventing a separate history store
+  - queue alert webhook failures are logged but do not block scheduler health
+  - auth audit history is readable in Admin when the configured sink is enabled, while the sink itself remains best-effort if Redis is unavailable
+- Current gap:
+  - long-window alert routing and dashboards remain deployment-owned even though the repo now stores the history needed to drive them
 
 ## Current Blind Spots
 - Real external ATS/browser submission flows still depend on manual validation rather than deterministic in-repo browser tests.
 - Scheduler job execution semantics are now explicit and health-backed, but queue throughput trend monitoring and alert routing are still deployment concerns.
-- Auth logs are now explicit and request-correlated, but they are not separated into a dedicated audit sink.
+- Auth logs are now explicit and request-correlated, and they can also emit to a dedicated Redis-backed audit stream when configured; Admin can read recent auth audit history from that stream.
+- Gmail sync emits structured lifecycle logs and integration error state, but long-window alert routing and dashboards remain deployment-owned.
 
 ## Existing Positive Controls
 - `request_completed` structured logs exist.
@@ -119,10 +165,11 @@ Document where the major runtime flows log today, where failures surface, and wh
 - Auth lifecycle events now cover register/login/refresh/logout/password/account-delete/session-clear paths, normalize common failure reasons, and keep sensitive payloads out of the structured log stream.
 - Security headers are centralized in middleware.
 - Queue enqueue and worker lifecycle logs now carry queue ownership, queue depth, retry metadata, scheduled retry backoff, truthful `retry_exhausted` outcomes, Redis heartbeat state, ARQ worker health surfaces, and worker runtime metrics hashes.
+- Queue telemetry is now written into Redis history streams, queue alert transitions are persisted separately, and the Admin runtime summary reads those histories back for operators.
 - CI already runs the reviewed backend dependency-audit policy, `bandit`, `ruff`, `mypy`, `pytest`, `npm audit`, `eslint`, frontend tests, and builds.
 - CodeQL and dependency review are already enabled.
 
 ## Hardening Direction
 1. Add job-level worker logging only where it improves diagnosis without flooding logs.
 2. Keep scheduler process health separate from API readiness in docs, compose, and CI.
-3. Keep normalized reason-code and request-correlation discipline consistent across future auth paths and queue-dispatched jobs, then add audit-sink discipline before claiming the auth surface is fully observable.
+3. Keep normalized reason-code and request-correlation discipline consistent across future auth paths and queue-dispatched jobs, and extend the auth audit stream or queue alert routing to a deployment sink only if durable long-window retention is required.

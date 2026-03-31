@@ -1,12 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useDeferredValue, useEffect, useState } from "react";
-import { jobsApi } from "../api/jobs";
-import {
-  networkingApi,
-  type Contact,
-  type ContactCreate,
-  type ReferralSuggestion,
-} from "../api/networking";
 import { NetworkingContactEditorPanel, NetworkingContactPanel } from "../components/networking/NetworkingContactPanel";
 import { NetworkingCompanyScanPanel } from "../components/networking/NetworkingCompanyScanPanel";
 import { NetworkingReferralDeskPanel } from "../components/networking/NetworkingReferralDeskPanel";
@@ -14,221 +5,62 @@ import { NetworkingReferralQueuePanel } from "../components/networking/Networkin
 import { MetricStrip } from "../components/system/MetricStrip";
 import { PageHeader } from "../components/system/PageHeader";
 import { Button } from "../components/ui/Button";
-import { toast } from "../components/ui/toastService";
-
-const emptyContact: ContactCreate = {
-  name: "",
-  company: "",
-  role: "",
-  relationship_strength: 3,
-  linkedin_url: "",
-  email: "",
-  notes: "",
-};
+import { useNetworkingContacts } from "../hooks/useNetworkingContacts";
+import { useNetworkingReferrals } from "../hooks/useNetworkingReferrals";
 
 export default function Networking() {
-  const queryClient = useQueryClient();
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
-  const [form, setForm] = useState<ContactCreate>({ ...emptyContact });
-  const [searchValue, setSearchValue] = useState("");
-  const [companyLookup, setCompanyLookup] = useState("");
-  const [selectedJobId, setSelectedJobId] = useState("");
-  const [generatedMessage, setGeneratedMessage] = useState("");
-  const [suggestions, setSuggestions] = useState<ReferralSuggestion[]>([]);
-  const [companyConnections, setCompanyConnections] = useState<Contact[]>([]);
-  const deferredSearch = useDeferredValue(searchValue);
-
-  const { data: contacts, isLoading: loadingContacts } = useQuery({
-    queryKey: ["networking", "contacts"],
-    queryFn: () => networkingApi.listContacts().then((response) => response.data),
-  });
-
-  const { data: referralRequests } = useQuery({
-    queryKey: ["networking", "referral-requests"],
-    queryFn: () => networkingApi.listReferralRequests().then((response) => response.data),
-  });
-
-  const { data: recentJobs } = useQuery({
-    queryKey: ["jobs", "networking-context"],
-    queryFn: () =>
-      jobsApi
-        .list({ page_size: 12, sort_by: "scraped_at", sort_order: "desc" })
-        .then((response) => response.data),
-  });
-
-  useEffect(() => {
-    if (!selectedJobId && recentJobs?.items.length) {
-      setSelectedJobId(recentJobs.items[0].id);
-    }
-  }, [recentJobs, selectedJobId]);
-
-  useEffect(() => {
-    if (!contacts?.length) return;
-    if (!selectedContactId) return;
-
-    const selected = contacts.find((contact) => contact.id === selectedContactId);
-    if (selected) {
-      setForm({
-        name: selected.name,
-        company: selected.company ?? "",
-        role: selected.role ?? "",
-        relationship_strength: selected.relationship_strength,
-        linkedin_url: selected.linkedin_url ?? "",
-        email: selected.email ?? "",
-        notes: selected.notes ?? "",
-      });
-    }
-  }, [contacts, selectedContactId]);
-
-  const filteredContacts =
-    contacts?.filter((contact) => {
-      const query = deferredSearch.trim().toLowerCase();
-      if (!query) return true;
-      return [contact.name, contact.company, contact.role, contact.email]
-        .filter(Boolean)
-        .some((value) => value?.toLowerCase().includes(query));
-    }) ?? [];
-
-  const selectedContact = contacts?.find((contact) => contact.id === selectedContactId) ?? null;
-
-  const createContactMutation = useMutation({
-    mutationFn: (payload: ContactCreate) => networkingApi.createContact(payload).then((response) => response.data),
-    onSuccess: (contact) => {
-      toast("success", "Contact added");
-      queryClient.invalidateQueries({ queryKey: ["networking", "contacts"] });
-      setSelectedContactId(contact.id);
-    },
-    onError: () => toast("error", "Failed to add contact"),
-  });
-
-  const updateContactMutation = useMutation({
-    mutationFn: (payload: ContactCreate) =>
-      networkingApi.updateContact(selectedContactId!, payload).then((response) => response.data),
-    onSuccess: () => {
-      toast("success", "Contact updated");
-      queryClient.invalidateQueries({ queryKey: ["networking", "contacts"] });
-    },
-    onError: () => toast("error", "Failed to update contact"),
-  });
-
-  const deleteContactMutation = useMutation({
-    mutationFn: () => networkingApi.deleteContact(selectedContactId!),
-    onSuccess: () => {
-      toast("success", "Contact deleted");
-      queryClient.invalidateQueries({ queryKey: ["networking", "contacts"] });
-      setSelectedContactId(null);
-      setForm({ ...emptyContact });
-    },
-    onError: () => toast("error", "Failed to delete contact"),
-  });
-
-  const connectionSearchMutation = useMutation({
-    mutationFn: (company: string) => networkingApi.findConnections(company).then((response) => response.data),
-    onSuccess: (results) => {
-      setCompanyConnections(results);
-    },
-    onError: () => toast("error", "Failed to look up connections"),
-  });
-
-  const suggestionsMutation = useMutation({
-    mutationFn: (jobId: string) => networkingApi.suggestReferrals(jobId).then((response) => response.data),
-    onSuccess: (results) => {
-      setSuggestions(results);
-      if (!results.length) {
-        toast("info", "No referral suggestions for that job yet");
-      }
-    },
-    onError: () => toast("error", "Failed to fetch referral suggestions"),
-  });
-
-  const outreachMutation = useMutation({
-    mutationFn: (payload: { contactId: string; jobId: string }) =>
-      networkingApi.generateOutreach(payload.contactId, payload.jobId).then((response) => response.data),
-    onSuccess: (response) => {
-      setGeneratedMessage(response.message);
-    },
-    onError: () => toast("error", "Failed to draft outreach"),
-  });
-
-  const createReferralRequestMutation = useMutation({
-    mutationFn: (payload: { contactId: string; jobId: string; message: string }) =>
-      networkingApi
-        .createReferralRequest({
-          contact_id: payload.contactId,
-          job_id: payload.jobId,
-          message_template: payload.message || undefined,
-        })
-        .then((response) => response.data),
-    onSuccess: () => {
-      toast("success", "Referral request draft created");
-      queryClient.invalidateQueries({ queryKey: ["networking", "referral-requests"] });
-    },
-    onError: () => toast("error", "Failed to create referral request"),
-  });
-
-  const saveContact = () => {
-    if (!form.name?.trim()) {
-      toast("error", "Name is required");
-      return;
-    }
-
-    const payload: ContactCreate = {
-      name: form.name.trim(),
-      company: form.company?.trim() || null,
-      role: form.role?.trim() || null,
-      relationship_strength: Number(form.relationship_strength ?? 3),
-      linkedin_url: form.linkedin_url?.trim() || null,
-      email: form.email?.trim() || null,
-      notes: form.notes?.trim() || null,
-    };
-
-    if (selectedContactId) {
-      updateContactMutation.mutate(payload);
-    } else {
-      createContactMutation.mutate(payload);
-    }
-  };
+  const {
+    contacts,
+    companyConnections,
+    companyLookup,
+    connectionSearchMutation,
+    deleteContactMutation,
+    filteredContacts,
+    form,
+    loadingContacts,
+    resetForm: resetContactForm,
+    saveContact,
+    searchValue,
+    selectedContact,
+    selectedContactId,
+    setCompanyLookup,
+    setForm,
+    setSearchValue,
+    setSelectedContactId,
+  } = useNetworkingContacts();
+  const {
+    createReferralRequestMutation,
+    generatedMessage,
+    jobOptions,
+    outreachMutation,
+    referralQueueItems,
+    referralRequests,
+    selectedJob,
+    selectedJobId,
+    setGeneratedMessage,
+    setSelectedJobId,
+    suggestions,
+    suggestionsMutation,
+  } = useNetworkingReferrals({ contacts });
 
   const resetForm = () => {
-    setSelectedContactId(null);
-    setForm({ ...emptyContact });
+    resetContactForm();
     setGeneratedMessage("");
   };
-
-  const strengthAverage =
-    contacts && contacts.length
-      ? (contacts.reduce((sum, contact) => sum + contact.relationship_strength, 0) / contacts.length).toFixed(1)
-      : "0.0";
-
-  const jobOptions =
-    recentJobs?.items.map((job) => ({
-      value: job.id,
-      label: `${job.title} - ${job.company_name ?? "Unknown company"}`,
-    })) ?? [];
-
-  const selectedJob = recentJobs?.items.find((job) => job.id === selectedJobId) ?? null;
-  const referralQueueItems =
-    referralRequests?.map((request) => {
-      const requestContact = contacts?.find((contact) => contact.id === request.contact_id);
-      return {
-        id: request.id,
-        contactName: requestContact?.name ?? "Unknown contact",
-        jobLabel: `Job ${request.job_id.slice(0, 10)}...`,
-        status: request.status,
-        messageTemplate: request.message_template,
-      };
-    }) ?? [];
 
   const heroMetrics = [
     {
       label: "Contacts",
-      value: String(contacts?.length ?? 0),
+      value: String(contacts.length),
       accent: "text-[var(--color-accent-primary)]",
       description: "People you can actually route through.",
     },
     {
       label: "Avg strength",
-      value: strengthAverage,
+      value:
+        contacts.length
+          ? (contacts.reduce((sum, contact) => sum + contact.relationship_strength, 0) / contacts.length).toFixed(1)
+          : "0.0",
       accent: "text-[var(--color-accent-success)]",
       description: "Relationship confidence across the network.",
     },
@@ -249,7 +81,7 @@ export default function Networking() {
         meta={
           <>
             <span className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
-              {contacts?.length ?? 0} contacts
+              {contacts.length} contacts
             </span>
             <span className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
               {referralRequests?.length ?? 0} referral drafts

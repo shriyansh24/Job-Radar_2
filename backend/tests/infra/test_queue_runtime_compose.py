@@ -22,8 +22,16 @@ def test_base_compose_defines_queue_worker_services() -> None:
     for role in WORKER_ROLES:
         service_name = f"worker-{role}"
         body = _service_block(BASE_COMPOSE, service_name)
+        worker_command = (
+            'command: ["uv", "run", "python", "-m", "app.runtime.arq_worker", '
+            f'"{role}"]'
+        )
+        worker_healthcheck = (
+            'test: ["CMD", "uv", "run", "python", "-m", '
+            f'"app.runtime.healthcheck", "worker", "{role}"]'
+        )
 
-        assert f'command: ["python", "-m", "app.runtime.arq_worker", "{role}"]' in body
+        assert worker_command in body
         assert f"JR_WORKER_ROLE: {role}" in body
         assert f"JR_WORKER_READY_MARKER: /tmp/jobradar-worker-{role}.ready" in body
         assert "migrate:" in body
@@ -31,10 +39,7 @@ def test_base_compose_defines_queue_worker_services() -> None:
         assert "postgres:" in body
         assert "service_healthy" in body
         assert "redis:" in body
-        assert (
-            f'test: ["CMD", "python", "-m", "app.runtime.healthcheck", "worker", "{role}"]'
-            in body
-        )
+        assert worker_healthcheck in body
         assert "restart: unless-stopped" in body
 
 
@@ -42,11 +47,15 @@ def test_dev_overlay_defines_bind_mounted_queue_worker_services() -> None:
     for role in WORKER_ROLES:
         service_name = f"worker-{role}"
         body = _service_block(DEV_COMPOSE, service_name)
+        worker_command = (
+            'command: ["uv", "run", "python", "-m", "app.runtime.arq_worker", '
+            f'"{role}"]'
+        )
 
         assert "context: ./backend" in body
         assert "dockerfile: Dockerfile" in body
         assert "- ./backend:/app" in body
-        assert f'command: ["python", "-m", "app.runtime.arq_worker", "{role}"]' in body
+        assert worker_command in body
         assert 'JR_DEBUG: "true"' in body
         assert (
             'JR_TRUSTED_HOSTS: \'["localhost","127.0.0.1","backend","test"]\''
@@ -54,3 +63,13 @@ def test_dev_overlay_defines_bind_mounted_queue_worker_services() -> None:
         )
         assert f"JR_WORKER_ROLE: {role}" in body
         assert f"JR_WORKER_READY_MARKER: /tmp/jobradar-worker-{role}.ready" in body
+
+
+def test_base_compose_scheduler_uses_uv_run_healthcheck() -> None:
+    body = _service_block(BASE_COMPOSE, "scheduler")
+
+    assert 'command: ["uv", "run", "python", "-m", "app.runtime.scheduler"]' in body
+    assert (
+        'test: ["CMD", "uv", "run", "python", "-m", "app.runtime.healthcheck", "scheduler"]'
+        in body
+    )

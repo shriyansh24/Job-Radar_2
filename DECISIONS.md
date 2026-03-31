@@ -32,11 +32,11 @@ Key technical decisions made during the development of JobRadar V2.
 
 **Rationale**: It keeps the stack simpler while still supporting similarity search at the scale this project targets.
 
-## 6. APScheduler For Background Jobs
+## 6. APScheduler + ARQ For Background Jobs
 
-**Decision**: Use APScheduler (`AsyncIOScheduler`) for background tasks instead of Celery.
+**Decision**: Keep APScheduler as the schedule source, but make ARQ on Redis the execution backbone for background jobs.
 
-**Rationale**: It keeps development and local deployment simpler than introducing a queue-first architecture while still allowing a dedicated scheduler process today and a later migration to a dedicated worker queue if the job mix outgrows in-process scheduled execution.
+**Rationale**: APScheduler remains a good fit for time-based orchestration, while ARQ gives the repo explicit queue ownership, retry policy, worker-role isolation, health probes, and queue telemetry. The scheduler now enqueues named jobs onto `scraping`, `analysis`, and `ops` instead of running background work in-process.
 
 ## 7. SSE For Real-Time Updates
 
@@ -85,3 +85,9 @@ Key technical decisions made during the development of JobRadar V2.
 **Decision**: Organize frontend and backend tests by protection goal and system boundary rather than historical accident.
 
 **Rationale**: Frontend tests are now grouped under `frontend/src/tests/{app,api,components,hooks,pages,support}` and backend tests increasingly live under role-based directories such as `infra/`, `migrations/`, `security/`, and `workers/`. This makes the suite easier to navigate and reduces drift between what a test protects and where it lives.
+
+## 15. Gmail-First Google Integration
+
+**Decision**: Add Google as an OAuth-backed provider in the existing integrations/settings model and integrate Gmail sync into the current email intelligence flow rather than introducing `googleworkspace/cli` or a separate mailbox product.
+
+**Rationale**: The current app already has inbound email parsing, notifications, and pipeline updates. Gmail-first OAuth sync extends those live surfaces with the smallest coherent addition: Google account connection, Gmail message ingestion, conservative status automation, and scheduler-backed sync. Calendar, Drive, and `gws` remain follow-on scope rather than hidden partial commitments.

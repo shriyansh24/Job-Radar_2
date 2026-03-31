@@ -33,6 +33,22 @@ def _auth(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
+def _not_configured_integration(provider: str, *, auth_type: str = "api_key") -> dict[str, object]:
+    return {
+        "provider": provider,
+        "auth_type": auth_type,
+        "connected": False,
+        "status": "not_configured",
+        "masked_value": None,
+        "account_email": None,
+        "scopes": [],
+        "updated_at": None,
+        "last_validated_at": None,
+        "last_synced_at": None,
+        "last_error": None,
+    }
+
+
 @pytest.mark.asyncio
 async def test_admin_health_is_public(client: AsyncClient) -> None:
     response = await client.get("/api/v1/admin/health")
@@ -86,6 +102,65 @@ async def test_admin_operator_can_view_diagnostics(
 
     assert diagnostics.status_code == 200
     assert diagnostics.json()["job_count"] >= 1
+
+
+@pytest.mark.asyncio
+async def test_admin_operator_can_view_runtime_status(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.admin.service import AdminService
+    from app.main import app
+
+    token, _ = await _register_and_login(client)
+    app.dependency_overrides[get_current_operator_user] = lambda: SimpleNamespace(id="operator")
+
+    async def _fake_runtime_status(self: AdminService) -> dict:
+        return {
+            "status": "ok",
+            "captured_at": "2026-03-31T12:00:00+00:00",
+            "redis_connected": True,
+            "queue_summary": {
+                "overall_pressure": "elevated",
+                "overall_alert": "watch",
+                "queues": [
+                    {
+                        "queue_name": "arq:queue:scraping",
+                        "queue_depth": 3,
+                        "queue_pressure": "elevated",
+                        "oldest_job_age_seconds": 45,
+                        "queue_alert": "watch",
+                    }
+                ],
+            },
+            "worker_metrics": [],
+            "auth_audit_sink": {
+                "enabled": True,
+                "stream_key": "jobradar:auth-audit",
+                "maxlen": 1000,
+            },
+            "queue_alert_routing": {
+                "stream_key": "jobradar:queue-alerts",
+                "stream_maxlen": 1000,
+                "webhook_enabled": False,
+                "webhook_host": None,
+            },
+            "recent_queue_samples": [],
+            "recent_queue_alerts": [],
+            "recent_auth_audit_events": [],
+        }
+
+    monkeypatch.setattr(AdminService, "runtime_status", _fake_runtime_status)
+
+    try:
+        runtime = await client.get("/api/v1/admin/runtime", headers=_auth(token))
+    finally:
+        app.dependency_overrides.pop(get_current_operator_user, None)
+
+    assert runtime.status_code == 200
+    assert runtime.json()["queue_summary"]["overall_alert"] == "watch"
+    assert runtime.json()["queue_alert_routing"]["stream_key"] == "jobradar:queue-alerts"
 
 
 @pytest.mark.asyncio
@@ -180,13 +255,13 @@ async def test_admin_clear_data_only_wipes_current_user_data(
     assert cleared.json()["status"] == "ok"
     assert cleared.json()["rows_deleted"] >= 1
     assert my_searches.json() == []
-    assert my_integrations.json()[0] == {
-        "provider": "openrouter",
-        "connected": False,
-        "status": "not_configured",
-        "masked_value": None,
-        "updated_at": None,
-    }
+    assert my_integrations.json() == [
+        _not_configured_integration("openrouter"),
+        _not_configured_integration("serpapi"),
+        _not_configured_integration("theirstack"),
+        _not_configured_integration("apify"),
+        _not_configured_integration("google", auth_type="oauth"),
+    ]
     assert json.loads(my_export.text) == {"jobs": [], "applications": []}
     assert my_profile.status_code == 200
     assert [job["id"] for job in json.loads(other_export.text)["jobs"]] == ["keep-job-1"]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
@@ -8,9 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 from app.dependencies import get_current_user, get_db
-from app.scraping.models import ScrapeTarget
+from app.scraping.constants import PRIORITY_INTERVALS
+from app.scraping.control.classifier import classify_target
+from app.scraping.models import ScrapeAttempt, ScrapeTarget
 from app.scraping.schemas import CareerPageCreate, CareerPageResponse, CareerPageUpdate
-from app.shared.errors import NotFoundError
+from app.shared.errors import NotFoundError, ValidationError
 
 career_pages_router = APIRouter()
 
@@ -37,11 +40,27 @@ async def create_career_page(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> CareerPageResponse:
+    existing = await db.scalar(
+        select(ScrapeTarget).where(
+            ScrapeTarget.user_id == user.id,
+            ScrapeTarget.url == data.url,
+        )
+    )
+    if existing is not None:
+        raise ValidationError("Career page target already exists for this URL.")
+
+    classification = classify_target(data.url, data.company_name)
     target = ScrapeTarget(
         user_id=user.id,
         url=data.url,
         company_name=data.company_name,
-        source_kind="career_page",
+        source_kind=classification.get("source_kind", "career_page"),
+        ats_vendor=classification.get("ats_vendor"),
+        ats_board_token=classification.get("ats_board_token"),
+        start_tier=classification.get("start_tier", 1),
+        priority_class="cool",
+        schedule_interval_m=PRIORITY_INTERVALS["cool"],
+        next_scheduled_at=datetime.now(UTC),
     )
     db.add(target)
     await db.commit()
@@ -66,8 +85,25 @@ async def update_career_page(
     target = result.scalar_one_or_none()
     if target is None:
         raise NotFoundError(f"Career page {page_id} not found")
-    for key, value in data.model_dump(exclude_unset=True).items():
+    update_data = data.model_dump(exclude_unset=True)
+    if "url" in update_data:
+        existing = await db.scalar(
+            select(ScrapeTarget).where(
+                ScrapeTarget.user_id == user.id,
+                ScrapeTarget.url == update_data["url"],
+                ScrapeTarget.id != page_id,
+            )
+        )
+        if existing is not None:
+            raise ValidationError("Career page target already exists for this URL.")
+    for key, value in update_data.items():
         setattr(target, key, value)
+    if "url" in update_data or "company_name" in update_data:
+        classification = classify_target(target.url, target.company_name)
+        target.source_kind = classification.get("source_kind", "career_page")
+        target.ats_vendor = classification.get("ats_vendor")
+        target.ats_board_token = classification.get("ats_board_token")
+        target.start_tier = classification.get("start_tier", 1)
     await db.commit()
     await db.refresh(target)
     return CareerPageResponse.model_validate(target)
@@ -89,5 +125,13 @@ async def delete_career_page(
     target = result.scalar_one_or_none()
     if target is None:
         raise NotFoundError(f"Career page {page_id} not found")
+    existing_attempt = await db.scalar(
+        select(ScrapeAttempt.id).where(ScrapeAttempt.target_id == target.id).limit(1)
+    )
+    if existing_attempt is not None:
+        raise ValidationError(
+            "Career page targets with scrape history cannot be deleted. "
+            "Disable or release the target instead."
+        )
     await db.delete(target)
     await db.commit()

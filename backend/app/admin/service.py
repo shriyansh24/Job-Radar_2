@@ -4,16 +4,29 @@ import json
 import platform
 import sys
 import uuid
+from datetime import UTC, datetime
 from importlib import import_module
+from typing import Any, cast
+from urllib.parse import urlparse
 
 import structlog
 from sqlalchemy import delete, func, inspect, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import Base
 from app.jobs.models import Job
 from app.pipeline.models import Application, ApplicationStatusHistory
+from app.runtime.queue import (
+    derive_overall_alert,
+    derive_overall_pressure,
+    get_queue_pool,
+    get_queue_snapshots,
+)
+from app.runtime.telemetry import read_queue_alerts, read_queue_telemetry
+from app.runtime.worker_metrics import COUNTER_FIELDS, worker_metrics_key
 from app.scraping.models import ScrapeAttempt, ScraperRun, ScrapeTarget
+from app.shared.audit_sink import read_auth_audit_events
 
 logger = structlog.get_logger()
 
@@ -41,11 +54,30 @@ USER_DATA_MODEL_MODULES = (
 )
 
 
+def _coerce_metric_int(value: object) -> int:
+    if isinstance(value, bytes):
+        return int(value.decode())
+    if isinstance(value, str):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    raise TypeError(f"Unsupported worker metric value {value!r}.")
+
+
+def _rowcount_or_zero(result: object) -> int:
+    return max(int(getattr(cast(Any, result), "rowcount", 0) or 0), 0)
+
+
+def _existing_table_names(sync_session: object) -> set[str]:
+    bind = cast(Any, sync_session).bind
+    return set(inspect(bind).get_table_names())
+
+
 class AdminService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def health_check(self) -> dict:
+    async def health_check(self) -> dict[str, str]:
         try:
             await self.db.execute(text("SELECT 1"))
             db_ok = True
@@ -57,7 +89,7 @@ class AdminService:
             "database": "connected" if db_ok else "disconnected",
         }
 
-    async def diagnostics(self) -> dict:
+    async def diagnostics(self) -> dict[str, object]:
         job_count = await self.db.scalar(select(func.count()).select_from(Job)) or 0
         app_count = await self.db.scalar(select(func.count()).select_from(Application)) or 0
 
@@ -68,7 +100,110 @@ class AdminService:
             "application_count": app_count,
         }
 
-    async def reindex(self, user_id: uuid.UUID) -> dict:
+    async def runtime_status(self) -> dict[str, object]:
+        captured_at = datetime.now(UTC).isoformat()
+        runtime: dict[str, object] = {
+            "status": "ok",
+            "captured_at": captured_at,
+            "redis_connected": False,
+            "queue_summary": {
+                "overall_pressure": "nominal",
+                "overall_alert": "clear",
+                "queues": [],
+            },
+            "worker_metrics": [],
+            "auth_audit_sink": {
+                "enabled": settings.auth_audit_stream_enabled,
+                "stream_key": settings.auth_audit_stream_key,
+                "maxlen": settings.auth_audit_stream_maxlen,
+            },
+            "queue_alert_routing": {
+                "stream_key": settings.queue_alert_stream_key,
+                "stream_maxlen": settings.queue_alert_stream_maxlen,
+                "webhook_enabled": bool(settings.queue_alert_webhook_url.strip()),
+                "webhook_host": (
+                    urlparse(settings.queue_alert_webhook_url).netloc
+                    if settings.queue_alert_webhook_url.strip()
+                    else None
+                ),
+            },
+            "recent_queue_samples": [],
+            "recent_queue_alerts": [],
+            "recent_auth_audit_events": [],
+        }
+
+        try:
+            queue_pool = await get_queue_pool()
+            await queue_pool.ping()
+            runtime["redis_connected"] = True
+
+            snapshots = await get_queue_snapshots(queue_pool)
+            queue_rows = [
+                {
+                    "queue_name": snapshot.queue_name,
+                    "queue_depth": snapshot.queue_depth,
+                    "queue_pressure": snapshot.queue_pressure,
+                    "oldest_job_age_seconds": snapshot.oldest_job_age_seconds,
+                    "queue_alert": snapshot.queue_alert,
+                }
+                for snapshot in snapshots.values()
+            ]
+            queue_pressures = {
+                snapshot.queue_name: snapshot.queue_pressure for snapshot in snapshots.values()
+            }
+            queue_alerts = {
+                snapshot.queue_name: snapshot.queue_alert for snapshot in snapshots.values()
+            }
+            runtime["queue_summary"] = {
+                "overall_pressure": derive_overall_pressure(queue_pressures),
+                "overall_alert": derive_overall_alert(queue_alerts),
+                "queues": queue_rows,
+            }
+            runtime["recent_queue_samples"] = await read_queue_telemetry(
+                limit=settings.admin_runtime_event_limit,
+                queue_pool=queue_pool,
+            )
+            runtime["recent_queue_alerts"] = await read_queue_alerts(
+                limit=settings.admin_runtime_event_limit,
+                queue_pool=queue_pool,
+            )
+            runtime["recent_auth_audit_events"] = await read_auth_audit_events(
+                limit=settings.admin_runtime_event_limit,
+                queue_pool=queue_pool,
+            )
+
+            worker_rows: list[dict[str, object]] = []
+            for role in ("scraping", "analysis", "ops"):
+                raw_fields = cast(
+                    dict[object, object],
+                    await cast(Any, queue_pool).hgetall(worker_metrics_key(role)),
+                )
+                if not raw_fields:
+                    continue
+                worker_row: dict[str, object] = {
+                    "role": role,
+                    "available": True,
+                }
+                for field_name in ("queue_name", "queue_pressure", "queue_alert"):
+                    if field_name in raw_fields:
+                        value = raw_fields[field_name]
+                        worker_row[field_name] = (
+                            value.decode() if isinstance(value, bytes) else value
+                        )
+                for field_name in ("queue_depth", "oldest_job_age_seconds", *COUNTER_FIELDS):
+                    if field_name in raw_fields:
+                        value = raw_fields[field_name]
+                        worker_row[field_name] = _coerce_metric_int(value)
+                worker_rows.append(worker_row)
+            runtime["worker_metrics"] = worker_rows
+        except Exception as exc:
+            runtime["status"] = "degraded"
+            runtime["runtime_error"] = str(exc)
+            logger.warning("admin_runtime_status_degraded", error=str(exc))
+
+        return runtime
+
+    async def reindex(self, user_id: uuid.UUID) -> dict[str, int | str]:
         count = (
             await self.db.scalar(
                 select(func.count()).select_from(
@@ -96,7 +231,9 @@ class AdminService:
         }
         return json.dumps(data, indent=2).encode()
 
-    async def import_data(self, data: dict, user_id: uuid.UUID) -> dict:
+    async def import_data(
+        self, data: dict[str, object], user_id: uuid.UUID
+    ) -> dict[str, int | str]:
         imported_jobs = 0
         imported_apps = 0
         return {
@@ -105,11 +242,11 @@ class AdminService:
             "applications_imported": imported_apps,
         }
 
-    async def clear_data(self, user_id: uuid.UUID, *, commit: bool = True) -> dict:
+    async def clear_data(
+        self, user_id: uuid.UUID, *, commit: bool = True
+    ) -> dict[str, int | str]:
         self._ensure_user_data_models_loaded()
-        existing_tables = await self.db.run_sync(
-            lambda sync_session: set(inspect(sync_session.bind).get_table_names())
-        )
+        existing_tables = await self.db.run_sync(_existing_table_names)
 
         rows_deleted = 0
         application_ids = select(Application.id).where(Application.user_id == user_id)
@@ -118,7 +255,7 @@ class AdminService:
                 ApplicationStatusHistory.application_id.in_(application_ids)
             )
         )
-        rows_deleted += max(application_history_result.rowcount or 0, 0)
+        rows_deleted += _rowcount_or_zero(application_history_result)
 
         run_ids = select(ScraperRun.id).where(ScraperRun.user_id == user_id)
         target_ids = select(ScrapeTarget.id).where(ScrapeTarget.user_id == user_id)
@@ -130,7 +267,7 @@ class AdminService:
                 )
             )
         )
-        rows_deleted += max(scrape_attempt_result.rowcount or 0, 0)
+        rows_deleted += _rowcount_or_zero(scrape_attempt_result)
 
         for table in reversed(Base.metadata.sorted_tables):
             if (
@@ -140,7 +277,7 @@ class AdminService:
             ):
                 continue
             result = await self.db.execute(delete(table).where(table.c.user_id == user_id))
-            rows_deleted += max(result.rowcount or 0, 0)
+            rows_deleted += _rowcount_or_zero(result)
 
         if commit:
             await self.db.commit()
