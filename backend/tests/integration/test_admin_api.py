@@ -105,6 +105,55 @@ async def test_admin_operator_can_view_diagnostics(
 
 
 @pytest.mark.asyncio
+async def test_admin_operator_can_view_runtime_status(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.admin.service import AdminService
+    from app.main import app
+
+    token, _ = await _register_and_login(client)
+    app.dependency_overrides[get_current_operator_user] = lambda: SimpleNamespace(id="operator")
+
+    async def _fake_runtime_status(self: AdminService) -> dict:
+        return {
+            "status": "ok",
+            "captured_at": "2026-03-31T12:00:00+00:00",
+            "redis_connected": True,
+            "queue_summary": {
+                "overall_pressure": "elevated",
+                "overall_alert": "watch",
+                "queues": [
+                    {
+                        "queue_name": "arq:queue:scraping",
+                        "queue_depth": 3,
+                        "queue_pressure": "elevated",
+                        "oldest_job_age_seconds": 45,
+                        "queue_alert": "watch",
+                    }
+                ],
+            },
+            "worker_metrics": [],
+            "auth_audit_sink": {
+                "enabled": True,
+                "stream_key": "jobradar:auth-audit",
+                "maxlen": 1000,
+            },
+        }
+
+    monkeypatch.setattr(AdminService, "runtime_status", _fake_runtime_status)
+
+    try:
+        runtime = await client.get("/api/v1/admin/runtime", headers=_auth(token))
+    finally:
+        app.dependency_overrides.pop(get_current_operator_user, None)
+
+    assert runtime.status_code == 200
+    assert runtime.json()["queue_summary"]["overall_alert"] == "watch"
+
+
+@pytest.mark.asyncio
 async def test_admin_export_and_reindex_only_include_current_user(
     client: AsyncClient,
     db_session: AsyncSession,

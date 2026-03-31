@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import select
@@ -10,6 +11,7 @@ from app.admin.service import AdminService
 from app.auth.models import User
 from app.jobs.models import Job
 from app.pipeline.models import Application
+from app.runtime.queue import QueueSnapshot
 
 
 async def _create_user(db_session: AsyncSession, email: str = "admin-unit@example.com") -> User:
@@ -104,3 +106,82 @@ async def test_export_data_returns_only_user_owned_records(db_session: AsyncSess
     assert [app["company_name"] for app in payload["applications"]] == ["OwnedCo"]
     stored_jobs = (await db_session.scalars(select(Job))).all()
     assert len(stored_jobs) == 2
+
+
+@pytest.mark.asyncio
+async def test_runtime_status_reports_queue_and_audit_state(
+    db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakeRedis:
+        def __init__(self) -> None:
+            self.hashes = {
+                "jobradar:worker-metrics:scraping": {
+                    "queue_name": "arq:queue:scraping",
+                    "queue_depth": "3",
+                    "queue_pressure": "elevated",
+                    "oldest_job_age_seconds": "45",
+                    "queue_alert": "watch",
+                    "retry_exhausted_total": "1",
+                    "retry_scheduled_total": "2",
+                    "queue_job_completed_total": "7",
+                    "queue_job_failed_total": "1",
+                }
+            }
+
+        async def ping(self) -> None:
+            return None
+
+        async def hgetall(self, key: str) -> dict[str, str]:
+            return self.hashes.get(key, {})
+
+    fake_pool = _FakeRedis()
+
+    async def _fake_get_queue_pool() -> _FakeRedis:
+        return fake_pool
+
+    async def _fake_get_queue_snapshots(_pool: object) -> dict[str, QueueSnapshot]:
+        return {
+            "arq:queue:scraping": QueueSnapshot(
+                queue_name="arq:queue:scraping",
+                queue_depth=3,
+                queue_pressure="elevated",
+                oldest_job_age_seconds=45,
+                queue_alert="watch",
+            ),
+            "arq:queue:analysis": QueueSnapshot(
+                queue_name="arq:queue:analysis",
+                queue_depth=0,
+                queue_pressure="nominal",
+                oldest_job_age_seconds=0,
+                queue_alert="clear",
+            ),
+            "arq:queue:ops": QueueSnapshot(
+                queue_name="arq:queue:ops",
+                queue_depth=1,
+                queue_pressure="nominal",
+                oldest_job_age_seconds=0,
+                queue_alert="clear",
+            ),
+        }
+
+    monkeypatch.setattr("app.admin.service.get_queue_pool", _fake_get_queue_pool)
+    monkeypatch.setattr("app.admin.service.get_queue_snapshots", _fake_get_queue_snapshots)
+    monkeypatch.setattr(
+        "app.admin.service.settings",
+        SimpleNamespace(
+            auth_audit_stream_enabled=True,
+            auth_audit_stream_key="jobradar:auth-audit",
+            auth_audit_stream_maxlen=1000,
+        ),
+    )
+
+    service = AdminService(db_session)
+    runtime = await service.runtime_status()
+
+    assert runtime["status"] == "ok"
+    assert runtime["redis_connected"] is True
+    assert runtime["queue_summary"]["overall_alert"] == "watch"
+    assert runtime["queue_summary"]["overall_pressure"] == "elevated"
+    assert runtime["worker_metrics"][0]["queue_name"] == "arq:queue:scraping"
+    assert runtime["auth_audit_sink"]["enabled"] is True

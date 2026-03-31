@@ -27,6 +27,15 @@ async def diagnostics(
     return await svc.diagnostics()
 
 
+@router.get("/runtime")
+async def runtime(
+    user: User = Depends(get_current_operator_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    svc = AdminService(db)
+    return await svc.runtime_status()
+
+
 @router.post("/reindex")
 async def reindex(
     user: User = Depends(get_current_user),

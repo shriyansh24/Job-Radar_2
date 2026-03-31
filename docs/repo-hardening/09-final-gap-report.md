@@ -29,6 +29,7 @@ Record the major unresolved risks and deferred work that remain after the curren
 - Why it matters:
   - compose-first runtime, ARQ worker topology, health probes, queue pressure/alert semantics, request/job correlation on queue-triggered operator paths, and the split between JWT signing keys and provider-secret encryption keys are now reflected consistently in code and docs.
   - the integrations model now truthfully covers both API-key and OAuth providers, and Gmail-first sync is part of the repo-local runtime rather than a deferred concept.
+  - the Admin runtime summary now exposes queue pressure, queue alerts, worker counters, and the configurable auth audit stream so operators can see the same runtime state the scheduler and workers are using.
 
 ### 3. Test taxonomy and browser coverage are aligned to committed scope
 - Status: `CLOSED_FOR_REPO_SCOPE`
@@ -55,7 +56,7 @@ Record the major unresolved risks and deferred work that remain after the curren
 
 ## External Or Deployment Follow-Through
 - GitHub branch-protection enforcement for the documented required checks is configured outside the repo and is not proven by files alone.
-- Dedicated auth audit routing, alert routing, and long-window queue monitoring depend on deployment and log-routing decisions in addition to the repo-local logging that now exists.
-- Deployment-level queue alerting and dashboarding remain external even though the repo now emits healthier runtime signals and CI validates the queue-backed topology.
+- Dedicated auth audit routing, alert routing, and long-window queue monitoring still depend on deployment and log-routing decisions in addition to the repo-local logging that now exists.
+- Deployment-level queue alerting and dashboarding remain external even though the repo now emits healthier runtime signals, a dedicated auth audit stream, and a repo-owned runtime summary.
 - The scraper/parser side now has a deterministic fixture matrix that separates selector, JSON-LD, embedded-state, JS-shell, and Cloudflare-challenge outcomes; the remaining work is source-specific render recovery and anti-bot handling on difficult sites, not missing fixture coverage.
 - Google Workspace breadth beyond Gmail-first remains intentionally out of repo-local live scope: Calendar, Drive, and any `googleworkspace/cli`/`gws` workflow are follow-on product decisions, not hidden gaps in the current shipped implementation.

@@ -17,6 +17,46 @@ export interface Diagnostics {
   scraper_runs?: number;
 }
 
+export interface QueueSnapshot {
+  queue_name: string;
+  queue_depth: number;
+  queue_pressure: string;
+  oldest_job_age_seconds: number;
+  queue_alert: string;
+}
+
+export interface WorkerMetric {
+  role: string;
+  available: boolean;
+  queue_name?: string;
+  queue_depth?: number;
+  queue_pressure?: string;
+  oldest_job_age_seconds?: number;
+  queue_alert?: string;
+  retry_exhausted_total?: number;
+  retry_scheduled_total?: number;
+  queue_job_completed_total?: number;
+  queue_job_failed_total?: number;
+}
+
+export interface RuntimeStatus {
+  status: string;
+  captured_at: string;
+  redis_connected: boolean;
+  runtime_error?: string;
+  queue_summary: {
+    overall_pressure: string;
+    overall_alert: string;
+    queues: QueueSnapshot[];
+  };
+  worker_metrics: WorkerMetric[];
+  auth_audit_sink: {
+    enabled: boolean;
+    stream_key: string;
+    maxlen: number;
+  };
+}
+
 export interface SourceHealth {
   id: string;
   source_name: string;
@@ -34,6 +74,8 @@ export const adminApi = {
     apiClient.get<HealthStatus>('/admin/health'),
   diagnostics: () =>
     apiClient.get<Diagnostics>('/admin/diagnostics'),
+  runtime: () =>
+    apiClient.get<RuntimeStatus>('/admin/runtime'),
   sourceHealth: () =>
     apiClient.get<Array<SourceHealth & { quality_score: number | string }>>('/source-health').then((response) => ({
       ...response,

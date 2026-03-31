@@ -220,3 +220,17 @@ def test_validate_runtime_settings_rejects_default_redis_url_outside_debug():
         assert "JR_REDIS_URL" in str(exc)
     else:
         raise AssertionError("Expected RuntimeError when using the built-in redis URL")
+
+
+def test_validate_runtime_settings_requires_audit_stream_key_when_enabled():
+    settings = _valid_runtime_settings(
+        auth_audit_stream_enabled=True,
+        auth_audit_stream_key="",
+    )
+
+    try:
+        validate_runtime_settings(settings)
+    except RuntimeError as exc:
+        assert "JR_AUTH_AUDIT_STREAM_KEY" in str(exc)
+    else:
+        raise AssertionError("Expected RuntimeError when auth audit stream key is missing")
