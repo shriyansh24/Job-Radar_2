@@ -4,7 +4,13 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, TypeAdapter, field_validator
+
+HTTP_URL_ADAPTER = TypeAdapter(AnyHttpUrl)
+
+
+def _normalize_http_url(value: str) -> str:
+    return str(HTTP_URL_ADAPTER.validate_python(value.strip()))
 
 
 class ScraperRunResponse(BaseModel):
@@ -34,6 +40,11 @@ class CareerPageCreate(BaseModel):
     url: str
     company_name: str | None = None
 
+    @field_validator("url")
+    @classmethod
+    def normalize_url(cls, value: str) -> str:
+        return _normalize_http_url(value)
+
 
 class CareerPageUpdate(BaseModel):
     """Partial update for a career-page scrape target."""
@@ -41,6 +52,13 @@ class CareerPageUpdate(BaseModel):
     url: str | None = None
     company_name: str | None = None
     enabled: bool | None = None
+
+    @field_validator("url")
+    @classmethod
+    def normalize_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _normalize_http_url(value)
 
 
 class CareerPageResponse(BaseModel):

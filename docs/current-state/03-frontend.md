@@ -36,7 +36,7 @@
 - `Settings` persists workspace settings, saved searches, integrations, password changes, account deletion, and data clear actions against real backend endpoints, including saved-search alert status and manual check execution. The Integrations panel now includes a Google Gmail card with connect/reconnect, manual sync, disconnect, account-email, scopes, last-sync, and last-error state alongside the existing API-key-backed providers.
 - `DocumentVault` edit flows are wired through the live PATCH endpoints.
 - `Admin` and source-health surfaces now read the current backend status and diagnostics shape instead of stale frontend assumptions.
-- `Targets` now exposes manual career-page create/edit/delete flows alongside bulk import, batch controls, and per-target trigger/release actions.
+- `Targets` now exposes manual career-page create/edit/delete flows alongside bulk import, batch controls, and per-target trigger/release actions, and the manual modal now applies the same safe `http`/`https` URL normalization baseline used by target import.
 - The largest routed surfaces have been partially decomposed into dedicated component groups under `frontend/src/components/`, including `admin`, `copilot`, `dashboard`, `email`, `interview`, `jobs`, `networking`, `onboarding`, `outcomes`, `pipeline`, `profile`, `resume`, `salary`, `settings`, and `vault`.
 
 ## Validation
