@@ -234,3 +234,27 @@ def test_validate_runtime_settings_requires_audit_stream_key_when_enabled():
         assert "JR_AUTH_AUDIT_STREAM_KEY" in str(exc)
     else:
         raise AssertionError("Expected RuntimeError when auth audit stream key is missing")
+
+
+def test_validate_runtime_settings_rejects_invalid_queue_alert_webhook_url() -> None:
+    settings = _valid_runtime_settings(queue_alert_webhook_url="ftp://alerts.example.com")
+
+    try:
+        validate_runtime_settings(settings)
+    except RuntimeError as exc:
+        assert "JR_QUEUE_ALERT_WEBHOOK_URL" in str(exc)
+    else:
+        raise AssertionError("Expected RuntimeError when queue alert webhook URL is invalid")
+
+
+def test_validate_runtime_settings_rejects_non_positive_admin_runtime_event_limit() -> None:
+    settings = _valid_runtime_settings(admin_runtime_event_limit=0)
+
+    try:
+        validate_runtime_settings(settings)
+    except RuntimeError as exc:
+        assert "JR_ADMIN_RUNTIME_EVENT_LIMIT" in str(exc)
+    else:
+        raise AssertionError(
+            "Expected RuntimeError when admin runtime event limit is not positive"
+        )

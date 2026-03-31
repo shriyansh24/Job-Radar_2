@@ -9,6 +9,7 @@
 - Compose-first local runtime is the current repo baseline
 - Dedicated scheduler runtime is live alongside the API process
 - Queue-backed ARQ worker services are now live for `scraping`, `analysis`, and `ops`
+- Queue telemetry history, queue alert transitions, and Admin-visible auth audit events are now repo-owned runtime signals
 - ATS identity persistence is now live on scraped jobs with migration coverage
 - Auto Apply now exposes run/pause/refresh operator controls and has API integration coverage
 - Settings integrations now support Google OAuth, and Gmail-first sync feeds the live email and pipeline surfaces
@@ -33,6 +34,7 @@
 - Repo-wide backend mypy remains a targeted CI gate rather than a full-program strict-type contract.
 - Browser/e2e coverage is committed and representative; destructive provider-backed flows and seeded-data-heavy workflows still rely on targeted or manual validation.
 - Queue-backed runtime is live with queue pressure, alert state, oldest-job age, and request/job correlation on queue-triggered operator paths. Long-window alert routing and dashboards still depend on deployment infrastructure outside the repo.
+- Queue-backed runtime is live with queue pressure, alert state, oldest-job age, recent telemetry history, alert transitions, and request/job correlation on queue-triggered operator paths. Long-window alert routing and dashboards still depend on deployment infrastructure outside the repo.
 - Gmail sync is now both operator-triggered from Settings and scheduler-triggered on the `ops` worker lane; broader Google Workspace surfaces such as Calendar, Drive, and `googleworkspace/cli` remain out of live scope.
 - Migration replay, targeted rollback coverage, and the migration-ops runbook are live; full production restore strategy remains an operator concern outside the codebase.
 

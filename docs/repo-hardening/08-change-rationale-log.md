@@ -201,3 +201,42 @@ Record why major repo-hardening decisions were made, what alternatives were reje
   - `docs/repo-hardening/09-final-gap-report.md`
 - Remaining risk:
   - the sink is intentionally default-off, so deployments still need to opt in and route the stream to durable storage if they want long-term retention
+
+### Queue telemetry history and alert transition routing
+- Status: `FIXED`
+- Changed because:
+  - runtime observability needed more than the current queue snapshot and worker heartbeat state
+  - the Admin page should expose recent queue history and queue alert changes without requiring a separate monitoring stack
+- Alternatives considered:
+  - keep queue observability as the latest snapshot only
+  - push all history to deployment-side tooling and leave the repo blind
+- Why rejected:
+  - latest-snapshot-only view hides whether pressure or alerts are trending in the right direction
+  - deployment-only tooling would leave local and CI runs without history
+- Files touched:
+  - `backend/app/runtime/telemetry.py`
+  - `backend/app/runtime/scheduler.py`
+  - `backend/app/admin/service.py`
+  - `backend/app/config.py`
+  - `frontend/src/components/admin/AdminRuntimePanel.tsx`
+  - `frontend/src/api/admin.ts`
+  - `docs/current-state/05-ops-and-ci.md`
+  - `docs/current-state/06-open-items.md`
+  - `docs/repo-hardening/07-observability-and-failure-map.md`
+  - `docs/repo-hardening/09-final-gap-report.md`
+- Remaining risk:
+  - long-window retention and alert fanout beyond the repo-owned Redis history still need deployment routing if the operator wants durable monitoring outside the app
+
+### Deployment ops runbook
+- Status: `IMPLEMENTED`
+- Changed because:
+  - repo-owned observability is only useful if operators know how to read it, recover it, and validate it after a deploy or restore
+- Alternatives considered:
+  - leave deployment follow-through as implicit knowledge in docs scattered across current-state pages
+- Why rejected:
+  - restore and monitoring guidance need a single operator-facing entry point or they drift immediately
+- Files touched:
+  - `docs/repo-hardening/12-deployment-ops-runbook.md`
+  - `docs/repo-hardening/00-index.md`
+- Remaining risk:
+  - external alert destinations and branch-protection enforcement still live outside the repo and must be set by the deployment/GitHub owner

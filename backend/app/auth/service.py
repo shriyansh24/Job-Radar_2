@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.models import User
 from app.auth.schemas import AuthSessionResponse, UserCreate
 from app.config import settings
-from app.shared.audit_sink import publish_auth_audit_event
+from app.shared.audit_sink import emit_auth_audit_event
 from app.shared.errors import AuthError, ValidationError
 
 type TokenPayload = dict[str, object]
@@ -89,10 +89,12 @@ def _build_auth_log_fields(
 
 def log_auth_info(event: str, **kwargs: object) -> None:
     logger.info(event, audit_stream="auth", **kwargs)
+    emit_auth_audit_event(event, **kwargs)
 
 
 def log_auth_warning(event: str, **kwargs: object) -> None:
     logger.warning(event, audit_stream="auth", **kwargs)
+    emit_auth_audit_event(event, **kwargs)
 
 
 def hash_password(password: str) -> str:
@@ -262,11 +264,6 @@ async def register_user(db: AsyncSession, data: UserCreate) -> User:
             reason="email_already_registered",
             auth_source="registration",
         )
-        await publish_auth_audit_event(
-            "auth_register_failed",
-            reason="email_already_registered",
-            auth_source="registration",
-        )
         raise ValidationError("Email already registered")
 
     user = User(
@@ -282,11 +279,6 @@ async def register_user(db: AsyncSession, data: UserCreate) -> User:
         user_id=str(user.id),
         auth_source="registration",
     )
-    await publish_auth_audit_event(
-        "auth_register_succeeded",
-        user_id=str(user.id),
-        auth_source="registration",
-    )
     return user
 
 
@@ -295,17 +287,11 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> User
     user = result.scalar_one_or_none()
     if user is None or not verify_password(password, user.password_hash):
         log_auth_warning("auth_login_failed", reason="invalid_credentials")
-        await publish_auth_audit_event("auth_login_failed", reason="invalid_credentials")
         raise AuthError("Invalid email or password")
     if not user.is_active:
         log_auth_warning(
             "auth_login_failed",
             **_build_auth_log_fields(user=user, reason="inactive_user"),
-        )
-        await publish_auth_audit_event(
-            "auth_login_failed",
-            user_id=str(user.id),
-            reason="inactive_user",
         )
         raise AuthError("User is inactive")
     return user
@@ -322,21 +308,11 @@ async def change_password(
             "auth_password_change_failed",
             **_build_auth_log_fields(user=user, reason="invalid_current_password"),
         )
-        await publish_auth_audit_event(
-            "auth_password_change_failed",
-            user_id=str(user.id),
-            reason="invalid_current_password",
-        )
         raise AuthError("Current password is incorrect")
     if current_password == new_password:
         log_auth_warning(
             "auth_password_change_failed",
             **_build_auth_log_fields(user=user, reason="password_reuse"),
-        )
-        await publish_auth_audit_event(
-            "auth_password_change_failed",
-            user_id=str(user.id),
-            reason="password_reuse",
         )
         raise ValidationError("New password must be different from current password")
     user.password_hash = hash_password(new_password)
@@ -344,5 +320,4 @@ async def change_password(
     await db.commit()
     await db.refresh(user)
     log_auth_info("auth_password_changed", **_build_auth_log_fields(user=user))
-    await publish_auth_audit_event("auth_password_changed", user_id=str(user.id))
     return user

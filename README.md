@@ -21,6 +21,7 @@ JobRadar V2 is a full-stack job-search and career-operations workspace. It combi
 - Backend: FastAPI, SQLAlchemy async, PostgreSQL, Alembic, `uv`
 - Runtime: compose-first local stack with Postgres, Redis, one-shot migrations, API, dedicated scheduler, queue-specific ARQ workers (`scraping`, `analysis`, `ops`), and frontend
 - Integrations: provider-typed settings surface with API-key providers plus Google OAuth for Gmail sync into the existing email and pipeline modules
+- Runtime observability: Redis-backed queue telemetry history, queue alert transitions, optional queue alert webhook routing, and Admin-visible auth audit events
 - Browser validation: committed Playwright coverage under `frontend/e2e/` plus broader screenshot sweeps under `.claude/ui-captures/`
 - Selective P1 recovery is now live on `main`: queue-backed worker runtime, ATS identity persistence on scraped jobs, recovered auto-apply execution and operator controls, richer interview prep bundles, bounded hybrid semantic search, live analytics pattern surfaces, resume preview/export flows, and the digest-worker follow-through on the ops lane
 
@@ -75,7 +76,7 @@ uv run python -m app.runtime.arq_worker analysis
 uv run python -m app.runtime.arq_worker ops
 ```
 
-The scheduler now enqueues named jobs onto ARQ queues `scraping`, `analysis`, and `ops`. Queue-specific worker services consume those queues directly instead of the scheduler spawning one-shot worker subprocesses. Treat [05-ops-and-ci.md](D:/jobradar-v2/docs/current-state/05-ops-and-ci.md) as the authoritative runtime-status page for current worker ownership, runtime health probes, and validation commands.
+The scheduler now enqueues named jobs onto ARQ queues `scraping`, `analysis`, and `ops`. Queue-specific worker services consume those queues directly instead of the scheduler spawning one-shot worker subprocesses. Treat [05-ops-and-ci.md](D:/jobradar-v2/docs/current-state/05-ops-and-ci.md) as the authoritative runtime-status page for current worker ownership, runtime health probes, telemetry history, and validation commands.
 Migration replay, rollback stance, and backfill guidance for the current tree are documented in [10-migration-ops.md](D:/jobradar-v2/docs/repo-hardening/10-migration-ops.md).
 
 ### Gmail-First Integration Runtime
@@ -88,6 +89,7 @@ If you want Gmail-derived hiring signals in the live email and pipeline surfaces
 - `JR_GOOGLE_GMAIL_SYNC_MAX_MESSAGES`
 
 The Google integration is Gmail-first only. It adds OAuth-backed Gmail sync through the existing Settings > Integrations surface and the `gmail_sync` scheduled job on the `ops` worker lane. It does not turn the app into a general inbox client, and Calendar, Drive, and `googleworkspace/cli` remain out of live scope.
+Queue telemetry history and queue alert routing are also repo-owned now: the scheduler records Redis-backed queue samples and alert transitions, and the Admin runtime view reads that history back for operators.
 
 ### Host-Local Frontend
 ```bash

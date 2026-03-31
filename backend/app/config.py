@@ -84,6 +84,16 @@ class Settings(BaseSettings):
     auth_audit_stream_key: str = "jobradar:auth-audit"
     auth_audit_stream_maxlen: int = 1000
 
+    # Queue telemetry and alert routing
+    queue_telemetry_stream_key: str = "jobradar:queue-telemetry"
+    queue_telemetry_stream_maxlen: int = 2000
+    queue_alert_stream_key: str = "jobradar:queue-alerts"
+    queue_alert_stream_maxlen: int = 1000
+    queue_alert_state_key: str = "jobradar:queue-alert-state"
+    queue_alert_webhook_url: str = ""
+    queue_alert_webhook_timeout_seconds: float = 5.0
+    admin_runtime_event_limit: int = 20
+
     # Intel GPU acceleration (optional - requires openvino or ipex)
     intel_gpu_enabled: bool = False
     openvino_cache_dir: str = ""
@@ -183,6 +193,28 @@ def validate_runtime_settings(settings: Settings) -> None:
             raise RuntimeError("JR_AUTH_AUDIT_STREAM_KEY must not be empty when enabled.")
         if settings.auth_audit_stream_maxlen <= 0:
             raise RuntimeError("JR_AUTH_AUDIT_STREAM_MAXLEN must be greater than zero.")
+    if not settings.queue_telemetry_stream_key.strip():
+        raise RuntimeError("JR_QUEUE_TELEMETRY_STREAM_KEY must not be empty.")
+    if settings.queue_telemetry_stream_maxlen <= 0:
+        raise RuntimeError("JR_QUEUE_TELEMETRY_STREAM_MAXLEN must be greater than zero.")
+    if not settings.queue_alert_stream_key.strip():
+        raise RuntimeError("JR_QUEUE_ALERT_STREAM_KEY must not be empty.")
+    if settings.queue_alert_stream_maxlen <= 0:
+        raise RuntimeError("JR_QUEUE_ALERT_STREAM_MAXLEN must be greater than zero.")
+    if not settings.queue_alert_state_key.strip():
+        raise RuntimeError("JR_QUEUE_ALERT_STATE_KEY must not be empty.")
+    if settings.queue_alert_webhook_url.strip():
+        parsed_alert_webhook = urlparse(settings.queue_alert_webhook_url)
+        if parsed_alert_webhook.scheme not in {"http", "https"} or not parsed_alert_webhook.netloc:
+            raise RuntimeError(
+                "JR_QUEUE_ALERT_WEBHOOK_URL must use a full http(s) URL when configured."
+            )
+    if settings.queue_alert_webhook_timeout_seconds <= 0:
+        raise RuntimeError(
+            "JR_QUEUE_ALERT_WEBHOOK_TIMEOUT_SECONDS must be greater than zero."
+        )
+    if settings.admin_runtime_event_limit <= 0:
+        raise RuntimeError("JR_ADMIN_RUNTIME_EVENT_LIMIT must be greater than zero.")
 
 
 settings = Settings()

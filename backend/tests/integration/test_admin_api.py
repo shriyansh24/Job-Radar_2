@@ -140,6 +140,15 @@ async def test_admin_operator_can_view_runtime_status(
                 "stream_key": "jobradar:auth-audit",
                 "maxlen": 1000,
             },
+            "queue_alert_routing": {
+                "stream_key": "jobradar:queue-alerts",
+                "stream_maxlen": 1000,
+                "webhook_enabled": False,
+                "webhook_host": None,
+            },
+            "recent_queue_samples": [],
+            "recent_queue_alerts": [],
+            "recent_auth_audit_events": [],
         }
 
     monkeypatch.setattr(AdminService, "runtime_status", _fake_runtime_status)
@@ -151,6 +160,7 @@ async def test_admin_operator_can_view_runtime_status(
 
     assert runtime.status_code == 200
     assert runtime.json()["queue_summary"]["overall_alert"] == "watch"
+    assert runtime.json()["queue_alert_routing"]["stream_key"] == "jobradar:queue-alerts"
 
 
 @pytest.mark.asyncio

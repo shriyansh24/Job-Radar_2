@@ -133,13 +133,30 @@ Document where the major runtime flows log today, where failures surface, and wh
   - truthful `retry_exhausted` logging for non-retryable or final failures
 - Current gap:
   - scheduler and worker readiness now come from live runtime healthcheck probes instead of sentinel files, but there is still no sustained long-window throughput view or deployment-owned alert routing
-  - queue lifecycle is now explicit and includes queue depth, queue alert state, worker counters, retry metadata, and a repo-owned Admin runtime summary, but deployment-level dashboards still live outside the repo
+  - queue lifecycle is now explicit and includes queue depth, queue alert state, worker counters, retry metadata, Redis-backed telemetry history, queue alert transitions, and a repo-owned Admin runtime summary, but deployment-level dashboards and durable external routing still live outside the repo
+
+### Repo-owned queue history and auth audit history
+- Files:
+  - `backend/app/runtime/telemetry.py`
+  - `backend/app/admin/service.py`
+  - `backend/app/shared/audit_sink.py`
+  - `frontend/src/components/admin/AdminRuntimePanel.tsx`
+- Signals:
+  - Redis-backed queue telemetry stream with recent samples
+  - Redis-backed queue alert transition stream
+  - optional queue alert webhook routing when configured
+  - readable auth audit history in Admin runtime
+- Failure behavior:
+  - queue telemetry capture is best-effort and tied to the live Redis pool rather than silently inventing a separate history store
+  - queue alert webhook failures are logged but do not block scheduler health
+  - auth audit history is readable in Admin when the configured sink is enabled, while the sink itself remains best-effort if Redis is unavailable
+- Current gap:
+  - long-window alert routing and dashboards remain deployment-owned even though the repo now stores the history needed to drive them
 
 ## Current Blind Spots
 - Real external ATS/browser submission flows still depend on manual validation rather than deterministic in-repo browser tests.
 - Scheduler job execution semantics are now explicit and health-backed, but queue throughput trend monitoring and alert routing are still deployment concerns.
-- Auth logs are now explicit and request-correlated, but they are not separated into a dedicated audit sink.
-- Auth logs are now explicit and request-correlated, and they can also emit to a dedicated Redis-backed audit stream when configured; deployment routing for that stream is still external.
+- Auth logs are now explicit and request-correlated, and they can also emit to a dedicated Redis-backed audit stream when configured; Admin can read recent auth audit history from that stream.
 - Gmail sync emits structured lifecycle logs and integration error state, but long-window alert routing and dashboards remain deployment-owned.
 
 ## Existing Positive Controls
@@ -148,10 +165,11 @@ Document where the major runtime flows log today, where failures surface, and wh
 - Auth lifecycle events now cover register/login/refresh/logout/password/account-delete/session-clear paths, normalize common failure reasons, and keep sensitive payloads out of the structured log stream.
 - Security headers are centralized in middleware.
 - Queue enqueue and worker lifecycle logs now carry queue ownership, queue depth, retry metadata, scheduled retry backoff, truthful `retry_exhausted` outcomes, Redis heartbeat state, ARQ worker health surfaces, and worker runtime metrics hashes.
+- Queue telemetry is now written into Redis history streams, queue alert transitions are persisted separately, and the Admin runtime summary reads those histories back for operators.
 - CI already runs the reviewed backend dependency-audit policy, `bandit`, `ruff`, `mypy`, `pytest`, `npm audit`, `eslint`, frontend tests, and builds.
 - CodeQL and dependency review are already enabled.
 
 ## Hardening Direction
 1. Add job-level worker logging only where it improves diagnosis without flooding logs.
 2. Keep scheduler process health separate from API readiness in docs, compose, and CI.
-3. Keep normalized reason-code and request-correlation discipline consistent across future auth paths and queue-dispatched jobs, and extend the auth audit stream routing if deployment needs a separate destination.
+3. Keep normalized reason-code and request-correlation discipline consistent across future auth paths and queue-dispatched jobs, and extend the auth audit stream or queue alert routing to a deployment sink only if durable long-window retention is required.

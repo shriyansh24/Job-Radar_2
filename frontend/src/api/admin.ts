@@ -25,6 +25,49 @@ export interface QueueSnapshot {
   queue_alert: string;
 }
 
+export interface QueueAlertRouting {
+  stream_key: string;
+  stream_maxlen: number;
+  webhook_enabled: boolean;
+  webhook_host: string | null;
+}
+
+export interface QueueTelemetrySample {
+  stream_id: string;
+  captured_at: string;
+  overall_pressure: string;
+  overall_alert: string;
+  queues: QueueSnapshot[];
+}
+
+export interface QueueAlertEvent {
+  stream_id: string;
+  captured_at: string;
+  scope: "overall" | "queue";
+  queue_name: string;
+  previous_pressure: string;
+  current_pressure: string;
+  previous_alert: string;
+  current_alert: string;
+  queue_depth: number;
+  oldest_job_age_seconds: number;
+}
+
+export interface AuthAuditEvent {
+  stream_id: string;
+  event: string;
+  audit_stream: string;
+  timestamp: string;
+  request_id?: string;
+  user_id?: string;
+  reason?: string;
+  auth_source?: string;
+  token_version?: string;
+  cleared_cookie_names?: string;
+  queue_name?: string;
+  role?: string;
+}
+
 export interface WorkerMetric {
   role: string;
   available: boolean;
@@ -55,6 +98,10 @@ export interface RuntimeStatus {
     stream_key: string;
     maxlen: number;
   };
+  queue_alert_routing: QueueAlertRouting;
+  recent_queue_samples: QueueTelemetrySample[];
+  recent_queue_alerts: QueueAlertEvent[];
+  recent_auth_audit_events: AuthAuditEvent[];
 }
 
 export interface SourceHealth {
