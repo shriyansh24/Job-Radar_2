@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { adminApi } from "../api/admin";
 import { changePasswordApi, deleteAccountApi } from "../api/auth";
-import { settingsApi, type AppSettings, type IntegrationStatus, type SavedSearch } from "../api/settings";
+import { settingsApi, type AppSettings, type IntegrationProvider, type SavedSearch } from "../api/settings";
 import { SettingsPageHeader } from "../components/settings/SettingsPageHeader";
 import { SettingsSearchEditorModal, type SearchEditorState } from "../components/settings/SettingsSearchEditorModal";
 import { toast } from "../components/ui/toastService";
@@ -114,6 +114,33 @@ export default function Settings() {
     });
   }, [integrations]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") === "integrations") {
+      setActiveTab("integrations");
+    }
+
+    const integrationStatus = params.get("integration_status");
+    const integrationProvider = params.get("integration_provider");
+    const integrationMessage = params.get("integration_message");
+    if (!integrationStatus || !integrationProvider) {
+      return;
+    }
+
+    if (integrationStatus === "connected") {
+      toast("success", `${integrationProvider} connected${integrationMessage ? ` (${integrationMessage})` : ""}`);
+      queryClient.invalidateQueries({ queryKey: ["settings", "integrations"] });
+    } else {
+      toast("error", integrationMessage ?? `${integrationProvider} integration failed`);
+    }
+
+    params.delete("integration_status");
+    params.delete("integration_provider");
+    params.delete("integration_message");
+    const nextQuery = params.toString();
+    window.history.replaceState({}, document.title, `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`);
+  }, [queryClient]);
+
   function updateThemeSelection(next: Partial<{ mode: ThemeMode; themeFamily: ThemeFamily }>) {
     const resolvedMode = next.mode ?? mode;
     const resolvedThemeFamily = next.themeFamily ?? themeFamily;
@@ -190,7 +217,7 @@ export default function Settings() {
   });
 
   const integrationUpsertMutation = useMutation({
-    mutationFn: async (provider: IntegrationStatus["provider"]) => {
+    mutationFn: async (provider: Exclude<IntegrationProvider, "google">) => {
       const key = integrationDrafts[provider]?.trim();
       if (!key) throw new Error("Enter an API key before saving");
       return settingsApi.upsertIntegration(provider, key);
@@ -207,12 +234,31 @@ export default function Settings() {
   });
 
   const integrationDeleteMutation = useMutation({
-    mutationFn: (provider: IntegrationStatus["provider"]) => settingsApi.deleteIntegration(provider),
+    mutationFn: (provider: IntegrationProvider) => settingsApi.deleteIntegration(provider),
     onSuccess: (_response, provider) => {
       toast("success", `${provider} disconnected`);
       queryClient.invalidateQueries({ queryKey: ["settings", "integrations"] });
     },
     onError: () => toast("error", "Failed to disconnect integration"),
+  });
+
+  const googleSyncMutation = useMutation({
+    mutationFn: () => settingsApi.syncGoogleIntegration(),
+    onSuccess: (response) => {
+      const result = response.data;
+      toast(
+        "success",
+        `Gmail sync processed ${result.messages_processed}/${result.messages_seen} messages and applied ${result.transitions_applied} updates`
+      );
+      queryClient.invalidateQueries({ queryKey: ["settings", "integrations"] });
+      queryClient.invalidateQueries({ queryKey: ["email", "logs"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Failed to sync Gmail";
+      toast("error", message);
+    },
   });
 
   const changePasswordMutation = useMutation({
@@ -280,6 +326,10 @@ export default function Settings() {
   const clearDataReady = clearConfirm.trim().toLowerCase() === "clear";
   const deleteAccountReady = deleteConfirm.trim().toLowerCase() === "delete";
 
+  function handleGoogleConnect() {
+    window.location.href = settingsApi.buildGoogleConnectUrl("/settings?tab=integrations");
+  }
+
   return (
     <div className="flex h-full flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
       <SettingsPageHeader
@@ -319,6 +369,7 @@ export default function Settings() {
             passwordPending={changePasswordMutation.isPending}
             savingProvider={integrationUpsertMutation.variables ?? null}
             deletingProvider={integrationDeleteMutation.variables ?? null}
+            syncingGoogle={googleSyncMutation.isPending}
             onModeChange={(nextMode) => updateThemeSelection({ mode: nextMode })}
             onThemeFamilyChange={(nextFamily) => updateThemeSelection({ themeFamily: nextFamily })}
             onNotificationsChange={(checked) =>
@@ -342,6 +393,8 @@ export default function Settings() {
             }
             onIntegrationSave={(provider) => integrationUpsertMutation.mutate(provider)}
             onIntegrationDelete={(provider) => integrationDeleteMutation.mutate(provider)}
+            onGoogleConnect={handleGoogleConnect}
+            onGoogleSync={() => googleSyncMutation.mutate()}
             onCreateSearch={() => openSearchEditor()}
             onEditSearch={(search) => openSearchEditor(search)}
             onToggleSearch={(search) =>

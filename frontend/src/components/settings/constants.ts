@@ -25,6 +25,7 @@ const INTEGRATION_LABELS: Record<IntegrationStatus["provider"], string> = {
   serpapi: "SerpAPI",
   theirstack: "TheirStack",
   apify: "Apify",
+  google: "Google Gmail",
 };
 
 const INTEGRATION_NOTES: Record<IntegrationStatus["provider"], string> = {
@@ -32,6 +33,7 @@ const INTEGRATION_NOTES: Record<IntegrationStatus["provider"], string> = {
   serpapi: "Search coverage for discovery flows.",
   theirstack: "Company and market enrichment.",
   apify: "Scraper expansion and long-running jobs.",
+  google: "OAuth-backed Gmail sync for hiring-signal intake and pipeline updates.",
 };
 
 export type { SearchEditorState };

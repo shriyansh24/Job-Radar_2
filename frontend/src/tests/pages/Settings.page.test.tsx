@@ -14,6 +14,8 @@ const settingsMocks = vi.hoisted(() => ({
   deleteSearch: vi.fn(),
   upsertIntegration: vi.fn(),
   deleteIntegration: vi.fn(),
+  buildGoogleConnectUrl: vi.fn(),
+  syncGoogleIntegration: vi.fn(),
   exportData: vi.fn(),
   clearData: vi.fn(),
   changePassword: vi.fn(),
@@ -32,6 +34,8 @@ vi.mock("../../api/settings", () => ({
     deleteSearch: settingsMocks.deleteSearch,
     upsertIntegration: settingsMocks.upsertIntegration,
     deleteIntegration: settingsMocks.deleteIntegration,
+    buildGoogleConnectUrl: settingsMocks.buildGoogleConnectUrl,
+    syncGoogleIntegration: settingsMocks.syncGoogleIntegration,
   },
 }));
 
@@ -83,17 +87,42 @@ describe("Settings page", () => {
       data: [
         {
           provider: "openrouter",
+          auth_type: "api_key",
           connected: true,
           status: "connected",
           masked_value: "sk-or-v1-****",
+          account_email: null,
+          scopes: [],
           updated_at: "2026-03-22T09:00:00Z",
+          last_validated_at: null,
+          last_synced_at: null,
+          last_error: null,
         },
         {
           provider: "serpapi",
+          auth_type: "api_key",
           connected: false,
           status: "not_configured",
           masked_value: null,
+          account_email: null,
+          scopes: [],
           updated_at: null,
+          last_validated_at: null,
+          last_synced_at: null,
+          last_error: null,
+        },
+        {
+          provider: "google",
+          auth_type: "oauth",
+          connected: true,
+          status: "connected",
+          masked_value: null,
+          account_email: "owner@jobradar.dev",
+          scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
+          updated_at: "2026-03-22T09:10:00Z",
+          last_validated_at: "2026-03-22T09:10:00Z",
+          last_synced_at: "2026-03-22T09:20:00Z",
+          last_error: null,
         },
       ],
     });
@@ -123,6 +152,18 @@ describe("Settings page", () => {
     settingsMocks.deleteSearch.mockResolvedValue({ data: null });
     settingsMocks.upsertIntegration.mockResolvedValue({ data: null });
     settingsMocks.deleteIntegration.mockResolvedValue({ data: null });
+    settingsMocks.buildGoogleConnectUrl.mockReturnValue("http://localhost:8000/api/v1/settings/integrations/google/connect");
+    settingsMocks.syncGoogleIntegration.mockResolvedValue({
+      data: {
+        provider: "google",
+        messages_seen: 3,
+        messages_processed: 2,
+        duplicates_skipped: 1,
+        signals_detected: 2,
+        transitions_applied: 1,
+        last_synced_at: "2026-03-22T09:20:00Z",
+      },
+    });
     settingsMocks.exportData.mockResolvedValue({ data: new Blob(["{}"], { type: "application/json" }) });
     settingsMocks.clearData.mockResolvedValue({ data: { rows_deleted: 0 } });
     settingsMocks.changePassword.mockResolvedValue({ data: null });
@@ -147,6 +188,8 @@ describe("Settings page", () => {
     await user.click(screen.getByRole("button", { name: /^integrations$/i }));
     expect(await screen.findByText("OpenRouter")).toBeInTheDocument();
     expect(screen.getByText(/sk-or-v1/i)).toBeInTheDocument();
+    expect(screen.getByText("Google Gmail")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /sync gmail/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^data$/i }));
     expect(await screen.findByRole("button", { name: /export data/i })).toBeInTheDocument();
@@ -160,5 +203,15 @@ describe("Settings page", () => {
     await user.click(await screen.findByRole("button", { name: /check now/i }));
 
     expect(settingsMocks.checkSearch).toHaveBeenCalledWith("search-1");
+  });
+
+  it("runs Gmail sync from the integrations surface", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Settings />);
+
+    await user.click(await screen.findByRole("button", { name: /^integrations$/i }));
+    await user.click(await screen.findByRole("button", { name: /sync gmail/i }));
+
+    expect(settingsMocks.syncGoogleIntegration).toHaveBeenCalledTimes(1);
   });
 });

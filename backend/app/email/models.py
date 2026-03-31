@@ -21,6 +21,10 @@ class EmailLog(Base):
     matched_application_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("applications.id", ondelete="SET NULL"), nullable=True
     )
+    source_provider: Mapped[str] = mapped_column(String(50), default="webhook", nullable=False)
+    source_message_id: Mapped[str | None] = mapped_column(String(255))
+    source_thread_id: Mapped[str | None] = mapped_column(String(255))
+    source_received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     company_extracted: Mapped[str | None] = mapped_column(String(300))
     job_title_extracted: Mapped[str | None] = mapped_column(String(500))
     raw_body_hash: Mapped[str | None] = mapped_column(String(64))

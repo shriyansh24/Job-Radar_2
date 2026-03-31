@@ -31,12 +31,15 @@ The revision set currently includes:
   - `7021f28ab5e0`
   - `005`
   - `20260323_integration_secrets`
+  - `20260330_saved_search_alerts`
+  - `20260330_google_integration`
 
 Important operational characteristics:
 - `7021f28ab5e0` is a merge-head revision and carries no schema body.
 - `005` is a consolidation migration that creates multiple branch-era tables idempotently.
 - `20260321_db_audit_fixes` rewires foreign keys and indexes and should be treated as structurally sensitive.
 - `002` has the only explicitly targeted downgrade test in the current test suite.
+- `20260330_google_integration` expands `user_integration_secrets` from API-key-only storage into a mixed auth model (`auth_type`, `secret_json`, `account_email`, `scopes`, sync/error timestamps) and adds Gmail provenance fields to `email_logs`; treat it as a contract-bearing migration because both settings and email flows depend on it.
 - The ATS identity lineage in this repo is currently represented by the `scrape_targets` contract rather than a dedicated identity table:
   - `aaba1d3f957f` introduces `scrape_targets.ats_vendor` and `scrape_targets.ats_board_token`
   - `45613a5a2f78` links `jobs.source_target_id` back to `scrape_targets`
@@ -99,6 +102,7 @@ When a revision performs data movement:
 For this tree:
 - `backend/app/migrations/versions/e5d40ea7c9db_migrate_career_pages_to_scrape_targets_.py` is a data migration and should be treated as a model for explicit column mapping notes
 - `backend/app/migrations/versions/005_create_p2_tables.py` is a consolidation migration and should remain idempotent-aware
+- `backend/app/migrations/versions/20260330_add_google_integration_and_email_provenance.py` changes both provider integration storage and inbound email provenance, so post-migration validation should include settings/integration routes and email-log serialization rather than schema replay alone
 - `backend/app/migrations/versions/aaba1d3f957f_create_scrape_targets_and_scrape_.py` carries the ATS identity surface for scrape targets and should not lose `ats_vendor`, `ats_board_token`, or the `idx_targets_ats` index without an explicit contract change
 - `backend/app/migrations/versions/45613a5a2f78_add_job_lifecycle_columns_and_tier_.py` is part of the same identity story because it wires jobs back to scrape targets through `source_target_id`
 

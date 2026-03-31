@@ -236,3 +236,12 @@ async def test_run_with_lifecycle_logs_completion_fields_for_success(
         ),
     ]
     assert counter_calls == ["queue_job_completed_total"]
+
+
+def test_gmail_sync_is_registered_on_ops_queue() -> None:
+    registered = job_registry.get_registered_job("gmail_sync")
+
+    assert registered.name == "gmail_sync"
+    assert registered.queue_name == OPS_QUEUE
+    assert registered.timeout_seconds == 1800
+    assert registered.max_tries == 2

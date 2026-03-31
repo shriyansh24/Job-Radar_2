@@ -60,6 +60,8 @@ def test_build_worker_preserves_function_retry_policy(monkeypatch: pytest.Monkey
 
     assert worker.functions["auto_apply_batch"].max_tries == 1
     assert worker.functions["cleanup"].max_tries == 2
+    assert "gmail_sync" in worker.functions
+    assert worker.functions["gmail_sync"].max_tries == 2
 
 
 def test_build_worker_rejects_unknown_role() -> None:

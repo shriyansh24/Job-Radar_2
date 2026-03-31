@@ -34,6 +34,7 @@ def test_create_scheduler_registers_daily_digest() -> None:
     job_ids = {job.id for job in scheduler.get_jobs()}
 
     assert "daily_digest" in job_ids
+    assert "gmail_sync" in job_ids
 
 
 def test_log_job_event_includes_dispatch_result(monkeypatch: pytest.MonkeyPatch) -> None:

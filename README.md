@@ -1,6 +1,6 @@
 # JobRadar V2
 
-JobRadar V2 is a full-stack job-search and career-operations workspace. It combines direct job scraping, enrichment, pipeline tracking, interview prep, resume tooling, compensation analysis, vault management, and auto-apply support behind a single React frontend and FastAPI backend.
+JobRadar V2 is a full-stack job-search and career-operations workspace. It combines direct job scraping, enrichment, pipeline tracking, interview prep, resume tooling, compensation analysis, vault management, auto-apply support, and Gmail-first hiring-signal intake behind a single React frontend and FastAPI backend.
 
 ## Start Here
 - Live repo state: `docs/current-state/00-index.md`
@@ -20,6 +20,7 @@ JobRadar V2 is a full-stack job-search and career-operations workspace. It combi
 - Frontend: React 19, Vite 6, TypeScript, Tailwind CSS v4, Zustand, React Query
 - Backend: FastAPI, SQLAlchemy async, PostgreSQL, Alembic, `uv`
 - Runtime: compose-first local stack with Postgres, Redis, one-shot migrations, API, dedicated scheduler, queue-specific ARQ workers (`scraping`, `analysis`, `ops`), and frontend
+- Integrations: provider-typed settings surface with API-key providers plus Google OAuth for Gmail sync into the existing email and pipeline modules
 - Browser validation: committed Playwright coverage under `frontend/e2e/` plus broader screenshot sweeps under `.claude/ui-captures/`
 - Selective P1 recovery is now live on `main`: queue-backed worker runtime, ATS identity persistence on scraped jobs, recovered auto-apply execution and operator controls, richer interview prep bundles, bounded hybrid semantic search, live analytics pattern surfaces, resume preview/export flows, and the digest-worker follow-through on the ops lane
 
@@ -77,6 +78,17 @@ uv run python -m app.runtime.arq_worker ops
 The scheduler now enqueues named jobs onto ARQ queues `scraping`, `analysis`, and `ops`. Queue-specific worker services consume those queues directly instead of the scheduler spawning one-shot worker subprocesses. Treat [05-ops-and-ci.md](D:/jobradar-v2/docs/current-state/05-ops-and-ci.md) as the authoritative runtime-status page for current worker ownership, runtime health probes, and validation commands.
 Migration replay, rollback stance, and backfill guidance for the current tree are documented in [10-migration-ops.md](D:/jobradar-v2/docs/repo-hardening/10-migration-ops.md).
 
+### Gmail-First Integration Runtime
+If you want Gmail-derived hiring signals in the live email and pipeline surfaces, configure:
+- `JR_FRONTEND_BASE_URL`
+- `JR_GOOGLE_OAUTH_CLIENT_ID`
+- `JR_GOOGLE_OAUTH_CLIENT_SECRET`
+- `JR_GOOGLE_OAUTH_REDIRECT_URI`
+- `JR_GOOGLE_GMAIL_SYNC_QUERY`
+- `JR_GOOGLE_GMAIL_SYNC_MAX_MESSAGES`
+
+The Google integration is Gmail-first only. It adds OAuth-backed Gmail sync through the existing Settings > Integrations surface and the `gmail_sync` scheduled job on the `ops` worker lane. It does not turn the app into a general inbox client, and Calendar, Drive, and `googleworkspace/cli` remain out of live scope.
+
 ### Host-Local Frontend
 ```bash
 cd frontend
@@ -105,6 +117,8 @@ npm run test -- --run
 npm run e2e
 npm run build
 ```
+
+`npm run e2e` now owns the Vite server and will reuse an already-running backend API on `127.0.0.1:8000` when present. If no backend is running, Playwright will run `alembic upgrade head` and boot the API itself before the browser suite starts. That still requires reachable Postgres and Redis settings; the repo-local preflight will fail early with an actionable message instead of proxying browser requests into a dead backend.
 
 ### Browser QA
 - Keep broader screenshot captures in `.claude/ui-captures/`
@@ -147,6 +161,7 @@ jobradar-v2/
 - Keep docs, tests, and runtime-truth updates in the same batch as behavior changes.
 - Keep ARQ queue-topology claims, worker-service claims, and retry-policy changes in `docs/current-state/05-ops-and-ci.md`.
 - Do not treat `docs/research/` as committed scope unless it is explicitly promoted into `docs/current-state/` and the relevant front-door docs.
+- Keep Google OAuth callback URL, Gmail sync cadence, and Gmail-first scope limits aligned across `.env.example`, current-state docs, and runtime code.
 
 ## Read Next
 - `docs/current-state/00-index.md`

@@ -6,6 +6,15 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+IntegrationProvider = Literal["openrouter", "serpapi", "theirstack", "apify", "google"]
+IntegrationAuthType = Literal["api_key", "oauth"]
+IntegrationConnectionStatus = Literal[
+    "connected",
+    "not_configured",
+    "needs_reconnect",
+    "sync_error",
+]
+
 
 class SavedSearchCreate(BaseModel):
     name: str
@@ -38,11 +47,27 @@ class IntegrationUpsertRequest(BaseModel):
 
 
 class IntegrationResponse(BaseModel):
-    provider: str
+    provider: IntegrationProvider
+    auth_type: IntegrationAuthType
     connected: bool
-    status: Literal["connected", "not_configured"]
+    status: IntegrationConnectionStatus
     masked_value: str | None = None
+    account_email: str | None = None
+    scopes: list[str] = Field(default_factory=list)
     updated_at: datetime | None = None
+    last_validated_at: datetime | None = None
+    last_synced_at: datetime | None = None
+    last_error: str | None = None
+
+
+class GmailSyncResponse(BaseModel):
+    provider: Literal["google"] = "google"
+    messages_seen: int
+    messages_processed: int
+    duplicates_skipped: int
+    signals_detected: int
+    transitions_applied: int
+    last_synced_at: datetime | None = None
 
 
 class AppSettingsResponse(BaseModel):

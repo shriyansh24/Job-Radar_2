@@ -63,11 +63,11 @@ This plan is the result of an exhaustive audit of every directory in the repo, a
 
 | Doc Requirement | Status | Detail |
 |-----------------|--------|--------|
-| googleworkspace/cli (`gws`) binary integration | **NOT IMPLEMENTED** | No Google Workspace CLI, no gws subprocess calls |
-| Gmail monitoring (inbox triage, auto-status update) | **NOT IMPLEMENTED** | `email/` module handles inbound webhooks but not Gmail API polling |
-| Calendar integration (interview scheduling) | **NOT IMPLEMENTED** | No calendar API integration at all |
-| Drive integration (resume storage in Drive folders) | **NOT IMPLEMENTED** | Resumes stored locally/in DB only |
-| OAuth credential management for Google | **NOT IMPLEMENTED** | `UserIntegrationSecret` model exists for provider secrets, but no Google OAuth flow |
+| googleworkspace/cli (`gws`) binary integration | **NOT IMPLEMENTED** | Live Google support uses direct OAuth + Gmail API calls, not the Google Workspace CLI |
+| Gmail monitoring (inbox triage, auto-status update) | **IMPLEMENTED (GMAIL-FIRST)** | Google OAuth-backed Gmail sync now lands selected hiring communications in the existing email module and can apply conservative pipeline transitions or review-required notifications |
+| Calendar integration (interview scheduling) | **NOT IMPLEMENTED** | Gmail-first is live; Calendar remains explicitly out of current live scope |
+| Drive integration (resume storage in Drive folders) | **NOT IMPLEMENTED** | Gmail-first is live; Drive remains explicitly out of current live scope |
+| OAuth credential management for Google | **IMPLEMENTED** | `UserIntegrationSecret` now stores OAuth metadata (`auth_type`, `secret_json`, account/scopes, validation/sync/error fields), and Settings exposes connect/reconnect/disconnect/sync flows |
 
 ### Section 5 — Repository Completion Program (6 Lanes)
 
@@ -210,7 +210,7 @@ The doc correctly identifies: Rust sidecar (performance), Google Workspace (prod
 
 ### Tier 2 — Medium-Effort from Doc (Do Next)
 1. YAML prompt registry + versioning migration
-2. Google Workspace CLI integration (Gmail monitoring, Calendar, Drive)
+2. Broader Google Workspace follow-through (Calendar, Drive, or `googleworkspace/cli` adoption beyond the live Gmail-first scope)
 3. LLM cost/token tracking and logging
 4. CAPTCHA handling for Greenhouse API submissions
 5. Unseen question review UI flow (present LLM answers for approval before submit)
