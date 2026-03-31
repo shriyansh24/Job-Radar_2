@@ -39,6 +39,8 @@ export function TargetDetail({
     enabled: !!targetId,
   });
   const safeTargetUrl = getSafeExternalUrl(target?.url);
+  const canDeleteCareerPage =
+    target?.source_kind === "career_page" && (target.recent_attempts?.length ?? 0) === 0;
 
   const triggerMutation = useMutation({
     mutationFn: (id: string) => scraperApi.triggerTarget(id),
@@ -199,7 +201,7 @@ export function TargetDetail({
                   Edit career page
                 </Button>
               ) : null}
-              {target.source_kind === "career_page" && onDeleteCareerPage ? (
+              {target.source_kind === "career_page" && onDeleteCareerPage && canDeleteCareerPage ? (
                 <Button
                   variant="danger"
                   size="sm"
@@ -211,6 +213,11 @@ export function TargetDetail({
                 </Button>
               ) : null}
             </div>
+            {target.source_kind === "career_page" && !canDeleteCareerPage ? (
+              <p className="text-sm text-text-muted">
+                Delete is unavailable after scrape history exists. Disable or release the target instead.
+              </p>
+            ) : null}
             <div className="flex items-center gap-3 pt-1">
               <Toggle
                 checked={target.enabled}

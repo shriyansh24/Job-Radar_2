@@ -481,6 +481,14 @@ class ScrapingService:
             await self.db.commit()
         except Exception:
             await self.db.rollback()
+            logger.exception(
+                "target_batch_commit_failed",
+                run_id=str(run_id),
+                targets_attempted=results["targets_attempted"],
+                targets_succeeded=results["targets_succeeded"],
+                targets_failed=results["targets_failed"],
+            )
+            raise
 
         return results
 

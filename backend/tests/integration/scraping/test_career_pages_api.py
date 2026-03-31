@@ -7,7 +7,7 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.scraping.models import ScrapeTarget
+from app.scraping.models import ScrapeAttempt, ScrapeTarget
 
 
 async def _register_and_login(
@@ -156,3 +156,50 @@ async def test_create_career_page_rejects_duplicate_normalized_urls(
     assert first.status_code == 201
     assert second.status_code == 422
     assert second.json() == {"detail": "Career page target already exists for this URL."}
+
+
+@pytest.mark.asyncio
+async def test_delete_career_page_rejects_targets_with_scrape_history(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    user_id, token = await _register_and_login(client, email_prefix="career-page-delete-guard")
+    created = await client.post(
+        "/api/v1/scraper/career-pages",
+        headers=_auth(token),
+        json={
+            "url": "https://careers.acme.example/delete-me",
+            "company_name": "Acme",
+        },
+    )
+    target_id = uuid.UUID(created.json()["id"])
+
+    db_session.add(
+        ScrapeAttempt(
+            run_id=None,
+            target_id=target_id,
+            selected_tier=1,
+            actual_tier_used=1,
+            scraper_name="test-scraper",
+            status="success",
+        )
+    )
+    await db_session.commit()
+
+    response = await client.delete(
+        f"/api/v1/scraper/career-pages/{target_id}",
+        headers=_auth(token),
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "Career page targets with scrape history cannot be deleted. "
+        "Disable or release the target instead."
+    }
+    target = await db_session.scalar(
+        select(ScrapeTarget).where(
+            ScrapeTarget.user_id == user_id,
+            ScrapeTarget.id == target_id,
+        )
+    )
+    assert target is not None

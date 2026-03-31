@@ -560,22 +560,22 @@ async def test_db_commit_called_after_processing():
 
 
 @pytest.mark.asyncio
-async def test_db_rollback_on_commit_failure():
+async def test_db_commit_failure_raises_and_rolls_back():
     svc = _mock_service()
     svc.db.commit = AsyncMock(side_effect=Exception("db error"))
     registry = _registry_for_ats()
     pool = MagicMock()
 
     with patch("app.scraping.service.persist_jobs", AsyncMock(return_value=(0, 0))):
-        results = await svc.run_target_batch(
-            targets=[_target()],
-            run_id=uuid.uuid4(),
-            adapter_registry=registry,
-            browser_pool=pool,
-        )
+        with pytest.raises(Exception, match="db error"):
+            await svc.run_target_batch(
+                targets=[_target()],
+                run_id=uuid.uuid4(),
+                adapter_registry=registry,
+                browser_pool=pool,
+            )
 
     svc.db.rollback.assert_awaited_once()
-    assert results["targets_attempted"] == 1
 
 
 @pytest.mark.asyncio
