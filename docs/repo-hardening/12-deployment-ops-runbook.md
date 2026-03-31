@@ -76,5 +76,5 @@ Do not use this file as the live product-state source of truth. Live behavior st
 
 ## Known Limits
 - Long-window monitoring and dashboarding are still deployment-owned.
-- Branch protection is still configured outside the repo.
+- Branch protection is configured outside the repo and is currently enforced on `main` with PR-only merges, `1` approving review, stale-review dismissal, conversation resolution, admin enforcement, and strict required checks for the always-on validation lanes.
 - The queue and auth histories are Redis-backed and therefore not a substitute for a durable monitoring warehouse if the deployment needs one.

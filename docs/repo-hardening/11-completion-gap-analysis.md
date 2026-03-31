@@ -139,7 +139,7 @@ These are items from the original 44-issue audit that no longer match the live c
 | iCIMS adapter (iframe handling) | `NOT DONE` |
 
 ### External/Deployment Follow-Through (Not Repo Bugs)
-- GitHub branch protection enforcement (configured outside repo)
+- GitHub branch protection maintenance (configured outside repo and now enforced on `main`)
 - Dedicated auth audit log routing (deployment infrastructure)
 - Long-window queue alert dashboards (deployment infrastructure)
 - Production restore strategy (operator concern)

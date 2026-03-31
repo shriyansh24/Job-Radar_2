@@ -117,10 +117,24 @@
 - `codeql.yml` and `dependency-review.yml` remain enabled.
 - Auth lifecycle events now emit to a dedicated Redis-backed audit stream in addition to the structured log stream. The repo-owned piece is the sink emission plus the Admin visibility of recent auth audit events and queue/runtime state; deployment-level routing for the stream remains external if durable long-window retention is desired.
 
-## Branch Protection Assumptions
-- Treat `main` as PR-only.
-- Require repository validation, dependency review, CodeQL, and `Frontend E2E Smoke / frontend-e2e-smoke` before merge.
-- Treat `Docs Validation` and `Migration Safety` as required path-scoped checks for doc/workflow/runtime and backend/migration changes respectively; if they must become unconditional required checks, convert them to always-run wrappers before tightening branch protection.
+## Branch Protection State
+- `main` is enforced as PR-only outside the repo.
+- The current enforced review policy on `main` is:
+  - `1` approving review
+  - stale-review dismissal
+  - conversation resolution
+  - admin enforcement
+  - no force pushes
+  - no branch deletion
+- The current enforced required checks on `main` are:
+  - `Backend quality and security checks`
+  - `Backend test suite`
+  - `Frontend audit and lint`
+  - `Frontend tests and build`
+  - `CodeQL (python)`
+  - `CodeQL (javascript-typescript)`
+  - `frontend-e2e-smoke`
+- `Docs Validation`, `Migration Safety`, and `Dependency Review` remain enabled workflow lanes, but they are not unconditional branch-protection checks because their trigger surfaces are narrower than the always-on validation lanes above.
 - Keep docs, tests, and runtime-truth updates in the same batch as behavior changes.
 - Do not make the required browser workflow path-filtered or matrix-shaped while branch protection depends on that exact emitted check name.
 
