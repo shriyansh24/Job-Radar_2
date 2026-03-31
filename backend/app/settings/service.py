@@ -10,6 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.email.gmail_sync import sync_gmail_for_user
 from app.integrations.gmail_client import GmailClient
 from app.integrations.google_oauth import (
+    GoogleOAuthError as _GoogleOAuthError,
+)
+from app.integrations.google_oauth import (
     decode_google_state,
     exchange_google_code,
 )
@@ -21,6 +24,7 @@ from app.settings.schemas import AppSettingsUpdate, SavedSearchCreate, SavedSear
 from app.shared.errors import NotFoundError
 
 logger = structlog.get_logger()
+GoogleOAuthError = _GoogleOAuthError
 
 
 class SettingsService:
