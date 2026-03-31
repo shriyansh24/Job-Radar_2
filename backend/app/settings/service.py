@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.email.gmail_sync import sync_gmail_for_user
 from app.integrations.gmail_client import GmailClient
 from app.integrations.google_oauth import (
-    GoogleOAuthError,  # noqa: F401
     decode_google_state,
     exchange_google_code,
 )

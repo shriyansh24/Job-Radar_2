@@ -76,8 +76,11 @@ def _check_redis(redis_url: str) -> None:
         try:
             if client is not None:
                 client.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            print(
+                f"warning: failed to close Redis client cleanly during Playwright bootstrap: {exc}",
+                file=sys.stderr,
+            )
 
 
 def main() -> int:
