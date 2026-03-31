@@ -50,6 +50,7 @@ export interface GmailSyncResult {
   provider: 'google';
   messages_seen: number;
   messages_processed: number;
+  messages_failed: number;
   duplicates_skipped: number;
   signals_detected: number;
   transitions_applied: number;

@@ -257,6 +257,11 @@ async def test_worker_job_hooks_report_queue_depth(monkeypatch: pytest.MonkeyPat
         async def expire(self, key: str, _ttl: int) -> None:
             return None
 
+        async def get(self, key: str) -> str | None:
+            if key == "jobradar:queue-job-metadata:job-123":
+                return '{"_queue_correlation_id":"request-123"}'
+            return None
+
     class _FakeLogger:
         def info(self, event: str, **fields: object) -> None:
             seen.append((event, fields))
@@ -285,7 +290,7 @@ async def test_worker_job_hooks_report_queue_depth(monkeypatch: pytest.MonkeyPat
                 "queue_name": SCRAPING_QUEUE,
                 "job_id": "job-123",
                 "queue_job_id": "job-123",
-                "queue_correlation_id": "job-123",
+                "queue_correlation_id": "request-123",
                 "job_try": 2,
                 "queue_depth": 5,
                 "queue_pressure": "nominal",
@@ -300,7 +305,7 @@ async def test_worker_job_hooks_report_queue_depth(monkeypatch: pytest.MonkeyPat
                 "queue_name": SCRAPING_QUEUE,
                 "job_id": "job-123",
                 "queue_job_id": "job-123",
-                "queue_correlation_id": "job-123",
+                "queue_correlation_id": "request-123",
                 "job_try": 2,
                 "queue_depth": 5,
                 "queue_pressure": "nominal",

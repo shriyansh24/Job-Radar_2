@@ -227,6 +227,19 @@ async def test_integrations_round_trip_with_masked_reads(client: AsyncClient) ->
 
 
 @pytest.mark.asyncio
+async def test_blank_integration_api_keys_are_rejected(client: AsyncClient) -> None:
+    token = await _register_and_login(client)
+
+    response = await client.put(
+        "/api/v1/settings/integrations/openrouter",
+        headers=_auth(token),
+        json={"api_key": "   "},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_google_connect_requires_auth(client: AsyncClient) -> None:
     response = await client.get("/api/v1/settings/integrations/google/connect")
 
@@ -281,7 +294,39 @@ async def test_google_callback_success_redirects_back_to_frontend(
     assert response.headers["location"].startswith("http://localhost:5173/settings?tab=integrations")
     assert "integration_status=connected" in response.headers["location"]
     assert "integration_provider=google" in response.headers["location"]
-    assert "owner%40gmail.com" in response.headers["location"]
+    assert "integration_message=google_connected" in response.headers["location"]
+    assert "owner%40gmail.com" not in response.headers["location"]
+
+
+@pytest.mark.asyncio
+async def test_google_callback_provider_failure_redirects_with_safe_code(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def _fake_connect_google_integration(
+        self,
+        *,
+        code: str,
+        state_token: str,
+    ) -> dict[str, str]:
+        raise settings_service_module.GoogleOAuthError("upstream timeout")
+
+    monkeypatch.setattr(
+        settings_service_module.SettingsService,
+        "connect_google_integration",
+        _fake_connect_google_integration,
+    )
+
+    response = await client.get(
+        "/api/v1/settings/integrations/google/callback?code=auth-code&state=signed-state",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    assert "integration_status=error" in response.headers["location"]
+    assert "integration_provider=google" in response.headers["location"]
+    assert "integration_message=google_oauth_callback_failed" in response.headers["location"]
+    assert "upstream" not in response.headers["location"]
 
 
 @pytest.mark.asyncio
@@ -344,6 +389,7 @@ async def test_google_sync_returns_counts_for_connected_account(
         return GmailSyncResult(
             messages_seen=5,
             messages_processed=4,
+            messages_failed=0,
             duplicates_skipped=1,
             signals_detected=2,
             transitions_applied=1,
@@ -361,6 +407,7 @@ async def test_google_sync_returns_counts_for_connected_account(
     assert response.json()["provider"] == "google"
     assert response.json()["messages_seen"] == 5
     assert response.json()["messages_processed"] == 4
+    assert response.json()["messages_failed"] == 0
     assert response.json()["duplicates_skipped"] == 1
     assert response.json()["signals_detected"] == 2
     assert response.json()["transitions_applied"] == 1

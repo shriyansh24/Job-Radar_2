@@ -66,7 +66,7 @@ def decode_google_state(state_token: str) -> GoogleOAuthState:
     try:
         payload = jwt.decode(
             state_token,
-            settings.secret_key,
+            settings.effective_jwt_signing_key,
             algorithms=[settings.algorithm],
             audience=_STATE_AUDIENCE,
         )
@@ -82,22 +82,28 @@ def decode_google_state(state_token: str) -> GoogleOAuthState:
 
 async def exchange_google_code(code: str) -> dict[str, Any]:
     ensure_google_oauth_configured()
-    async with httpx.AsyncClient(timeout=20.0) as client:
-        response = await client.post(
-            _GOOGLE_TOKEN_URL,
-            data={
-                "client_id": settings.google_oauth_client_id,
-                "client_secret": settings.google_oauth_client_secret,
-                "code": code,
-                "grant_type": "authorization_code",
-                "redirect_uri": settings.google_oauth_redirect_uri,
-            },
-        )
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.post(
+                _GOOGLE_TOKEN_URL,
+                data={
+                    "client_id": settings.google_oauth_client_id,
+                    "client_secret": settings.google_oauth_client_secret,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": settings.google_oauth_redirect_uri,
+                },
+            )
+    except httpx.HTTPError as exc:
+        raise GoogleOAuthError("Google token exchange request failed.") from exc
     if response.is_error:
         raise GoogleOAuthError(
             f"Google token exchange failed with status {response.status_code}."
         )
-    payload = cast(dict[str, Any], response.json())
+    try:
+        payload = cast(dict[str, Any], response.json())
+    except ValueError as exc:
+        raise GoogleOAuthError("Google token exchange returned an invalid response.") from exc
     access_token = str(payload.get("access_token") or "").strip()
     refresh_token = str(payload.get("refresh_token") or "").strip()
     if not access_token or not refresh_token:
@@ -107,21 +113,29 @@ async def exchange_google_code(code: str) -> dict[str, Any]:
 
 async def refresh_google_access_token(refresh_token: str) -> dict[str, Any]:
     ensure_google_oauth_configured()
-    async with httpx.AsyncClient(timeout=20.0) as client:
-        response = await client.post(
-            _GOOGLE_TOKEN_URL,
-            data={
-                "client_id": settings.google_oauth_client_id,
-                "client_secret": settings.google_oauth_client_secret,
-                "refresh_token": refresh_token,
-                "grant_type": "refresh_token",
-            },
-        )
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.post(
+                _GOOGLE_TOKEN_URL,
+                data={
+                    "client_id": settings.google_oauth_client_id,
+                    "client_secret": settings.google_oauth_client_secret,
+                    "refresh_token": refresh_token,
+                    "grant_type": "refresh_token",
+                },
+            )
+    except httpx.HTTPError as exc:
+        raise GoogleOAuthError("Google access token refresh request failed.") from exc
     if response.is_error:
         raise GoogleOAuthError(
             f"Google access token refresh failed with status {response.status_code}."
         )
-    payload = cast(dict[str, Any], response.json())
+    try:
+        payload = cast(dict[str, Any], response.json())
+    except ValueError as exc:
+        raise GoogleOAuthError(
+            "Google access token refresh returned an invalid response."
+        ) from exc
     access_token = str(payload.get("access_token") or "").strip()
     if not access_token:
         raise GoogleOAuthError("Google access token refresh returned no access token.")
@@ -139,6 +153,6 @@ def _encode_state(*, user_id: str, return_to: str) -> str:
             "iat": int(now.timestamp()),
             "exp": int((now + timedelta(minutes=10)).timestamp()),
         },
-        settings.secret_key,
+        settings.effective_jwt_signing_key,
         algorithm=settings.algorithm,
     )

@@ -245,3 +245,34 @@ def test_gmail_sync_is_registered_on_ops_queue() -> None:
     assert registered.queue_name == OPS_QUEUE
     assert registered.timeout_seconds == 1800
     assert registered.max_tries == 2
+
+
+@pytest.mark.asyncio
+async def test_run_with_lifecycle_uses_stored_queue_correlation_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_logger = _FakeLogger()
+    monkeypatch.setattr(job_registry, "logger", fake_logger)
+
+    class _FakeRedis:
+        async def get(self, key: str) -> str | None:
+            assert key == "jobradar:queue-job-metadata:job-5"
+            return '{"_queue_correlation_id":"request-789"}'
+
+    async def _fake_increment(*args: object, counter_name: str, **kwargs: object) -> None:
+        return None
+
+    monkeypatch.setattr(job_registry, "increment_worker_counter", _fake_increment)
+
+    async def _successful_callback() -> None:
+        return None
+
+    await job_registry._run_with_lifecycle(
+        job_name="cleanup",
+        queue_name=OPS_QUEUE,
+        ctx={"job_id": "job-5", "job_try": 1, "redis": _FakeRedis()},
+        callback=_successful_callback,
+    )
+
+    assert fake_logger.info_calls[0][1]["queue_correlation_id"] == "request-789"
+    assert fake_logger.info_calls[1][1]["queue_correlation_id"] == "request-789"

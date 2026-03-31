@@ -66,9 +66,12 @@ function useSettingsIntegrations({
     mutationFn: () => settingsApi.syncGoogleIntegration(),
     onSuccess: (response) => {
       const result = response.data;
+      const toastType = result.messages_failed > 0 ? "warning" : "success";
+      const failureSummary =
+        result.messages_failed > 0 ? `, ${result.messages_failed} failed` : "";
       toast(
-        "success",
-        `Gmail sync processed ${result.messages_processed}/${result.messages_seen} messages and applied ${result.transitions_applied} updates`
+        toastType,
+        `Gmail sync processed ${result.messages_processed}/${result.messages_seen} messages${failureSummary} and applied ${result.transitions_applied} updates`
       );
       queryClient.invalidateQueries({ queryKey: ["settings", "integrations"] });
       queryClient.invalidateQueries({ queryKey: ["email", "logs"] });

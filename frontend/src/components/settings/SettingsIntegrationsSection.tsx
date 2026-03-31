@@ -45,6 +45,8 @@ function SettingsIntegrationsSection({
           integrations?.map((integration) => {
             const draft = drafts[integration.provider] ?? "";
             const googleIntegration = integration.provider === "google";
+            const showGoogleDisconnect = googleIntegration && integration.status !== "not_configured";
+            const showGoogleSync = googleIntegration && integration.status === "connected";
             const updatedLabel = integration.updated_at
               ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(integration.updated_at))
               : "Never checked";
@@ -87,30 +89,34 @@ function SettingsIntegrationsSection({
                   {googleIntegration ? (
                     <div className="w-full max-w-xl space-y-3">
                       <div className="flex flex-wrap justify-end gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() => onDelete(integration.provider)}
-                          loading={deletingProvider === integration.provider}
-                          icon={<Trash size={16} weight="bold" />}
-                        >
-                          Disconnect
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={onSyncGoogle}
-                          loading={Boolean(syncingGoogle)}
-                          icon={<ArrowsClockwise size={16} weight="bold" />}
-                        >
-                          Sync Gmail
-                        </Button>
+                        {showGoogleDisconnect ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => onDelete(integration.provider)}
+                            loading={deletingProvider === integration.provider}
+                            icon={<Trash size={16} weight="bold" />}
+                          >
+                            Disconnect
+                          </Button>
+                        ) : null}
+                        {showGoogleSync ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={onSyncGoogle}
+                            loading={Boolean(syncingGoogle)}
+                            icon={<ArrowsClockwise size={16} weight="bold" />}
+                          >
+                            Sync Gmail
+                          </Button>
+                        ) : null}
                         <Button
                           type="button"
                           onClick={onConnectGoogle}
                           icon={<LinkSimple size={16} weight="bold" />}
                         >
-                          {integration.connected ? "Reconnect Google" : "Connect Google"}
+                          {integration.status === "not_configured" ? "Connect Google" : "Reconnect Google"}
                         </Button>
                       </div>
                     </div>
