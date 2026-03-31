@@ -31,7 +31,7 @@ export default defineConfig({
   webServer: [
     {
       name: "backend-api",
-      command: `python "${fileURLToPath(new URL("../scripts/start_playwright_backend.py", import.meta.url))}"`,
+      command: `uv run python "${fileURLToPath(new URL("../scripts/start_playwright_backend.py", import.meta.url))}"`,
       url: "http://127.0.0.1:8000/docs",
       reuseExistingServer: true,
       timeout: 120_000,

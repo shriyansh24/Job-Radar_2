@@ -168,6 +168,9 @@ class ScrapingService:
         result.jobs_new = new_count
         result.jobs_updated = updated_count
 
+        if run_id is None:
+            await self.db.commit()
+
         elapsed_total = time.monotonic() - start
         await self._complete_run_record(run_id, result, elapsed_total)
 

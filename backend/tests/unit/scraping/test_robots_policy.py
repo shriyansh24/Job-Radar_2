@@ -78,3 +78,27 @@ async def test_evaluate_robots_allows_when_fetch_unavailable(
     )
     assert decision.allowed is True
     assert decision.reason == "robots_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_evaluate_robots_preserves_cached_unavailable_reason(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "app.scraping.execution.robots_policy.httpx.AsyncClient",
+        lambda **kwargs: _AsyncClient(_Response(404, "")),
+    )
+    cache: dict[str, object] = {}
+    first = await evaluate_robots(
+        "https://example.com/jobs",
+        "JobRadar/1.0",
+        cache,
+    )
+    second = await evaluate_robots(
+        "https://example.com/jobs",
+        "JobRadar/1.0",
+        cache,
+    )
+    assert first.reason == "robots_missing"
+    assert second.reason == "robots_missing"
+    assert second.from_cache is True
