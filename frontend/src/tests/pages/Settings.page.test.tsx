@@ -22,6 +22,8 @@ const settingsMocks = vi.hoisted(() => ({
   deleteAccount: vi.fn(),
 }));
 
+const toastMock = vi.hoisted(() => vi.fn());
+
 vi.mock("../../api/settings", () => ({
   settingsApi: {
     getSettings: settingsMocks.getSettings,
@@ -51,6 +53,10 @@ vi.mock("../../api/auth", () => ({
   deleteAccountApi: settingsMocks.deleteAccount,
 }));
 
+vi.mock("../../components/ui/toastService", () => ({
+  toast: toastMock,
+}));
+
 vi.mock("../../store/useAuthStore", () => ({
   useAuthStore: (selector: (state: { user: { email: string } | null }) => unknown) =>
     selector({ user: { email: "owner@jobradar.dev" } }),
@@ -61,6 +67,7 @@ import Settings from "../../pages/Settings";
 describe("Settings page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.history.replaceState({}, "", "/settings");
     settingsMocks.getSettings.mockResolvedValue({
       data: {
         theme: "dark",
@@ -158,6 +165,7 @@ describe("Settings page", () => {
         provider: "google",
         messages_seen: 3,
         messages_processed: 2,
+        messages_failed: 0,
         duplicates_skipped: 1,
         signals_detected: 2,
         transitions_applied: 1,
@@ -213,5 +221,62 @@ describe("Settings page", () => {
     await user.click(await screen.findByRole("button", { name: /sync gmail/i }));
 
     expect(settingsMocks.syncGoogleIntegration).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects whitespace-only API keys before calling the backend", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Settings />);
+
+    await user.click(await screen.findByRole("button", { name: /^integrations$/i }));
+    const apiKeyInputs = await screen.findAllByLabelText("API key");
+    await user.type(apiKeyInputs[0], "   ");
+    await user.click(screen.getAllByRole("button", { name: /save key/i })[0]);
+
+    expect(settingsMocks.upsertIntegration).not.toHaveBeenCalled();
+    expect(toastMock).toHaveBeenCalledWith("error", "Enter an API key before saving");
+  });
+
+  it("hides Google sync and disconnect actions until Google is configured", async () => {
+    const user = userEvent.setup();
+    settingsMocks.listIntegrations.mockResolvedValueOnce({
+      data: [
+        {
+          provider: "google",
+          auth_type: "oauth",
+          connected: false,
+          status: "not_configured",
+          masked_value: null,
+          account_email: null,
+          scopes: [],
+          updated_at: null,
+          last_validated_at: null,
+          last_synced_at: null,
+          last_error: null,
+        },
+      ],
+    });
+
+    renderWithProviders(<Settings />);
+
+    await user.click(await screen.findByRole("button", { name: /^integrations$/i }));
+
+    expect(await screen.findByText("Google Gmail")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /sync gmail/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /disconnect/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /connect google/i })).toBeInTheDocument();
+  });
+
+  it("humanizes Google callback status codes and strips them from the URL", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/settings?tab=integrations&integration_status=connected&integration_provider=google&integration_message=google_connected"
+    );
+
+    renderWithProviders(<Settings />);
+
+    expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    expect(toastMock).toHaveBeenCalledWith("success", "Google Gmail connected.");
+    expect(window.location.search).toBe("?tab=integrations");
   });
 });

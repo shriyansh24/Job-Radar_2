@@ -24,6 +24,9 @@ from app.settings.schemas import (
 from app.settings.service import SettingsService
 
 router = APIRouter(prefix="/settings", tags=["settings"])
+GOOGLE_CALLBACK_SUCCESS_CODE = "google_connected"
+GOOGLE_CALLBACK_ERROR_CODE = "google_oauth_callback_failed"
+GOOGLE_CALLBACK_DENIED_CODE = "google_oauth_denied"
 
 
 @router.get("/searches", response_model=list[SavedSearchResponse])
@@ -122,7 +125,7 @@ async def google_integration_callback(
                 return_to=None,
                 status="error",
                 provider="google",
-                message=error,
+                message=GOOGLE_CALLBACK_DENIED_CODE,
             ),
             status_code=302,
         )
@@ -138,13 +141,13 @@ async def google_integration_callback(
         )
     try:
         result = await svc.connect_google_integration(code=code, state_token=state)
-    except GoogleOAuthError as exc:
+    except GoogleOAuthError:
         return RedirectResponse(
             url=_build_frontend_callback_url(
                 return_to=None,
                 status="error",
                 provider="google",
-                message=str(exc),
+                message=GOOGLE_CALLBACK_ERROR_CODE,
             ),
             status_code=302,
         )
@@ -153,7 +156,7 @@ async def google_integration_callback(
             return_to=result["return_to"],
             status="connected",
             provider="google",
-            message=result["account_email"],
+            message=GOOGLE_CALLBACK_SUCCESS_CODE,
         ),
         status_code=302,
     )

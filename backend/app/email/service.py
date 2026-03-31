@@ -257,10 +257,10 @@ class EmailService:
     def verify_webhook_signature(
         timestamp: str, token: str, signature: str
     ) -> bool:
-        if not settings.secret_key or not timestamp or not token or not signature:
+        if not settings.effective_jwt_signing_key or not timestamp or not token or not signature:
             return False
         digest = hmac.new(
-            settings.secret_key.encode(),
+            settings.effective_jwt_signing_key.encode(),
             f"{timestamp}{token}".encode(),
             hashlib.sha256,
         ).hexdigest()

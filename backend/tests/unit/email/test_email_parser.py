@@ -205,6 +205,15 @@ class TestEmailParserCompanyExtraction:
         # Should not return "Greenhouse Mail" as the company
         assert result.company is None or "greenhouse" not in result.company.lower()
 
+    def test_company_falls_back_to_body_when_sender_is_generic(self) -> None:
+        result = self.parser.parse(
+            sender="recruiting@gmail.com",
+            subject="Interview Invitation",
+            body="We would love to schedule an interview with you at Acme Labs.",
+        )
+        assert result is not None
+        assert result.company == "Acme Labs"
+
 
 class TestEmailParserATSDetection:
     def setup_method(self) -> None:

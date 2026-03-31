@@ -5,6 +5,8 @@ from typing import Any, cast
 
 from arq.worker import Retry
 
+from app.runtime.job_context import resolve_queue_correlation_id
+
 IncrementWorkerCounter = Callable[..., Awaitable[int | None]]
 WorkerCallback = Callable[[], Awaitable[None]]
 
@@ -51,6 +53,10 @@ async def run_with_lifecycle(
         context,
         queue_name=queue_name,
         registered_jobs=registered_jobs,
+    )
+    log_fields["queue_correlation_id"] = await resolve_queue_correlation_id(
+        context,
+        logger=logger,
     )
     redis = cast(Any, context.get("redis"))
     worker_role = str(context.get("worker_role", ""))

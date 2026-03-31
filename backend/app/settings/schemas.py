@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 IntegrationProvider = Literal["openrouter", "serpapi", "theirstack", "apify", "google"]
 IntegrationAuthType = Literal["api_key", "oauth"]
@@ -45,6 +45,14 @@ class SavedSearchUpdate(BaseModel):
 class IntegrationUpsertRequest(BaseModel):
     api_key: str = Field(min_length=1)
 
+    @field_validator("api_key")
+    @classmethod
+    def validate_api_key(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("API key cannot be blank.")
+        return normalized
+
 
 class IntegrationResponse(BaseModel):
     provider: IntegrationProvider
@@ -64,6 +72,7 @@ class GmailSyncResponse(BaseModel):
     provider: Literal["google"] = "google"
     messages_seen: int
     messages_processed: int
+    messages_failed: int
     duplicates_skipped: int
     signals_detected: int
     transitions_applied: int

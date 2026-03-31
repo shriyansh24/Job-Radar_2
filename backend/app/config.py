@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     # Auth
     secret_key: str = DEFAULT_SECRET_KEY
+    jwt_signing_key: str = ""
+    credential_encryption_key: str = ""
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
@@ -85,17 +87,39 @@ class Settings(BaseSettings):
     api_rate_limit_per_minute: int = 120
     login_rate_limit_per_minute: int = 10
 
+    @property
+    def effective_jwt_signing_key(self) -> str:
+        return self.jwt_signing_key.strip() or self.secret_key.strip()
+
+    @property
+    def effective_credential_encryption_key(self) -> str:
+        return self.credential_encryption_key.strip() or self.secret_key.strip()
+
 
 def validate_runtime_settings(settings: Settings) -> None:
     normalized_origins = [origin.strip() for origin in settings.cors_origins if origin.strip()]
     normalized_operator_emails = [
         email.strip().lower() for email in settings.operator_emails if email.strip()
     ]
+    effective_jwt_signing_key = settings.effective_jwt_signing_key
+    effective_credential_encryption_key = settings.effective_credential_encryption_key
 
-    if settings.secret_key == DEFAULT_SECRET_KEY and not settings.debug:
+    if effective_jwt_signing_key == DEFAULT_SECRET_KEY and not settings.debug:
         raise RuntimeError(
-            "JR_SECRET_KEY is using the default value. Set a secure secret key "
-            "or enable JR_DEBUG for local-only development."
+            "JR_SECRET_KEY / JR_JWT_SIGNING_KEY is using the default value. "
+            "Set a secure signing key or enable JR_DEBUG for local-only development."
+        )
+    if not settings.debug and not settings.credential_encryption_key.strip():
+        raise RuntimeError(
+            "JR_CREDENTIAL_ENCRYPTION_KEY must be set outside debug mode."
+        )
+    if (
+        not settings.debug
+        and effective_credential_encryption_key == effective_jwt_signing_key
+    ):
+        raise RuntimeError(
+            "JR_CREDENTIAL_ENCRYPTION_KEY must differ from JR_SECRET_KEY / "
+            "JR_JWT_SIGNING_KEY outside debug mode."
         )
     if not settings.database_url:
         raise RuntimeError("JR_DATABASE_URL must be set.")

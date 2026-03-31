@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 from typing import Any, cast
 
@@ -17,6 +18,13 @@ from app.integrations.google_oauth import (
 )
 from app.settings.models import UserIntegrationSecret
 from app.shared.errors import NotFoundError, ValidationError
+from app.shared.secrets import (
+    SecretDecryptionError,
+    seal_secret,
+    seal_secret_mapping,
+    unseal_secret,
+    unseal_secret_mapping,
+)
 
 logger = structlog.get_logger()
 
@@ -42,6 +50,9 @@ async def upsert_integration(
     user_id: uuid.UUID,
 ) -> dict[str, Any]:
     normalized_provider = _normalize_provider(provider, api_key_only=True)
+    normalized_api_key = api_key.strip()
+    if not normalized_api_key:
+        raise ValidationError("Integration API key cannot be blank.")
     result = await db.scalars(
         select(UserIntegrationSecret).where(
             UserIntegrationSecret.user_id == user_id,
@@ -54,12 +65,12 @@ async def upsert_integration(
             user_id=user_id,
             provider=normalized_provider,
             auth_type="api_key",
-            secret_value=api_key,
+            secret_value=seal_secret(normalized_api_key),
         )
         db.add(integration)
     else:
         integration.auth_type = "api_key"
-        integration.secret_value = api_key
+        integration.secret_value = seal_secret(normalized_api_key)
         integration.secret_json = None
         integration.account_email = None
         integration.scopes = None
@@ -90,9 +101,9 @@ async def connect_google_integration(
     *,
     code: str,
     state_token: str,
-    decode_google_state_fn,
-    exchange_google_code_fn,
-    gmail_client_cls=GmailClient,
+    decode_google_state_fn: Callable[[str], Any],
+    exchange_google_code_fn: Callable[[str], Awaitable[dict[str, Any]]],
+    gmail_client_cls: type[GmailClient] = GmailClient,
 ) -> dict[str, Any]:
     state = decode_google_state_fn(state_token)
     tokens = await exchange_google_code_fn(code)
@@ -103,7 +114,10 @@ async def connect_google_integration(
         if scope.strip()
     ]
     profile = await gmail_client_cls().get_profile(access_token)
-    user_id = uuid.UUID(state.user_id)
+    try:
+        user_id = uuid.UUID(state.user_id)
+    except ValueError as exc:
+        raise GoogleOAuthError("Invalid Google OAuth state.") from exc
     integration = await _get_integration_record(db, GOOGLE_PROVIDER, user_id)
     if integration is None:
         integration = UserIntegrationSecret(
@@ -114,10 +128,12 @@ async def connect_google_integration(
         db.add(integration)
     integration.auth_type = "oauth"
     integration.secret_value = None
-    integration.secret_json = {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-    }
+    integration.secret_json = seal_secret_mapping(
+        {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+        }
+    )
     integration.account_email = str(profile["emailAddress"])
     integration.scopes = scopes
     integration.last_validated_at = datetime.now(timezone.utc)
@@ -140,7 +156,7 @@ async def sync_google_integration(
     db: AsyncSession,
     *,
     user_id: uuid.UUID,
-    sync_gmail_for_user_fn,
+    sync_gmail_for_user_fn: Callable[..., Awaitable[Any]],
 ) -> dict[str, Any]:
     integration = await _get_integration_record(db, GOOGLE_PROVIDER, user_id)
     if integration is None:
@@ -162,6 +178,7 @@ async def sync_google_integration(
         "provider": GOOGLE_PROVIDER,
         "messages_seen": result.messages_seen,
         "messages_processed": result.messages_processed,
+        "messages_failed": result.messages_failed,
         "duplicates_skipped": result.duplicates_skipped,
         "signals_detected": result.signals_detected,
         "transitions_applied": result.transitions_applied,
@@ -214,22 +231,37 @@ def _serialize_integration(
 
     status = "connected"
     if integration.auth_type == "oauth":
-        refresh_token = str((integration.secret_json or {}).get("refresh_token") or "").strip()
-        if not refresh_token:
+        try:
+            secret_json = unseal_secret_mapping(integration.secret_json) or {}
+        except SecretDecryptionError:
+            secret_json = {}
             status = "needs_reconnect"
-        elif integration.last_error:
+        refresh_token = str(secret_json.get("refresh_token") or "").strip()
+        if status == "connected" and not refresh_token:
+            status = "needs_reconnect"
+        elif status == "connected" and integration.last_error:
             status = "sync_error"
+
+    masked_value = None
+    if integration.auth_type == "api_key" and integration.secret_value:
+        try:
+            plaintext_value = unseal_secret(integration.secret_value)
+        except SecretDecryptionError:
+            plaintext_value = None
+            status = "needs_reconnect"
+        if plaintext_value and plaintext_value.strip():
+            masked_value = _mask_secret(plaintext_value)
+        elif status == "connected":
+            status = "not_configured"
+    elif integration.auth_type == "api_key":
+        status = "not_configured"
 
     return {
         "provider": provider,
         "auth_type": integration.auth_type,
         "connected": status == "connected",
         "status": status,
-        "masked_value": (
-            _mask_secret(integration.secret_value)
-            if integration.auth_type == "api_key" and integration.secret_value
-            else None
-        ),
+        "masked_value": masked_value,
         "account_email": integration.account_email,
         "scopes": list(integration.scopes or []),
         "updated_at": integration.updated_at,

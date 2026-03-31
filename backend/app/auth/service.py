@@ -116,7 +116,7 @@ def create_access_token(user_id: str, token_version: int = 0) -> str:
             "jti": str(uuid.uuid4()),
             "ver": token_version,
         },
-        settings.secret_key,
+        settings.effective_jwt_signing_key,
         algorithm=settings.algorithm,
     )
 
@@ -131,7 +131,7 @@ def create_refresh_token(user_id: str, token_version: int = 0) -> str:
             "jti": str(uuid.uuid4()),
             "ver": token_version,
         },
-        settings.secret_key,
+        settings.effective_jwt_signing_key,
         algorithm=settings.algorithm,
     )
 
@@ -155,7 +155,11 @@ def decode_token_payload(token: str, expected_type: str | None = None) -> TokenP
     try:
         payload = cast(
             TokenPayload,
-            jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm]),
+            jwt.decode(
+                token,
+                settings.effective_jwt_signing_key,
+                algorithms=[settings.algorithm],
+            ),
         )
         token_type = payload.get("type")
         if expected_type is not None and token_type != expected_type:

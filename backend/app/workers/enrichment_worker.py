@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import uuid
 from collections.abc import Mapping
 from typing import Any, cast
@@ -13,44 +12,19 @@ from app.enrichment.embedding import EmbeddingService
 from app.enrichment.llm_client import LLMClient
 from app.enrichment.service import EnrichmentService
 from app.enrichment.tfidf import TFIDFScorer
+from app.runtime.job_context import (
+    build_job_metadata_key as _shared_build_job_metadata_key,
+)
+from app.runtime.job_context import (
+    clear_job_metadata,
+    load_job_metadata,
+)
 
 logger = structlog.get_logger()
-JOB_METADATA_KEY_PREFIX = "jobradar:queue-job-metadata"
 
 
 def _build_job_metadata_key(job_id: str) -> str:
-    return f"{JOB_METADATA_KEY_PREFIX}:{job_id}"
-
-
-async def _load_job_metadata(ctx: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    context = dict(ctx or {})
-    redis = cast(Any, context.get("redis"))
-    queue_job_id = context.get("job_id")
-    if redis is None or not isinstance(queue_job_id, str):
-        return {}
-
-    raw_metadata = await redis.get(_build_job_metadata_key(queue_job_id))
-    if raw_metadata is None:
-        return {}
-    if isinstance(raw_metadata, bytes):
-        raw_metadata = raw_metadata.decode()
-    if not isinstance(raw_metadata, str):
-        return {}
-    try:
-        parsed = json.loads(raw_metadata)
-    except json.JSONDecodeError:
-        logger.warning("enrichment_batch_metadata_invalid", queue_job_id=queue_job_id)
-        return {}
-    return parsed if isinstance(parsed, dict) else {}
-
-
-async def _clear_job_metadata(ctx: Mapping[str, Any] | None = None) -> None:
-    context = dict(ctx or {})
-    redis = cast(Any, context.get("redis"))
-    queue_job_id = context.get("job_id")
-    if redis is None or not isinstance(queue_job_id, str):
-        return
-    await redis.delete(_build_job_metadata_key(queue_job_id))
+    return _shared_build_job_metadata_key(job_id)
 
 
 async def run_enrichment_batch(
@@ -60,18 +34,22 @@ async def run_enrichment_batch(
     """Background job: enrich unenriched jobs via LLM."""
     settings = Settings()
     llm_client = LLMClient(settings.openrouter_api_key, settings.default_llm_model)
-    metadata = await _load_job_metadata(ctx)
+    metadata = await load_job_metadata(
+        ctx,
+        logger=logger,
+        invalid_event="enrichment_batch_metadata_invalid",
+    )
     raw_user_id = user_id or metadata.get("user_id")
     if not isinstance(raw_user_id, str):
         logger.warning("enrichment_batch_skipped", reason="missing_user_scope")
-        await _clear_job_metadata(ctx)
+        await clear_job_metadata(ctx)
         await llm_client.close()
         raise RuntimeError("Enrichment batch requires a scoped user_id.")
     try:
         scoped_user_id = uuid.UUID(raw_user_id)
     except ValueError:
         logger.warning("enrichment_batch_skipped", reason="invalid_user_scope")
-        await _clear_job_metadata(ctx)
+        await clear_job_metadata(ctx)
         await llm_client.close()
         raise RuntimeError("Enrichment batch received an invalid scoped user_id.")
 
@@ -84,7 +62,7 @@ async def run_enrichment_batch(
                 jobs_enriched=count,
                 scoped_user_id=str(scoped_user_id) if scoped_user_id else None,
             )
-            await _clear_job_metadata(ctx)
+            await clear_job_metadata(ctx)
         except Exception:
             logger.exception(
                 "enrichment_worker_failed",

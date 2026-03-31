@@ -3,9 +3,11 @@ from __future__ import annotations
 import base64
 from datetime import UTC, datetime
 
+import httpx
 import pytest
 
-from app.integrations.gmail_client import GmailClient
+from app.integrations import gmail_client as gmail_client_module
+from app.integrations.gmail_client import GmailAPIError, GmailClient
 
 
 def _encode_part(text: str) -> str:
@@ -84,3 +86,103 @@ async def test_get_message_parses_nested_multipart_payload(
     assert message.text_body == "Plain text body"
     assert message.html_body == "<p>HTML body</p>"
     assert message.received_at == datetime(2026, 3, 30, 12, 0, tzinfo=UTC)
+
+
+@pytest.mark.asyncio
+async def test_get_json_wraps_transport_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = GmailClient()
+
+    class _FailingAsyncClient:
+        def __init__(self, *, timeout: float) -> None:
+            assert timeout == 20.0
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb) -> bool:
+            return False
+
+        async def get(self, *args, **kwargs):
+            raise httpx.ConnectTimeout("timed out")
+
+    monkeypatch.setattr(gmail_client_module.httpx, "AsyncClient", _FailingAsyncClient)
+
+    with pytest.raises(
+        GmailAPIError,
+        match="Gmail API request failed before a response was received",
+    ):
+        await client._get_json("/profile", "access-token")
+
+
+@pytest.mark.asyncio
+async def test_get_json_marks_expired_access_tokens_for_refresh(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = GmailClient()
+
+    class _Response:
+        status_code = 401
+        is_error = True
+
+        def json(self):
+            return {}
+
+    class _FakeAsyncClient:
+        def __init__(self, *, timeout: float) -> None:
+            assert timeout == 20.0
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb) -> bool:
+            return False
+
+        async def get(self, *args, **kwargs):
+            return _Response()
+
+    monkeypatch.setattr(gmail_client_module.httpx, "AsyncClient", _FakeAsyncClient)
+
+    with pytest.raises(GmailAPIError) as exc_info:
+        await client._get_json("/profile", "access-token")
+
+    assert exc_info.value.token_refresh_recommended is True
+    assert exc_info.value.retryable is False
+    assert exc_info.value.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_get_json_does_not_mark_quota_failures_for_refresh(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = GmailClient()
+
+    class _Response:
+        status_code = 429
+        is_error = True
+
+        def json(self):
+            return {}
+
+    class _FakeAsyncClient:
+        def __init__(self, *, timeout: float) -> None:
+            assert timeout == 20.0
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb) -> bool:
+            return False
+
+        async def get(self, *args, **kwargs):
+            return _Response()
+
+    monkeypatch.setattr(gmail_client_module.httpx, "AsyncClient", _FakeAsyncClient)
+
+    with pytest.raises(GmailAPIError) as exc_info:
+        await client._get_json("/profile", "access-token")
+
+    assert exc_info.value.token_refresh_recommended is False
+    assert exc_info.value.retryable is True
+    assert exc_info.value.status_code == 429

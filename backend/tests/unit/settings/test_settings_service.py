@@ -13,6 +13,7 @@ from app.settings.models import UserIntegrationSecret
 from app.settings.schemas import AppSettingsUpdate, SavedSearchCreate
 from app.settings.service import SettingsService
 from app.shared.errors import NotFoundError, ValidationError
+from app.shared.secrets import unseal_secret, unseal_secret_mapping
 
 
 async def _create_user(
@@ -113,6 +114,35 @@ async def test_list_integrations_includes_google_placeholder(db_session: AsyncSe
 
 
 @pytest.mark.asyncio
+async def test_upsert_integration_seals_api_key_at_rest(db_session: AsyncSession) -> None:
+    user = await _create_user(db_session, "settings-api-key-encryption@example.com")
+    service = SettingsService(db_session)
+
+    result = await service.upsert_integration("openrouter", "sk-test-1234567890", user.id)
+
+    assert result["provider"] == "openrouter"
+    integration = await db_session.scalar(
+        settings_service_module.select(UserIntegrationSecret).where(
+            UserIntegrationSecret.user_id == user.id,
+            UserIntegrationSecret.provider == "openrouter",
+        )
+    )
+    assert integration is not None
+    assert integration.secret_value is not None
+    assert integration.secret_value != "sk-test-1234567890"
+    assert unseal_secret(integration.secret_value) == "sk-test-1234567890"
+
+
+@pytest.mark.asyncio
+async def test_upsert_integration_rejects_blank_api_keys(db_session: AsyncSession) -> None:
+    user = await _create_user(db_session, "settings-api-key-blank@example.com")
+    service = SettingsService(db_session)
+
+    with pytest.raises(ValidationError, match="cannot be blank"):
+        await service.upsert_integration("openrouter", "   ", user.id)
+
+
+@pytest.mark.asyncio
 async def test_connect_google_integration_persists_oauth_metadata(
     db_session: AsyncSession,
     monkeypatch: pytest.MonkeyPatch,
@@ -164,7 +194,11 @@ async def test_connect_google_integration_persists_oauth_metadata(
     assert integration is not None
     assert integration.auth_type == "oauth"
     assert integration.secret_value is None
-    assert integration.secret_json == {
+    assert integration.secret_json != {
+        "access_token": "access-token",
+        "refresh_token": "refresh-token",
+    }
+    assert unseal_secret_mapping(integration.secret_json) == {
         "access_token": "access-token",
         "refresh_token": "refresh-token",
     }
@@ -210,6 +244,7 @@ async def test_sync_google_integration_returns_sync_counts(
         return GmailSyncResult(
             messages_seen=4,
             messages_processed=3,
+            messages_failed=0,
             duplicates_skipped=1,
             signals_detected=2,
             transitions_applied=1,
@@ -223,6 +258,7 @@ async def test_sync_google_integration_returns_sync_counts(
     assert result["provider"] == "google"
     assert result["messages_seen"] == 4
     assert result["messages_processed"] == 3
+    assert result["messages_failed"] == 0
     assert result["duplicates_skipped"] == 1
     assert result["signals_detected"] == 2
     assert result["transitions_applied"] == 1
@@ -265,6 +301,30 @@ async def test_list_integrations_marks_google_reconnect_and_sync_error_states(
     assert google["account_email"] == "owner@gmail.com"
     assert openrouter["status"] == "connected"
     assert openrouter["masked_value"] == "sk-t...7890"
+
+
+@pytest.mark.asyncio
+async def test_list_integrations_marks_blank_api_key_rows_as_not_configured(
+    db_session: AsyncSession,
+) -> None:
+    user = await _create_user(db_session, "settings-api-key-empty-row@example.com")
+    db_session.add(
+        UserIntegrationSecret(
+            user_id=user.id,
+            provider="openrouter",
+            auth_type="api_key",
+            secret_value="   ",
+        )
+    )
+    await db_session.commit()
+
+    service = SettingsService(db_session)
+    integrations = await service.list_integrations(user.id)
+
+    openrouter = next(item for item in integrations if item["provider"] == "openrouter")
+    assert openrouter["status"] == "not_configured"
+    assert openrouter["connected"] is False
+    assert openrouter["masked_value"] is None
 
 
 @pytest.mark.asyncio

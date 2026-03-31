@@ -7,6 +7,7 @@ services:
       JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
       JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
       JR_SECRET_KEY: docker-dev-secret
+      JR_CREDENTIAL_ENCRYPTION_KEY: docker-dev-encryption-secret
       JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
     depends_on:
       postgres:
@@ -22,6 +23,7 @@ services:
       JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
       JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
       JR_SECRET_KEY: docker-dev-secret
+      JR_CREDENTIAL_ENCRYPTION_KEY: docker-dev-encryption-secret
       JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
     depends_on:
@@ -51,6 +53,7 @@ services:
       JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
       JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
       JR_SECRET_KEY: docker-dev-secret
+      JR_CREDENTIAL_ENCRYPTION_KEY: docker-dev-encryption-secret
       JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
       JR_SCHEDULER_READY_MARKER: /tmp/jobradar-scheduler.ready
@@ -79,6 +82,7 @@ services:
       JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
       JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
       JR_SECRET_KEY: docker-dev-secret
+      JR_CREDENTIAL_ENCRYPTION_KEY: docker-dev-encryption-secret
       JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
       JR_WORKER_ROLE: scraping
@@ -108,6 +112,7 @@ services:
       JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
       JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
       JR_SECRET_KEY: docker-dev-secret
+      JR_CREDENTIAL_ENCRYPTION_KEY: docker-dev-encryption-secret
       JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
       JR_WORKER_ROLE: analysis
@@ -137,6 +142,7 @@ services:
       JR_DATABASE_URL: postgresql+asyncpg://jobradar:jobradar@postgres:5432/jobradar
       JR_REDIS_URL: redis://:jobradar-redis@redis:6379/0
       JR_SECRET_KEY: docker-dev-secret
+      JR_CREDENTIAL_ENCRYPTION_KEY: docker-dev-encryption-secret
       JR_CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
       JR_TRUSTED_HOSTS: '["localhost","127.0.0.1","backend","test"]'
       JR_WORKER_ROLE: ops

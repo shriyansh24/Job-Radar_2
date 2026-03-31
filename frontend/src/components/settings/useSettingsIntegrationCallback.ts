@@ -8,6 +8,27 @@ type UseSettingsIntegrationCallbackOptions = {
   setActiveTab: (tab: SettingsTab) => void;
 };
 
+const CALLBACK_MESSAGE_TEXT: Record<string, string> = {
+  google_connected: "Google Gmail connected.",
+  google_oauth_denied: "Google connection was cancelled before access was granted.",
+  google_oauth_callback_failed: "Google connection failed before the account could be linked.",
+  missing_oauth_callback_params: "Google sign-in did not return the required callback parameters.",
+};
+
+function formatCallbackMessage(
+  integrationStatus: string,
+  integrationProvider: string,
+  integrationMessage: string | null,
+) {
+  if (integrationMessage && CALLBACK_MESSAGE_TEXT[integrationMessage]) {
+    return CALLBACK_MESSAGE_TEXT[integrationMessage];
+  }
+  if (integrationStatus === "connected") {
+    return `${integrationProvider} connected`;
+  }
+  return integrationMessage ?? `${integrationProvider} integration failed`;
+}
+
 function useSettingsIntegrationCallback({
   queryClient,
   setActiveTab,
@@ -26,10 +47,16 @@ function useSettingsIntegrationCallback({
     }
 
     if (integrationStatus === "connected") {
-      toast("success", `${integrationProvider} connected${integrationMessage ? ` (${integrationMessage})` : ""}`);
+      toast(
+        "success",
+        formatCallbackMessage(integrationStatus, integrationProvider, integrationMessage)
+      );
       queryClient.invalidateQueries({ queryKey: ["settings", "integrations"] });
     } else {
-      toast("error", integrationMessage ?? `${integrationProvider} integration failed`);
+      toast(
+        "error",
+        formatCallbackMessage(integrationStatus, integrationProvider, integrationMessage)
+      );
     }
 
     params.delete("integration_status");

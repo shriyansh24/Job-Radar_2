@@ -24,6 +24,23 @@ class GmailMessage:
     received_at: datetime | None
 
 
+class GmailAPIError(GoogleOAuthError):
+    """Raised when Gmail API calls fail with machine-readable retry semantics."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+        token_refresh_recommended: bool = False,
+        retryable: bool = False,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.token_refresh_recommended = token_refresh_recommended
+        self.retryable = retryable
+
+
 class GmailClient:
     async def get_profile(self, access_token: str) -> dict[str, Any]:
         payload = await self._get_json("/profile", access_token)
@@ -66,19 +83,37 @@ class GmailClient:
         *,
         params: dict[str, str | int] | None = None,
     ) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            response = await client.get(
-                f"{_GMAIL_API_ROOT}{path}",
-                params=params,
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                response = await client.get(
+                    f"{_GMAIL_API_ROOT}{path}",
+                    params=params,
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+        except httpx.HTTPError as exc:
+            raise GmailAPIError(
+                "Gmail API request failed before a response was received.",
+                retryable=True,
+            ) from exc
         if response.status_code == 401:
-            raise GoogleOAuthError("Google access token is invalid or expired.")
-        if response.is_error:
-            raise GoogleOAuthError(
-                f"Gmail API request failed with status {response.status_code}."
+            raise GmailAPIError(
+                "Google access token is invalid or expired.",
+                status_code=401,
+                token_refresh_recommended=True,
             )
-        return cast(dict[str, Any], response.json())
+        if response.is_error:
+            raise GmailAPIError(
+                f"Gmail API request failed with status {response.status_code}.",
+                status_code=response.status_code,
+                retryable=response.status_code == 429 or response.status_code >= 500,
+            )
+        try:
+            return cast(dict[str, Any], response.json())
+        except ValueError as exc:
+            raise GmailAPIError(
+                "Gmail API returned an invalid JSON response.",
+                retryable=True,
+            ) from exc
 
 
 def _parse_message(payload: dict[str, Any]) -> GmailMessage:

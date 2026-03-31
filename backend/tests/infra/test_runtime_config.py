@@ -13,6 +13,7 @@ def _valid_runtime_settings(**overrides: object) -> Settings:
     values = {
         "debug": False,
         "secret_key": "not-default",
+        "credential_encryption_key": "not-default-encryption",
         "cookie_secure": True,
         "database_url": "postgresql+asyncpg://jobradar:jobradar@db.example.com:5432/jobradar",
         "redis_url": "redis://:jobradar-redis@redis.example.com:6379/0",
@@ -37,6 +38,28 @@ def test_validate_runtime_settings_allows_default_secret_in_debug():
     settings = Settings(debug=True, secret_key=DEFAULT_SECRET_KEY)
 
     validate_runtime_settings(settings)
+
+
+def test_validate_runtime_settings_requires_credential_encryption_key():
+    settings = _valid_runtime_settings(credential_encryption_key="")
+
+    try:
+        validate_runtime_settings(settings)
+    except RuntimeError as exc:
+        assert "JR_CREDENTIAL_ENCRYPTION_KEY" in str(exc)
+    else:
+        raise AssertionError("Expected RuntimeError when credential encryption key is missing")
+
+
+def test_validate_runtime_settings_rejects_shared_signing_and_encryption_keys():
+    settings = _valid_runtime_settings(credential_encryption_key="not-default")
+
+    try:
+        validate_runtime_settings(settings)
+    except RuntimeError as exc:
+        assert "JR_CREDENTIAL_ENCRYPTION_KEY" in str(exc)
+    else:
+        raise AssertionError("Expected RuntimeError when encryption and signing keys match")
 
 
 def test_validate_runtime_settings_rejects_samesite_none_without_secure_cookie():
