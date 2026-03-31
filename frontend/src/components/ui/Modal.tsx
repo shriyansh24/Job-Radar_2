@@ -1,6 +1,6 @@
 import { X } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { cn } from "../../lib/utils";
 
 interface ModalProps {
@@ -14,6 +14,7 @@ interface ModalProps {
 
 export default function Modal({ open, onClose, title, children, size = 'md', className }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -56,6 +57,9 @@ export default function Modal({ open, onClose, title, children, size = 'md', cla
               sizes[size],
               className
             )}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? titleId : undefined}
             initial={{ opacity: 0, y: 10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -67,7 +71,7 @@ export default function Modal({ open, onClose, title, children, size = 'md', cla
                   <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
                     Overlay
                   </div>
-                  <h2 className="font-display text-xl font-black uppercase tracking-[-0.05em] text-text-primary">
+                  <h2 id={titleId} className="font-display text-xl font-black uppercase tracking-[-0.05em] text-text-primary">
                     {title}
                   </h2>
                 </div>
