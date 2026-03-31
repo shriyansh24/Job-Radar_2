@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 import structlog
 from sqlalchemy import func, select
@@ -13,6 +14,7 @@ from app.auto_apply.schemas import (
     AutoApplyProfileUpdate,
     RuleCreate,
     RuleUpdate,
+    RunResult,
 )
 from app.config import Settings
 from app.enrichment.llm_client import LLMClient
@@ -131,7 +133,25 @@ class AutoApplyService:
         )
         return list(result.all())
 
-    async def trigger_run(self, user_id: uuid.UUID) -> dict:
+    def serialize_run(self, run: AutoApplyRun) -> RunResult:
+        review_items = self._review_items_for_run(run)
+        return RunResult(
+            id=run.id,
+            job_id=run.job_id,
+            rule_id=run.rule_id,
+            status=run.status,
+            ats_provider=run.ats_provider,
+            fields_filled=run.fields_filled or {},
+            fields_missed=run.fields_missed or [],
+            review_required=bool(review_items),
+            review_items=review_items,
+            screenshots=run.screenshots or [],
+            error_message=run.error_message,
+            started_at=run.started_at,
+            completed_at=run.completed_at,
+        )
+
+    async def trigger_run(self, user_id: uuid.UUID) -> dict[str, Any]:
         profile = await self._get_active_profile(user_id)
         if profile is None:
             return {"status": "idle", "message": "No active auto-apply profile"}
@@ -155,7 +175,7 @@ class AutoApplyService:
             "run_ids": [str(run.id) for run in runs],
         }
 
-    async def apply_single(self, job_id: str, user_id: uuid.UUID) -> dict:
+    async def apply_single(self, job_id: str, user_id: uuid.UUID) -> dict[str, Any]:
         profile = await self._get_active_profile(user_id)
         if profile is None:
             return {
@@ -187,9 +207,11 @@ class AutoApplyService:
             "job_id": job_id,
             "run_id": str(run.id),
             "message": self._message_for_run(run.status, run.error_message),
+            "review_required": bool(self._review_items_for_run(run)),
+            "review_items": self._review_items_for_run(run),
         }
 
-    async def pause(self, user_id: uuid.UUID) -> dict:
+    async def pause(self, user_id: uuid.UUID) -> dict[str, Any]:
         rules = (
             await self.db.scalars(
                 select(AutoApplyRule).where(
@@ -209,7 +231,7 @@ class AutoApplyService:
             "rules_paused": len(rules),
         }
 
-    async def get_stats(self, user_id: uuid.UUID) -> dict:
+    async def get_stats(self, user_id: uuid.UUID) -> dict[str, int]:
         # Total runs
         total = (
             await self.db.scalar(select(func.count()).where(AutoApplyRun.user_id == user_id)) or 0
@@ -256,12 +278,13 @@ class AutoApplyService:
         }
 
     async def _get_active_profile(self, user_id: uuid.UUID) -> AutoApplyProfile | None:
-        return await self.db.scalar(
+        result = await self.db.execute(
             select(AutoApplyProfile).where(
                 AutoApplyProfile.user_id == user_id,
                 AutoApplyProfile.is_active == True,  # noqa: E712
             )
         )
+        return result.scalar_one_or_none()
 
     def _build_orchestrator(self) -> AutoApplyOrchestrator:
         settings = Settings()
@@ -276,3 +299,20 @@ class AutoApplyService:
         if status == "failed":
             return error_message or "Application attempt failed"
         return error_message or f"Run ended with status '{status}'"
+
+    def _review_items_for_run(self, run: AutoApplyRun) -> list[str]:
+        review_items: list[str] = []
+
+        if run.status == "filled":
+            review_items.append("Manual confirmation required before final submission.")
+
+        for item in run.review_items or []:
+            if item not in review_items:
+                review_items.append(item)
+
+        for field in run.fields_missed or []:
+            message = f"Provide value for '{field}'"
+            if message not in review_items:
+                review_items.append(message)
+
+        return review_items

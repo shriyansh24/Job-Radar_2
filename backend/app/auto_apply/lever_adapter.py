@@ -28,6 +28,7 @@ class ApplicationResult:
     needs_confirmation: bool = False
     fields_filled: dict[str, str] = field(default_factory=dict)
     fields_missed: list[str] = field(default_factory=list)
+    review_items: list[str] = field(default_factory=list)
     blocked_by: list[str] | None = None
 
 

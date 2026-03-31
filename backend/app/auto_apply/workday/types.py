@@ -31,6 +31,7 @@ class ApplicationResult:
     steps: list[StepResult] = field(default_factory=list)
     screenshots: list[bytes] = field(default_factory=list)
     error: str | None = None
+    review_items: list[str] = field(default_factory=list)
 
     @property
     def fields_filled(self) -> dict[str, str]:

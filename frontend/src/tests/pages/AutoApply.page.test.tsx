@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../support/renderWithProviders";
@@ -74,10 +74,15 @@ describe("AutoApply page", () => {
           id: "run-1",
           job_id: "job-12345678",
           rule_id: "rule-1",
-          status: "completed",
+          status: "filled",
           ats_provider: "greenhouse",
           fields_filled: { email: "filled" },
-          fields_missed: [],
+          fields_missed: ["LinkedIn Profile"],
+          review_required: true,
+          review_items: [
+            "Manual confirmation required before final submission.",
+            "Provide value for 'LinkedIn Profile'",
+          ],
           error_message: null,
           started_at: "2026-03-22T10:00:00Z",
           completed_at: "2026-03-22T10:05:00Z",
@@ -87,8 +92,15 @@ describe("AutoApply page", () => {
     autoApplyMocks.createProfile.mockResolvedValue({ data: null });
     autoApplyMocks.createRule.mockResolvedValue({ data: null });
     autoApplyMocks.updateRule.mockResolvedValue({ data: null });
-    autoApplyMocks.pause.mockResolvedValue({ data: { status: "paused" } });
-    autoApplyMocks.run.mockResolvedValue({ data: { status: "queued" } });
+    autoApplyMocks.pause.mockResolvedValue({ data: { status: "paused", message: "Auto-apply paused" } });
+    autoApplyMocks.run.mockResolvedValue({
+      data: {
+        status: "completed",
+        message: "Auto-apply batch executed",
+        runs_created: 1,
+        run_ids: ["run-1"],
+      },
+    });
   });
 
   it("renders profile data and stats across the main auto-apply tabs", async () => {
@@ -114,13 +126,16 @@ describe("AutoApply page", () => {
 
     expect(await screen.findByText("Operator controls")).toBeInTheDocument();
     expect(screen.getByText("Latest run")).toBeInTheDocument();
+    expect(screen.getAllByText("Review notes").length).toBeGreaterThan(0);
 
-    await user.click(screen.getAllByRole("button", { name: /^run now$/i })[0]);
+    const operatorControls = screen.getByTestId("auto-apply-operator-controls");
+    await user.click(within(operatorControls).getByRole("button", { name: /^run now$/i }));
     expect(autoApplyMocks.run).toHaveBeenCalledTimes(1);
     expect(await screen.findByText("Recent attempts and field coverage.")).toBeInTheDocument();
     expect(screen.getByText("Success signal")).toBeInTheDocument();
+    expect(screen.getAllByText("Provide value for 'LinkedIn Profile'").length).toBeGreaterThan(0);
 
-    await user.click(screen.getAllByRole("button", { name: /^pause$/i })[0]);
+    await user.click(within(operatorControls).getByRole("button", { name: /^pause$/i }));
     expect(autoApplyMocks.pause).toHaveBeenCalledTimes(1);
   });
 });

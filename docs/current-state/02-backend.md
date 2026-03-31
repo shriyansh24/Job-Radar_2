@@ -10,7 +10,7 @@
 
 ## Key Runtime Areas
 - Auth: cookie-based access and refresh flow with revocation, CSRF protection on unsafe cookie-auth requests, trusted-host enforcement, rate limiting, request-correlated lifecycle logs, route-aware request completion logs, and normalized reason codes for register/login/refresh/logout/password-change/session-clear/account-delete paths
-- Auto-apply: field learning, Workday adapter, recovered form extraction, Greenhouse/Lever adapters, a pre-flight safety layer, live batch/single service wiring, worker-level batch execution, and operator-facing run/pause/list/stats API coverage are all part of the live repo-local flow
+- Auto-apply: field learning, Workday adapter, recovered form extraction, Greenhouse/Lever adapters, a pre-flight safety layer, live batch/single service wiring, worker-level batch execution, operator-facing run/pause/list/stats API coverage, and persisted run-level `review_items` / `review_required` diagnostics are all part of the live repo-local flow
 - Settings and integrations: saved-search CRUD plus alert metadata, API-key-backed providers (`openrouter`, `serpapi`, `theirstack`, `apify`), and Google OAuth-backed Gmail integration with account email, scopes, sync status, last-validated, last-synced, and last-error state
 - Resume: upload parsing supports `.pdf`, `.docx`, `.tex`, and `.txt` into persisted structured IR payloads; tailoring, ATS validation, council review, cover-letter generation, HTML/PDF rendering, template preview, and PDF export are live on the branch
 - Jobs: SHA-256 string IDs, enrichment fields, lifecycle tracking, application relationship via `selectin`
@@ -48,6 +48,7 @@
 - Latest full local result on `2026-03-27`: `1025 passed, 1 skipped` with backend coverage at `71.24%`
 - Latest targeted local result on `2026-03-27`: `117 passed` across auth, jobs semantic search, interview prep, dedup/normalization/freshness, queue runtime, and auto-apply worker slices
 - Additional targeted local results on `2026-03-27`: `37 passed` across ATS identity persistence, auto-apply operator API coverage, digest worker runtime, and migration lineage checks, plus `5 passed` across direct `alert_worker` / `phase7a_worker` coverage and the focused `005_create_p2_tables` migration regression suite
+- Additional targeted local result on `2026-03-30`: `138 passed` across the full `unit/auto_apply` and `integration/auto_apply` suites plus Alembic revision-lineage checks after the persisted review-diagnostics slice landed
 - Backend tests now use explicit `contracts/`, `infra/`, `integration/`, `migrations/`, `security/`, `unit/`, and `workers/` directories under `backend/tests/`.
 - Auth lifecycle events now emit structured logs without credential/token payloads and inherit request correlation from middleware-bound request IDs.
 - Dirty-worktree recovery coverage now also exists for `backend/tests/unit/search/test_hybrid_search.py`, `backend/tests/unit/search/test_freshness.py`, `backend/tests/unit/search/test_normalization.py`, `backend/tests/unit/interview/test_interview_contextual_service.py`, `backend/tests/workers/test_queue_runtime.py`, and `backend/tests/workers/test_arq_worker_runtime.py`.
@@ -68,7 +69,7 @@
 - Bandit, pip-audit with the checked-in reviewed exception policy, pip check, backend Ruff, and the targeted backend mypy gate are green in the current branch.
 - The latest full backend validation run keeps every `app/` module at or above `50%` coverage and brings overall backend coverage to `71.24%`.
 - The revalidated backend slice covers auth, settings, admin, and vault contract changes used by the reference-first frontend migration.
-- Auto-apply backend foundations are broader than `main`, and the live API/service execution path now includes recovered form extraction, Greenhouse/Lever adapters, safety gating, worker-triggered batch execution, and operator-facing API coverage. Provider-backed ATS submission remains environment-specific validation rather than a missing repo-local implementation.
+- Auto-apply backend foundations are broader than the older branch-era recovery slices, and the live API/service execution path now includes recovered form extraction, Greenhouse/Lever adapters, safety gating, worker-triggered batch execution, operator-facing API coverage, and persisted manual-review diagnostics on each run. Provider-backed ATS submission remains environment-specific validation rather than a missing repo-local implementation.
 - Resume capability is now part of `main`: structured IR extraction, tailoring, ATS validation, council review, renderer/template coverage, backend-backed preview, and PDF export are live in the merged branch tip. The branch-era proposal/session model is not part of the committed live flow.
 - Cookie-authenticated unsafe requests now require the readable `jr_csrf_token` cookie to be echoed via `X-CSRF-Token`, and `TrustedHostMiddleware` is part of the live middleware stack.
 - Scheduler isolation is now queue-backed: APScheduler enqueues named jobs, worker services consume queue-owned jobs directly, and Redis is part of the active background-execution critical path.

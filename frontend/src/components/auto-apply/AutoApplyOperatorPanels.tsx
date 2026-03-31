@@ -23,7 +23,7 @@ export function AutoApplyOperatorControlsPanel({
   operatorBusy,
 }: AutoApplyOperatorControlsPanelProps) {
   return (
-    <Surface padding="lg" radius="xl">
+    <Surface padding="lg" radius="xl" data-testid="auto-apply-operator-controls">
       <SectionHeader
         title="Operator controls"
         description="Trigger a run, pause submission, and refresh queue state."
@@ -61,21 +61,25 @@ export function AutoApplyOperatorControlsPanel({
 type AutoApplyLatestRunPanelProps = {
   latestRun: AutoApplyRun | null;
   pendingCount: number;
+  reviewCount: number;
 };
 
 export function AutoApplyLatestRunPanel({
   latestRun,
   pendingCount,
+  reviewCount,
 }: AutoApplyLatestRunPanelProps) {
   return (
     <Surface padding="lg" radius="xl">
-      <SectionHeader title="Latest run" description="Most recent execution attempt and queue posture." />
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <SectionHeader title="Latest run" description="Most recent execution attempt and review posture." />
+      <div className="mt-5 grid gap-4 sm:grid-cols-3">
         <StateBlock
           tone={
             latestRun?.status === "failed"
               ? "danger"
-              : latestRun?.status === "running" || pendingCount
+              : latestRun?.review_required || latestRun?.status === "filled"
+                ? "warning"
+                : latestRun?.status === "running" || pendingCount
                 ? "warning"
                 : latestRun
                   ? "success"
@@ -99,6 +103,16 @@ export function AutoApplyLatestRunPanel({
               : "No runs waiting."
           }
         />
+        <StateBlock
+          tone={reviewCount ? "warning" : "success"}
+          icon={<Lightning size={18} weight="bold" />}
+          title="Review notes"
+          description={
+            reviewCount
+              ? `${reviewCount} recorded run${reviewCount === 1 ? "" : "s"} include manual review notes.`
+              : "No recorded runs include manual review notes."
+          }
+        />
       </div>
       {latestRun ? (
         <div className="mt-4 rounded-none border-2 border-border bg-bg-tertiary p-4">
@@ -108,13 +122,25 @@ export function AutoApplyLatestRunPanel({
           <div className="mt-3 grid gap-3 text-sm text-text-secondary sm:grid-cols-2">
             <div>
               <span className="font-semibold text-text-primary">Job</span>
-              <div className="mt-1 break-all">{latestRun.job_id}</div>
+              <div className="mt-1 break-all">{latestRun.job_id ?? "Unlinked job"}</div>
             </div>
             <div>
               <span className="font-semibold text-text-primary">Missed fields</span>
               <div className="mt-1">{latestRun.fields_missed.length || 0}</div>
             </div>
           </div>
+          {latestRun.review_items.length ? (
+            <div className="mt-3 space-y-2">
+              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                Review items
+              </div>
+              <ul className="space-y-1 text-sm text-text-secondary">
+                {latestRun.review_items.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {latestRun.error_message ? (
             <p className="mt-3 text-sm leading-6 text-[var(--color-accent-danger)]">
               {latestRun.error_message}

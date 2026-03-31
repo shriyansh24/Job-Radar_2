@@ -62,27 +62,32 @@ export default function AutoApply() {
   };
 
   const runNowMutation = useMutation({
-    mutationFn: () => autoApplyApi.run(),
-    onSuccess: async () => {
+    mutationFn: () => autoApplyApi.run().then((response) => response.data),
+    onSuccess: async (result) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["auto-apply-runs"] }),
         queryClient.invalidateQueries({ queryKey: ["auto-apply-stats"] }),
       ]);
-      toast("success", "Auto-apply run triggered");
+      if (result.status === "idle") {
+        toast("warning", result.message);
+        return;
+      }
+
+      toast("success", result.message || "Auto-apply run triggered");
       setActiveTab("history");
     },
     onError: () => toast("error", "Failed to trigger auto-apply"),
   });
 
   const pauseMutation = useMutation({
-    mutationFn: () => autoApplyApi.pause(),
-    onSuccess: async () => {
+    mutationFn: () => autoApplyApi.pause().then((response) => response.data),
+    onSuccess: async (result) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["auto-apply-rules"] }),
         queryClient.invalidateQueries({ queryKey: ["auto-apply-runs"] }),
         queryClient.invalidateQueries({ queryKey: ["auto-apply-stats"] }),
       ]);
-      toast("success", "Auto-apply pause sent");
+      toast("success", result.message || "Auto-apply pause sent");
     },
     onError: () => toast("error", "Failed to pause auto-apply"),
   });
@@ -113,6 +118,7 @@ export default function AutoApply() {
     [runs]
   );
   const operatorBusy = runNowMutation.isPending || pauseMutation.isPending;
+  const reviewCount = runs?.filter((run) => run.review_required).length ?? 0;
 
   const metricItems = useMemo(
     () => [
@@ -187,7 +193,11 @@ export default function AutoApply() {
           runPending={runNowMutation.isPending}
           operatorBusy={operatorBusy}
         />
-        <AutoApplyLatestRunPanel latestRun={latestRun} pendingCount={stats?.pending ?? 0} />
+        <AutoApplyLatestRunPanel
+          latestRun={latestRun}
+          pendingCount={stats?.pending ?? 0}
+          reviewCount={reviewCount}
+        />
       </div>
 
       <Tabs tabs={TABS.map((tab) => ({ ...tab }))} activeTab={activeTab} onChange={setActiveTab} />
@@ -217,6 +227,7 @@ export default function AutoApply() {
           runsLoading={runsLoading}
           successfulCount={stats?.successful ?? 0}
           failedCount={stats?.failed ?? 0}
+          reviewCount={reviewCount}
         />
       ) : null}
 

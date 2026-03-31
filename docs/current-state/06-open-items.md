@@ -11,7 +11,7 @@
 - Local Postgres schema was upgraded to Alembic `head` so the settings/integration surfaces match the current app.
 
 ## Repo-Local Closure
-- The reference-first frontend, queue-backed runtime, recovered auto-apply execution path, resume preview/export flow, interview prep bundles, analytics patterns, and hybrid search path are all live and validated in repo-local scope.
+- The reference-first frontend, queue-backed runtime, recovered auto-apply execution path, persisted operator review diagnostics, resume preview/export flow, interview prep bundles, analytics patterns, and hybrid search path are all live and validated in repo-local scope.
 - Branch-era variants that were not promoted are archived as historical alternatives rather than left as active live-scope gaps.
 
 ## Non-Blocking Residuals
