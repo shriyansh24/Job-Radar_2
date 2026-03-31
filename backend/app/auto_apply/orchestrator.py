@@ -102,7 +102,8 @@ class AutoApplyOrchestrator:
         )
         if not safety_result.passed:
             run.status = "failed"
-            run.fields_missed = safety_result.failed_checks
+            run.fields_missed = []
+            run.review_items = []
             run.error_message = f"Blocked by: {', '.join(safety_result.failed_checks)}"
             run.completed_at = datetime.now(UTC)
             await self.db.commit()

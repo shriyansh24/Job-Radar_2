@@ -28,8 +28,8 @@ async def test_trigger_run_returns_idle_without_profile(db_session):
     service = AutoApplyService(db_session)
     result = await service.trigger_run(user.id)
 
-    assert result["status"] == "idle"
-    assert "profile" in result["message"].lower()
+    assert result.status == "idle"
+    assert "profile" in result.message.lower()
 
 
 @pytest.mark.asyncio
@@ -48,9 +48,9 @@ async def test_trigger_run_executes_batch(db_session, monkeypatch):
 
     result = await service.trigger_run(user.id)
 
-    assert result["status"] == "completed"
-    assert result["runs_created"] == 1
-    assert result["run_ids"] == [str(fake_run.id)]
+    assert result.status == "completed"
+    assert result.runs_created == 1
+    assert result.run_ids == [str(fake_run.id)]
 
 
 @pytest.mark.asyncio
@@ -77,11 +77,11 @@ async def test_apply_single_executes_orchestrator(db_session, monkeypatch):
 
     result = await service.apply_single(job.id, user.id)
 
-    assert result["status"] == "filled"
-    assert result["job_id"] == job.id
-    assert result["run_id"] == str(fake_run.id)
-    assert result["review_required"] is True
-    assert "Manual confirmation required before final submission." in result["review_items"]
+    assert result.status == "filled"
+    assert result.job_id == job.id
+    assert result.run_id == str(fake_run.id)
+    assert result.review_required is True
+    assert "Manual confirmation required before final submission." in result.review_items
 
 
 @pytest.mark.asyncio
@@ -101,8 +101,8 @@ async def test_pause_deactivates_active_rules(db_session):
         await db_session.scalars(select(AutoApplyRule).where(AutoApplyRule.user_id == user.id))
     ).all()
 
-    assert result["status"] == "paused"
-    assert result["rules_paused"] == 2
+    assert result.status == "paused"
+    assert result.rules_paused == 2
     assert all(rule.is_active is False for rule in refreshed)
 
 
@@ -150,3 +150,25 @@ async def test_serialize_run_exposes_review_queue_details(db_session):
         "Review custom question 'Work authorization'",
         "Provide value for 'LinkedIn Profile'",
     ]
+
+
+@pytest.mark.asyncio
+async def test_serialize_failed_run_omits_review_queue_details(db_session):
+    user = await _make_user(db_session, "review-failed@example.com")
+    run = AutoApplyRun(
+        user_id=user.id,
+        job_id="job-review-2",
+        status="failed",
+        fields_missed=["duplicate"],
+        review_items=["Blocked by duplicate safety check"],
+        error_message="Blocked by: duplicate",
+    )
+    db_session.add(run)
+    await db_session.commit()
+
+    service = AutoApplyService(db_session)
+    payload = service.serialize_run(run)
+
+    assert payload.review_required is False
+    assert payload.review_items == []
+    assert payload.error_message == "Blocked by: duplicate"

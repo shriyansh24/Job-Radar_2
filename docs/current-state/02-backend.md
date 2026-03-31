@@ -10,7 +10,7 @@
 
 ## Key Runtime Areas
 - Auth: cookie-based access and refresh flow with revocation, CSRF protection on unsafe cookie-auth requests, trusted-host enforcement, rate limiting, request-correlated lifecycle logs, route-aware request completion logs, and normalized reason codes for register/login/refresh/logout/password-change/session-clear/account-delete paths
-- Auto-apply: field learning, Workday adapter, recovered form extraction, Greenhouse/Lever adapters, a pre-flight safety layer, live batch/single service wiring, worker-level batch execution, operator-facing run/pause/list/stats API coverage, and persisted run-level `review_items` / `review_required` diagnostics are all part of the live repo-local flow
+- Auto-apply: field learning, Workday adapter, recovered form extraction, Greenhouse/Lever adapters, a pre-flight safety layer, live batch/single service wiring, worker-level batch execution, operator-facing run/pause/list/stats API coverage, and persisted run-level `review_items` / `review_required` diagnostics for manual pre-submit review states are all part of the live repo-local flow
 - Settings and integrations: saved-search CRUD plus alert metadata, API-key-backed providers (`openrouter`, `serpapi`, `theirstack`, `apify`), and Google OAuth-backed Gmail integration with account email, scopes, sync status, last-validated, last-synced, and last-error state
 - Resume: upload parsing supports `.pdf`, `.docx`, `.tex`, and `.txt` into persisted structured IR payloads; tailoring, ATS validation, council review, cover-letter generation, HTML/PDF rendering, template preview, and PDF export are live on the branch
 - Jobs: SHA-256 string IDs, enrichment fields, lifecycle tracking, application relationship via `selectin`
