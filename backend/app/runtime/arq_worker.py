@@ -12,6 +12,7 @@ from sqlalchemy import text
 
 from app.config import settings, validate_runtime_settings
 from app.database import engine
+from app.runtime.job_context import resolve_queue_correlation_id
 from app.runtime.job_registry import (
     ANALYSIS_QUEUE,
     OPS_QUEUE,
@@ -151,13 +152,15 @@ async def _on_job_start(ctx: dict[str, object]) -> None:
             health_interval_seconds=int(cast(int | str, ctx["health_check_interval_seconds"])),
         )
     queue_job_id = ctx["job_id"]
+    queue_correlation_id = await resolve_queue_correlation_id(ctx, logger=logger)
+    ctx["queue_correlation_id"] = queue_correlation_id
     logger.info(
         "arq_worker_job_starting",
         worker_role=ctx["worker_role"],
         queue_name=queue_name,
         job_id=queue_job_id,
         queue_job_id=queue_job_id,
-        queue_correlation_id=queue_job_id,
+        queue_correlation_id=queue_correlation_id,
         job_try=ctx["job_try"],
         queue_depth=queue_snapshot.queue_depth if queue_snapshot is not None else None,
         queue_pressure=queue_snapshot.queue_pressure if queue_snapshot is not None else None,
@@ -180,13 +183,14 @@ async def _on_job_end(ctx: dict[str, object]) -> None:
             health_interval_seconds=int(cast(int | str, ctx["health_check_interval_seconds"])),
         )
     queue_job_id = ctx["job_id"]
+    queue_correlation_id = await resolve_queue_correlation_id(ctx, logger=logger)
     logger.info(
         "arq_worker_job_finished",
         worker_role=ctx["worker_role"],
         queue_name=queue_name,
         job_id=queue_job_id,
         queue_job_id=queue_job_id,
-        queue_correlation_id=queue_job_id,
+        queue_correlation_id=queue_correlation_id,
         job_try=ctx["job_try"],
         queue_depth=queue_snapshot.queue_depth if queue_snapshot is not None else None,
         queue_pressure=queue_snapshot.queue_pressure if queue_snapshot is not None else None,

@@ -4,7 +4,7 @@
 
 - Figma Make file: `https://www.figma.com/make/BTSWvIKqvJxLLEHdE8DOwC/Improve-Job-Radar-UI-UX`
 - Secondary code source: `origin/feature/ui/figma/neo-brutalist-themes`
-- Current branch: `codex/ui-changes`
+- Current branch at port time: `codex/ui-changes` (now merged into `main`)
 
 ## Decision
 
@@ -37,7 +37,7 @@ Do not use that branch as a merge target or replacement branch.
 
 Reasons:
 
-- it diverges from `codex/ui-changes` instead of building on top of it
+- it diverged from `codex/ui-changes` instead of building on top of it
 - it deletes the current shared system layer under `frontend/src/components/system`
 - it deletes `frontend/src/lib/navigation.tsx`
 - it deletes `frontend/system.md`
@@ -48,7 +48,7 @@ Working hierarchy:
 
 1. Figma Make sets the visual system and multi-theme model.
 2. `origin/feature/ui/figma/neo-brutalist-themes` can donate selected code patterns.
-3. `codex/ui-changes` remains authoritative for behavior, route coverage, auth, API wiring, and current-only widgets.
+3. `main` is now authoritative for behavior, route coverage, auth, API wiring, and current-only widgets.
 
 ## Theme Strategy
 

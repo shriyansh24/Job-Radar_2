@@ -177,6 +177,7 @@ async def test_enqueue_registered_job_uses_registered_queue(
         def __init__(self) -> None:
             self.depth_by_queue = {SCRAPING_QUEUE: 3}
             self.oldest_score_by_queue = {SCRAPING_QUEUE: 298_000}
+            self.metadata_writes: list[tuple[str, str, int | None]] = []
 
         async def zcard(self, queue_name: str) -> int:
             depth = self.depth_by_queue[queue_name]
@@ -206,6 +207,10 @@ async def test_enqueue_registered_job_uses_registered_queue(
         ) -> SimpleNamespace:
             seen.append((job_name, _queue_name, _job_id))
             return SimpleNamespace(job_id=_job_id)
+
+        async def set(self, key: str, value: str, *, ex: int | None = None) -> bool:
+            self.metadata_writes.append((key, value, ex))
+            return True
 
     class _FakeLogger:
         def info(self, event: str, **fields: object) -> None:
@@ -237,7 +242,7 @@ async def test_enqueue_registered_job_uses_registered_queue(
     assert result.queue_pressure_before == "nominal"
     assert result.queue_pressure_after == "nominal"
     assert result.queue_job_id == result.enqueued_job_id
-    assert result.queue_correlation_id is None
+    assert result.queue_correlation_id == result.enqueued_job_id
     assert result.oldest_job_age_seconds_before == 2
     assert result.oldest_job_age_seconds_after == 4
     assert result.queue_alert_before == "clear"
@@ -256,7 +261,7 @@ async def test_enqueue_registered_job_uses_registered_queue(
                 "queue_name": SCRAPING_QUEUE,
                 "enqueued_job_id": result.enqueued_job_id,
                 "queue_job_id": result.enqueued_job_id,
-                "queue_correlation_id": None,
+                "queue_correlation_id": result.enqueued_job_id,
                 "queue_depth_before": 3,
                 "queue_depth_after": 4,
                 "queue_pressure_before": "nominal",

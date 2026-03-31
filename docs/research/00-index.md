@@ -31,7 +31,7 @@
 ## Promotion Status Snapshot
 
 - `01-smart-dedup.md`: `PARTIALLY_ADOPTED`
-  - normalization, freshness scoring, the first hybrid-search slice, and ATS identity persistence on `jobs` are now live on `codex/ui-changes`
+  - normalization, freshness scoring, the first hybrid-search slice, and ATS identity persistence on `jobs` are now live on `main`
 - `02-resume-pipeline.md`: `PARTIALLY_ADOPTED`
   - multi-format parsing, structured IR persistence, ATS validation, template preview, and PDF export are live; the branch-era proposal/session model is archived
 - `03-form-filling.md`: `PARTIALLY_ADOPTED`

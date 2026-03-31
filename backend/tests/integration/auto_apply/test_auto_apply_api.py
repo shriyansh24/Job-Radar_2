@@ -110,7 +110,13 @@ async def test_apply_single_runs_against_owned_job(
     db_session.add_all([profile, job])
     await db_session.commit()
 
-    fake_run = SimpleNamespace(id=uuid.uuid4(), status="filled", error_message=None)
+    fake_run = SimpleNamespace(
+        id=uuid.uuid4(),
+        status="filled",
+        error_message=None,
+        fields_missed=[],
+        review_items=[],
+    )
     fake_orchestrator = SimpleNamespace(apply_to_job=AsyncMock(return_value=fake_run))
     monkeypatch.setattr(
         AutoApplyService,
@@ -130,12 +136,64 @@ async def test_apply_single_runs_against_owned_job(
         "job_id": job.id,
         "run_id": str(fake_run.id),
         "message": "Application filled and ready for review",
+        "review_required": True,
+        "review_items": ["Manual confirmation required before final submission."],
     }
 
     call = fake_orchestrator.apply_to_job.await_args
     assert call.args[0].id == job.id
     assert call.args[1].id == profile.id
     assert call.kwargs == {"allow_first_time_ats": True}
+
+
+@pytest.mark.asyncio
+async def test_apply_single_failed_run_does_not_expose_review_queue(
+    client: AsyncClient,
+    db_session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user_id, token = await _register_and_login(client)
+    profile = AutoApplyProfile(user_id=user_id, name="Primary", is_active=True)
+    job = Job(
+        id="auto-apply-job-002",
+        user_id=user_id,
+        source="lever",
+        title="Automation Engineer",
+        company_name="Acme",
+        status="new",
+    )
+    db_session.add_all([profile, job])
+    await db_session.commit()
+
+    fake_run = SimpleNamespace(
+        id=uuid.uuid4(),
+        status="failed",
+        error_message="Blocked by: duplicate",
+        fields_missed=["duplicate"],
+        review_items=["Blocked by duplicate safety check"],
+    )
+    fake_orchestrator = SimpleNamespace(apply_to_job=AsyncMock(return_value=fake_run))
+    monkeypatch.setattr(
+        AutoApplyService,
+        "_build_orchestrator",
+        lambda self: fake_orchestrator,
+    )
+
+    response = await client.post(
+        "/api/v1/auto-apply/apply-single",
+        headers=_auth(token),
+        json={"job_id": job.id},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "failed",
+        "job_id": job.id,
+        "run_id": str(fake_run.id),
+        "message": "Blocked by: duplicate",
+        "review_required": False,
+        "review_items": [],
+    }
 
 
 @pytest.mark.asyncio
@@ -190,6 +248,8 @@ async def test_stats_and_runs_are_user_scoped_and_runs_are_ordered(
             AutoApplyRun(
                 user_id=user_id,
                 status="filled",
+                review_items=["Review custom question 'Work authorization'"],
+                fields_missed=["LinkedIn Profile"],
                 started_at=now - timedelta(minutes=5),
                 completed_at=now - timedelta(minutes=4),
             ),
@@ -231,3 +291,9 @@ async def test_stats_and_runs_are_user_scoped_and_runs_are_ordered(
     assert [item["status"] for item in runs] == ["running", "filled", "failed"]
     assert all(item["id"] for item in runs)
     assert all(item["error_message"] in {None, "bad field mapping"} for item in runs)
+    assert runs[1]["review_required"] is True
+    assert runs[1]["review_items"] == [
+        "Manual confirmation required before final submission.",
+        "Review custom question 'Work authorization'",
+        "Provide value for 'LinkedIn Profile'",
+    ]

@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.models import User
 from app.auth.schemas import AuthSessionResponse, UserCreate
 from app.config import settings
+from app.shared.audit_sink import emit_auth_audit_event
 from app.shared.errors import AuthError, ValidationError
 
 type TokenPayload = dict[str, object]
@@ -88,10 +89,12 @@ def _build_auth_log_fields(
 
 def log_auth_info(event: str, **kwargs: object) -> None:
     logger.info(event, audit_stream="auth", **kwargs)
+    emit_auth_audit_event(event, **kwargs)
 
 
 def log_auth_warning(event: str, **kwargs: object) -> None:
     logger.warning(event, audit_stream="auth", **kwargs)
+    emit_auth_audit_event(event, **kwargs)
 
 
 def hash_password(password: str) -> str:
@@ -116,7 +119,7 @@ def create_access_token(user_id: str, token_version: int = 0) -> str:
             "jti": str(uuid.uuid4()),
             "ver": token_version,
         },
-        settings.secret_key,
+        settings.effective_jwt_signing_key,
         algorithm=settings.algorithm,
     )
 
@@ -131,7 +134,7 @@ def create_refresh_token(user_id: str, token_version: int = 0) -> str:
             "jti": str(uuid.uuid4()),
             "ver": token_version,
         },
-        settings.secret_key,
+        settings.effective_jwt_signing_key,
         algorithm=settings.algorithm,
     )
 
@@ -155,7 +158,11 @@ def decode_token_payload(token: str, expected_type: str | None = None) -> TokenP
     try:
         payload = cast(
             TokenPayload,
-            jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm]),
+            jwt.decode(
+                token,
+                settings.effective_jwt_signing_key,
+                algorithms=[settings.algorithm],
+            ),
         )
         token_type = payload.get("type")
         if expected_type is not None and token_type != expected_type:

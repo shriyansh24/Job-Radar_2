@@ -37,5 +37,6 @@ def scraped_job_to_dict(job: ScrapedJob) -> dict[str, Any]:
         "ats_job_id": ats_identity["ats_job_id"],
         "ats_provider": ats_identity["ats_provider"],
         "ats_composite_key": ats_identity["ats_composite_key"],
+        "source_target_id": job.extra_data.get("source_target_id"),
         "scraped_at": datetime.now(UTC),
     }

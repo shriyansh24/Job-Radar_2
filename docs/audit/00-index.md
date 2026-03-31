@@ -94,12 +94,12 @@
 
 | ID | Feature | Phase | Segment |
 |----|---------|-------|---------|
-| DEF-01 | Resume PDF generation + templates | Phase D | backend |
-| DEF-03 | Targets add/edit/delete career page UI | Phase B | frontend |
-| DEF-04 | Saved Search Alerts UI + scheduler trigger | Phase B | frontend |
-| DEF-06 | Conditional requests (ETag/If-Modified-Since) | Phase 3 | scraper |
-| DEF-07 | robots.txt checking via Protego | Phase 3 | scraper |
-| DEF-08 | Protego library wired into execution loop | Phase 3 | scraper |
+| DEF-01 | Resume PDF generation + templates | DONE - resume preview, template coverage, and PDF export are live; remaining template breadth is normal product iteration, not deferred backlog | backend |
+| DEF-03 | Targets add/edit/delete career page UI | DONE - operator CRUD is live on `/targets` with page/detail validation | frontend |
+| DEF-04 | Saved Search Alerts UI + scheduler trigger | DONE - saved searches now expose alert status, manual checks, worker notifications, and scheduled alert runs | frontend |
+| DEF-06 | Conditional requests (ETag/If-Modified-Since) | DONE - fetcher tiers now send `If-None-Match` / `If-Modified-Since` from `scrape_targets` cache metadata and refresh cache headers after successful fetches | scraper |
+| DEF-07 | robots.txt checking via Protego | DONE - non-ATS target batches now evaluate `robots.txt` before fetches and block disallowed targets with visible attempt/log output | scraper |
+| DEF-08 | Protego library wired into execution loop | DONE - Protego policy is now part of the live target-batch execution path and has deterministic regression coverage | scraper |
 
 ## Verified Fixes Since Initial Audit
 

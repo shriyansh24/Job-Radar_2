@@ -72,14 +72,26 @@ test.describe("flows/operations-admin-data", () => {
       return response.url().includes("/api/v1/auto-apply/run") && response.request().method() === "POST";
     });
     await page.getByRole("button", { name: /^run now$/i }).first().click();
-    await expect((await runResponsePromise).ok()).toBeTruthy();
-    await expect(page.getByText("Recent attempts and field coverage.", { exact: true })).toBeVisible();
+    const runResponse = await runResponsePromise;
+    await expect(runResponse.ok()).toBeTruthy();
+
+    const runResult = (await runResponse.json()) as { status?: string; message?: string };
+    if (runResult.status === "idle" && runResult.message) {
+      await expect(page.getByText(runResult.message, { exact: true })).toBeVisible();
+    } else {
+      await expect(page.getByText("Recent attempts and field coverage.", { exact: true })).toBeVisible();
+    }
 
     const pauseResponsePromise = page.waitForResponse((response) => {
       return response.url().includes("/api/v1/auto-apply/pause") && response.request().method() === "POST";
     });
     await page.getByRole("button", { name: /^pause$/i }).first().click();
-    await expect((await pauseResponsePromise).ok()).toBeTruthy();
-    await expect(page.getByText("Auto-apply pause sent", { exact: true })).toBeVisible();
+    const pauseResponse = await pauseResponsePromise;
+    await expect(pauseResponse.ok()).toBeTruthy();
+
+    const pauseResult = (await pauseResponse.json()) as { message?: string };
+    await expect(
+      page.getByText(pauseResult.message || "Auto-apply pause sent", { exact: true })
+    ).toBeVisible();
   });
 });

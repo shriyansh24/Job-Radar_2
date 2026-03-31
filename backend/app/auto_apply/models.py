@@ -71,6 +71,7 @@ class AutoApplyRun(Base):
     ats_provider: Mapped[str | None] = mapped_column(String(50))
     fields_filled: Mapped[dict | None] = mapped_column(JSONB, default=dict)
     fields_missed: Mapped[list | None] = mapped_column(JSONB, default=list)
+    review_items: Mapped[list | None] = mapped_column(JSONB, default=list)
     screenshots: Mapped[list | None] = mapped_column(JSONB, default=list)
     error_message: Mapped[str | None] = mapped_column(Text)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

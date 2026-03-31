@@ -14,6 +14,7 @@ type AutoApplyHistoryTabPanelProps = {
   runsLoading: boolean;
   successfulCount: number;
   failedCount: number;
+  reviewCount: number;
 };
 
 export function AutoApplyHistoryTabPanel({
@@ -21,6 +22,7 @@ export function AutoApplyHistoryTabPanel({
   runsLoading,
   successfulCount,
   failedCount,
+  reviewCount,
 }: AutoApplyHistoryTabPanelProps) {
   return (
     <SplitWorkspace
@@ -68,6 +70,16 @@ export function AutoApplyHistoryTabPanel({
               failedCount
                 ? `${failedCount} runs failed. Inspect field coverage.`
                 : "No failed runs are currently recorded."
+            }
+          />
+          <StateBlock
+            tone={reviewCount ? "warning" : "success"}
+            icon={<Clock size={18} weight="bold" />}
+            title="Review notes"
+            description={
+              reviewCount
+                ? `${reviewCount} recorded runs include operator review notes or manual-answer prompts.`
+                : "No recorded runs include operator review notes."
             }
           />
         </div>

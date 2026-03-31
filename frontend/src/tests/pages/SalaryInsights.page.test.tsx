@@ -65,4 +65,34 @@ describe("SalaryInsights page", () => {
     expect(screen.getAllByText("$205k").length).toBeGreaterThan(0);
     expect(screen.getByText(/would like to discuss compensation/i)).toBeInTheDocument();
   });
+
+  it("replays a saved research entry back into the form", async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<SalaryInsights />);
+
+    await user.type(screen.getByPlaceholderText("Senior Frontend Engineer"), "Staff Engineer");
+    await user.type(screen.getByPlaceholderText("Stripe"), "Acme");
+    await user.type(screen.getByPlaceholderText("Remote"), "Chicago");
+    await user.click(screen.getByRole("button", { name: /^research$/i }));
+
+    expect(await screen.findByRole("button", { name: /staff engineer/i })).toBeInTheDocument();
+
+    const jobTitleInput = screen.getByPlaceholderText("Senior Frontend Engineer");
+    const companyInput = screen.getByPlaceholderText("Stripe");
+    const locationInput = screen.getByPlaceholderText("Remote");
+
+    await user.clear(jobTitleInput);
+    await user.type(jobTitleInput, "Principal Engineer");
+    await user.clear(companyInput);
+    await user.type(companyInput, "OtherCo");
+    await user.clear(locationInput);
+    await user.type(locationInput, "Austin");
+
+    await user.click(screen.getByRole("button", { name: /staff engineer/i }));
+
+    expect(jobTitleInput).toHaveValue("Staff Engineer");
+    expect(companyInput).toHaveValue("Acme");
+    expect(locationInput).toHaveValue("Chicago");
+  });
 });

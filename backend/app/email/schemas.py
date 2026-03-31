@@ -47,6 +47,10 @@ class EmailLogResponse(BaseModel):
     parsed_action: str | None = None
     confidence: float | None = None
     matched_application_id: uuid.UUID | None = None
+    source_provider: str = "webhook"
+    source_message_id: str | None = None
+    source_thread_id: str | None = None
+    source_received_at: datetime | None = None
     company_extracted: str | None = None
     job_title_extracted: str | None = None
     processed_at: datetime

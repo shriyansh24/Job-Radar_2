@@ -83,6 +83,7 @@ class WorkdayBrowserAdapter:
                     page_reached=page_num + 1,
                     steps=steps,
                     screenshots=screenshots,
+                    review_items=self._build_review_items(),
                 )
 
             step_result = await self._fill_current_page(wizard_step, resume_path)
@@ -104,6 +105,7 @@ class WorkdayBrowserAdapter:
             page_reached=self._current_step,
             steps=steps,
             screenshots=screenshots,
+            review_items=self._build_review_items(),
         )
 
     async def _query_shadow(self, selector: str) -> list[Any]:
@@ -169,3 +171,11 @@ class WorkdayBrowserAdapter:
     async def _take_screenshot(self) -> bytes:
         """Take a full-page screenshot for review."""
         return await self._executor.take_screenshot()
+
+    def _build_review_items(self) -> list[str]:
+        items = ["Manual confirmation required on the Workday review step."]
+        for field in self._missed_total:
+            message = f"Provide value for '{field}'"
+            if message not in items:
+                items.append(message)
+        return items

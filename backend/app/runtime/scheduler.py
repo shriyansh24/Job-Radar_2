@@ -19,6 +19,7 @@ from app.runtime.queue import (
     shutdown_queue_pool,
     startup_queue_pool,
 )
+from app.runtime.telemetry import record_queue_telemetry
 from app.shared.logging import setup_logging
 from app.workers.scheduler import create_scheduler
 
@@ -61,6 +62,7 @@ def _clear_ready() -> None:
 async def _record_health() -> None:
     queue_pool = await startup_queue_pool()
     queue_snapshots = await get_queue_snapshots(queue_pool)
+    captured_at = datetime.now(UTC).isoformat()
     queue_pressures = {
         queue_name: snapshot.queue_pressure for queue_name, snapshot in queue_snapshots.items()
     }
@@ -71,7 +73,7 @@ async def _record_health() -> None:
     overall_alert = derive_overall_alert(queue_alerts)
     payload = " ".join(
         [
-            f"{datetime.now(UTC).isoformat()}",
+            captured_at,
             "scheduler_running=1",
             f"overall_pressure={overall_pressure}",
             f"overall_alert={overall_alert}",
@@ -95,6 +97,7 @@ async def _record_health() -> None:
     )
     ttl_ms = (_scheduler_healthcheck_interval_seconds() + 5) * 1000
     await queue_pool.psetex(_scheduler_healthcheck_key(), ttl_ms, payload.encode())
+    await record_queue_telemetry(queue_pool, queue_snapshots, captured_at=captured_at)
 
 
 async def _clear_health() -> None:

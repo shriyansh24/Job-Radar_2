@@ -30,3 +30,5 @@ frontend/e2e/
 - `theme-matrix/route-theme-matrix.spec.ts` is the desktop route-family check for all 8 theme combinations across home, communications, setup, prepare, intelligence, operations, search, and settings.
 - `flows/shell-responsive.spec.ts` is the shell behavior check for desktop, tablet, and phone chrome without screenshot assertions.
 - `frontend/playwright.config.ts` is intentionally serial (`fullyParallel: false`, `workers: 1`) because the suite is deterministic when Playwright owns the `webServer` lifecycle.
+- `npm run e2e` now owns both the Vite server and the backend API lifecycle. It reuses an already-running backend on `127.0.0.1:8000` when one exists; otherwise it runs `alembic upgrade head` and starts the API before the browser suite begins.
+- The backend bootstrap still requires reachable Postgres and Redis settings. When those services are missing or misconfigured, the suite now fails at startup with a direct dependency error instead of surfacing `ECONNREFUSED` through the Vite proxy.

@@ -36,10 +36,11 @@ class EmbeddingService:
                 from sentence_transformers import SentenceTransformer
 
                 self._model = SentenceTransformer("all-MiniLM-L6-v2")
-            except ImportError:
+            except Exception as exc:
                 logger.warning(
-                    "sentence_transformers_not_installed",
+                    "sentence_transformers_unavailable",
                     hint="pip install sentence-transformers",
+                    error=str(exc),
                 )
                 return None
 

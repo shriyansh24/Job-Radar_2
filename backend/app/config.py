@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     # Auth
     secret_key: str = DEFAULT_SECRET_KEY
+    jwt_signing_key: str = ""
+    credential_encryption_key: str = ""
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
@@ -66,6 +68,31 @@ class Settings(BaseSettings):
     ]
     trusted_hosts: list[str] = ["localhost", "127.0.0.1", "backend", "test"]
     operator_emails: list[str] = []
+    frontend_base_url: str = "http://localhost:5173"
+
+    # Google / Gmail
+    google_oauth_client_id: str = ""
+    google_oauth_client_secret: str = ""
+    google_oauth_redirect_uri: str = "http://localhost:8000/api/v1/settings/integrations/google/callback"
+    google_gmail_sync_query: str = (
+        "newer_than:30d -category:promotions -category:social -category:forums"
+    )
+    google_gmail_sync_max_messages: int = 25
+
+    # Auth audit sink
+    auth_audit_stream_enabled: bool = False
+    auth_audit_stream_key: str = "jobradar:auth-audit"
+    auth_audit_stream_maxlen: int = 1000
+
+    # Queue telemetry and alert routing
+    queue_telemetry_stream_key: str = "jobradar:queue-telemetry"
+    queue_telemetry_stream_maxlen: int = 2000
+    queue_alert_stream_key: str = "jobradar:queue-alerts"
+    queue_alert_stream_maxlen: int = 1000
+    queue_alert_state_key: str = "jobradar:queue-alert-state"
+    queue_alert_webhook_url: str = ""
+    queue_alert_webhook_timeout_seconds: float = 5.0
+    admin_runtime_event_limit: int = 20
 
     # Intel GPU acceleration (optional - requires openvino or ipex)
     intel_gpu_enabled: bool = False
@@ -75,17 +102,39 @@ class Settings(BaseSettings):
     api_rate_limit_per_minute: int = 120
     login_rate_limit_per_minute: int = 10
 
+    @property
+    def effective_jwt_signing_key(self) -> str:
+        return self.jwt_signing_key.strip() or self.secret_key.strip()
+
+    @property
+    def effective_credential_encryption_key(self) -> str:
+        return self.credential_encryption_key.strip() or self.secret_key.strip()
+
 
 def validate_runtime_settings(settings: Settings) -> None:
     normalized_origins = [origin.strip() for origin in settings.cors_origins if origin.strip()]
     normalized_operator_emails = [
         email.strip().lower() for email in settings.operator_emails if email.strip()
     ]
+    effective_jwt_signing_key = settings.effective_jwt_signing_key
+    effective_credential_encryption_key = settings.effective_credential_encryption_key
 
-    if settings.secret_key == DEFAULT_SECRET_KEY and not settings.debug:
+    if effective_jwt_signing_key == DEFAULT_SECRET_KEY and not settings.debug:
         raise RuntimeError(
-            "JR_SECRET_KEY is using the default value. Set a secure secret key "
-            "or enable JR_DEBUG for local-only development."
+            "JR_SECRET_KEY / JR_JWT_SIGNING_KEY is using the default value. "
+            "Set a secure signing key or enable JR_DEBUG for local-only development."
+        )
+    if not settings.debug and not settings.credential_encryption_key.strip():
+        raise RuntimeError(
+            "JR_CREDENTIAL_ENCRYPTION_KEY must be set outside debug mode."
+        )
+    if (
+        not settings.debug
+        and effective_credential_encryption_key == effective_jwt_signing_key
+    ):
+        raise RuntimeError(
+            "JR_CREDENTIAL_ENCRYPTION_KEY must differ from JR_SECRET_KEY / "
+            "JR_JWT_SIGNING_KEY outside debug mode."
         )
     if not settings.database_url:
         raise RuntimeError("JR_DATABASE_URL must be set.")
@@ -137,6 +186,35 @@ def validate_runtime_settings(settings: Settings) -> None:
         raise RuntimeError("JR_API_RATE_LIMIT_PER_MINUTE must be greater than zero.")
     if settings.login_rate_limit_per_minute <= 0:
         raise RuntimeError("JR_LOGIN_RATE_LIMIT_PER_MINUTE must be greater than zero.")
+    if settings.google_gmail_sync_max_messages <= 0:
+        raise RuntimeError("JR_GOOGLE_GMAIL_SYNC_MAX_MESSAGES must be greater than zero.")
+    if settings.auth_audit_stream_enabled:
+        if not settings.auth_audit_stream_key.strip():
+            raise RuntimeError("JR_AUTH_AUDIT_STREAM_KEY must not be empty when enabled.")
+        if settings.auth_audit_stream_maxlen <= 0:
+            raise RuntimeError("JR_AUTH_AUDIT_STREAM_MAXLEN must be greater than zero.")
+    if not settings.queue_telemetry_stream_key.strip():
+        raise RuntimeError("JR_QUEUE_TELEMETRY_STREAM_KEY must not be empty.")
+    if settings.queue_telemetry_stream_maxlen <= 0:
+        raise RuntimeError("JR_QUEUE_TELEMETRY_STREAM_MAXLEN must be greater than zero.")
+    if not settings.queue_alert_stream_key.strip():
+        raise RuntimeError("JR_QUEUE_ALERT_STREAM_KEY must not be empty.")
+    if settings.queue_alert_stream_maxlen <= 0:
+        raise RuntimeError("JR_QUEUE_ALERT_STREAM_MAXLEN must be greater than zero.")
+    if not settings.queue_alert_state_key.strip():
+        raise RuntimeError("JR_QUEUE_ALERT_STATE_KEY must not be empty.")
+    if settings.queue_alert_webhook_url.strip():
+        parsed_alert_webhook = urlparse(settings.queue_alert_webhook_url)
+        if parsed_alert_webhook.scheme not in {"http", "https"} or not parsed_alert_webhook.netloc:
+            raise RuntimeError(
+                "JR_QUEUE_ALERT_WEBHOOK_URL must use a full http(s) URL when configured."
+            )
+    if settings.queue_alert_webhook_timeout_seconds <= 0:
+        raise RuntimeError(
+            "JR_QUEUE_ALERT_WEBHOOK_TIMEOUT_SECONDS must be greater than zero."
+        )
+    if settings.admin_runtime_event_limit <= 0:
+        raise RuntimeError("JR_ADMIN_RUNTIME_EVENT_LIMIT must be greater than zero.")
 
 
 settings = Settings()

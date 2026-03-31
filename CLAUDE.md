@@ -15,6 +15,7 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Frontend: React 19, Vite 6, TypeScript, Tailwind CSS v4, Zustand, React Query
 - Auth: cookie-based access and refresh tokens
 - Scraping: ATS registry, target-based scheduler, browser pool, tier router, page crawler
+- Runtime observability: Redis-backed queue telemetry history, queue alert transitions, optional queue alert webhook routing, and Admin-visible auth audit events
 - CI: dependency checks, backend lint/tests, frontend audit/lint/tests/build
 - Current UI: reference-first command-center shell with shared primitives under `frontend/src/components/system`, a `frontend/system.md` design source of truth, shadowless buttons, and routed workspace groupings for `Home`, `Discover`, `Execute`, `Prepare`, `Intelligence`, and `Operations`
 - Test layout: frontend Vitest suites live under `frontend/src/tests/`, browser suites live under `frontend/e2e/`, and backend pytest suites are moving toward explicit `contracts/`, `infra/`, `migrations/`, `security/`, and `workers/` lanes
@@ -43,11 +44,12 @@ Use `docs/research/00-index.md` only for future-planning context.
 - Containerized dev proxy override: `VITE_API_PROXY_TARGET=http://backend:8000`
 
 ## Branch Context
-- Active migration branch in this workspace: `codex/ui-changes`.
+- Active branch in this workspace: `main`.
 
 ## Current State Summary (2026-03-27)
 - Frontend: reference-first UI migration is implemented, the shared system is flatter and shadowless on controls, the largest routed pages have been broken into smaller component groups, and the slop-copy cleanup pass is already integrated into login, settings, dashboard, jobs, pipeline, and copilot.
-- Backend: targeted auth/settings/admin/vault integration tests pass locally.
+- Backend: targeted auth/settings/admin/vault integration tests pass locally, and the broader recovered runtime/search/resume/auto-apply slices are merged into `main`.
+- Queue runtime: the scheduler writes queue telemetry samples and alert transitions into Redis-backed history streams, and the Admin runtime summary reads those histories back for operators.
 - Browser QA: the latest authenticated route sweep is current and representative captures live under `.claude/ui-captures/`.
 - Local Postgres schema was upgraded from Alembic revision `005` to `head` during QA so the settings/integration surfaces match the live schema.
 - The audit ledger remains at `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.

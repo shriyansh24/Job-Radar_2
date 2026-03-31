@@ -9,10 +9,13 @@ from app.auth.models import User
 from app.auto_apply.form_learning import FormLearningService
 from app.auto_apply.schemas import (
     ApplySingleRequest,
+    ApplySingleResponse,
+    AutoApplyPauseResponse,
     AutoApplyProfileCreate,
     AutoApplyProfileResponse,
     AutoApplyProfileUpdate,
     AutoApplyStatsResponse,
+    AutoApplyTriggerResponse,
     FieldMappingRuleResponse,
     RuleCreate,
     RuleResponse,
@@ -118,33 +121,33 @@ async def list_runs(
 ) -> list[RunResult]:
     svc = AutoApplyService(db)
     items = await svc.list_runs(user.id)
-    return [RunResult.model_validate(r) for r in items]
+    return [svc.serialize_run(r) for r in items]
 
 
-@router.post("/run")
+@router.post("/run", response_model=AutoApplyTriggerResponse, response_model_exclude_none=True)
 async def trigger_run(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> AutoApplyTriggerResponse:
     svc = AutoApplyService(db)
     return await svc.trigger_run(user.id)
 
 
-@router.post("/apply-single")
+@router.post("/apply-single", response_model=ApplySingleResponse, response_model_exclude_none=True)
 async def apply_single(
     data: ApplySingleRequest,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> ApplySingleResponse:
     svc = AutoApplyService(db)
     return await svc.apply_single(data.job_id, user.id)
 
 
-@router.post("/pause")
+@router.post("/pause", response_model=AutoApplyPauseResponse)
 async def pause_auto_apply(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> AutoApplyPauseResponse:
     svc = AutoApplyService(db)
     return await svc.pause(user.id)
 

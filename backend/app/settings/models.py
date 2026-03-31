@@ -4,7 +4,16 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import JSON as JSONB  # Use JSON for SQLite compat; works on PG too
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -19,6 +28,9 @@ class SavedSearch(Base):
     filters: Mapped[dict] = mapped_column(JSONB, nullable=False)
     alert_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_matched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_match_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -33,7 +45,14 @@ class UserIntegrationSecret(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     provider: Mapped[str] = mapped_column(String(50), nullable=False)
-    secret_value: Mapped[str] = mapped_column(Text, nullable=False)
+    auth_type: Mapped[str] = mapped_column(String(20), default="api_key", nullable=False)
+    secret_value: Mapped[str | None] = mapped_column(Text)
+    secret_json: Mapped[dict | None] = mapped_column(JSONB)
+    account_email: Mapped[str | None] = mapped_column(String(320))
+    scopes: Mapped[list[str] | None] = mapped_column(JSONB)
+    last_validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

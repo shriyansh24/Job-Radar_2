@@ -92,9 +92,12 @@ async def test_check_saved_search_alerts_creates_notification_for_new_matches(
     refreshed_search = await db_session.get(SavedSearch, saved_search.id)
 
     assert notification is not None
-    assert notification.notification_type == "alert"
-    assert notification.title == "New jobs for 'Backend roles'"
+    assert notification.notification_type == "saved_search_alert"
+    assert notification.title == "Saved search: Backend roles"
     assert notification.link == "/jobs?q=Engineer"
     assert refreshed_search is not None
     assert refreshed_search.last_checked_at is not None
+    assert refreshed_search.last_matched_at is not None
+    assert refreshed_search.last_match_count == 1
+    assert refreshed_search.last_error is None
     assert refreshed_search.last_checked_at > now - timedelta(minutes=1)

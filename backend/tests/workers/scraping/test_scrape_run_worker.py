@@ -57,6 +57,7 @@ def _job(
 def _service_with_scraper(scraper: ScraperPort) -> ScrapingService:
     svc = ScrapingService.__new__(ScrapingService)
     svc.db = MagicMock()
+    svc.db.commit = AsyncMock(return_value=None)
     svc.settings = _settings()
     svc._scrapers = {scraper.source_name: scraper}
     svc._rate_limiters = {scraper.source_name: TokenBucketLimiter(rate=1.0, burst=5)}

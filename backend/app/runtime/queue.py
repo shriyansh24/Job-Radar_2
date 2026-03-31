@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import re
 import time
 from dataclasses import dataclass
@@ -13,17 +12,27 @@ import structlog
 from arq.connections import ArqRedis, RedisSettings, create_pool
 
 from app.config import settings
+from app.runtime import job_context, queue_state
 
 logger = structlog.get_logger()
 
 _queue_pool: ArqRedis | None = None
 _queue_pool_lock = asyncio.Lock()
-VALID_QUEUE_PRESSURES = frozenset({"nominal", "elevated", "saturated"})
-VALID_QUEUE_ALERTS = frozenset({"clear", "watch", "backlog", "stalled"})
+JOB_METADATA_TTL_SECONDS = job_context.JOB_METADATA_TTL_SECONDS
+VALID_QUEUE_PRESSURES = queue_state.VALID_QUEUE_PRESSURES
+VALID_QUEUE_ALERTS = queue_state.VALID_QUEUE_ALERTS
 _CORRELATION_ID_SANITIZER = re.compile(r"[^A-Za-z0-9_-]+")
-SCRAPING_QUEUE = "arq:queue:scraping"
-ANALYSIS_QUEUE = "arq:queue:analysis"
-OPS_QUEUE = "arq:queue:ops"
+SCRAPING_QUEUE = queue_state.SCRAPING_QUEUE
+ANALYSIS_QUEUE = queue_state.ANALYSIS_QUEUE
+OPS_QUEUE = queue_state.OPS_QUEUE
+QUEUE_PRESSURE_THRESHOLDS = queue_state.QUEUE_PRESSURE_THRESHOLDS
+QUEUE_ALERT_AGE_THRESHOLDS_SECONDS = queue_state.QUEUE_ALERT_AGE_THRESHOLDS_SECONDS
+QueueSnapshot = queue_state.QueueSnapshot
+classify_queue_pressure = queue_state.classify_queue_pressure
+summarize_queue_pressures = queue_state.summarize_queue_pressures
+classify_queue_alert = queue_state.classify_queue_alert
+derive_overall_pressure = queue_state.derive_overall_pressure
+derive_overall_alert = queue_state.derive_overall_alert
 
 
 def _get_queue_names() -> list[str]:
@@ -32,7 +41,7 @@ def _get_queue_names() -> list[str]:
     return get_queue_names()
 
 
-def _get_registered_job(job_name: str):
+def _get_registered_job(job_name: str) -> Any:
     from app.runtime.job_registry import get_registered_job
 
     return get_registered_job(job_name)
@@ -75,29 +84,16 @@ async def sync_worker_queue_metrics_for_queue(
         health_interval_seconds=health_interval_seconds,
     )
 
-QUEUE_PRESSURE_THRESHOLDS: dict[str, tuple[int, int]] = {
-    SCRAPING_QUEUE: (10, 25),
-    ANALYSIS_QUEUE: (20, 50),
-    OPS_QUEUE: (5, 15),
-}
 
-QUEUE_ALERT_AGE_THRESHOLDS_SECONDS: dict[str, tuple[int, int]] = {
-    SCRAPING_QUEUE: (300, 1200),
-    ANALYSIS_QUEUE: (180, 900),
-    OPS_QUEUE: (120, 600),
-}
-JOB_METADATA_KEY_PREFIX = "jobradar:queue-job-metadata"
-JOB_METADATA_TTL_SECONDS = 3600
-QUEUE_CORRELATION_METADATA_FIELD = "_queue_correlation_id"
+def _current_unix_ms() -> int:
+    return int(time.time() * 1000)
 
 
-@dataclass(frozen=True)
-class QueueSnapshot:
-    queue_name: str
-    queue_depth: int
-    queue_pressure: str
-    oldest_job_age_seconds: int
-    queue_alert: str
+def _score_to_oldest_job_age_seconds(score: float | int | None) -> int:
+    if score is None:
+        return 0
+    age_ms = max(_current_unix_ms() - int(score), 0)
+    return age_ms // 1000
 
 
 @dataclass(frozen=True)
@@ -179,64 +175,6 @@ async def get_queue_depths(queue_pool: ArqRedis | None = None) -> dict[str, int]
     return dict(zip(queue_names, queue_depths, strict=True))
 
 
-def classify_queue_pressure(queue_name: str, depth: int) -> str:
-    elevated_threshold, saturated_threshold = QUEUE_PRESSURE_THRESHOLDS.get(queue_name, (10, 25))
-    if depth >= saturated_threshold:
-        return "saturated"
-    if depth >= elevated_threshold:
-        return "elevated"
-    return "nominal"
-
-
-def summarize_queue_pressures(queue_depths: dict[str, int]) -> dict[str, str]:
-    return {
-        queue_name: classify_queue_pressure(queue_name, depth)
-        for queue_name, depth in queue_depths.items()
-    }
-
-
-def classify_queue_alert(queue_name: str, *, pressure: str, oldest_job_age_seconds: int) -> str:
-    watch_age_seconds, stalled_age_seconds = QUEUE_ALERT_AGE_THRESHOLDS_SECONDS.get(
-        queue_name, (180, 900)
-    )
-    if oldest_job_age_seconds >= stalled_age_seconds:
-        return "stalled"
-    if pressure == "saturated":
-        return "backlog"
-    if pressure == "elevated" or oldest_job_age_seconds >= watch_age_seconds:
-        return "watch"
-    return "clear"
-
-
-def derive_overall_pressure(queue_pressures: dict[str, str]) -> str:
-    if "saturated" in queue_pressures.values():
-        return "saturated"
-    if "elevated" in queue_pressures.values():
-        return "elevated"
-    return "nominal"
-
-
-def derive_overall_alert(queue_alerts: dict[str, str]) -> str:
-    if "stalled" in queue_alerts.values():
-        return "stalled"
-    if "backlog" in queue_alerts.values():
-        return "backlog"
-    if "watch" in queue_alerts.values():
-        return "watch"
-    return "clear"
-
-
-def _current_unix_ms() -> int:
-    return int(time.time() * 1000)
-
-
-def _score_to_oldest_job_age_seconds(score: float | int | None) -> int:
-    if score is None:
-        return 0
-    age_ms = max(_current_unix_ms() - int(score), 0)
-    return age_ms // 1000
-
-
 async def _get_oldest_queue_score(queue_name: str, queue_pool: ArqRedis) -> float | int | None:
     if not hasattr(queue_pool, "zrange"):
         return None
@@ -297,18 +235,7 @@ def sanitize_correlation_id(correlation_id: str | None) -> str | None:
 
 
 def build_job_metadata_key(job_id: str) -> str:
-    return f"{JOB_METADATA_KEY_PREFIX}:{job_id}"
-
-
-def _build_job_metadata_payload(
-    *,
-    correlation_id: str | None,
-    job_kwargs: dict[str, object],
-) -> dict[str, object]:
-    payload = dict(job_kwargs)
-    if correlation_id is not None:
-        payload[QUEUE_CORRELATION_METADATA_FIELD] = correlation_id
-    return payload
+    return job_context.build_job_metadata_key(job_id)
 
 
 async def enqueue_registered_job(
@@ -351,15 +278,16 @@ async def enqueue_registered_job(
         raise RuntimeError(
             f"Queue enqueue for job '{job.name}' returned an invalid job id; treating as failure."
         )
-    metadata_payload = _build_job_metadata_payload(
-        correlation_id=normalized_correlation_id,
+    effective_queue_correlation_id = normalized_correlation_id or enqueued_job_id
+    if job_context.build_job_metadata_payload(
+        correlation_id=effective_queue_correlation_id,
         job_kwargs=job_kwargs,
-    )
-    if metadata_payload:
-        await cast(Any, queue_pool).set(
-            build_job_metadata_key(enqueued_job_id),
-            json.dumps(metadata_payload, separators=(",", ":"), sort_keys=True),
-            ex=JOB_METADATA_TTL_SECONDS,
+    ):
+        await job_context.store_job_metadata(
+            queue_pool,
+            job_id=enqueued_job_id,
+            correlation_id=effective_queue_correlation_id,
+            job_kwargs=job_kwargs,
         )
     after_snapshot = await capture_queue_snapshot(job.queue_name, queue_pool)
     await sync_worker_queue_metrics_for_queue(
@@ -373,7 +301,7 @@ async def enqueue_registered_job(
         queue_name=job.queue_name,
         enqueued_job_id=enqueued_job_id,
         queue_job_id=enqueued_job_id,
-        queue_correlation_id=normalized_correlation_id,
+        queue_correlation_id=effective_queue_correlation_id,
         queue_depth_before=before_snapshot.queue_depth,
         queue_depth_after=after_snapshot.queue_depth,
         queue_pressure_before=before_snapshot.queue_pressure,
@@ -394,7 +322,7 @@ async def enqueue_registered_job(
         queue_pressure_before=before_snapshot.queue_pressure,
         queue_pressure_after=after_snapshot.queue_pressure,
         queue_job_id=enqueued_job_id,
-        queue_correlation_id=normalized_correlation_id,
+        queue_correlation_id=effective_queue_correlation_id,
         oldest_job_age_seconds_before=before_snapshot.oldest_job_age_seconds,
         oldest_job_age_seconds_after=after_snapshot.oldest_job_age_seconds,
         queue_alert_before=before_snapshot.queue_alert,
