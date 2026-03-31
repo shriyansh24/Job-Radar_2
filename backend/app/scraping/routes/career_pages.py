@@ -11,7 +11,7 @@ from app.auth.models import User
 from app.dependencies import get_current_user, get_db
 from app.scraping.constants import PRIORITY_INTERVALS
 from app.scraping.control.classifier import classify_target
-from app.scraping.models import ScrapeTarget
+from app.scraping.models import ScrapeAttempt, ScrapeTarget
 from app.scraping.schemas import CareerPageCreate, CareerPageResponse, CareerPageUpdate
 from app.shared.errors import NotFoundError, ValidationError
 
@@ -125,5 +125,13 @@ async def delete_career_page(
     target = result.scalar_one_or_none()
     if target is None:
         raise NotFoundError(f"Career page {page_id} not found")
+    existing_attempt = await db.scalar(
+        select(ScrapeAttempt.id).where(ScrapeAttempt.target_id == target.id).limit(1)
+    )
+    if existing_attempt is not None:
+        raise ValidationError(
+            "Career page targets with scrape history cannot be deleted. "
+            "Disable or release the target instead."
+        )
     await db.delete(target)
     await db.commit()

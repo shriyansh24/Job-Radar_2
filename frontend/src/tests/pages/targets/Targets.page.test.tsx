@@ -211,9 +211,15 @@ describe("Targets page", () => {
     expect(scraperMocks.createCareerPage).not.toHaveBeenCalled();
   });
 
-  it("exposes edit and delete actions for career-page targets", async () => {
+  it("exposes edit and delete actions for career-page targets without scrape history", async () => {
     const user = userEvent.setup();
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    scraperMocks.getTarget.mockResolvedValueOnce({
+      data: {
+        ...defaultTargetDetail,
+        recent_attempts: [],
+      },
+    });
 
     renderWithProviders(<Targets />);
     await user.click(await screen.findByText("Acme"));
@@ -234,6 +240,20 @@ describe("Targets page", () => {
     expect(scraperMocks.deleteCareerPage).toHaveBeenCalledWith("target-1");
 
     confirmSpy.mockRestore();
+  });
+
+  it("hides delete actions when scrape history already exists", async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<Targets />);
+    await user.click(await screen.findByText("Acme"));
+
+    expect(
+      screen.queryByRole("button", { name: /Delete career page/i })
+    ).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(/Delete is unavailable after scrape history exists/i)
+    ).toBeInTheDocument();
   });
 
   it("normalizes edited career-page urls before submit", async () => {

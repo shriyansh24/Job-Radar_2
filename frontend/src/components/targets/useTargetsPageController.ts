@@ -27,6 +27,8 @@ function blankCareerPageDraft(): CareerPageDraft {
     url: "",
     companyName: "",
     enabled: true,
+    canDelete: false,
+    deleteBlockedReason: null,
   };
 }
 
@@ -141,6 +143,11 @@ function useTargetsPageController() {
       url: target.url,
       companyName: target.company_name ?? "",
       enabled: target.enabled,
+      canDelete: (target.recent_attempts?.length ?? 0) === 0,
+      deleteBlockedReason:
+        (target.recent_attempts?.length ?? 0) === 0
+          ? null
+          : "Delete is unavailable once the target has scrape history.",
     });
     setCareerPageModalOpen(true);
   }

@@ -11,6 +11,8 @@ type CareerPageDraft = {
   url: string;
   companyName: string;
   enabled: boolean;
+  canDelete: boolean;
+  deleteBlockedReason: string | null;
 };
 
 type CareerPageModalProps = {
@@ -108,15 +110,22 @@ function CareerPageModal({
         <div className="flex flex-wrap justify-between gap-2">
           <div>
             {isEditing && onDelete ? (
-              <Button
-                type="button"
-                variant="danger"
-                loading={deleting}
-                onClick={() => onDelete(localDraft)}
-                icon={<Trash size={16} weight="bold" />}
-              >
-                Delete career page
-              </Button>
+              localDraft.canDelete ? (
+                <Button
+                  type="button"
+                  variant="danger"
+                  loading={deleting}
+                  onClick={() => onDelete(localDraft)}
+                  icon={<Trash size={16} weight="bold" />}
+                >
+                  Delete career page
+                </Button>
+              ) : (
+                <p className="max-w-sm text-sm text-muted-foreground">
+                  {localDraft.deleteBlockedReason ??
+                    "Delete is unavailable once the target has scrape history."}
+                </p>
+              )
             ) : null}
           </div>
           <div className="flex gap-2">
