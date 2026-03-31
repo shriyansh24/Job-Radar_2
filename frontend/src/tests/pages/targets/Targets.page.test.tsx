@@ -191,9 +191,24 @@ describe("Targets page", () => {
     await user.click(screen.getByRole("button", { name: /Create career page/i }));
 
     expect(scraperMocks.createCareerPage).toHaveBeenCalledWith({
-      url: "https://careers.acme.example",
+      url: "https://careers.acme.example/",
       company_name: "Acme",
     });
+  });
+
+  it("rejects invalid career-page urls in the operator modal", async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<Targets />);
+
+    await user.click(await screen.findByRole("button", { name: /Add Career Page/i }));
+    await user.type(screen.getByLabelText(/Career page URL/i), "javascript:alert(1)");
+    await user.click(screen.getByRole("button", { name: /Create career page/i }));
+
+    expect(
+      await screen.findByText(/Career page URL must be a valid "http:\/\/" or "https:\/\/" URL/i)
+    ).toBeInTheDocument();
+    expect(scraperMocks.createCareerPage).not.toHaveBeenCalled();
   });
 
   it("exposes edit and delete actions for career-page targets", async () => {
@@ -219,5 +234,22 @@ describe("Targets page", () => {
     expect(scraperMocks.deleteCareerPage).toHaveBeenCalledWith("target-1");
 
     confirmSpy.mockRestore();
+  });
+
+  it("normalizes edited career-page urls before submit", async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<Targets />);
+    await user.click(await screen.findByText("Acme"));
+    await user.click(await screen.findByRole("button", { name: /Edit career page/i }));
+    await user.clear(screen.getByLabelText(/Career page URL/i));
+    await user.type(screen.getByLabelText(/Career page URL/i), "https://careers.acme.example");
+    await user.click(screen.getByRole("button", { name: /Save changes/i }));
+
+    expect(scraperMocks.updateCareerPage).toHaveBeenCalledWith("target-1", {
+      url: "https://careers.acme.example/",
+      company_name: "Acme",
+      enabled: true,
+    });
   });
 });

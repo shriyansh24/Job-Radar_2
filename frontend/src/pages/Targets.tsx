@@ -6,6 +6,7 @@ import {
   UploadSimple,
   Warning,
 } from "@phosphor-icons/react";
+import { AxiosError } from "axios";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { scraperApi, type TargetListParams, type TargetWithAttempts } from "../api/scraper";
@@ -23,6 +24,19 @@ import { TargetDetail } from "../components/targets/TargetDetail";
 import { TargetImportModal } from "../components/targets/TargetImportModal";
 
 const pageSize = 50;
+
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof AxiosError) {
+    const detail = error.response?.data?.detail;
+    if (typeof detail === "string" && detail.trim()) {
+      return detail;
+    }
+  }
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  return fallback;
+}
 
 function blankCareerPageDraft(): CareerPageDraft {
   return {
@@ -85,7 +99,7 @@ export default function Targets() {
       setCareerPageModalOpen(false);
       setCareerPageDraft(blankCareerPageDraft());
     },
-    onError: () => toast("error", "Failed to create career page"),
+    onError: (error) => toast("error", getApiErrorMessage(error, "Failed to create career page")),
   });
 
   const updateCareerPageMutation = useMutation({
@@ -104,7 +118,7 @@ export default function Targets() {
       setCareerPageModalOpen(false);
       setCareerPageDraft(blankCareerPageDraft());
     },
-    onError: () => toast("error", "Failed to update career page"),
+    onError: (error) => toast("error", getApiErrorMessage(error, "Failed to update career page")),
   });
 
   const deleteCareerPageMutation = useMutation({
@@ -119,7 +133,7 @@ export default function Targets() {
       setCareerPageModalOpen(false);
       setCareerPageDraft(blankCareerPageDraft());
     },
-    onError: () => toast("error", "Failed to delete career page"),
+    onError: (error) => toast("error", getApiErrorMessage(error, "Failed to delete career page")),
   });
 
   const list = targets?.items ?? [];

@@ -1,5 +1,6 @@
 import { CheckCircle, Trash } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { getSafeExternalUrl } from "../../lib/utils";
 import Modal from "../ui/Modal";
 import Input from "../ui/Input";
 import Toggle from "../ui/Toggle";
@@ -32,15 +33,18 @@ function CareerPageModal({
   onDelete,
 }: CareerPageModalProps) {
   const [localDraft, setLocalDraft] = useState(draft);
+  const [urlError, setUrlError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setLocalDraft(draft);
+      setUrlError(null);
     }
   }, [draft, open]);
 
   const isEditing = Boolean(localDraft.id);
   const trimmedUrl = localDraft.url.trim();
+  const normalizedUrl = trimmedUrl ? getSafeExternalUrl(trimmedUrl) : null;
 
   return (
     <Modal
@@ -53,9 +57,13 @@ function CareerPageModal({
         className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
+          if (!normalizedUrl) {
+            setUrlError('Career page URL must be a valid "http://" or "https://" URL');
+            return;
+          }
           onSave({
             ...localDraft,
-            url: trimmedUrl,
+            url: normalizedUrl,
             companyName: localDraft.companyName.trim(),
           });
         }}
@@ -64,9 +72,11 @@ function CareerPageModal({
           label="Career page URL"
           type="url"
           value={localDraft.url}
-          onChange={(event) =>
-            setLocalDraft((current) => ({ ...current, url: event.target.value }))
-          }
+          error={urlError ?? undefined}
+          onChange={(event) => {
+            setUrlError(null);
+            setLocalDraft((current) => ({ ...current, url: event.target.value }));
+          }}
           placeholder="https://company.example/careers"
         />
         <Input
