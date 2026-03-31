@@ -22,6 +22,8 @@
 - The current authenticated browser sweep is up to date, and representative screenshots now live in `.claude/ui-captures/`.
 - Local Postgres schema was upgraded from Alembic revision `005` to `head` during QA so the settings/integration surfaces match the current schema.
 - Settings integrations are no longer API-key-only: Google OAuth is now a live provider, and Gmail-first sync feeds the existing email and pipeline modules through both operator-triggered sync and the scheduled `gmail_sync` job on the `ops` worker lane.
+- The Admin runtime summary now exposes queue pressure, queue alerts, worker counters, recent queue telemetry history, queue alert transitions, and recent auth audit events so operators can inspect runtime history without leaving the app.
+- Queue telemetry history and alert transitions are captured in Redis-backed streams; the repo-owned signal is the capture and in-app visibility, while long-window deployment alerting remains external.
 - The audit ledger remains `39 FIXED / 1 VERIFIED_CLEAN / 4 STALE / 0 OPEN / 0 PARTIAL`.
 
 ## Latest Validation Snapshot
@@ -68,6 +70,7 @@
 - Treat `docs/repo-hardening/` as the normalization and traceability audit trail while the hardening pass is in progress, not as a replacement for current-state.
 - Use `CLAUDE.md` and `AGENTS.md` for working conventions, not product-state discovery.
 - Treat `05-ops-and-ci.md` as the canonical runtime-status page for the live ARQ queue topology, worker services, and deployment-facing follow-through.
+- Treat `docs/repo-hardening/12-deployment-ops-runbook.md` as the operator guide for queue history, auth audit history, alert routing, and restore checks.
 - The current workspace includes the reference-first frontend migration: shared shell, responsive navigation, light/dark parity, backend-aligned settings/admin/resume/salary/search-expansion surfaces, decomposed page families, and a completed browser-verified cleanup pass over the main routed surfaces.
 - The current routed app now includes live analytics pattern panels plus backend-backed resume template preview and PDF export flows on the main branch, not just branch-only recovery code.
 - Gmail-first Google integration is part of the current live scope; Calendar, Drive, and `googleworkspace/cli` are not.

@@ -137,6 +137,7 @@ async def test_scheduler_record_health_includes_pressure_summary(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: list[tuple[str, int, bytes]] = []
+    telemetry_calls: list[tuple[object, object, str]] = []
 
     class _FakeQueuePool:
         async def psetex(self, key: str, ttl_ms: int, payload: bytes) -> None:
@@ -200,6 +201,15 @@ async def test_scheduler_record_health_includes_pressure_summary(
         "_scheduler_healthcheck_interval_seconds",
         lambda: 15,
     )
+    async def _fake_record_queue_telemetry(
+        queue_pool: object,
+        queue_snapshots: object,
+        *,
+        captured_at: str,
+    ) -> None:
+        telemetry_calls.append((queue_pool, queue_snapshots, captured_at))
+
+    monkeypatch.setattr(scheduler_runtime, "record_queue_telemetry", _fake_record_queue_telemetry)
 
     await scheduler_runtime._record_health()
 
@@ -218,6 +228,7 @@ async def test_scheduler_record_health_includes_pressure_summary(
     assert "arq:queue:ops=16" in payload_text
     assert "arq:queue:ops.pressure=saturated" in payload_text
     assert "arq:queue:ops.alert=stalled" in payload_text
+    assert len(telemetry_calls) == 1
 
 
 @pytest.mark.asyncio

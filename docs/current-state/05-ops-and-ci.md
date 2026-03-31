@@ -43,7 +43,18 @@
   - the scheduled `gmail_sync` worker job on the `ops` lane
 - The `worker-ops` lane now owns outbound Google OAuth + Gmail API traffic in addition to digest, alert, cleanup, and operator-support jobs.
 - The Admin page now includes a repo-owned runtime summary that surfaces queue depth, queue pressure, queue alerts, worker-lane counters, and the configured auth audit stream so operators can see the same queue state the scheduler and workers are using.
+- The Admin runtime summary now also includes recent queue telemetry samples, queue alert transition events, and recent auth audit events so operators can inspect the queue history and auth lifecycle without leaving the app.
+- Queue telemetry and queue alerts are written into Redis-backed streams by the scheduler runtime. The repo-owned keys are:
+  - `JR_QUEUE_TELEMETRY_STREAM_KEY`
+  - `JR_QUEUE_TELEMETRY_STREAM_MAXLEN`
+  - `JR_QUEUE_ALERT_STREAM_KEY`
+  - `JR_QUEUE_ALERT_STREAM_MAXLEN`
+  - `JR_QUEUE_ALERT_STATE_KEY`
+  - `JR_QUEUE_ALERT_WEBHOOK_URL`
+  - `JR_QUEUE_ALERT_WEBHOOK_TIMEOUT_SECONDS`
+  - `JR_ADMIN_RUNTIME_EVENT_LIMIT`
 - The auth audit stream is controlled by `JR_AUTH_AUDIT_STREAM_ENABLED`, `JR_AUTH_AUDIT_STREAM_KEY`, and `JR_AUTH_AUDIT_STREAM_MAXLEN`; when enabled, the sink is best-effort and does not block auth flows if Redis is unavailable.
+- The auth audit sink now feeds both the structured log stream and a Redis-backed audit stream when enabled; Admin runtime exposes the configured sink plus recent auth audit events so operators can see auth lifecycle transitions without grepping logs.
 
 ## Validation Commands
 
@@ -104,7 +115,7 @@
 - `migration-safety.yml` replays Alembic on clean Postgres and runs the full `backend/tests/migrations/` lane.
 - `migration-safety.yml` now runs the full `backend/tests/migrations/` lane and uploads `alembic history --verbose` output on failure for replay debugging.
 - `codeql.yml` and `dependency-review.yml` remain enabled.
-- Auth lifecycle events now emit to a dedicated Redis-backed audit stream in addition to the structured log stream. The repo-owned piece is the sink emission and the Admin visibility of the configured stream; deployment-level routing for that stream is still external.
+- Auth lifecycle events now emit to a dedicated Redis-backed audit stream in addition to the structured log stream. The repo-owned piece is the sink emission plus the Admin visibility of recent auth audit events and queue/runtime state; deployment-level routing for the stream remains external if durable long-window retention is desired.
 
 ## Branch Protection Assumptions
 - Treat `main` as PR-only.

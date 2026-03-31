@@ -61,8 +61,8 @@ async def test_change_password_logs_success_without_sensitive_fields(
 ):
     logger = Mock()
     monkeypatch.setattr(auth_service, "logger", logger)
-    audit_sink = AsyncMock()
-    monkeypatch.setattr(auth_service, "publish_auth_audit_event", audit_sink)
+    audit_sink = Mock()
+    monkeypatch.setattr(auth_service, "emit_auth_audit_event", audit_sink)
     db = SimpleNamespace(commit=AsyncMock(), refresh=AsyncMock())
     user = SimpleNamespace(
         id=uuid4(),
@@ -86,7 +86,11 @@ async def test_change_password_logs_success_without_sensitive_fields(
     assert fields["token_version"] == 1
     assert "password" not in fields
     assert "email" not in fields
-    audit_sink.assert_awaited_once_with("auth_password_changed", user_id=str(user.id))
+    audit_sink.assert_called_once_with(
+        "auth_password_changed",
+        user_id=str(user.id),
+        token_version=1,
+    )
 
 
 @pytest.mark.asyncio
@@ -95,8 +99,8 @@ async def test_change_password_logs_failure_without_sensitive_fields(
 ):
     logger = Mock()
     monkeypatch.setattr(auth_service, "logger", logger)
-    audit_sink = AsyncMock()
-    monkeypatch.setattr(auth_service, "publish_auth_audit_event", audit_sink)
+    audit_sink = Mock()
+    monkeypatch.setattr(auth_service, "emit_auth_audit_event", audit_sink)
     db = SimpleNamespace(commit=AsyncMock(), refresh=AsyncMock())
     user = SimpleNamespace(
         id=uuid4(),
@@ -120,9 +124,10 @@ async def test_change_password_logs_failure_without_sensitive_fields(
     assert fields["reason"] == "invalid_current_password"
     assert "password" not in fields
     assert "email" not in fields
-    audit_sink.assert_awaited_once_with(
+    audit_sink.assert_called_once_with(
         "auth_password_change_failed",
         user_id=str(user.id),
+        token_version=0,
         reason="invalid_current_password",
     )
 
@@ -132,9 +137,9 @@ async def test_register_user_emits_auth_audit_event(
     monkeypatch: pytest.MonkeyPatch,
 ):
     logger = Mock()
-    audit_sink = AsyncMock()
+    audit_sink = Mock()
     monkeypatch.setattr(auth_service, "logger", logger)
-    monkeypatch.setattr(auth_service, "publish_auth_audit_event", audit_sink)
+    monkeypatch.setattr(auth_service, "emit_auth_audit_event", audit_sink)
     db = SimpleNamespace(
         execute=AsyncMock(return_value=SimpleNamespace(scalar_one_or_none=lambda: None)),
         add=Mock(),
@@ -150,7 +155,7 @@ async def test_register_user_emits_auth_audit_event(
     user = await auth_service.register_user(db, data)
 
     assert user.email == "register-audit@example.com"
-    audit_sink.assert_awaited_once()
+    audit_sink.assert_called_once()
     assert audit_sink.call_args.args[0] == "auth_register_succeeded"
 
 
@@ -159,9 +164,9 @@ async def test_authenticate_user_emits_failure_audit_event(
     monkeypatch: pytest.MonkeyPatch,
 ):
     logger = Mock()
-    audit_sink = AsyncMock()
+    audit_sink = Mock()
     monkeypatch.setattr(auth_service, "logger", logger)
-    monkeypatch.setattr(auth_service, "publish_auth_audit_event", audit_sink)
+    monkeypatch.setattr(auth_service, "emit_auth_audit_event", audit_sink)
     user = SimpleNamespace(
         id=uuid4(),
         email="auth-failure@example.com",
@@ -176,7 +181,7 @@ async def test_authenticate_user_emits_failure_audit_event(
     with pytest.raises(AuthError):
         await auth_service.authenticate_user(db, "auth-failure@example.com", "wrong")
 
-    audit_sink.assert_awaited_once_with("auth_login_failed", reason="invalid_credentials")
+    audit_sink.assert_called_once_with("auth_login_failed", reason="invalid_credentials")
 
 
 def test_clear_auth_cookies_logs_session_clear_without_sensitive_fields(
@@ -184,6 +189,8 @@ def test_clear_auth_cookies_logs_session_clear_without_sensitive_fields(
 ):
     logger = Mock()
     monkeypatch.setattr(auth_service, "logger", logger)
+    audit_sink = Mock()
+    monkeypatch.setattr(auth_service, "emit_auth_audit_event", audit_sink)
     response = Response()
     user_id = str(uuid4())
 
@@ -203,3 +210,13 @@ def test_clear_auth_cookies_logs_session_clear_without_sensitive_fields(
     assert "refresh_token" not in fields
     assert "access_token" not in fields
     assert "email" not in fields
+    audit_sink.assert_called_once_with(
+        "auth_session_cleared",
+        user_id=user_id,
+        reason="logout",
+        cleared_cookie_names=[
+            "jr_access_token",
+            "jr_refresh_token",
+            "jr_csrf_token",
+        ],
+    )

@@ -5,6 +5,22 @@ import { SectionHeader } from "../system/SectionHeader";
 import { Surface } from "../system/Surface";
 import type { RuntimeStatus } from "../../api/admin";
 
+function summarizeHistoryItems(items: number, label: string) {
+  return `${items} ${label}`;
+}
+
+function queuePressureVariant(pressure?: string) {
+  if (pressure === "saturated") return "danger";
+  if (pressure === "elevated") return "warning";
+  return "default";
+}
+
+function queueAlertVariant(alert?: string) {
+  if (alert === "stalled" || alert === "backlog") return "danger";
+  if (alert === "watch") return "warning";
+  return "default";
+}
+
 export function AdminRuntimePanel({
   loading,
   runtime,
@@ -15,12 +31,16 @@ export function AdminRuntimePanel({
   const queueSummary = runtime?.queue_summary;
   const queueRows = queueSummary?.queues ?? [];
   const workerRows = runtime?.worker_metrics ?? [];
+  const recentQueueSamples = runtime?.recent_queue_samples ?? [];
+  const recentQueueAlerts = runtime?.recent_queue_alerts ?? [];
+  const recentAuthEvents = runtime?.recent_auth_audit_events ?? [];
+  const queueAlertRouting = runtime?.queue_alert_routing;
 
   return (
     <Surface className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)]">
       <SectionHeader
         title="Runtime signals"
-        description="Queue pressure, worker heartbeats, and the dedicated auth audit sink."
+        description="Queue pressure, worker heartbeats, recent queue events, and auth audit state."
       />
 
       {loading ? (
@@ -53,7 +73,7 @@ export function AdminRuntimePanel({
                 Queue pressure
               </p>
               <div className="mt-4">
-                <Badge variant={queueSummary?.overall_pressure === "stalled" ? "danger" : "warning"}>
+                <Badge variant={queuePressureVariant(queueSummary?.overall_pressure)}>
                   {queueSummary?.overall_pressure ?? "unknown"}
                 </Badge>
               </div>
@@ -63,7 +83,7 @@ export function AdminRuntimePanel({
                 Queue alert
               </p>
               <div className="mt-4">
-                <Badge variant={queueSummary?.overall_alert === "critical" ? "danger" : "default"}>
+                <Badge variant={queueAlertVariant(queueSummary?.overall_alert)}>
                   {queueSummary?.overall_alert ?? "unknown"}
                 </Badge>
               </div>
@@ -142,16 +162,17 @@ export function AdminRuntimePanel({
                         <Badge variant={worker.available ? "success" : "danger"}>
                           {worker.available ? "Heartbeat" : "Missing"}
                         </Badge>
-                        {worker.queue_alert ? <Badge variant="default">{worker.queue_alert}</Badge> : null}
+                        {worker.queue_alert ? (
+                          <Badge variant={queueAlertVariant(worker.queue_alert)}>{worker.queue_alert}</Badge>
+                        ) : null}
                       </div>
                       <p className="mt-2 text-sm text-text-secondary">
-                        Queue {worker.queue_name ?? "unknown"} · depth {worker.queue_depth ?? 0} · pressure{" "}
-                        {worker.queue_pressure ?? "unknown"} · oldest{" "}
-                        {worker.oldest_job_age_seconds ?? 0}s
+                        Queue {worker.queue_name ?? "unknown"} | depth {worker.queue_depth ?? 0} | pressure{" "}
+                        {worker.queue_pressure ?? "unknown"} | oldest {worker.oldest_job_age_seconds ?? 0}s
                       </p>
                       <p className="mt-1 text-xs text-text-muted">
-                        completed {worker.queue_job_completed_total ?? 0} · failed{" "}
-                        {worker.queue_job_failed_total ?? 0} · retried {worker.retry_scheduled_total ?? 0} · exhausted{" "}
+                        completed {worker.queue_job_completed_total ?? 0} | failed{" "}
+                        {worker.queue_job_failed_total ?? 0} | retried {worker.retry_scheduled_total ?? 0} | exhausted{" "}
                         {worker.retry_exhausted_total ?? 0}
                       </p>
                     </div>
@@ -161,14 +182,98 @@ export function AdminRuntimePanel({
             </div>
           </div>
 
+          <div className="grid gap-6 xl:grid-cols-3">
+            <div className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] px-4 py-4">
+              <p className="text-sm font-bold uppercase tracking-[0.18em]">Queue routing</p>
+              <p className="mt-2 text-sm text-text-secondary">
+                {queueAlertRouting?.webhook_enabled
+                  ? `Alerts route to ${queueAlertRouting.stream_key} and ${queueAlertRouting.webhook_host ?? "a webhook"}`
+                  : `Alerts stay in ${queueAlertRouting?.stream_key ?? "the queue alert stream"}.`}
+              </p>
+              <p className="mt-1 text-xs text-text-muted">
+                Stream maxlen {queueAlertRouting?.stream_maxlen ?? 0}
+              </p>
+            </div>
+
+            <div className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] px-4 py-4">
+              <p className="text-sm font-bold uppercase tracking-[0.18em]">Queue samples</p>
+              <p className="mt-2 text-sm text-text-secondary">
+                {summarizeHistoryItems(recentQueueSamples.length, "samples")}
+              </p>
+              <div className="mt-3 space-y-3">
+                {recentQueueSamples.length === 0 ? (
+                  <p className="text-xs text-text-muted">No queue samples recorded yet.</p>
+                ) : (
+                  recentQueueSamples.slice(0, 3).map((sample) => (
+                    <div key={sample.stream_id} className="border border-border px-3 py-2">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-text-muted">
+                        {sample.captured_at}
+                      </p>
+                      <p className="mt-1 text-sm text-text-secondary">
+                        {sample.overall_pressure} | {sample.overall_alert}
+                      </p>
+                      <p className="mt-1 text-xs text-text-muted">
+                        {sample.queues.map((queue) => queue.queue_name).join(" | ") || "No queues"}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] px-4 py-4">
+              <p className="text-sm font-bold uppercase tracking-[0.18em]">Auth audit</p>
+              <p className="mt-2 text-sm text-text-secondary">
+                {summarizeHistoryItems(recentAuthEvents.length, "events")}
+              </p>
+              <div className="mt-3 space-y-3">
+                {recentAuthEvents.length === 0 ? (
+                  <p className="text-xs text-text-muted">No auth audit events captured yet.</p>
+                ) : (
+                  recentAuthEvents.slice(0, 3).map((event) => (
+                    <div key={event.stream_id} className="border border-border px-3 py-2">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-text-muted">
+                        {event.timestamp}
+                      </p>
+                      <p className="mt-1 text-sm text-text-secondary">{event.event}</p>
+                      <p className="mt-1 text-xs text-text-muted">
+                        {event.user_id ?? "anon"}
+                        {event.reason ? ` | ${event.reason}` : ""}
+                        {event.request_id ? ` | ${event.request_id}` : ""}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="border-2 border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] px-4 py-4">
-            <p className="text-sm font-bold uppercase tracking-[0.18em]">Auth audit sink</p>
+            <p className="text-sm font-bold uppercase tracking-[0.18em]">Queue alerts</p>
             <p className="mt-2 text-sm text-text-secondary">
-              {runtime?.auth_audit_sink.enabled
-                ? `Redis stream ${runtime?.auth_audit_sink.stream_key} is enabled with maxlen ${runtime?.auth_audit_sink.maxlen}.`
-                : "Auth audit streaming is disabled."}
+              {summarizeHistoryItems(recentQueueAlerts.length, "events")}
             </p>
-            <p className="mt-1 text-xs text-text-muted">Captured at {runtime?.captured_at ?? "unknown"}.</p>
+            <div className="mt-3 space-y-3">
+              {recentQueueAlerts.length === 0 ? (
+                <p className="text-xs text-text-muted">No queue alert transitions yet.</p>
+              ) : (
+                recentQueueAlerts.slice(0, 3).map((alert) => (
+                  <div key={alert.stream_id} className="border border-border px-3 py-2">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-text-muted">
+                      {alert.captured_at}
+                    </p>
+                    <p className="mt-1 text-sm text-text-secondary">
+                      {alert.scope}
+                      {alert.queue_name ? ` | ${alert.queue_name}` : ""}
+                    </p>
+                      <p className="mt-1 text-xs text-text-muted">
+                      {alert.previous_pressure} to {alert.current_pressure} | {alert.previous_alert} to{" "}
+                      {alert.current_alert}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}

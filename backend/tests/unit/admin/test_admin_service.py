@@ -126,7 +126,63 @@ async def test_runtime_status_reports_queue_and_audit_state(
                     "retry_scheduled_total": "2",
                     "queue_job_completed_total": "7",
                     "queue_job_failed_total": "1",
-                }
+                },
+                "jobradar:queue-alert-state": {
+                    "overall_pressure": "elevated",
+                    "overall_alert": "watch",
+                    "arq:queue:scraping:pressure": "elevated",
+                    "arq:queue:scraping:alert": "watch",
+                },
+            }
+            self.streams = {
+                "jobradar:queue-telemetry": [
+                    (
+                        "1-0",
+                        {
+                            "captured_at": "2026-03-31T11:59:00+00:00",
+                            "overall_pressure": "elevated",
+                            "overall_alert": "watch",
+                            "queues_json": json.dumps(
+                                [
+                                    {
+                                        "queue_name": "arq:queue:scraping",
+                                        "queue_depth": 3,
+                                        "queue_pressure": "elevated",
+                                        "oldest_job_age_seconds": 45,
+                                        "queue_alert": "watch",
+                                    }
+                                ]
+                            ),
+                        },
+                    )
+                ],
+                "jobradar:queue-alerts": [
+                    (
+                        "2-0",
+                        {
+                            "captured_at": "2026-03-31T12:00:00+00:00",
+                            "scope": "queue",
+                            "queue_name": "arq:queue:scraping",
+                            "previous_pressure": "nominal",
+                            "current_pressure": "elevated",
+                            "previous_alert": "clear",
+                            "current_alert": "watch",
+                            "queue_depth": "3",
+                            "oldest_job_age_seconds": "45",
+                        },
+                    )
+                ],
+                "jobradar:auth-audit": [
+                    (
+                        "3-0",
+                        {
+                            "event": "auth_login_succeeded",
+                            "timestamp": "2026-03-31T12:00:00+00:00",
+                            "user_id": "user-1",
+                            "auth_source": "password",
+                        },
+                    )
+                ],
             }
 
         async def ping(self) -> None:
@@ -134,6 +190,16 @@ async def test_runtime_status_reports_queue_and_audit_state(
 
         async def hgetall(self, key: str) -> dict[str, str]:
             return self.hashes.get(key, {})
+
+        async def xrevrange(
+            self,
+            key: str,
+            _max: str,
+            _min: str,
+            *,
+            count: int,
+        ) -> list[tuple[str, dict[str, str]]]:
+            return self.streams.get(key, [])[:count]
 
     fake_pool = _FakeRedis()
 
@@ -173,6 +239,18 @@ async def test_runtime_status_reports_queue_and_audit_state(
             auth_audit_stream_enabled=True,
             auth_audit_stream_key="jobradar:auth-audit",
             auth_audit_stream_maxlen=1000,
+            queue_alert_stream_key="jobradar:queue-alerts",
+            queue_alert_stream_maxlen=1000,
+            queue_alert_webhook_url="",
+            admin_runtime_event_limit=5,
+        ),
+    )
+    monkeypatch.setattr(
+        "app.shared.audit_sink.settings",
+        SimpleNamespace(
+            auth_audit_stream_enabled=True,
+            auth_audit_stream_key="jobradar:auth-audit",
+            auth_audit_stream_maxlen=1000,
         ),
     )
 
@@ -185,3 +263,7 @@ async def test_runtime_status_reports_queue_and_audit_state(
     assert runtime["queue_summary"]["overall_pressure"] == "elevated"
     assert runtime["worker_metrics"][0]["queue_name"] == "arq:queue:scraping"
     assert runtime["auth_audit_sink"]["enabled"] is True
+    assert runtime["queue_alert_routing"]["stream_key"] == "jobradar:queue-alerts"
+    assert runtime["recent_queue_samples"][0]["overall_alert"] == "watch"
+    assert runtime["recent_queue_alerts"][0]["current_alert"] == "watch"
+    assert runtime["recent_auth_audit_events"][0]["event"] == "auth_login_succeeded"

@@ -25,6 +25,7 @@ It is not the live product-state source of truth. Live repo truth still lives in
 9. `09-final-gap-report.md`
 10. `10-migration-ops.md`
 11. `11-completion-gap-analysis.md`
+12. `12-deployment-ops-runbook.md`
 
 ## What This Hub Must Produce
 - A durable evidence ledger for repo contradictions and drift
@@ -44,4 +45,4 @@ It is not the live product-state source of truth. Live repo truth still lives in
 - Phase 1 is complete: runtime/doc truth reconciliation, compose-first runtime alignment, and the first GitHub guardrail changes are landed
 - Phase 2 is materially complete: the first test-taxonomy normalization batch, committed browser lane, and branch-protection-facing workflow names are now implemented in the filesystem, runners, and docs
 - Phase 3 is active: selective capability recovery is proceeding in bounded slices rather than branch-wide merges, and the remaining runtime closure is now documented around the ARQ queue target (`scraping`, `analysis`, `ops`) instead of the older inline/subprocess-only story
-- The merge-prep working set now also includes `10-migration-ops.md` for operator-facing schema guidance and `11-completion-gap-analysis.md` for the evidence-based closure delta that accompanies the final broad integration PR
+- The merge-prep working set now also includes `10-migration-ops.md` for operator-facing schema guidance, `11-completion-gap-analysis.md` for the evidence-based closure delta that accompanies the final broad integration PR, and `12-deployment-ops-runbook.md` for runtime history, alert routing, and restore guidance
