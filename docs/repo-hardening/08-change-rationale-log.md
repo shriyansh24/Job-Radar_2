@@ -129,3 +129,22 @@ Record why major repo-hardening decisions were made, what alternatives were reje
   - `docs/repo-hardening/06-test-taxonomy.md`
 - Remaining risk:
   - the taxonomy is now stable, but some broad lanes such as `backend/tests/unit/scraping/` and a few route-owned frontend suites are still intentionally coarse and should only be split further when a concrete ownership gain exists
+
+### Adaptive parser fixture matrix and diagnosis API
+- Status: `FIXED`
+- Changed because:
+  - the scraper stack already handled selectors, JSON-LD, embedded state, and anti-bot escalation, but failures still collapsed into a generic "no jobs" outcome when a fixture did not match
+  - source-quality work needs to distinguish parser misses from JS-shell pages and Cloudflare-style blocks before further tuning is meaningful
+- Alternatives considered:
+  - add another scraper tier or broader fallback behavior
+- Why rejected:
+  - the stack already has the right runtime tiers; what was missing was an evidence-bearing diagnosis layer for the existing paths
+- Files touched:
+  - `backend/app/scraping/scrapers/adaptive_parser.py`
+  - `backend/tests/unit/scraping/test_adaptive_parser_diagnostics.py`
+  - `backend/tests/fixtures/career_pages/*`
+  - `docs/current-state/04-data-and-scraping.md`
+  - `docs/current-state/06-open-items.md`
+  - `docs/repo-hardening/01-evidence-ledger.md`
+- Remaining risk:
+  - source-specific render recovery is still external to the parser itself; the harness only makes that boundary explicit
