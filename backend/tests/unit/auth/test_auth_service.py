@@ -55,6 +55,35 @@ def test_decode_invalid_refresh_token():
         auth_service.decode_refresh_token("invalid-token")
 
 
+def test_decode_token_payload_invalid_type():
+    user_id = "test-user"
+    token = auth_service.create_access_token(user_id)
+    with pytest.raises(AuthError, match="Invalid token type"):
+        auth_service.decode_token_payload(token, expected_type="refresh")
+
+
+def test_decode_token_payload_invalid_sub(monkeypatch):
+    monkeypatch.setattr(
+        auth_service.jwt,
+        "decode",
+        lambda *args, **kwargs: {"type": "access", "sub": 123},
+    )
+    with pytest.raises(AuthError, match="Invalid token"):
+        auth_service.decode_token_payload("dummy-token", expected_type="access")
+
+
+def test_decode_token_payload_expired(monkeypatch):
+    from jwt import ExpiredSignatureError
+
+    def mock_decode(*args, **kwargs):
+        raise ExpiredSignatureError("Token expired")
+
+    monkeypatch.setattr(auth_service.jwt, "decode", mock_decode)
+
+    with pytest.raises(AuthError, match="Invalid token"):
+        auth_service.decode_token_payload("expired-token")
+
+
 @pytest.mark.asyncio
 async def test_change_password_logs_success_without_sensitive_fields(
     monkeypatch: pytest.MonkeyPatch,
