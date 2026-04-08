@@ -19,6 +19,13 @@ def test_hash_and_verify_password():
     assert not auth_service.verify_password("wrongpassword", hashed)
 
 
+def test_verify_password_with_known_hash():
+    # Hash generated with bcrypt for "mysecretpassword"
+    known_hash = "$2b$12$3zl1BmX2bM4rIlbhWMOaKOdpWw2jOWbIIqTZwJ/vbqtqgqoC9QF9."
+    assert auth_service.verify_password("mysecretpassword", known_hash)
+    assert not auth_service.verify_password("wrongpassword", known_hash)
+
+
 def test_create_access_token():
     token = auth_service.create_access_token("test-user-id", token_version=3)
     assert isinstance(token, str)
