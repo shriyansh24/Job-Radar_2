@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auto_apply.models import AutoApplyProfile, AutoApplyRule, AutoApplyRun
@@ -97,19 +97,36 @@ class AutoApplyService:
         data: RuleUpdate,
         user_id: uuid.UUID,
     ) -> AutoApplyRule:
-        result = await self.db.execute(
-            select(AutoApplyRule).where(
+        update_data = data.model_dump(exclude_unset=True)
+        if not update_data:
+            result = await self.db.execute(
+                select(AutoApplyRule).where(
+                    AutoApplyRule.id == rule_id,
+                    AutoApplyRule.user_id == user_id,
+                )
+            )
+            rule = result.scalar_one_or_none()
+            if rule is None:
+                raise NotFoundError(f"Auto-apply rule {rule_id} not found")
+            logger.info("auto_apply_rule_updated", rule_id=str(rule_id), user_id=str(user_id))
+            return rule
+
+        stmt = (
+            update(AutoApplyRule)
+            .where(
                 AutoApplyRule.id == rule_id,
                 AutoApplyRule.user_id == user_id,
             )
+            .values(**update_data)
+            .returning(AutoApplyRule)
         )
+        result = await self.db.execute(stmt)
         rule = result.scalar_one_or_none()
+
         if rule is None:
             raise NotFoundError(f"Auto-apply rule {rule_id} not found")
-        for key, value in data.model_dump(exclude_unset=True).items():
-            setattr(rule, key, value)
+
         await self.db.commit()
-        await self.db.refresh(rule)
         logger.info("auto_apply_rule_updated", rule_id=str(rule_id), user_id=str(user_id))
         return rule
 
