@@ -19,6 +19,15 @@ def test_hash_and_verify_password():
     assert not auth_service.verify_password("wrongpassword", hashed)
 
 
+def test_create_csrf_token():
+    token = auth_service.create_csrf_token()
+    assert isinstance(token, str)
+    assert len(token) == 32
+
+    token2 = auth_service.create_csrf_token()
+    assert token != token2
+
+
 def test_create_access_token():
     token = auth_service.create_access_token("test-user-id", token_version=3)
     assert isinstance(token, str)
