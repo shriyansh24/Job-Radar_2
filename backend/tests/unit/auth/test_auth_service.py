@@ -19,6 +19,14 @@ def test_hash_and_verify_password():
     assert not auth_service.verify_password("wrongpassword", hashed)
 
 
+def test_get_token_version():
+    assert auth_service.get_token_version(SimpleNamespace()) == 0
+    assert auth_service.get_token_version(SimpleNamespace(token_version=None)) == 0
+    assert auth_service.get_token_version(SimpleNamespace(token_version=0)) == 0
+    assert auth_service.get_token_version(SimpleNamespace(token_version=5)) == 5
+    assert auth_service.get_token_version(SimpleNamespace(token_version="3")) == 3
+
+
 def test_create_access_token():
     token = auth_service.create_access_token("test-user-id", token_version=3)
     assert isinstance(token, str)
