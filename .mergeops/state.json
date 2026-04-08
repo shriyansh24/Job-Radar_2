@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "queue": [],
+  "in_progress": null,
+  "completed": [],
+  "skipped": [],
+  "failed": {},
+  "run_history": [],
+  "current_main_sha": null,
+  "last_successful_main_sha": null,
+  "active_prs": {}
+}
