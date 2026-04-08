@@ -1,21 +1,42 @@
 from __future__ import annotations
 
 import uuid
+from typing import TypeVar
 
 import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.copilot.models import CoverLetter
+from app.database import Base
 from app.resume.models import ResumeVersion
 from app.shared.errors import NotFoundError
 
 logger = structlog.get_logger()
 
 
+T = TypeVar("T", bound=Base)
+
+
 class VaultService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
+
+    async def _get_resource(
+        self,
+        model: type[T],
+        resource_id: uuid.UUID,
+        user_id: uuid.UUID,
+        resource_name: str,
+    ) -> T:
+        query = select(model).where(
+            getattr(model, "id") == resource_id,
+            getattr(model, "user_id") == user_id,
+        )
+        resource = await self.db.scalar(query)
+        if resource is None:
+            raise NotFoundError(detail=f"{resource_name} {resource_id} not found")
+        return resource
 
     async def list_resumes(self, user_id: uuid.UUID) -> list[ResumeVersion]:
         """Return all resume versions for the given user."""
@@ -44,14 +65,7 @@ class VaultService:
             resume_id=str(resume_id),
             user_id=str(user_id),
         )
-        query = select(ResumeVersion).where(
-            ResumeVersion.id == resume_id,
-            ResumeVersion.user_id == user_id,
-        )
-        resume = await self.db.scalar(query)
-        if resume is None:
-            raise NotFoundError(detail=f"Resume {resume_id} not found")
-
+        resume = await self._get_resource(ResumeVersion, resume_id, user_id, "Resume")
         resume.label = label or None
         await self.db.commit()
         await self.db.refresh(resume)
@@ -70,14 +84,7 @@ class VaultService:
             letter_id=str(letter_id),
             user_id=str(user_id),
         )
-        query = select(CoverLetter).where(
-            CoverLetter.id == letter_id,
-            CoverLetter.user_id == user_id,
-        )
-        letter = await self.db.scalar(query)
-        if letter is None:
-            raise NotFoundError(detail=f"Cover letter {letter_id} not found")
-
+        letter = await self._get_resource(CoverLetter, letter_id, user_id, "Cover letter")
         if content is not None:
             letter.content = content
 
@@ -92,13 +99,7 @@ class VaultService:
             resume_id=str(resume_id),
             user_id=str(user_id),
         )
-        query = select(ResumeVersion).where(
-            ResumeVersion.id == resume_id,
-            ResumeVersion.user_id == user_id,
-        )
-        resume = await self.db.scalar(query)
-        if resume is None:
-            raise NotFoundError(detail=f"Resume {resume_id} not found")
+        resume = await self._get_resource(ResumeVersion, resume_id, user_id, "Resume")
         await self.db.delete(resume)
         await self.db.commit()
 
@@ -109,12 +110,6 @@ class VaultService:
             letter_id=str(letter_id),
             user_id=str(user_id),
         )
-        query = select(CoverLetter).where(
-            CoverLetter.id == letter_id,
-            CoverLetter.user_id == user_id,
-        )
-        letter = await self.db.scalar(query)
-        if letter is None:
-            raise NotFoundError(detail=f"Cover letter {letter_id} not found")
+        letter = await self._get_resource(CoverLetter, letter_id, user_id, "Cover letter")
         await self.db.delete(letter)
         await self.db.commit()
