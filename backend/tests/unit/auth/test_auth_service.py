@@ -50,6 +50,26 @@ def test_normalize_auth_reason_falls_back_to_slugified_code() -> None:
     )
 
 
+def test_normalize_auth_reason_edge_cases() -> None:
+    # Test None input
+    assert auth_service.normalize_auth_reason(None) == "auth_error"
+    assert auth_service.normalize_auth_reason(None, fallback="custom_fallback") == "custom_fallback"
+
+    # Test empty string / whitespace
+    assert auth_service.normalize_auth_reason("") == "auth_error"
+    assert auth_service.normalize_auth_reason("   ") == "auth_error"
+
+    # Test object with .detail attribute
+    class ExceptionWithDetail:
+        detail = "Some error detail"
+
+    assert auth_service.normalize_auth_reason(ExceptionWithDetail()) == "some_error_detail"
+
+    # Test string that normalizes to empty (only special chars)
+    assert auth_service.normalize_auth_reason("!!!***@@@") == "auth_error"
+    assert auth_service.normalize_auth_reason("---", fallback="custom") == "custom"
+
+
 def test_decode_invalid_refresh_token():
     with pytest.raises(AuthError):
         auth_service.decode_refresh_token("invalid-token")
