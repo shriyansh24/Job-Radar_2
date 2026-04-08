@@ -24,25 +24,22 @@ class AnalyticsService:
         self.db = db
 
     async def get_overview(self, user_id: uuid.UUID) -> OverviewStats:
-        # Total jobs
-        total_jobs = (
-            await self.db.scalar(
-                select(func.count()).select_from(
-                    select(Job).where(Job.user_id == user_id, Job.is_active.is_(True)).subquery()
-                )
-            )
-            or 0
-        )
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
 
-        # Total applications
-        total_apps = (
-            await self.db.scalar(
-                select(func.count()).select_from(
-                    select(Application).where(Application.user_id == user_id).subquery()
-                )
+        # Execute a single aggregated query for job metrics
+        from sqlalchemy import case
+        job_stats_row = (await self.db.execute(
+            select(
+                func.sum(case((Job.is_active.is_(True), 1), else_=0)).label("total"),
+                func.sum(case((Job.scraped_at >= today_start, 1), else_=0)).label("today"),
+                func.sum(case((Job.is_enriched.is_(True), 1), else_=0)).label("enriched"),
             )
-            or 0
-        )
+            .where(Job.user_id == user_id)
+        )).first()
+
+        total_jobs = int(job_stats_row.total or 0) if job_stats_row else 0
+        jobs_today = int(job_stats_row.today or 0) if job_stats_row else 0
+        enriched = int(job_stats_row.enriched or 0) if job_stats_row else 0
 
         # Applications by status
         status_rows = await self.db.execute(
@@ -50,43 +47,15 @@ class AnalyticsService:
             .where(Application.user_id == user_id)
             .group_by(Application.status)
         )
-        apps_by_status = {row[0]: row[1] for row in status_rows}
+        apps_by_status = dict(status_rows.all())
+
+        # Calculate total applications directly from status counts
+        total_apps = sum(apps_by_status.values())
 
         # Response rate (apps that moved past 'applied')
         responded = sum(v for k, v in apps_by_status.items() if k not in ("saved", "applied"))
         applied_total = sum(v for k, v in apps_by_status.items() if k != "saved")
         response_rate = (responded / applied_total * 100) if applied_total > 0 else 0.0
-
-        # Jobs scraped today
-        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-        jobs_today = (
-            await self.db.scalar(
-                select(func.count()).select_from(
-                    select(Job)
-                    .where(
-                        Job.user_id == user_id,
-                        Job.scraped_at >= today_start,
-                    )
-                    .subquery()
-                )
-            )
-            or 0
-        )
-
-        # Enriched
-        enriched = (
-            await self.db.scalar(
-                select(func.count()).select_from(
-                    select(Job)
-                    .where(
-                        Job.user_id == user_id,
-                        Job.is_enriched.is_(True),
-                    )
-                    .subquery()
-                )
-            )
-            or 0
-        )
 
         total_interviews = apps_by_status.get("interviewing", 0) + apps_by_status.get(
             "screening", 0
@@ -195,7 +164,7 @@ class AnalyticsService:
             .where(Application.user_id == user_id)
             .group_by(Application.status)
         )
-        counts = {row[0]: row[1] for row in rows}
+        counts = dict(rows.all())
         stages = ["saved", "applied", "screening", "interviewing", "offer", "accepted"]
         return [
             FunnelStageData(stage=stage.capitalize(), count=counts.get(stage, 0))
