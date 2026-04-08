@@ -26,6 +26,18 @@ def test_create_access_token():
     payload = auth_service.decode_token_payload(token, expected_type="access")
     assert payload["sub"] == "test-user-id"
     assert payload["ver"] == 3
+    assert payload["type"] == "access"
+    assert "exp" in payload
+    assert payload["jti"]
+
+def test_create_access_token_default_version():
+    token = auth_service.create_access_token("test-user-id")
+    assert isinstance(token, str)
+    payload = auth_service.decode_token_payload(token, expected_type="access")
+    assert payload["sub"] == "test-user-id"
+    assert payload["ver"] == 0
+    assert payload["type"] == "access"
+    assert "exp" in payload
     assert payload["jti"]
 
 
