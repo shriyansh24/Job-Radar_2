@@ -111,6 +111,7 @@ async def import_targets(
     imported = 0
     skipped = 0
     errors: list[str] = []
+    to_add: list[ScrapeTarget] = []
 
     for item in items:
         url = item.url.strip()
@@ -150,8 +151,11 @@ async def import_targets(
             schedule_interval_m=schedule_interval_m,
             next_scheduled_at=datetime.now(UTC),
         )
-        db.add(target)
+        to_add.append(target)
         imported += 1
+
+    if to_add:
+        db.add_all(to_add)
 
     await db.commit()
     return ScrapeTargetImportResponse(imported=imported, skipped=skipped, errors=errors)
