@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import get_db
 from backend.models import Job
 from backend.schemas import JobBase, JobListResponse, JobUpdate
+from backend.utils.db import escape_like_term
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -46,20 +47,22 @@ async def list_jobs(
             query = query.where(Job.job_id.in_(matching_ids))
         else:
             # Fallback to LIKE search
+            escaped_q = escape_like_term(q)
             query = query.where(
                 or_(
-                    Job.title.ilike(f"%{q}%"),
-                    Job.company_name.ilike(f"%{q}%"),
-                    Job.description_clean.ilike(f"%{q}%"),
+                    Job.title.ilike(f"%{escaped_q}%", escape="\\"),
+                    Job.company_name.ilike(f"%{escaped_q}%", escape="\\"),
+                    Job.description_clean.ilike(f"%{escaped_q}%", escape="\\"),
                 )
             )
 
     if location:
+        escaped_location = escape_like_term(location)
         query = query.where(
             or_(
-                Job.location_city.ilike(f"%{location}%"),
-                Job.location_state.ilike(f"%{location}%"),
-                Job.location_country.ilike(f"%{location}%"),
+                Job.location_city.ilike(f"%{escaped_location}%", escape="\\"),
+                Job.location_state.ilike(f"%{escaped_location}%", escape="\\"),
+                Job.location_country.ilike(f"%{escaped_location}%", escape="\\"),
             )
         )
 
@@ -92,10 +95,12 @@ async def list_jobs(
     if tech_stack:
         stacks = [s.strip() for s in tech_stack.split(",")]
         for stack in stacks:
-            query = query.where(Job.tech_stack.ilike(f"%{stack}%"))
+            escaped_stack = escape_like_term(stack)
+            query = query.where(Job.tech_stack.ilike(f"%{escaped_stack}%", escape="\\"))
 
     if company:
-        query = query.where(Job.company_name.ilike(f"%{company}%"))
+        escaped_company = escape_like_term(company)
+        query = query.where(Job.company_name.ilike(f"%{escaped_company}%", escape="\\"))
 
     if is_starred is not None:
         query = query.where(Job.is_starred == is_starred)
