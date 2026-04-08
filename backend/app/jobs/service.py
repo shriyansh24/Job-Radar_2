@@ -7,7 +7,7 @@ import uuid
 from datetime import UTC, datetime
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enrichment.embedding import EmbeddingService
@@ -92,13 +92,27 @@ class JobService:
         return job
 
     async def update_job(self, job_id: str, data: JobUpdate, user_id: uuid.UUID) -> Job:
-        job = await self.get_job(job_id, user_id)
         update_data = data.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(job, key, value)
-        job.updated_at = datetime.now(UTC)
+        if not update_data:
+            return await self.get_job(job_id, user_id)
+
+        update_data["updated_at"] = datetime.now(UTC)
+
+        # Performance optimization: Replace select->setattr->commit->refresh (3 DB roundtrips)
+        # with a single update().returning() query (1 DB roundtrip).
+        stmt = (
+            update(Job)
+            .where(Job.id == job_id, Job.user_id == user_id)
+            .values(**update_data)
+            .returning(Job)
+        )
+        result = await self.db.execute(stmt)
+        job = result.scalar_one_or_none()
+
+        if job is None:
+            raise NotFoundError(f"Job {job_id} not found")
+
         await self.db.commit()
-        await self.db.refresh(job)
         return job
 
     async def delete_job(self, job_id: str, user_id: uuid.UUID) -> None:
