@@ -220,3 +220,26 @@ def test_clear_auth_cookies_logs_session_clear_without_sensitive_fields(
             "jr_csrf_token",
         ],
     )
+
+def test_decode_token_payload_wrong_expected_type():
+    token = auth_service.create_access_token("test-user-id", token_version=1)
+    with pytest.raises(AuthError, match="Invalid token type"):
+        auth_service.decode_token_payload(token, expected_type="refresh")
+
+def test_decode_token_payload_missing_sub(monkeypatch: pytest.MonkeyPatch):
+    import jwt
+    from app.config import settings
+    # create a token missing sub
+    payload = {
+        "exp": auth_service.datetime.now(auth_service.timezone.utc) + auth_service.timedelta(minutes=15),
+        "type": "access",
+        "jti": "fake-jti",
+        "ver": 0,
+    }
+    token = jwt.encode(
+        payload,
+        settings.effective_jwt_signing_key,
+        algorithm=settings.algorithm,
+    )
+    with pytest.raises(AuthError, match="Invalid token"):
+        auth_service.decode_token_payload(token, expected_type="access")
