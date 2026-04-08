@@ -15,6 +15,17 @@ RRF_K = 60
 BM25_WEIGHT = 0.4
 SEMANTIC_WEIGHT = 0.6
 
+_BM25_BASE_QUERY = """
+SELECT id, ROW_NUMBER() OVER (
+    ORDER BY ts_rank_cd(search_vector,
+                        plainto_tsquery('english', :query)) DESC
+) AS rank
+FROM jobs
+WHERE user_id = :user_id
+  AND is_active = true
+  AND search_vector @@ plainto_tsquery('english', :query)
+"""
+
 
 @dataclass
 class HybridSearchResult:
@@ -57,16 +68,9 @@ class HybridSearchService:
 
         fetch_limit = limit * 3
         sql = text(
-            """
+            f"""
             WITH bm25 AS (
-                SELECT id, ROW_NUMBER() OVER (
-                    ORDER BY ts_rank_cd(search_vector,
-                                        plainto_tsquery('english', :query)) DESC
-                ) AS rank
-                FROM jobs
-                WHERE user_id = :user_id
-                  AND is_active = true
-                  AND search_vector @@ plainto_tsquery('english', :query)
+                {_BM25_BASE_QUERY}
                 LIMIT :fetch_limit
             ),
             semantic AS (
@@ -135,15 +139,8 @@ class HybridSearchService:
         offset: int,
     ) -> list[HybridSearchResult]:
         sql = text(
-            """
-            SELECT id, ROW_NUMBER() OVER (
-                ORDER BY ts_rank_cd(search_vector,
-                                    plainto_tsquery('english', :query)) DESC
-            ) AS rank
-            FROM jobs
-            WHERE user_id = :user_id
-              AND is_active = true
-              AND search_vector @@ plainto_tsquery('english', :query)
+            f"""
+            {_BM25_BASE_QUERY}
             ORDER BY rank
             LIMIT :limit OFFSET :offset
             """
