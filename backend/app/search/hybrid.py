@@ -103,29 +103,27 @@ class HybridSearchService:
             """
         )
 
-        result = await self.db.execute(
-            sql,
-            {
-                "query": query,
-                "q_emb": str(query_embedding),
-                "user_id": str(user_id),
-                "fetch_limit": fetch_limit,
-                "limit": limit,
-                "offset": offset,
-                "bm25_w": self.bm25_weight,
-                "sem_w": self.semantic_weight,
-                "k": self.rrf_k,
-            },
-        )
-        return [
-            HybridSearchResult(
+        params = {
+            "query": query,
+            "q_emb": str(query_embedding),
+            "user_id": str(user_id),
+            "fetch_limit": fetch_limit,
+            "limit": limit,
+            "offset": offset,
+            "bm25_w": self.bm25_weight,
+            "sem_w": self.semantic_weight,
+            "k": self.rrf_k,
+        }
+
+        def _map_func(row: Any, _: int) -> HybridSearchResult:
+            return HybridSearchResult(
                 job_id=row.id,
                 rrf_score=float(row.rrf_score),
                 bm25_rank=row.bm25_rank,
                 semantic_rank=row.semantic_rank,
             )
-            for row in result
-        ]
+
+        return await self._execute_search_query(sql, params, _map_func)
 
     async def _bm25_only_search(
         self,
@@ -149,24 +147,22 @@ class HybridSearchService:
             """
         )
 
-        result = await self.db.execute(
-            sql,
-            {
-                "query": query,
-                "user_id": str(user_id),
-                "limit": limit,
-                "offset": offset,
-            },
-        )
-        return [
-            HybridSearchResult(
+        params = {
+            "query": query,
+            "user_id": str(user_id),
+            "limit": limit,
+            "offset": offset,
+        }
+
+        def _map_func(row: Any, _: int) -> HybridSearchResult:
+            return HybridSearchResult(
                 job_id=row.id,
                 rrf_score=self.bm25_weight * (1.0 / (self.rrf_k + row.rank)),
                 bm25_rank=int(row.rank),
                 semantic_rank=None,
             )
-            for row in result
-        ]
+
+        return await self._execute_search_query(sql, params, _map_func)
 
     async def _fallback_keyword_search(
         self,
@@ -191,24 +187,28 @@ class HybridSearchService:
             """
         )
 
-        result = await self.db.execute(
-            sql,
-            {
-                "user_id": str(user_id),
-                "pattern": like_pattern,
-                "limit": limit,
-                "offset": offset,
-            },
-        )
-        return [
-            HybridSearchResult(
+        params = {
+            "user_id": str(user_id),
+            "pattern": like_pattern,
+            "limit": limit,
+            "offset": offset,
+        }
+
+        def _map_func(row: Any, index: int) -> HybridSearchResult:
+            return HybridSearchResult(
                 job_id=row.id,
                 rrf_score=1.0 / (index + 1),
                 bm25_rank=index + 1,
                 semantic_rank=None,
             )
-            for index, row in enumerate(result)
-        ]
+
+        return await self._execute_search_query(sql, params, _map_func)
+
+    async def _execute_search_query(
+        self, sql: Any, params: dict[str, Any], map_func: Any
+    ) -> list[HybridSearchResult]:
+        result = await self.db.execute(sql, params)
+        return [map_func(row, index) for index, row in enumerate(result)]
 
     async def _embed_query(self, query: str) -> list[float] | None:
         embed_query = getattr(self.embedder, "embed_query", None)
