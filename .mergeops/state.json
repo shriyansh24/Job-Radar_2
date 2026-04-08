@@ -5,8 +5,16 @@
   "completed": [],
   "skipped": [],
   "failed": {},
-  "run_history": [],
-  "current_main_sha": null,
+  "run_history": [
+    {
+      "timestamp": "2026-04-08T06:47:47Z",
+      "status": "failed",
+      "reason": "main required checks are not green",
+      "report_path": ".mergeops\\reports\\20260408T064737Z-baseline.md",
+      "artifact_path": ".mergeops\\artifacts\\20260408T064737Z-baseline.json"
+    }
+  ],
+  "current_main_sha": "b1b3f64b92a3fb1a56ff7afd40bad8d6be402bea",
   "last_successful_main_sha": null,
   "active_prs": {}
 }
