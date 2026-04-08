@@ -245,8 +245,7 @@ async def run_import() -> None:
 
         # ---- Bulk insert ----
         print(f"\nInserting {len(new_targets)} targets into DB...")
-        for t in new_targets:
-            db.add(t)
+        db.add_all(new_targets)
         await db.commit()
         print("Commit successful.")
 
