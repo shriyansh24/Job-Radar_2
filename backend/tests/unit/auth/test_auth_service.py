@@ -38,6 +38,28 @@ def test_create_and_decode_refresh_token():
     assert payload["ver"] == 1
 
 
+def test_create_tokens(monkeypatch: pytest.MonkeyPatch):
+    user_id = "test-user-id"
+    token_version = 2
+    mock_access_token = "mock.access.token"
+    mock_refresh_token = "mock.refresh.token"
+
+    mock_create_access_token = Mock(return_value=mock_access_token)
+    mock_create_refresh_token = Mock(return_value=mock_refresh_token)
+
+    monkeypatch.setattr(auth_service, "create_access_token", mock_create_access_token)
+    monkeypatch.setattr(auth_service, "create_refresh_token", mock_create_refresh_token)
+
+    tokens = auth_service.create_tokens(user_id, token_version=token_version)
+
+    mock_create_access_token.assert_called_once_with(user_id, token_version=token_version)
+    mock_create_refresh_token.assert_called_once_with(user_id, token_version=token_version)
+
+    assert isinstance(tokens, auth_service.AuthTokens)
+    assert tokens.access_token == mock_access_token
+    assert tokens.refresh_token == mock_refresh_token
+
+
 def test_normalize_auth_reason_prefers_known_aliases() -> None:
     assert auth_service.normalize_auth_reason("Invalid token type") == "invalid_token_type"
     assert auth_service.normalize_auth_reason("Refresh token required") == "refresh_token_required"
