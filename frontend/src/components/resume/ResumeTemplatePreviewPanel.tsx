@@ -1,5 +1,6 @@
 import { DownloadSimple, Eye } from "@phosphor-icons/react";
 import type { ResumeTemplate } from "../../api/resume";
+import { sanitizeHtml } from "../../lib/sanitize";
 import { Surface } from "../system/Surface";
 import Button from "../ui/Button";
 import EmptyState from "../ui/EmptyState";
@@ -86,7 +87,7 @@ export function ResumeTemplatePreviewPanel({
           </div>
           <div
             className="mt-4 max-h-[32rem] overflow-auto border-2 border-border bg-background p-4 text-sm text-text-primary"
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) }}
           />
         </Surface>
       ) : (
