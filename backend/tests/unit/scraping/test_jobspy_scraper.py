@@ -131,11 +131,7 @@ class TestFetchJobs:
     @pytest.mark.asyncio
     async def test_limit_respected(self):
         scraper = _make_scraper()
-        rows = [_make_df_row(title=f"Job {i}", company="Co", site="indeed",
-                             job_url=f"https://co.com/{i}", location="NYC",
-                             is_remote="False", description="", job_type="",
-                             min_amount=None, max_amount=None, interval=None)
-                for i in range(20)]
+        rows = [_make_df_row(title=f"Job {i}", job_url=f"https://co.com/{i}") for i in range(20)]
         df = _MockDataFrame(rows)
         mock_module = MagicMock()
         mock_module.scrape_jobs.return_value = df
