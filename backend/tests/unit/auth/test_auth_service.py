@@ -29,6 +29,16 @@ def test_create_access_token():
     assert payload["jti"]
 
 
+def test_create_refresh_token():
+    token = auth_service.create_refresh_token("test-user-id", token_version=2)
+    assert isinstance(token, str)
+    assert len(token) > 0
+    payload = auth_service.decode_token_payload(token, expected_type="refresh")
+    assert payload["sub"] == "test-user-id"
+    assert payload["ver"] == 2
+    assert payload["jti"]
+
+
 def test_create_and_decode_refresh_token():
     user_id = "test-user-id"
     token = auth_service.create_refresh_token(user_id, token_version=1)
