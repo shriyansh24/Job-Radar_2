@@ -163,6 +163,10 @@ class TestStalenessSweep:
             db_session, user_id, status="open", is_stale=False, last_refreshed_at=old_date
         )
 
+        svc = CanonicalJobService(db_session)
+        count = await svc.run_staleness_sweep(user_id)
+        assert count == 1
+
     @pytest.mark.asyncio
     async def test_does_not_mark_recent_jobs_stale(self, db_session: AsyncSession):
         user_id = uuid.uuid4()
@@ -171,6 +175,10 @@ class TestStalenessSweep:
             db_session, user_id, status="open", is_stale=False, last_refreshed_at=recent_date
         )
 
+        svc = CanonicalJobService(db_session)
+        count = await svc.run_staleness_sweep(user_id)
+        assert count == 0
+
     @pytest.mark.asyncio
     async def test_already_stale_jobs_not_counted_twice(self, db_session: AsyncSession):
         user_id = uuid.uuid4()
@@ -178,6 +186,10 @@ class TestStalenessSweep:
         await _make_canonical_job(
             db_session, user_id, status="open", is_stale=True, last_refreshed_at=old_date
         )
+
+        svc = CanonicalJobService(db_session)
+        count = await svc.run_staleness_sweep(user_id)
+        assert count == 0
 
     @pytest.mark.asyncio
     async def test_closed_jobs_not_swept(self, db_session: AsyncSession):
