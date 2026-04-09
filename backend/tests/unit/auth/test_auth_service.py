@@ -220,3 +220,142 @@ def test_clear_auth_cookies_logs_session_clear_without_sensitive_fields(
             "jr_csrf_token",
         ],
     )
+
+
+
+def test_decode_token_payload_invalid_type():
+    user_id = "test-user"
+    token = auth_service.create_access_token(user_id)
+    with pytest.raises(AuthError, match="Invalid token type"):
+        auth_service.decode_token_payload(token, expected_type="refresh")
+
+
+
+def test_decode_token_payload_invalid_sub(monkeypatch):
+    monkeypatch.setattr(
+        auth_service.jwt,
+        "decode",
+        lambda *args, **kwargs: {"type": "access", "sub": 123},
+    )
+    with pytest.raises(AuthError, match="Invalid token"):
+        auth_service.decode_token_payload("dummy-token", expected_type="access")
+
+
+
+def test_decode_token_payload_expired(monkeypatch):
+    from jwt import ExpiredSignatureError
+
+    def mock_decode(*args, **kwargs):
+        raise ExpiredSignatureError("Token expired")
+
+    monkeypatch.setattr(auth_service.jwt, "decode", mock_decode)
+
+    with pytest.raises(AuthError, match="Invalid token"):
+        auth_service.decode_token_payload("expired-token")
+
+
+
+def test_normalize_auth_reason_edge_cases() -> None:
+    assert auth_service.normalize_auth_reason(None) == "auth_error"
+    assert auth_service.normalize_auth_reason(None, fallback="custom_fallback") == "custom_fallback"
+    assert auth_service.normalize_auth_reason("") == "auth_error"
+    assert auth_service.normalize_auth_reason("   ") == "auth_error"
+
+    class ExceptionWithDetail:
+        detail = "Some error detail"
+
+    assert auth_service.normalize_auth_reason(ExceptionWithDetail()) == "some_error_detail"
+    assert auth_service.normalize_auth_reason("!!!***@@@") == "auth_error"
+    assert auth_service.normalize_auth_reason("---", fallback="custom") == "custom"
+
+
+
+def test_create_csrf_token():
+    token = auth_service.create_csrf_token()
+    assert isinstance(token, str)
+    assert len(token) == 32
+    token2 = auth_service.create_csrf_token()
+    assert token != token2
+
+
+
+def test_decode_token_payload_missing_sub(monkeypatch: pytest.MonkeyPatch):
+    import jwt as pyjwt
+    from app.config import settings
+
+    payload = {
+        "exp": auth_service.datetime.now(auth_service.timezone.utc)
+        + auth_service.timedelta(minutes=15),
+        "type": "access",
+        "jti": "fake-jti",
+        "ver": 0,
+    }
+    token = pyjwt.encode(
+        payload,
+        settings.effective_jwt_signing_key,
+        algorithm=settings.algorithm,
+    )
+    with pytest.raises(AuthError, match="Invalid token"):
+        auth_service.decode_token_payload(token, expected_type="access")
+
+
+
+def test_create_refresh_token():
+    token = auth_service.create_refresh_token("test-user-id", token_version=2)
+    assert isinstance(token, str)
+    assert len(token) > 0
+    payload = auth_service.decode_token_payload(token, expected_type="refresh")
+    assert payload["sub"] == "test-user-id"
+    assert payload["ver"] == 2
+    assert payload["jti"]
+
+
+
+def test_verify_password_with_known_hash():
+    known_hash = "$2b$12$3zl1BmX2bM4rIlbhWMOaKOdpWw2jOWbIIqTZwJ/vbqtqgqoC9QF9."
+    assert auth_service.verify_password("mysecretpassword", known_hash)
+    assert not auth_service.verify_password("wrongpassword", known_hash)
+
+
+
+def test_get_token_version():
+    assert auth_service.get_token_version(SimpleNamespace()) == 0
+    assert auth_service.get_token_version(SimpleNamespace(token_version=None)) == 0
+    assert auth_service.get_token_version(SimpleNamespace(token_version=0)) == 0
+    assert auth_service.get_token_version(SimpleNamespace(token_version=5)) == 5
+    assert auth_service.get_token_version(SimpleNamespace(token_version="3")) == 3
+
+
+
+def test_create_tokens(monkeypatch: pytest.MonkeyPatch):
+    user_id = "test-user-id"
+    token_version = 2
+    mock_access_token = "mock.access.token"
+    mock_refresh_token = "mock.refresh.token"
+
+    mock_create_access_token = Mock(return_value=mock_access_token)
+    mock_create_refresh_token = Mock(return_value=mock_refresh_token)
+
+    monkeypatch.setattr(auth_service, "create_access_token", mock_create_access_token)
+    monkeypatch.setattr(auth_service, "create_refresh_token", mock_create_refresh_token)
+
+    tokens = auth_service.create_tokens(user_id, token_version=token_version)
+
+    mock_create_access_token.assert_called_once_with(user_id, token_version=token_version)
+    mock_create_refresh_token.assert_called_once_with(user_id, token_version=token_version)
+
+    assert isinstance(tokens, auth_service.AuthTokens)
+    assert tokens.access_token == mock_access_token
+    assert tokens.refresh_token == mock_refresh_token
+
+
+
+def test_create_access_token_default_version():
+    token = auth_service.create_access_token("test-user-id")
+    assert isinstance(token, str)
+    payload = auth_service.decode_token_payload(token, expected_type="access")
+    assert payload["sub"] == "test-user-id"
+    assert payload["ver"] == 0
+    assert payload["type"] == "access"
+    assert "exp" in payload
+    assert payload["jti"]
