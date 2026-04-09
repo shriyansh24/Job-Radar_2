@@ -57,9 +57,7 @@ async def test_run_enrichment_batch_raises_for_missing_scope_and_clears_metadata
             ctx={"redis": redis, "job_id": "job-123"},
         )
 
-    redis.delete.assert_awaited_once_with(
-        enrichment_worker._build_job_metadata_key("job-123")
-    )
+    redis.delete.assert_awaited_once_with(enrichment_worker._build_job_metadata_key("job-123"))
     llm_client.close.assert_awaited_once()
     logger.warning.assert_called_once_with(
         "enrichment_batch_skipped",

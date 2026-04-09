@@ -109,10 +109,7 @@ async def connect_google_integration(
     tokens = await exchange_google_code_fn(code)
     access_token = str(tokens.get("access_token") or "").strip()
     refresh_token = str(tokens.get("refresh_token") or "").strip()
-    scopes = [
-        scope for scope in str(tokens.get("scope") or "").split()
-        if scope.strip()
-    ]
+    scopes = [scope for scope in str(tokens.get("scope") or "").split() if scope.strip()]
     profile = await gmail_client_cls().get_profile(access_token)
     try:
         user_id = uuid.UUID(state.user_id)

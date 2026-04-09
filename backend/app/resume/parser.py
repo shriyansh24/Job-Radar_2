@@ -13,9 +13,7 @@ from app.resume.ir_schema import ResumeIR
 
 logger = structlog.get_logger()
 
-_STRUCTURING_SYSTEM_PROMPT = (
-    "You are a resume-parsing assistant. Return ONLY valid JSON."
-)
+_STRUCTURING_SYSTEM_PROMPT = "You are a resume-parsing assistant. Return ONLY valid JSON."
 
 _STRUCTURING_USER_PROMPT = """\
 Parse the following resume text into a structured JSON object with these fields:
@@ -113,9 +111,7 @@ class ResumeParser:
                 {"role": "system", "content": _STRUCTURING_SYSTEM_PROMPT},
                 {
                     "role": "user",
-                    "content": _STRUCTURING_USER_PROMPT.format(
-                        resume_text=raw_text[:8000]
-                    ),
+                    "content": _STRUCTURING_USER_PROMPT.format(resume_text=raw_text[:8000]),
                 },
             ],
             temperature=0.1,

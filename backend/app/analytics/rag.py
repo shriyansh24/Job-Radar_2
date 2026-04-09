@@ -42,16 +42,12 @@ _RESUMES_QUERY = text("""
 class PersonalRAG:
     """Minimal RAG over a user's jobs, applications, and resumes."""
 
-    def __init__(
-        self, db: AsyncSession, embedder: EmbeddingService, llm: LLMClient
-    ) -> None:
+    def __init__(self, db: AsyncSession, embedder: EmbeddingService, llm: LLMClient) -> None:
         self.db = db
         self.embedder = embedder
         self.llm = llm
 
-    async def get_contexts(
-        self, question_embedding: list[float], user_id: uuid.UUID
-    ) -> list[str]:
+    async def get_contexts(self, question_embedding: list[float], user_id: uuid.UUID) -> list[str]:
         """Retrieve relevant context strings via pgvector similarity."""
         contexts: list[str] = []
         params = {"q_emb": str(question_embedding), "uid": str(user_id)}

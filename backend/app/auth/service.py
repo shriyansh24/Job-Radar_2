@@ -30,6 +30,7 @@ class AuthTokens:
     access_token: str
     refresh_token: str
 
+
 _AUTH_REASON_ALIASES = {
     "Invalid email or password": "invalid_credentials",
     "User is inactive": "inactive_user",
@@ -73,8 +74,10 @@ def _build_auth_log_fields(
     resolved_user_id = user_id or (str(user.id) if user is not None else None)
     if resolved_user_id is not None:
         fields["user_id"] = resolved_user_id
-    resolved_token_version = token_version if token_version is not None else (
-        get_token_version(user) if user is not None else None
+    resolved_token_version = (
+        token_version
+        if token_version is not None
+        else (get_token_version(user) if user is not None else None)
     )
     if resolved_token_version is not None:
         fields["token_version"] = resolved_token_version

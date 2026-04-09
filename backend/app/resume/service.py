@@ -331,9 +331,7 @@ class ResumeService:
 
         tone = request.tone
         if tone not in VALID_TONES:
-            raise ValueError(
-                f"Invalid tone {tone!r}. Must be one of: {sorted(VALID_TONES)}"
-            )
+            raise ValueError(f"Invalid tone {tone!r}. Must be one of: {sorted(VALID_TONES)}")
 
         # Map B6 tones to existing cover_letter.py styles
         tone_to_style = {
@@ -356,9 +354,7 @@ class ResumeService:
         company_context_used = False
         if job.company_name:
             company = await self.db.scalar(
-                select(Company).where(
-                    Company.canonical_name.ilike(job.company_name)
-                )
+                select(Company).where(Company.canonical_name.ilike(job.company_name))
             )
             if company:
                 company_context_used = True

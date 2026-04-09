@@ -149,9 +149,7 @@ class EmailService:
         await self.db.commit()
 
         status = (
-            "review_required"
-            if review_required
-            else ("updated" if transitioned else "no_match")
+            "review_required" if review_required else ("updated" if transitioned else "no_match")
         )
         return EmailWebhookResponse(
             status=status,
@@ -161,9 +159,7 @@ class EmailService:
             confidence=parsed.confidence,
         )
 
-    async def list_logs(
-        self, user_id: uuid.UUID, *, limit: int = 50
-    ) -> list[EmailLogResponse]:
+    async def list_logs(self, user_id: uuid.UUID, *, limit: int = 50) -> list[EmailLogResponse]:
         result = await self.db.scalars(
             select(EmailLog)
             .where(EmailLog.user_id == user_id)
@@ -192,13 +188,13 @@ class EmailService:
         return cast(
             EmailLog | None,
             await self.db.scalar(
-            select(EmailLog).where(
-                EmailLog.user_id == user_id,
-                EmailLog.sender == message.effective_sender,
-                EmailLog.subject == message.subject[:1000],
-                EmailLog.raw_body_hash == body_hash,
-            )
-        )
+                select(EmailLog).where(
+                    EmailLog.user_id == user_id,
+                    EmailLog.sender == message.effective_sender,
+                    EmailLog.subject == message.subject[:1000],
+                    EmailLog.raw_body_hash == body_hash,
+                )
+            ),
         )
 
     def _build_log(
@@ -254,9 +250,7 @@ class EmailService:
         return target_status in allowed
 
     @staticmethod
-    def verify_webhook_signature(
-        timestamp: str, token: str, signature: str
-    ) -> bool:
+    def verify_webhook_signature(timestamp: str, token: str, signature: str) -> bool:
         if not settings.effective_jwt_signing_key or not timestamp or not token or not signature:
             return False
         digest = hmac.new(

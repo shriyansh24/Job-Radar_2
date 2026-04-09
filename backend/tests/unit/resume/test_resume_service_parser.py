@@ -45,9 +45,7 @@ async def test_upload_resume_falls_back_for_unsupported_format() -> None:
 
     with patch("app.resume.service.ResumeParser") as parser_cls:
         parser = parser_cls.return_value
-        parser.parse = AsyncMock(
-            side_effect=ValueError("Unsupported resume format '.jpg'")
-        )
+        parser.parse = AsyncMock(side_effect=ValueError("Unsupported resume format '.jpg'"))
         service = ResumeService(db, llm_client=MagicMock())
         version = await service.upload_resume("resume.jpg", b"raw-bytes", user_id)
 

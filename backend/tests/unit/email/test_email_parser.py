@@ -27,8 +27,7 @@ class TestEmailParserRejection:
             sender="recruiting@acme.com",
             subject="Update on your application",
             body=(
-                "Unfortunately, we will not be moving forward"
-                " with your application at this time."
+                "Unfortunately, we will not be moving forward with your application at this time."
             ),
         )
         assert result is not None

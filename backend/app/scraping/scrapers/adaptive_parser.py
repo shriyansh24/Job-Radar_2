@@ -38,6 +38,7 @@ class ParserDiagnosis:
     signals: tuple[str, ...] = ()
     notes: tuple[str, ...] = ()
 
+
 ADAPTIVE_SELECTORS = [
     ".job-listing",
     ".job-card",
@@ -336,8 +337,7 @@ class AdaptiveCareerParser:
         raw_url = self._first_string(payload, "url", "applyUrl", "jobUrl", "href", "path")
         url = urljoin(self.base_url, raw_url) if raw_url else ""
         company_name = (
-            self._first_string(payload, "company_name", "companyName")
-            or self.company_name
+            self._first_string(payload, "company_name", "companyName") or self.company_name
         )
 
         hiring_org = payload.get("hiringOrganization")

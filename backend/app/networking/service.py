@@ -57,9 +57,7 @@ class NetworkingService:
     # Contact CRUD
     # ------------------------------------------------------------------
 
-    async def create_contact(
-        self, data: ContactCreate, user_id: uuid.UUID
-    ) -> Contact:
+    async def create_contact(self, data: ContactCreate, user_id: uuid.UUID) -> Contact:
         contact = Contact(user_id=user_id, **data.model_dump())
         self.db.add(contact)
         await self.db.commit()
@@ -68,19 +66,13 @@ class NetworkingService:
 
     async def list_contacts(self, user_id: uuid.UUID) -> list[Contact]:
         result = await self.db.execute(
-            select(Contact)
-            .where(Contact.user_id == user_id)
-            .order_by(Contact.name)
+            select(Contact).where(Contact.user_id == user_id).order_by(Contact.name)
         )
         return list(result.scalars().all())
 
-    async def get_contact(
-        self, contact_id: uuid.UUID, user_id: uuid.UUID
-    ) -> Contact:
+    async def get_contact(self, contact_id: uuid.UUID, user_id: uuid.UUID) -> Contact:
         contact = await self.db.scalar(
-            select(Contact).where(
-                Contact.id == contact_id, Contact.user_id == user_id
-            )
+            select(Contact).where(Contact.id == contact_id, Contact.user_id == user_id)
         )
         if contact is None:
             raise NotFoundError("Contact not found")
@@ -99,9 +91,7 @@ class NetworkingService:
         await self.db.refresh(contact)
         return contact
 
-    async def delete_contact(
-        self, contact_id: uuid.UUID, user_id: uuid.UUID
-    ) -> None:
+    async def delete_contact(self, contact_id: uuid.UUID, user_id: uuid.UUID) -> None:
         contact = await self.get_contact(contact_id, user_id)
         await self.db.delete(contact)
         await self.db.commit()
@@ -110,9 +100,7 @@ class NetworkingService:
     # Connection search
     # ------------------------------------------------------------------
 
-    async def find_connections(
-        self, user_id: uuid.UUID, company: str
-    ) -> list[Contact]:
+    async def find_connections(self, user_id: uuid.UUID, company: str) -> list[Contact]:
         result = await self.db.execute(
             select(Contact)
             .where(
@@ -127,9 +115,7 @@ class NetworkingService:
     # Referral suggestion
     # ------------------------------------------------------------------
 
-    async def suggest_referral(
-        self, user_id: uuid.UUID, job_id: str
-    ) -> list[ReferralSuggestion]:
+    async def suggest_referral(self, user_id: uuid.UUID, job_id: str) -> list[ReferralSuggestion]:
         from app.jobs.models import Job
 
         job = await self.db.scalar(select(Job).where(Job.id == job_id))
@@ -224,9 +210,7 @@ class NetworkingService:
         await self.db.refresh(rr)
         return rr
 
-    async def list_referral_requests(
-        self, user_id: uuid.UUID
-    ) -> list[ReferralRequest]:
+    async def list_referral_requests(self, user_id: uuid.UUID) -> list[ReferralRequest]:
         result = await self.db.execute(
             select(ReferralRequest)
             .where(ReferralRequest.user_id == user_id)

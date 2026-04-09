@@ -68,9 +68,7 @@ def test_p2_tables_migration_upgrade_creates_tables_indexes_and_timezone_fix(
         ["job_a_id", "job_b_id"],
         False,
     ) in created_indexes
-    assert ("idx_dedup_feedback_user", "dedup_feedback", ["user_id"], False) in (
-        created_indexes
-    )
+    assert ("idx_dedup_feedback_user", "dedup_feedback", ["user_id"], False) in (created_indexes)
     assert (
         "ix_ml_model_artifacts_user_model",
         "ml_model_artifacts",

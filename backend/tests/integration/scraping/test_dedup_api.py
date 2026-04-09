@@ -213,9 +213,7 @@ async def test_dedup_review_only_returns_pairs_from_current_workspace(
 
     assert response.status_code == 200
     job_ids = {
-        job_id
-        for item in response.json()
-        for job_id in (item["job_a_id"], item["job_b_id"])
+        job_id for item in response.json() for job_id in (item["job_a_id"], item["job_b_id"])
     }
     assert "dedup-review-a" in job_ids
     assert "dedup-review-b" in job_ids

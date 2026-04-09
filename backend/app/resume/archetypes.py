@@ -138,9 +138,7 @@ class ArchetypeService:
         )
         return list((await self.db.scalars(q)).all())
 
-    async def get_archetype(
-        self, archetype_id: uuid.UUID, user_id: uuid.UUID
-    ) -> ResumeArchetype:
+    async def get_archetype(self, archetype_id: uuid.UUID, user_id: uuid.UUID) -> ResumeArchetype:
         archetype = await self.db.scalar(
             select(ResumeArchetype).where(
                 ResumeArchetype.id == archetype_id,
@@ -175,9 +173,7 @@ class ArchetypeService:
 
         Returns (archetype, score, reason).
         """
-        job = await self.db.scalar(
-            select(Job).where(Job.id == job_id, Job.user_id == user_id)
-        )
+        job = await self.db.scalar(select(Job).where(Job.id == job_id, Job.user_id == user_id))
         if job is None:
             raise NotFoundError(detail=f"Job {job_id} not found")
 
@@ -185,9 +181,7 @@ class ArchetypeService:
         if not archetypes:
             raise NotFoundError(detail="No archetypes found for user")
 
-        job_tokens = _tokenize(
-            f"{job.title or ''} {job.description_clean or ''}"
-        )
+        job_tokens = _tokenize(f"{job.title or ''} {job.description_clean or ''}")
         job_skills = set(s.lower() for s in (job.skills_required or []))
         job_tokens |= job_skills
 
@@ -223,9 +217,7 @@ def _tokenize(text: str) -> set[str]:
     return {w.strip(".,;:!?()[]{}\"'").lower() for w in text.split() if len(w) > 2}
 
 
-def _score_archetype(
-    arch: ResumeArchetype, job_tokens: set[str]
-) -> tuple[float, str]:
+def _score_archetype(arch: ResumeArchetype, job_tokens: set[str]) -> tuple[float, str]:
     """Score an archetype against job tokens using keyword overlap.
 
     Returns (score_0_to_1, human_reason).
@@ -244,7 +236,7 @@ def _score_archetype(
     if arch.target_role_type:
         arch_tokens |= _tokenize(arch.target_role_type)
 
-    # Add base IR text (limited)
+        # Add base IR text (limited)
         ir = arch.base_ir_json or {}
         raw_ir_text = ir.get("text", "")
         ir_text = raw_ir_text if isinstance(raw_ir_text, str) else ""

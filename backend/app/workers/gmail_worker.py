@@ -63,9 +63,7 @@ async def run_gmail_sync(ctx: dict[str, Any] | None = None) -> None:
                     retryable_failures += 1
                 await db.rollback()
                 failed_integration = await db.scalar(
-                    select(UserIntegrationSecret).where(
-                        UserIntegrationSecret.id == integration_id
-                    )
+                    select(UserIntegrationSecret).where(UserIntegrationSecret.id == integration_id)
                 )
                 if failed_integration is not None:
                     failed_integration.last_error = str(exc)

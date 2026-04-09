@@ -132,9 +132,7 @@ async def test_generate_user_digest_skips_when_no_recent_activity(
     assert created is False
     notifications = list(
         (
-            await db_session.scalars(
-                select(Notification).where(Notification.user_id == user.id)
-            )
+            await db_session.scalars(select(Notification).where(Notification.user_id == user.id))
         ).all()
     )
     assert notifications == []

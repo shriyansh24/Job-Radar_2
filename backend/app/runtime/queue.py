@@ -116,9 +116,7 @@ class QueueDispatchResult:
 def build_redis_settings() -> RedisSettings:
     parsed = urlparse(settings.redis_url)
     if parsed.scheme not in {"redis", "rediss"} or not parsed.hostname:
-        raise RuntimeError(
-            "JR_REDIS_URL must use redis:// or rediss:// with an explicit host."
-        )
+        raise RuntimeError("JR_REDIS_URL must use redis:// or rediss:// with an explicit host.")
 
     database = int((parsed.path or "/0").lstrip("/") or "0")
     ssl_enabled = settings.redis_use_tls or parsed.scheme == "rediss"

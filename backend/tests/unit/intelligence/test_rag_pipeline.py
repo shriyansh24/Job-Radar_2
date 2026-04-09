@@ -63,9 +63,7 @@ class TestGetContexts:
 
         db = AsyncMock()
         # First call -> jobs, second call -> resumes
-        db.execute = AsyncMock(
-            side_effect=[_fake_result(job_rows), _fake_result(resume_rows)]
-        )
+        db.execute = AsyncMock(side_effect=[_fake_result(job_rows), _fake_result(resume_rows)])
 
         embedder = MagicMock()
         llm = AsyncMock()
@@ -82,9 +80,7 @@ class TestGetContexts:
     @pytest.mark.asyncio
     async def test_returns_empty_when_no_data(self) -> None:
         db = AsyncMock()
-        db.execute = AsyncMock(
-            side_effect=[_fake_result([]), _fake_result([])]
-        )
+        db.execute = AsyncMock(side_effect=[_fake_result([]), _fake_result([])])
 
         rag = PersonalRAG(db=db, embedder=MagicMock(), llm=AsyncMock())
         contexts = await rag.get_contexts(FAKE_EMBEDDING, USER_ID)
@@ -116,9 +112,7 @@ class TestGetContexts:
             },
         ]
         db = AsyncMock()
-        db.execute = AsyncMock(
-            side_effect=[_fake_result(job_rows), _fake_result([])]
-        )
+        db.execute = AsyncMock(side_effect=[_fake_result(job_rows), _fake_result([])])
 
         rag = PersonalRAG(db=db, embedder=MagicMock(), llm=AsyncMock())
         contexts = await rag.get_contexts(FAKE_EMBEDDING, USER_ID)
@@ -142,9 +136,7 @@ class TestQuery:
         ]
 
         db = AsyncMock()
-        db.execute = AsyncMock(
-            side_effect=[_fake_result(job_rows), _fake_result([])]
-        )
+        db.execute = AsyncMock(side_effect=[_fake_result(job_rows), _fake_result([])])
 
         embedder = MagicMock()
         embedder.embed_text = MagicMock(return_value=FAKE_EMBEDDING)
@@ -183,9 +175,7 @@ class TestQuery:
     @pytest.mark.asyncio
     async def test_returns_fallback_when_no_contexts(self) -> None:
         db = AsyncMock()
-        db.execute = AsyncMock(
-            side_effect=[_fake_result([]), _fake_result([])]
-        )
+        db.execute = AsyncMock(side_effect=[_fake_result([]), _fake_result([])])
 
         embedder = MagicMock()
         embedder.embed_text = MagicMock(return_value=FAKE_EMBEDDING)
@@ -200,15 +190,19 @@ class TestQuery:
         db = AsyncMock()
         db.execute = AsyncMock(
             side_effect=[
-                _fake_result([{
-                    "title": "Eng",
-                    "company_name": "Co",
-                    "summary_ai": None,
-                    "status": "applied",
-                    "salary_offered": None,
-                    "notes": None,
-                    "similarity": 0.9,
-                }]),
+                _fake_result(
+                    [
+                        {
+                            "title": "Eng",
+                            "company_name": "Co",
+                            "summary_ai": None,
+                            "status": "applied",
+                            "salary_offered": None,
+                            "notes": None,
+                            "similarity": 0.9,
+                        }
+                    ]
+                ),
                 _fake_result([]),
             ]
         )

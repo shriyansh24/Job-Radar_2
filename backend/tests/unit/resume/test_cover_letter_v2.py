@@ -130,9 +130,7 @@ class TestGenerateCoverLetter:
         mock_llm = AsyncMock()
         mock_router._llm = mock_llm
 
-        with patch(
-            "app.nlp.cover_letter._get_model_router", return_value=mock_router
-        ):
+        with patch("app.nlp.cover_letter._get_model_router", return_value=mock_router):
             result = await generate_cover_letter(
                 resume_parsed={"text": "Python developer with ML experience"},
                 job_data={
@@ -173,9 +171,7 @@ class TestGenerateCoverLetter:
         mock_llm = AsyncMock()
         mock_router._llm = mock_llm
 
-        with patch(
-            "app.nlp.cover_letter._get_model_router", return_value=mock_router
-        ):
+        with patch("app.nlp.cover_letter._get_model_router", return_value=mock_router):
             result = await generate_cover_letter(
                 resume_parsed={"text": "Python developer"},
                 job_data={

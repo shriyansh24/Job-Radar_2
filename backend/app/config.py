@@ -73,7 +73,9 @@ class Settings(BaseSettings):
     # Google / Gmail
     google_oauth_client_id: str = ""
     google_oauth_client_secret: str = ""
-    google_oauth_redirect_uri: str = "http://localhost:8000/api/v1/settings/integrations/google/callback"
+    google_oauth_redirect_uri: str = (
+        "http://localhost:8000/api/v1/settings/integrations/google/callback"
+    )
     google_gmail_sync_query: str = (
         "newer_than:30d -category:promotions -category:social -category:forums"
     )
@@ -125,13 +127,8 @@ def validate_runtime_settings(settings: Settings) -> None:
             "Set a secure signing key or enable JR_DEBUG for local-only development."
         )
     if not settings.debug and not settings.credential_encryption_key.strip():
-        raise RuntimeError(
-            "JR_CREDENTIAL_ENCRYPTION_KEY must be set outside debug mode."
-        )
-    if (
-        not settings.debug
-        and effective_credential_encryption_key == effective_jwt_signing_key
-    ):
+        raise RuntimeError("JR_CREDENTIAL_ENCRYPTION_KEY must be set outside debug mode.")
+    if not settings.debug and effective_credential_encryption_key == effective_jwt_signing_key:
         raise RuntimeError(
             "JR_CREDENTIAL_ENCRYPTION_KEY must differ from JR_SECRET_KEY / "
             "JR_JWT_SIGNING_KEY outside debug mode."
@@ -150,9 +147,7 @@ def validate_runtime_settings(settings: Settings) -> None:
         )
     parsed_redis = urlparse(settings.redis_url)
     if parsed_redis.scheme not in {"redis", "rediss"} or not parsed_redis.hostname:
-        raise RuntimeError(
-            "JR_REDIS_URL must use redis:// or rediss:// with an explicit host."
-        )
+        raise RuntimeError("JR_REDIS_URL must use redis:// or rediss:// with an explicit host.")
     if not normalized_origins:
         raise RuntimeError("JR_CORS_ORIGINS must include at least one explicit origin.")
     if "*" in normalized_origins:
@@ -171,9 +166,7 @@ def validate_runtime_settings(settings: Settings) -> None:
             "JR_COOKIE_SECURE must be enabled when JR_COOKIE_SAMESITE is set to 'none'."
         )
     if not settings.debug and not settings.cookie_secure:
-        raise RuntimeError(
-            "JR_COOKIE_SECURE must be enabled when JR_DEBUG is false."
-        )
+        raise RuntimeError("JR_COOKIE_SECURE must be enabled when JR_DEBUG is false.")
     if not settings.trusted_hosts:
         raise RuntimeError("JR_TRUSTED_HOSTS must include at least one host.")
     if "*" in settings.trusted_hosts and not settings.debug:
@@ -210,9 +203,7 @@ def validate_runtime_settings(settings: Settings) -> None:
                 "JR_QUEUE_ALERT_WEBHOOK_URL must use a full http(s) URL when configured."
             )
     if settings.queue_alert_webhook_timeout_seconds <= 0:
-        raise RuntimeError(
-            "JR_QUEUE_ALERT_WEBHOOK_TIMEOUT_SECONDS must be greater than zero."
-        )
+        raise RuntimeError("JR_QUEUE_ALERT_WEBHOOK_TIMEOUT_SECONDS must be greater than zero.")
     if settings.admin_runtime_event_limit <= 0:
         raise RuntimeError("JR_ADMIN_RUNTIME_EVENT_LIMIT must be greater than zero.")
 

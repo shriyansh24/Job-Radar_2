@@ -119,7 +119,9 @@ class SafetyLayer:
         self, job_id: str, user_id: uuid.UUID, db: AsyncSession
     ) -> SafetyCheck:
         count = await db.scalar(
-            select(func.count()).select_from(Application).where(
+            select(func.count())
+            .select_from(Application)
+            .where(
                 Application.user_id == user_id,
                 Application.job_id == job_id,
             )
@@ -135,7 +137,9 @@ class SafetyLayer:
         now = datetime.now(UTC)
         start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
         count = await db.scalar(
-            select(func.count()).select_from(AutoApplyRun).where(
+            select(func.count())
+            .select_from(AutoApplyRun)
+            .where(
                 AutoApplyRun.user_id == user_id,
                 AutoApplyRun.started_at >= start_of_day,
                 AutoApplyRun.status.in_(("filled", "submitted", "running")),
@@ -154,7 +158,9 @@ class SafetyLayer:
         limits = self.PER_ATS_LIMITS.get(ats, self.PER_ATS_LIMITS["default"])
         one_hour_ago = datetime.now(UTC) - timedelta(hours=1)
         count = await db.scalar(
-            select(func.count()).select_from(AutoApplyRun).where(
+            select(func.count())
+            .select_from(AutoApplyRun)
+            .where(
                 AutoApplyRun.user_id == user_id,
                 AutoApplyRun.ats_provider == ats,
                 AutoApplyRun.started_at >= one_hour_ago,
@@ -174,7 +180,9 @@ class SafetyLayer:
     ) -> SafetyCheck:
         cutoff = datetime.now(UTC) - timedelta(days=self.SAME_COMPANY_COOLDOWN_DAYS)
         count = await db.scalar(
-            select(func.count()).select_from(Application).where(
+            select(func.count())
+            .select_from(Application)
+            .where(
                 Application.user_id == user_id,
                 func.lower(Application.company_name) == company_name.lower(),
                 Application.created_at >= cutoff,

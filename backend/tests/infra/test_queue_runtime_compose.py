@@ -23,8 +23,7 @@ def test_base_compose_defines_queue_worker_services() -> None:
         service_name = f"worker-{role}"
         body = _service_block(BASE_COMPOSE, service_name)
         worker_command = (
-            'command: ["uv", "run", "python", "-m", "app.runtime.arq_worker", '
-            f'"{role}"]'
+            f'command: ["uv", "run", "python", "-m", "app.runtime.arq_worker", "{role}"]'
         )
         worker_healthcheck = (
             'test: ["CMD", "uv", "run", "python", "-m", '
@@ -48,8 +47,7 @@ def test_dev_overlay_defines_bind_mounted_queue_worker_services() -> None:
         service_name = f"worker-{role}"
         body = _service_block(DEV_COMPOSE, service_name)
         worker_command = (
-            'command: ["uv", "run", "python", "-m", "app.runtime.arq_worker", '
-            f'"{role}"]'
+            f'command: ["uv", "run", "python", "-m", "app.runtime.arq_worker", "{role}"]'
         )
 
         assert "context: ./backend" in body
@@ -57,10 +55,7 @@ def test_dev_overlay_defines_bind_mounted_queue_worker_services() -> None:
         assert "- ./backend:/app" in body
         assert worker_command in body
         assert 'JR_DEBUG: "true"' in body
-        assert (
-            'JR_TRUSTED_HOSTS: \'["localhost","127.0.0.1","backend","test"]\''
-            in body
-        )
+        assert 'JR_TRUSTED_HOSTS: \'["localhost","127.0.0.1","backend","test"]\'' in body
         assert f"JR_WORKER_ROLE: {role}" in body
         assert f"JR_WORKER_READY_MARKER: /tmp/jobradar-worker-{role}.ready" in body
 

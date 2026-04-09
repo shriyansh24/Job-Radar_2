@@ -38,9 +38,7 @@ class FieldMappingRule(Base):
     confidence: Mapped[float] = mapped_column(Float, default=0.8)
     source: Mapped[str] = mapped_column(String(30), default="llm")
     times_seen: Mapped[int] = mapped_column(Integer, default=1)
-    last_seen: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    last_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
         UniqueConstraint(
@@ -56,18 +54,14 @@ class ApplicationDedup(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
-    job_id: Mapped[str] = mapped_column(
-        ForeignKey("jobs.id", ondelete="CASCADE"), index=True
-    )
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), index=True)
     ats_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
     application_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     applied_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
-    __table_args__ = (
-        UniqueConstraint("user_id", "job_id", name="uq_application_dedup_user_job"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "job_id", name="uq_application_dedup_user_job"),)
 
 
 # ---------------------------------------------------------------------------

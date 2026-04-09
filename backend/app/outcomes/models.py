@@ -30,9 +30,7 @@ class ApplicationOutcome(Base):
     application_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("applications.id", ondelete="CASCADE"), nullable=False
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id"), nullable=False
-    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     stage_reached: Mapped[str | None] = mapped_column(String(30))
     rejection_reason: Mapped[str | None] = mapped_column(String(50))
     rejection_stage: Mapped[str | None] = mapped_column(String(30))
@@ -58,15 +56,11 @@ class ApplicationOutcome(Base):
 class CompanyInsight(Base):
     __tablename__ = "company_insights"
     __table_args__ = (
-        Index(
-            "ix_company_insights_user_company", "user_id", "company_name", unique=True
-        ),
+        Index("ix_company_insights_user_company", "user_id", "company_name", unique=True),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id"), nullable=False
-    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     company_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     total_applications: Mapped[int] = mapped_column(Integer, default=0)
     callback_count: Mapped[int] = mapped_column(Integer, default=0)

@@ -185,16 +185,14 @@ async def main() -> None:
             "What is your desired salary?": "$120,000 - $200,000",
             "Are you willing to relocate?": "Yes, I am willing to relocate anywhere in the USA.",
             "How many years of experience do you have?": (
-                "1 year of professional experience plus 2 years of academic "
-                "project experience."
+                "1 year of professional experience plus 2 years of academic project experience."
             ),
             "What is your highest level of education?": (
                 "Master of Science in Data Science from Example University."
             ),
             "Are you over 18 years of age?": "Yes",
             "Do you have experience with Python?": (
-                "Yes, Python is my primary programming language with 4+ years "
-                "of experience."
+                "Yes, Python is my primary programming language with 4+ years of experience."
             ),
             "Do you have experience with machine learning?": (
                 "Yes, I have hands-on experience building and deploying ML "

@@ -144,7 +144,9 @@ async def test_saved_search_check_creates_notification_and_updates_metadata(
     from app.auth.models import User
 
     auth_user = await db_session.scalar(
-        select(User).where(User.email.like("settings-api-%@test.com")).order_by(User.created_at.desc())
+        select(User)
+        .where(User.email.like("settings-api-%@test.com"))
+        .order_by(User.created_at.desc())
     )
     assert auth_user is not None
     user_id = auth_user.id
@@ -291,7 +293,9 @@ async def test_google_callback_success_redirects_back_to_frontend(
     )
 
     assert response.status_code == 302
-    assert response.headers["location"].startswith("http://localhost:5173/settings?tab=integrations")
+    assert response.headers["location"].startswith(
+        "http://localhost:5173/settings?tab=integrations"
+    )
     assert "integration_status=connected" in response.headers["location"]
     assert "integration_provider=google" in response.headers["location"]
     assert "integration_message=google_connected" in response.headers["location"]
@@ -354,7 +358,9 @@ async def test_google_sync_returns_counts_for_connected_account(
     from app.auth.models import User
 
     auth_user = await db_session.scalar(
-        select(User).where(User.email.like("settings-api-%@test.com")).order_by(User.created_at.desc())
+        select(User)
+        .where(User.email.like("settings-api-%@test.com"))
+        .order_by(User.created_at.desc())
     )
     assert auth_user is not None
     db_session.add(

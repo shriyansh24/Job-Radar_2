@@ -126,7 +126,9 @@ class TestApplicationDedup:
         await db_session.flush()
 
         svc = FormLearningService(db_session)
-        await svc.record_application(user.id, job.id, ats_provider="greenhouse", url="https://apply.com")
+        await svc.record_application(
+            user.id, job.id, ats_provider="greenhouse", url="https://apply.com"
+        )
 
         assert await svc.has_applied(user.id, job.id) is True
         assert await svc.has_applied(user.id, "other_job") is False

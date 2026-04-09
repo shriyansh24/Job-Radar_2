@@ -168,8 +168,8 @@ class GreenhouseBrowserAdapter:
             logger.warning("auto_apply_greenhouse_custom_field_extraction_failed", error=str(exc))
             return filled, missed, review_items
 
-        standard_selectors = set(self.FIELD_MAP) | set(self.RESUME_SELECTORS) | set(
-            self.COVER_LETTER_SELECTORS
+        standard_selectors = (
+            set(self.FIELD_MAP) | set(self.RESUME_SELECTORS) | set(self.COVER_LETTER_SELECTORS)
         )
 
         for field in fields:

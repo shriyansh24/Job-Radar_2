@@ -98,9 +98,10 @@ async def test_resume_templates_preview_and_export(
 
     assert export_resp.status_code == 200
     assert export_resp.headers["content-type"] == "application/pdf"
-    assert 'attachment; filename="Staff-Resume-minimal.pdf"' == export_resp.headers[
-        "content-disposition"
-    ]
+    assert (
+        'attachment; filename="Staff-Resume-minimal.pdf"'
+        == export_resp.headers["content-disposition"]
+    )
     assert export_resp.content == b"%PDF-test"
 
 

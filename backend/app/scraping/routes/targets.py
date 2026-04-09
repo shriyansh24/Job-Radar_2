@@ -82,8 +82,7 @@ async def get_target(
         .limit(5)
     )
     recent_attempts = [
-        ScrapeAttemptResponse.model_validate(attempt)
-        for attempt in attempts_result.all()
+        ScrapeAttemptResponse.model_validate(attempt) for attempt in attempts_result.all()
     ]
 
     return ScrapeTargetWithAttemptsResponse(

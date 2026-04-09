@@ -365,9 +365,7 @@ class SalaryService:
         if not result:
             raise AppError("Salary brief generation failed", status_code=502)
 
-        leverage_points = [
-            NegotiationPoint(**lp) for lp in result.get("leverage_points", [])
-        ]
+        leverage_points = [NegotiationPoint(**lp) for lp in result.get("leverage_points", [])]
 
         return SalaryBrief(
             job_id=job_id,

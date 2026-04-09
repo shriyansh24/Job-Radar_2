@@ -63,9 +63,7 @@ class GmailClient:
         )
         messages = payload.get("messages") or []
         return [
-            str(message.get("id"))
-            for message in messages
-            if str(message.get("id") or "").strip()
+            str(message.get("id")) for message in messages if str(message.get("id") or "").strip()
         ]
 
     async def get_message(self, access_token: str, message_id: str) -> GmailMessage:

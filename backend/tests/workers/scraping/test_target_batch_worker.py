@@ -300,9 +300,7 @@ async def test_browser_target_acquires_pool_and_persists():
         patch(
             "app.scraping.execution.page_crawler.PageCrawler.crawl",
             AsyncMock(
-                return_value=_pagination_result(
-                    {"title": "Rendered role", "url": "/jobs/1"}
-                )
+                return_value=_pagination_result({"title": "Rendered role", "url": "/jobs/1"})
             ),
         ),
         patch("app.scraping.service.persist_jobs", AsyncMock(return_value=(1, 0))),

@@ -75,9 +75,7 @@ class Job(Base):
     enriched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     summary_ai: Mapped[str | None] = mapped_column(Text)
     skills_required: Mapped[list[str] | None] = mapped_column(JSONB, default=list)
-    skills_nice_to_have: Mapped[list[str] | None] = mapped_column(
-        JSONB, default=list
-    )
+    skills_nice_to_have: Mapped[list[str] | None] = mapped_column(JSONB, default=list)
     tech_stack: Mapped[list[str] | None] = mapped_column(JSONB, default=list)
     red_flags: Mapped[list[str] | None] = mapped_column(JSONB, default=list)
     green_flags: Mapped[list[str] | None] = mapped_column(JSONB, default=list)

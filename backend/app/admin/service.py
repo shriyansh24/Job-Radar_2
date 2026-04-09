@@ -242,9 +242,7 @@ class AdminService:
             "applications_imported": imported_apps,
         }
 
-    async def clear_data(
-        self, user_id: uuid.UUID, *, commit: bool = True
-    ) -> dict[str, int | str]:
+    async def clear_data(self, user_id: uuid.UUID, *, commit: bool = True) -> dict[str, int | str]:
         self._ensure_user_data_models_loaded()
         existing_tables = await self.db.run_sync(_existing_table_names)
 

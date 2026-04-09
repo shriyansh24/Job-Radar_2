@@ -83,9 +83,7 @@ class TestATSValidator:
         ir["contact"]["email"] = ""
         validator = ATSValidator()
         result = validator.validate(ir)
-        email_check = next(
-            check for check in result.checks if check.field == "contact_email"
-        )
+        email_check = next(check for check in result.checks if check.field == "contact_email")
         assert email_check.passed is False
 
     def test_missing_phone_flagged(self):
@@ -93,9 +91,7 @@ class TestATSValidator:
         ir["contact"]["phone"] = ""
         validator = ATSValidator()
         result = validator.validate(ir)
-        phone_check = next(
-            check for check in result.checks if check.field == "contact_phone"
-        )
+        phone_check = next(check for check in result.checks if check.field == "contact_phone")
         assert phone_check.passed is False
 
     def test_no_work_section_flagged(self):
@@ -111,9 +107,7 @@ class TestATSValidator:
         ir["skills"] = []
         validator = ATSValidator()
         result = validator.validate(ir)
-        skills_check = next(
-            check for check in result.checks if check.field == "has_skills"
-        )
+        skills_check = next(check for check in result.checks if check.field == "has_skills")
         assert skills_check.passed is False
 
     def test_skill_categories_count_as_skills(self):
@@ -122,9 +116,7 @@ class TestATSValidator:
         ir["skill_categories"] = {"Languages": ["Python", "Go"]}
         validator = ATSValidator()
         result = validator.validate(ir)
-        skills_check = next(
-            check for check in result.checks if check.field == "has_skills"
-        )
+        skills_check = next(check for check in result.checks if check.field == "has_skills")
         assert skills_check.passed is True
 
     def test_no_summary_flagged(self):
@@ -132,17 +124,13 @@ class TestATSValidator:
         ir["summary"] = ""
         validator = ATSValidator()
         result = validator.validate(ir)
-        summary_check = next(
-            check for check in result.checks if check.field == "has_summary"
-        )
+        summary_check = next(check for check in result.checks if check.field == "has_summary")
         assert summary_check.passed is False
 
     def test_bullet_quality_with_good_bullets(self):
         validator = ATSValidator()
         result = validator.validate(_make_full_ir())
-        quality_check = next(
-            check for check in result.checks if check.field == "bullet_quality"
-        )
+        quality_check = next(check for check in result.checks if check.field == "bullet_quality")
         assert quality_check.passed is True
         assert quality_check.details is not None
         assert quality_check.details["action_verb_ratio"] >= 0.5
@@ -157,17 +145,13 @@ class TestATSValidator:
         ]
         validator = ATSValidator()
         result = validator.validate(ir)
-        quality_check = next(
-            check for check in result.checks if check.field == "bullet_quality"
-        )
+        quality_check = next(check for check in result.checks if check.field == "bullet_quality")
         assert quality_check.passed is False
 
     def test_text_length_check(self):
         validator = ATSValidator()
         result = validator.validate(_make_full_ir())
-        length_check = next(
-            check for check in result.checks if check.field == "text_length"
-        )
+        length_check = next(check for check in result.checks if check.field == "text_length")
         assert length_check.passed is True
         assert length_check.details is not None
         assert length_check.details["length"] > 0
@@ -175,9 +159,7 @@ class TestATSValidator:
     def test_standard_headers_all_present(self):
         validator = ATSValidator()
         result = validator.validate(_make_full_ir())
-        headers_check = next(
-            check for check in result.checks if check.field == "standard_headers"
-        )
+        headers_check = next(check for check in result.checks if check.field == "standard_headers")
         assert headers_check.passed is True
 
     def test_standard_headers_missing_education(self):
@@ -185,9 +167,7 @@ class TestATSValidator:
         ir["education"] = []
         validator = ATSValidator()
         result = validator.validate(ir)
-        headers_check = next(
-            check for check in result.checks if check.field == "standard_headers"
-        )
+        headers_check = next(check for check in result.checks if check.field == "standard_headers")
         assert headers_check.passed is False
         assert "education" in headers_check.details["missing"]
 

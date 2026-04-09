@@ -186,9 +186,7 @@ class ModelRouter:
                 last_exc = exc
 
         if last_exc is None:
-            last_exc = RuntimeError(
-                f"ModelRouter: no models configured for JSON task '{task}'"
-            )
+            last_exc = RuntimeError(f"ModelRouter: no models configured for JSON task '{task}'")
         raise RuntimeError(
             f"ModelRouter: all models exhausted for JSON task '{task}'. Last error: {last_exc}"
         ) from last_exc

@@ -86,9 +86,7 @@ class MatchPredictor:
         self._model: HistGradientBoostingClassifier | None = None
         self._artifact: MLModelArtifact | None = None
 
-    async def _load_model(
-        self, user_id: uuid.UUID
-    ) -> HistGradientBoostingClassifier | None:
+    async def _load_model(self, user_id: uuid.UUID) -> HistGradientBoostingClassifier | None:
         if self._model is not None:
             return self._model
 
@@ -111,9 +109,7 @@ class MatchPredictor:
         self._model = pickle.loads(artifact.model_bytes)  # noqa: S301  # nosec B301
         return self._model
 
-    async def predict(
-        self, user_id: uuid.UUID, job_id: str
-    ) -> PredictionResult | None:
+    async def predict(self, user_id: uuid.UUID, job_id: str) -> PredictionResult | None:
         model = await self._load_model(user_id)
         if model is None:
             return None
@@ -240,14 +236,10 @@ class MatchPredictor:
             cv_accuracy=artifact.cv_accuracy,
             positive_rate=artifact.positive_rate,
             trained_at=artifact.created_at,
-            feature_names=(
-                artifact.feature_names.split(",") if artifact.feature_names else []
-            ),
+            feature_names=(artifact.feature_names.split(",") if artifact.feature_names else []),
         )
 
-    async def _get_training_data(
-        self, user_id: uuid.UUID
-    ) -> list[dict[str, object]]:
+    async def _get_training_data(self, user_id: uuid.UUID) -> list[dict[str, object]]:
         return await get_training_data(
             self.db,
             user_id=user_id,
@@ -268,18 +260,14 @@ class MatchPredictor:
             outcome=outcome,
         )
 
-    async def _title_similarity(
-        self, user_id: uuid.UUID, job_title: str
-    ) -> float:
+    async def _title_similarity(self, user_id: uuid.UUID, job_title: str) -> float:
         return await title_similarity(
             self.db,
             user_id=user_id,
             job_title=job_title,
         )
 
-    async def _company_familiarity(
-        self, user_id: uuid.UUID, company_name: str
-    ) -> float:
+    async def _company_familiarity(self, user_id: uuid.UUID, company_name: str) -> float:
         return await company_familiarity(
             self.db,
             user_id=user_id,
@@ -308,9 +296,7 @@ class MatchPredictor:
     ) -> list[FeatureContribution]:
         # Compute marginal contribution of each feature by zeroing it out
         # and measuring the change in predicted probability.
-        base_proba = float(
-            model.predict_proba(np.array([features]))[0][1]
-        )
+        base_proba = float(model.predict_proba(np.array([features]))[0][1])
         contributions: list[FeatureContribution] = []
 
         for i, name in enumerate(FEATURE_NAMES):
@@ -318,9 +304,7 @@ class MatchPredictor:
                 break
             perturbed = list(features)
             perturbed[i] = 0.0
-            perturbed_proba = float(
-                model.predict_proba(np.array([perturbed]))[0][1]
-            )
+            perturbed_proba = float(model.predict_proba(np.array([perturbed]))[0][1])
             delta = base_proba - perturbed_proba
             contributions.append(
                 FeatureContribution(

@@ -60,9 +60,7 @@ async def test_generate_brief_returns_brief():
     # Second scalar call: Company lookup (returns None)
     # Third scalar call: cache check (returns None)
     # Fourth scalar call: cache check inside research_salary (returns None)
-    service, db = _build_service(
-        scalar_side_effect=[job, None, None, None]
-    )
+    service, db = _build_service(scalar_side_effect=[job, None, None, None])
 
     mock_router = MagicMock()
     # First call: research_salary LLM call
@@ -120,9 +118,7 @@ async def test_generate_brief_job_not_found():
 @pytest.mark.asyncio
 async def test_generate_brief_llm_failure():
     job = _mock_job()
-    service, db = _build_service(
-        scalar_side_effect=[job, None, None, None]
-    )
+    service, db = _build_service(scalar_side_effect=[job, None, None, None])
 
     mock_router = MagicMock()
     # research_salary succeeds, brief generation fails
@@ -145,9 +141,7 @@ async def test_generate_brief_llm_failure():
 @pytest.mark.asyncio
 async def test_generate_brief_empty_llm_response():
     job = _mock_job()
-    service, db = _build_service(
-        scalar_side_effect=[job, None, None, None]
-    )
+    service, db = _build_service(scalar_side_effect=[job, None, None, None])
 
     mock_router = MagicMock()
     mock_router.complete_json = AsyncMock(
@@ -171,9 +165,7 @@ def test_salary_brief_schema():
         job_id="test123",
         job_title="Engineer",
         market_range=MarketRange(p50=Decimal("150000")),
-        leverage_points=[
-            NegotiationPoint(category="skills", point="test", strength="high")
-        ],
+        leverage_points=[NegotiationPoint(category="skills", point="test", strength="high")],
         talking_points=["point1"],
     )
     assert brief.job_id == "test123"
