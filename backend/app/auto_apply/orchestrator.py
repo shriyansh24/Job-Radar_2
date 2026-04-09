@@ -298,7 +298,9 @@ class AutoApplyOrchestrator:
         run.status = (
             self.SUBMITTED_STATUS
             if submitted and getattr(result, "success", False)
-            else self.REVIEW_COMPLETE_STATUS if getattr(result, "success", False) else "failed"
+            else self.REVIEW_COMPLETE_STATUS
+            if getattr(result, "success", False)
+            else "failed"
         )
         run.completed_at = datetime.now(UTC)
 
@@ -382,9 +384,7 @@ class AutoApplyOrchestrator:
             select(AutoApplyRun.ats_provider).where(
                 AutoApplyRun.user_id == user_id,
                 AutoApplyRun.ats_provider.is_not(None),
-                AutoApplyRun.status.in_(
-                    [self.SUBMITTED_STATUS, self.REVIEW_COMPLETE_STATUS]
-                ),
+                AutoApplyRun.status.in_([self.SUBMITTED_STATUS, self.REVIEW_COMPLETE_STATUS]),
             )
         )
         return {provider for provider in rows.all() if provider}

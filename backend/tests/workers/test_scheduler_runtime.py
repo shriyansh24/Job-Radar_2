@@ -201,6 +201,7 @@ async def test_scheduler_record_health_includes_pressure_summary(
         "_scheduler_healthcheck_interval_seconds",
         lambda: 15,
     )
+
     async def _fake_record_queue_telemetry(
         queue_pool: object,
         queue_snapshots: object,

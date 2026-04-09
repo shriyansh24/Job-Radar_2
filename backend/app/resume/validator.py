@@ -88,9 +88,7 @@ class ATSValidator:
         return ATSCheckResult(
             field="contact_email",
             passed=has_email,
-            message="Contact email present"
-            if has_email
-            else "Missing or invalid email address",
+            message="Contact email present" if has_email else "Missing or invalid email address",
         )
 
     def _check_contact_phone(self, ir: dict[str, Any]) -> ATSCheckResult:
@@ -120,9 +118,7 @@ class ATSValidator:
         return ATSCheckResult(
             field="has_education",
             passed=has_education,
-            message="Education section present"
-            if has_education
-            else "No education section found",
+            message="Education section present" if has_education else "No education section found",
         )
 
     def _check_has_skills(self, ir: dict[str, Any]) -> ATSCheckResult:
@@ -183,9 +179,7 @@ class ATSValidator:
         action_count = sum(
             1 for bullet in all_bullets if action_verb_pattern.match(bullet.strip())
         )
-        quant_count = sum(
-            1 for bullet in all_bullets if quantified_pattern.search(bullet)
-        )
+        quant_count = sum(1 for bullet in all_bullets if quantified_pattern.search(bullet))
         total = len(all_bullets)
         action_ratio = action_count / total
         quant_ratio = quant_count / total
@@ -288,9 +282,7 @@ class ATSValidator:
             for bullet in work.get("bullets", []) or []:
                 parts.append(bullet)
         for education in ir.get("education", []) or []:
-            parts.append(
-                f"{education.get('institution', '')} {education.get('degree', '')}"
-            )
+            parts.append(f"{education.get('institution', '')} {education.get('degree', '')}")
         for skill in ir.get("skills", []) or []:
             parts.append(skill)
         return "\n".join(parts)

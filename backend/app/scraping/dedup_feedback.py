@@ -237,14 +237,12 @@ class DedupFeedbackService:
         diffs = [r for r in rows if not r.is_duplicate]
 
         # Compute average similarity for each group
-        avg_dup_title = (
-            sum(r.title_similarity for r in dupes if r.title_similarity is not None)
-            / max(len([r for r in dupes if r.title_similarity is not None]), 1)
-        )
-        avg_diff_title = (
-            sum(r.title_similarity for r in diffs if r.title_similarity is not None)
-            / max(len([r for r in diffs if r.title_similarity is not None]), 1)
-        )
+        avg_dup_title = sum(
+            r.title_similarity for r in dupes if r.title_similarity is not None
+        ) / max(len([r for r in dupes if r.title_similarity is not None]), 1)
+        avg_diff_title = sum(
+            r.title_similarity for r in diffs if r.title_similarity is not None
+        ) / max(len([r for r in diffs if r.title_similarity is not None]), 1)
 
         # Suggested threshold is midpoint between average dup and average diff similarity
         if dupes and diffs:
@@ -317,7 +315,7 @@ class DedupFeedbackService:
         adjustment = await self.adjust_thresholds(user_id=user_id)
         suggested = cast(
             dict[str, float] | None,
-            adjustment.get("suggested_thresholds") if isinstance(adjustment, dict) else None
+            adjustment.get("suggested_thresholds") if isinstance(adjustment, dict) else None,
         )
 
         return AccuracyStats(

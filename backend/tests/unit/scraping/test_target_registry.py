@@ -21,8 +21,7 @@ def _make_mock_workbook(rows: list[tuple]) -> MagicMock:
 
 
 def _make_mock_db() -> AsyncMock:
-    """Create a mock AsyncSession.
-    """
+    """Create a mock AsyncSession."""
     mock_db = AsyncMock()
 
     mock_db.scalar = AsyncMock(return_value=None)

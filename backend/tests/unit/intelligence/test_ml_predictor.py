@@ -143,9 +143,7 @@ async def _seed_training_data(
         else:
             stage = negative_stages[i % len(negative_stages)]
 
-        await _create_outcome(
-            db, user, application, stage=stage, referral=(i % 7 == 0)
-        )
+        await _create_outcome(db, user, application, stage=stage, referral=(i % 7 == 0))
 
     await db.commit()
 
@@ -316,9 +314,7 @@ async def test_feature_contributions_sorted_by_importance(
     contributions = pred.top_features
     # Verify sorted by absolute contribution descending
     for i in range(len(contributions) - 1):
-        assert abs(contributions[i].contribution) >= abs(
-            contributions[i + 1].contribution
-        )
+        assert abs(contributions[i].contribution) >= abs(contributions[i + 1].contribution)
 
 
 @pytest.mark.asyncio
@@ -329,9 +325,7 @@ async def test_title_similarity_with_matching_titles(
 
     # Create past applications with "Software Engineer" titles
     for i in range(3):
-        job = await _create_job(
-            db_session, user, title=f"Software Engineer {i}"
-        )
+        job = await _create_job(db_session, user, title=f"Software Engineer {i}")
         await _create_application(db_session, user, job)
     await db_session.commit()
 

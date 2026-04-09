@@ -182,11 +182,13 @@ class TestProfileMapping:
 class TestStepDetection:
     @pytest.mark.asyncio()
     async def test_detects_personal_info(self, profile: MagicMock) -> None:
-        page = _make_page(automation_ids=[
-            "legalNameSection_firstName",
-            "legalNameSection_lastName",
-            "email",
-        ])
+        page = _make_page(
+            automation_ids=[
+                "legalNameSection_firstName",
+                "legalNameSection_lastName",
+                "email",
+            ]
+        )
         adapter = WorkdayBrowserAdapter(page, profile, action_delay=(0, 0))
         step = await adapter._detect_current_step()
         assert step == WizardStep.PERSONAL_INFO
@@ -232,26 +234,26 @@ class TestFieldFilling:
     @pytest.mark.asyncio()
     async def test_fill_shadow_field_via_locator(self, profile: MagicMock) -> None:
         loc = _make_locator(count=1, tag="input")
-        page = _make_page(locator_map={
-            WORKDAY_SELECTORS["first_name"]: loc,
-        })
-        adapter = WorkdayBrowserAdapter(page, profile, action_delay=(0, 0))
-        result = await adapter._fill_shadow_field(
-            WORKDAY_SELECTORS["first_name"], "Jane"
+        page = _make_page(
+            locator_map={
+                WORKDAY_SELECTORS["first_name"]: loc,
+            }
         )
+        adapter = WorkdayBrowserAdapter(page, profile, action_delay=(0, 0))
+        result = await adapter._fill_shadow_field(WORKDAY_SELECTORS["first_name"], "Jane")
         assert result is True
         loc.first.fill.assert_awaited_once_with("Jane")
 
     @pytest.mark.asyncio()
     async def test_fill_shadow_field_select(self, profile: MagicMock) -> None:
         loc = _make_locator(count=1, tag="select")
-        page = _make_page(locator_map={
-            WORKDAY_SELECTORS["state"]: loc,
-        })
-        adapter = WorkdayBrowserAdapter(page, profile, action_delay=(0, 0))
-        result = await adapter._fill_shadow_field(
-            WORKDAY_SELECTORS["state"], "California"
+        page = _make_page(
+            locator_map={
+                WORKDAY_SELECTORS["state"]: loc,
+            }
         )
+        adapter = WorkdayBrowserAdapter(page, profile, action_delay=(0, 0))
+        result = await adapter._fill_shadow_field(WORKDAY_SELECTORS["state"], "California")
         assert result is True
         loc.first.select_option.assert_awaited_once_with(label="California")
 
@@ -261,13 +263,13 @@ class TestFieldFilling:
     ) -> None:
         """When locator count=0 and JS traversal also returns None, returns False."""
         loc = _make_locator(count=0)
-        page = _make_page(locator_map={
-            WORKDAY_SELECTORS["first_name"]: loc,
-        })
-        adapter = WorkdayBrowserAdapter(page, profile, action_delay=(0, 0))
-        result = await adapter._fill_shadow_field(
-            WORKDAY_SELECTORS["first_name"], "Jane"
+        page = _make_page(
+            locator_map={
+                WORKDAY_SELECTORS["first_name"]: loc,
+            }
         )
+        adapter = WorkdayBrowserAdapter(page, profile, action_delay=(0, 0))
+        result = await adapter._fill_shadow_field(WORKDAY_SELECTORS["first_name"], "Jane")
         assert result is False
 
 
@@ -280,9 +282,11 @@ class TestResumeUpload:
     @pytest.mark.asyncio()
     async def test_upload_via_input(self, profile: MagicMock) -> None:
         upload_loc = _make_locator(count=1)
-        page = _make_page(locator_map={
-            WORKDAY_SELECTORS["resume_upload"]: upload_loc,
-        })
+        page = _make_page(
+            locator_map={
+                WORKDAY_SELECTORS["resume_upload"]: upload_loc,
+            }
+        )
         adapter = WorkdayBrowserAdapter(page, profile, action_delay=(0, 0))
         result = await adapter._upload_resume("/tmp/resume.pdf")
         assert result is True
@@ -346,11 +350,14 @@ class TestApplyFlow:
     @pytest.mark.asyncio()
     async def test_single_page_flow(self, profile: MagicMock) -> None:
         """Single page with no next button -> fills and returns."""
-        page = _make_page(has_next=False, automation_ids=[
-            "legalNameSection_firstName",
-            "legalNameSection_lastName",
-            "email",
-        ])
+        page = _make_page(
+            has_next=False,
+            automation_ids=[
+                "legalNameSection_firstName",
+                "legalNameSection_lastName",
+                "email",
+            ],
+        )
         # Make fallback also return nothing
         fallback_loc = _make_locator(count=0)
 
@@ -509,8 +516,12 @@ class TestSelectors:
 
     def test_critical_selectors_present(self) -> None:
         required = [
-            "first_name", "last_name", "email", "phone",
-            "resume_upload", "next_button",
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "resume_upload",
+            "next_button",
         ]
         for key in required:
             assert key in WORKDAY_SELECTORS, f"Missing selector: {key}"

@@ -92,9 +92,7 @@ def upgrade() -> None:
                 sa.DateTime(timezone=True),
                 server_default=sa.func.now(),
             ),
-            sa.UniqueConstraint(
-                "user_id", "job_id", name="uq_application_dedup_user_job"
-            ),
+            sa.UniqueConstraint("user_id", "job_id", name="uq_application_dedup_user_job"),
         )
 
     # ------------------------------------------------------------------
@@ -126,9 +124,7 @@ def upgrade() -> None:
                 server_default=sa.func.now(),
             ),
         )
-        op.create_index(
-            "idx_dedup_feedback_pair", "dedup_feedback", ["job_a_id", "job_b_id"]
-        )
+        op.create_index("idx_dedup_feedback_pair", "dedup_feedback", ["job_a_id", "job_b_id"])
         op.create_index("idx_dedup_feedback_user", "dedup_feedback", ["user_id"])
 
     # ------------------------------------------------------------------
@@ -291,9 +287,7 @@ def upgrade() -> None:
                 server_default=sa.func.now(),
             ),
         )
-        op.create_index(
-            "ix_application_outcomes_user_id", "application_outcomes", ["user_id"]
-        )
+        op.create_index("ix_application_outcomes_user_id", "application_outcomes", ["user_id"])
         op.create_index(
             "ix_application_outcomes_application_id",
             "application_outcomes",
@@ -306,9 +300,7 @@ def upgrade() -> None:
             "company_insights",
             sa.Column("id", sa.Uuid(), primary_key=True),
             sa.Column("user_id", sa.Uuid(), sa.ForeignKey("users.id"), nullable=False),
-            sa.Column(
-                "company_name", sa.String(200), nullable=False, index=True
-            ),
+            sa.Column("company_name", sa.String(200), nullable=False, index=True),
             sa.Column("total_applications", sa.Integer(), default=0),
             sa.Column("callback_count", sa.Integer(), default=0),
             sa.Column("avg_response_days", sa.Float(), nullable=True),

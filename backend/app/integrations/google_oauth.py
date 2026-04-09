@@ -97,9 +97,7 @@ async def exchange_google_code(code: str) -> dict[str, Any]:
     except httpx.HTTPError as exc:
         raise GoogleOAuthError("Google token exchange request failed.") from exc
     if response.is_error:
-        raise GoogleOAuthError(
-            f"Google token exchange failed with status {response.status_code}."
-        )
+        raise GoogleOAuthError(f"Google token exchange failed with status {response.status_code}.")
     try:
         payload = cast(dict[str, Any], response.json())
     except ValueError as exc:

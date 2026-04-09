@@ -132,9 +132,7 @@ class GPUAccelerator:
                     gpu_dev = gpu_devices[0]
                     info.available = True
                     info.backend = "openvino"
-                    info.device_name = self._core.get_property(
-                        gpu_dev, "FULL_DEVICE_NAME"
-                    )
+                    info.device_name = self._core.get_property(gpu_dev, "FULL_DEVICE_NAME")
                     info.extra["openvino_devices"] = ",".join(devices)
                     self._device_info = info
                     return info
@@ -205,9 +203,7 @@ class GPUAccelerator:
 
         return result
 
-    def benchmark(
-        self, model_path: str, iterations: int = 10
-    ) -> BenchmarkResult:
+    def benchmark(self, model_path: str, iterations: int = 10) -> BenchmarkResult:
         """Compare CPU vs GPU inference time for an ONNX model.
 
         Returns a ``BenchmarkResult`` with timings and speedup ratio.

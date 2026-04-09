@@ -130,9 +130,7 @@ class WorkdayBrowserAdapter:
         """Determine which wizard step we are on by checking automation IDs."""
         return await self._detector.detect_current_step()
 
-    async def _fill_current_page(
-        self, step: WizardStep, resume_path: str | None
-    ) -> StepResult:
+    async def _fill_current_page(self, step: WizardStep, resume_path: str | None) -> StepResult:
         """Fill all recognized fields on the current wizard page."""
         result = await self._executor.fill_current_page(
             step,

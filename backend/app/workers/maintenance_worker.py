@@ -25,9 +25,9 @@ async def run_cleanup(ctx: Mapping[str, Any] | None = None) -> None:
             result = cast(
                 CursorResult[Any],
                 await db.execute(
-                update(Job)
-                .where(Job.scraped_at < cutoff, Job.status == "new")
-                .values(is_active=False)
+                    update(Job)
+                    .where(Job.scraped_at < cutoff, Job.status == "new")
+                    .values(is_active=False)
                 ),
             )
             await db.commit()
@@ -73,6 +73,4 @@ async def run_source_health_check(ctx: Mapping[str, Any] | None = None) -> None:
         finally:
             await scraper.close()
     if failed_sources:
-        raise RuntimeError(
-            "Source health checks failed for: " + ", ".join(sorted(failed_sources))
-        )
+        raise RuntimeError("Source health checks failed for: " + ", ".join(sorted(failed_sources)))

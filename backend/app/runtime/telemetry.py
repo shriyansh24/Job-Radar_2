@@ -72,8 +72,7 @@ async def _read_current_state(redis: ArqRedis) -> dict[str, str]:
         await cast(Any, redis).hgetall(settings.queue_alert_state_key),
     )
     return {
-        _decode_stream_value(key): _decode_stream_value(value)
-        for key, value in raw_state.items()
+        _decode_stream_value(key): _decode_stream_value(value) for key, value in raw_state.items()
     }
 
 

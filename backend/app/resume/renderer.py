@@ -63,8 +63,7 @@ class ResumeRenderer:
         """Render a ResumeIR to an HTML string."""
         if template_id not in _TEMPLATE_IDS:
             raise ValueError(
-                f"Unknown template '{template_id}'. "
-                f"Available: {sorted(_TEMPLATE_IDS)}"
+                f"Unknown template '{template_id}'. Available: {sorted(_TEMPLATE_IDS)}"
             )
         data = _to_dict(ir)
         template = self.env.get_template(f"{template_id}.html")
@@ -83,9 +82,7 @@ class ResumeRenderer:
         html_content = self.render_html(ir, template_id)
         return bytes(HTML(string=html_content).write_pdf())
 
-    def render_to_file(
-        self, ir: Any, output_path: str, template_id: str = "professional"
-    ) -> str:
+    def render_to_file(self, ir: Any, output_path: str, template_id: str = "professional") -> str:
         """Render PDF and write to *output_path*. Returns the path."""
         pdf_bytes = self.render_pdf(ir, template_id)
         Path(output_path).write_bytes(pdf_bytes)

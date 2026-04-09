@@ -107,9 +107,9 @@ async def read_auth_audit_events(
     entries: list[dict[str, object]] = []
     for raw_stream_id, raw_payload in raw_entries:
         payload = {
-            (
-                key.decode() if isinstance(key, bytes) else str(key)
-            ): value.decode() if isinstance(value, bytes) else str(value)
+            (key.decode() if isinstance(key, bytes) else str(key)): value.decode()
+            if isinstance(value, bytes)
+            else str(value)
             for key, value in raw_payload.items()
         }
         entries.append(

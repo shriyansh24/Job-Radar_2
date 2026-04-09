@@ -338,9 +338,7 @@ class FormExtractor:
             )
         return fields
 
-    async def _infer_label(
-        self, locator: Locator, ctx: Page | FrameLocator | None = None
-    ) -> str:
+    async def _infer_label(self, locator: Locator, ctx: Page | FrameLocator | None = None) -> str:
         aria_label = await locator.get_attribute("aria-label")
         if aria_label:
             return aria_label.strip()

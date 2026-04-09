@@ -260,7 +260,7 @@ class InterviewService:
 
     @staticmethod
     def _coerce_job_context(
-        context: tuple[str, str, str] | tuple[str, str, str, list[str]]
+        context: tuple[str, str, str] | tuple[str, str, str, list[str]],
     ) -> tuple[str, str, str, list[str]]:
         if len(context) == 4:
             return context

@@ -47,8 +47,10 @@ def seal_secret(value: str) -> str:
     plaintext = value.strip()
     if not plaintext:
         return ""
-    token = _fernet_for_key(_primary_encryption_key()).encrypt(plaintext.encode("utf-8")).decode(
-        "utf-8"
+    token = (
+        _fernet_for_key(_primary_encryption_key())
+        .encrypt(plaintext.encode("utf-8"))
+        .decode("utf-8")
     )
     return f"{_SECRET_PREFIX}{token}"
 
@@ -58,7 +60,7 @@ def unseal_secret(value: str | None) -> str | None:
         return None
     if not value.startswith(_SECRET_PREFIX):
         return value
-    token = value[len(_SECRET_PREFIX):]
+    token = value[len(_SECRET_PREFIX) :]
     for key in _decryption_keys():
         try:
             return _fernet_for_key(key).decrypt(token.encode("utf-8")).decode("utf-8")

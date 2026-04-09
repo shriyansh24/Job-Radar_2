@@ -234,8 +234,4 @@ def _build_frontend_callback_url(
         }
     )
     separator = "&" if "?" in normalized_return_to else "?"
-    return (
-        f"{settings.frontend_base_url.rstrip('/')}"
-        f"{normalized_return_to}"
-        f"{separator}{params}"
-    )
+    return f"{settings.frontend_base_url.rstrip('/')}{normalized_return_to}{separator}{params}"

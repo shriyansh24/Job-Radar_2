@@ -112,9 +112,7 @@ class TestParserWithMockedLLM:
                         "metrics": [],
                     }
                 ],
-                "education": [
-                    {"institution": "State U", "degree": "BS", "field": "CS"}
-                ],
+                "education": [{"institution": "State U", "degree": "BS", "field": "CS"}],
                 "skills": ["Python", "Go"],
                 "skill_categories": {"Languages": ["Python", "Go"]},
                 "projects": [],
@@ -128,9 +126,7 @@ class TestParserWithMockedLLM:
     @pytest.mark.asyncio
     async def test_parse_txt(self, mock_llm: AsyncMock) -> None:
         parser = ResumeParser(llm_client=mock_llm)
-        ir = await parser.parse(
-            b"Jane Doe\njane@example.com\nExperienced engineer.", "resume.txt"
-        )
+        ir = await parser.parse(b"Jane Doe\njane@example.com\nExperienced engineer.", "resume.txt")
         assert ir.contact.name == "Jane Doe"
         assert ir.contact.email == "jane@example.com"
         assert len(ir.work) == 1

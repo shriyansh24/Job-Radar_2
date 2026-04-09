@@ -38,9 +38,7 @@ class ReferralRequest(Base):
     contact_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("contacts.id", ondelete="CASCADE"), index=True
     )
-    job_id: Mapped[str] = mapped_column(
-        ForeignKey("jobs.id", ondelete="CASCADE"), index=True
-    )
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), index=True)
     status: Mapped[str] = mapped_column(String(30), default="draft")
     message_template: Mapped[str | None] = mapped_column(Text)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

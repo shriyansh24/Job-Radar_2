@@ -61,9 +61,7 @@ class TestHybridSearchService:
         db = _make_db(is_pg=False)
         db.execute = AsyncMock(
             return_value=MagicMock(
-                __iter__=lambda _: iter(
-                    [SimpleNamespace(id="job-1"), SimpleNamespace(id="job-2")]
-                )
+                __iter__=lambda _: iter([SimpleNamespace(id="job-1"), SimpleNamespace(id="job-2")])
             )
         )
         service = HybridSearchService(db, _make_embedder())
@@ -78,9 +76,7 @@ class TestHybridSearchService:
         embedder = AsyncMock()
         embedder.embed_query = AsyncMock(return_value=None)
         db.execute = AsyncMock(
-            return_value=MagicMock(
-                __iter__=lambda _: iter([SimpleNamespace(id="job-1", rank=1)])
-            )
+            return_value=MagicMock(__iter__=lambda _: iter([SimpleNamespace(id="job-1", rank=1)]))
         )
         service = HybridSearchService(db, embedder)
         results = await service.search("python", USER_ID, limit=10)

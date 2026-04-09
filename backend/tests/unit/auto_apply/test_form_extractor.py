@@ -107,9 +107,7 @@ def _make_page(
 class TestFormExtractorTextInputs:
     @pytest.mark.asyncio
     async def test_extracts_text_input_with_aria_label(self) -> None:
-        locator = _make_locator(
-            attrs={"aria-label": "First Name", "id": "fname", "type": "text"}
-        )
+        locator = _make_locator(attrs={"aria-label": "First Name", "id": "fname", "type": "text"})
         page = _make_page(textboxes=[locator])
 
         extractor = FormExtractor()

@@ -21,6 +21,7 @@ from app.shared.errors import NotFoundError
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_resume(db: AsyncSession, user_id: uuid.UUID) -> ResumeVersion:
     rv = ResumeVersion(
         user_id=user_id,

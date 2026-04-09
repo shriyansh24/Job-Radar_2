@@ -13,9 +13,7 @@ from app.jobs.models import Job
 from app.pipeline.models import Application, ApplicationStatusHistory
 from app.profile.models import UserProfile
 
-_RESPONDED_STATUSES = frozenset(
-    {"screening", "interviewing", "offer", "accepted", "rejected"}
-)
+_RESPONDED_STATUSES = frozenset({"screening", "interviewing", "offer", "accepted", "rejected"})
 _MIN_SAMPLE = 3
 
 
@@ -304,10 +302,7 @@ class PatternDetector:
             if skill.lower() not in resume_lower and count >= _MIN_SAMPLE
         ]
         gap_pairs.sort(key=lambda item: item[1], reverse=True)
-        return [
-            {"skill": skill, "demand_count": count}
-            for skill, count in gap_pairs[:20]
-        ]
+        return [{"skill": skill, "demand_count": count} for skill, count in gap_pairs[:20]]
 
     async def get_all_patterns(self, user_id: uuid.UUID) -> dict[str, Any]:
         return {

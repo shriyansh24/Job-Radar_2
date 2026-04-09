@@ -130,9 +130,7 @@ class OutcomeService:
         total_applications = app_count_result.scalar() or 0
 
         outcome_count_result = await self.db.execute(
-            select(func.count(ApplicationOutcome.id)).where(
-                ApplicationOutcome.user_id == user_id
-            )
+            select(func.count(ApplicationOutcome.id)).where(ApplicationOutcome.user_id == user_id)
         )
         total_outcomes = outcome_count_result.scalar() or 0
 
@@ -143,9 +141,7 @@ class OutcomeService:
             )
         )
         avg_days = avg_days_result.scalar()
-        avg_days_to_response = (
-            round(float(avg_days), 1) if avg_days is not None else None
-        )
+        avg_days_to_response = round(float(avg_days), 1) if avg_days is not None else None
 
         ghosted_count_result = await self.db.execute(
             select(func.count(ApplicationOutcome.id)).where(
@@ -154,9 +150,7 @@ class OutcomeService:
             )
         )
         ghosted_count = ghosted_count_result.scalar() or 0
-        ghosting_rate = (
-            round(ghosted_count / total_outcomes, 2) if total_outcomes > 0 else 0.0
-        )
+        ghosting_rate = round(ghosted_count / total_outcomes, 2) if total_outcomes > 0 else 0.0
 
         responded_result = await self.db.execute(
             select(func.count(ApplicationOutcome.id)).where(
@@ -165,9 +159,7 @@ class OutcomeService:
             )
         )
         responded_count = responded_result.scalar() or 0
-        response_rate = (
-            round(responded_count / total_outcomes, 2) if total_outcomes > 0 else 0.0
-        )
+        response_rate = round(responded_count / total_outcomes, 2) if total_outcomes > 0 else 0.0
 
         offer_count_result = await self.db.execute(
             select(func.count(ApplicationOutcome.id)).where(
@@ -176,9 +168,7 @@ class OutcomeService:
             )
         )
         offer_count = offer_count_result.scalar() or 0
-        offer_rate = (
-            round(offer_count / total_outcomes, 2) if total_outcomes > 0 else 0.0
-        )
+        offer_rate = round(offer_count / total_outcomes, 2) if total_outcomes > 0 else 0.0
 
         avg_offer_result = await self.db.execute(
             select(func.avg(ApplicationOutcome.offer_amount)).where(
@@ -187,9 +177,7 @@ class OutcomeService:
             )
         )
         avg_offer = avg_offer_result.scalar()
-        avg_offer_amount = (
-            round(float(avg_offer), 2) if avg_offer is not None else None
-        )
+        avg_offer_amount = round(float(avg_offer), 2) if avg_offer is not None else None
 
         rejection_rows = await self.db.execute(
             select(
@@ -267,9 +255,7 @@ class OutcomeService:
 
         total = len(outcomes)
         if total == 0:
-            raise NotFoundError(
-                f"No outcome data found for company: {company_name}"
-            )
+            raise NotFoundError(f"No outcome data found for company: {company_name}")
 
         ghosted = sum(1 for o in outcomes if o.was_ghosted)
         offers = [o for o in outcomes if o.offer_amount is not None]
@@ -277,30 +263,22 @@ class OutcomeService:
         responded = [o for o in outcomes if o.days_to_response is not None]
 
         avg_response = (
-            sum(o.days_to_response for o in responded) / len(responded)
-            if responded
-            else None
+            sum(o.days_to_response for o in responded) / len(responded) if responded else None
         )
-        avg_offer = (
-            sum(o.offer_amount for o in offers) / len(offers) if offers else None
-        )
+        avg_offer = sum(o.offer_amount for o in offers) / len(offers) if offers else None
 
         return CompanyInsightResponse(
             id=uuid.uuid4(),
             company_name=company_name,
             total_applications=total,
             callback_count=len(responded),
-            avg_response_days=(
-                round(avg_response, 1) if avg_response is not None else None
-            ),
+            avg_response_days=(round(avg_response, 1) if avg_response is not None else None),
             ghosted_count=ghosted,
             ghost_rate=round(ghosted / total, 2) if total > 0 else 0.0,
             rejection_rate=round(rejected / total, 2) if total > 0 else 0.0,
             offer_rate=round(len(offers) / total, 2) if total > 0 else 0.0,
             offers_received=len(offers),
-            avg_offer_amount=(
-                round(avg_offer, 2) if avg_offer is not None else None
-            ),
+            avg_offer_amount=(round(avg_offer, 2) if avg_offer is not None else None),
         )
 
     async def _update_company_insight(
@@ -337,9 +315,7 @@ class OutcomeService:
         if outcome.days_to_response is not None:
             insight.callback_count += 1
             if insight.avg_response_days is not None:
-                total_days = insight.avg_response_days * (
-                    insight.callback_count - 1
-                )
+                total_days = insight.avg_response_days * (insight.callback_count - 1)
                 insight.avg_response_days = (
                     total_days + outcome.days_to_response
                 ) / insight.callback_count
@@ -349,9 +325,7 @@ class OutcomeService:
         if outcome.offer_amount is not None:
             insight.offers_received += 1
             if insight.avg_offer_amount is not None:
-                total_offer = insight.avg_offer_amount * (
-                    insight.offers_received - 1
-                )
+                total_offer = insight.avg_offer_amount * (insight.offers_received - 1)
                 insight.avg_offer_amount = (
                     total_offer + outcome.offer_amount
                 ) / insight.offers_received

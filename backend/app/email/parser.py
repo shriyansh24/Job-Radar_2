@@ -93,9 +93,18 @@ _DATE_PATTERN = re.compile(
 )
 
 _MONTH_MAP: dict[str, int] = {
-    "january": 1, "february": 2, "march": 3, "april": 4,
-    "may": 5, "june": 6, "july": 7, "august": 8,
-    "september": 9, "october": 10, "november": 11, "december": 12,
+    "january": 1,
+    "february": 2,
+    "march": 3,
+    "april": 4,
+    "may": 5,
+    "june": 6,
+    "july": 7,
+    "august": 8,
+    "september": 9,
+    "october": 10,
+    "november": 11,
+    "december": 12,
 }
 
 # Job title extraction: "for the <title> position/role"
@@ -164,10 +173,19 @@ class EmailParser:
             domain = domain_match.group(1)
             # Skip generic email / ATS domains
             skip_domains = {
-                "gmail", "yahoo", "outlook", "hotmail",
-                "greenhouse", "greenhouse-mail", "lever",
-                "icims", "myworkdayjobs", "myworkday",
-                "noreply", "no-reply", "notifications",
+                "gmail",
+                "yahoo",
+                "outlook",
+                "hotmail",
+                "greenhouse",
+                "greenhouse-mail",
+                "lever",
+                "icims",
+                "myworkdayjobs",
+                "myworkday",
+                "noreply",
+                "no-reply",
+                "notifications",
             }
             if domain.lower() not in skip_domains:
                 return domain.replace("-", " ").title()
@@ -234,9 +252,7 @@ class EmailParser:
             text,
             flags=re.IGNORECASE,
         )
-        month_match = re.match(
-            r"([A-Za-z]+)\s+(\d{1,2})(?:,?\s+(\d{4}))?", text
-        )
+        month_match = re.match(r"([A-Za-z]+)\s+(\d{1,2})(?:,?\s+(\d{4}))?", text)
         if month_match:
             month_name = month_match.group(1).lower()
             month = _MONTH_MAP.get(month_name)

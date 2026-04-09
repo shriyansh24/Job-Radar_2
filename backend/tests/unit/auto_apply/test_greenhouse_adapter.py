@@ -189,8 +189,7 @@ class TestGreenhouseApply:
 
         assert (
             "Review custom question "
-            "'Do you now or will you in the future require sponsorship?'"
-            in result.review_items
+            "'Do you now or will you in the future require sponsorship?'" in result.review_items
         )
 
 
