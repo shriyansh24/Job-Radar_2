@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 import uuid
 from dataclasses import dataclass
-from pathlib import Path
+from importlib.resources import files as _resource_files
 from typing import Any, cast
 
 import structlog
@@ -27,17 +27,38 @@ WHERE user_id = :user_id
   AND search_vector @@ plainto_tsquery('english', :query)
 """
 
-_SQL_DIR = Path(__file__).with_name("sql")
+_HYBRID_SEARCH_SQL: Any = None
+_BM25_ONLY_SEARCH_SQL: Any = None
 
 
 def _load_sql(filename: str) -> str:
-    return (_SQL_DIR / filename).read_text(encoding="utf-8").replace(
-        "__BM25_BASE_QUERY__", _BM25_BASE_QUERY.strip()
-    )
+    try:
+        sql_text = (
+            _resource_files("app.search")
+            .joinpath("sql")
+            .joinpath(filename)
+            .read_text(encoding="utf-8")
+        )
+    except (FileNotFoundError, TypeError) as exc:
+        raise RuntimeError(
+            f"Could not load search SQL template '{filename}'. "
+            "Ensure app/search/sql/ files are included in the package data."
+        ) from exc
+    return sql_text.replace("__BM25_BASE_QUERY__", _BM25_BASE_QUERY.strip())
 
 
-_HYBRID_SEARCH_SQL = text(_load_sql("hybrid_search.sql"))
-_BM25_ONLY_SEARCH_SQL = text(_load_sql("bm25_only_search.sql"))
+def _get_hybrid_search_sql() -> Any:
+    global _HYBRID_SEARCH_SQL
+    if _HYBRID_SEARCH_SQL is None:
+        _HYBRID_SEARCH_SQL = text(_load_sql("hybrid_search.sql"))
+    return _HYBRID_SEARCH_SQL
+
+
+def _get_bm25_only_search_sql() -> Any:
+    global _BM25_ONLY_SEARCH_SQL
+    if _BM25_ONLY_SEARCH_SQL is None:
+        _BM25_ONLY_SEARCH_SQL = text(_load_sql("bm25_only_search.sql"))
+    return _BM25_ONLY_SEARCH_SQL
 
 
 @dataclass
@@ -100,7 +121,7 @@ class HybridSearchService:
                 semantic_rank=row.semantic_rank,
             )
 
-        return await self._execute_search_query(_HYBRID_SEARCH_SQL, params, _map_func)
+        return await self._execute_search_query(_get_hybrid_search_sql(), params, _map_func)
 
     async def _bm25_only_search(
         self,
@@ -124,7 +145,7 @@ class HybridSearchService:
                 semantic_rank=None,
             )
 
-        return await self._execute_search_query(_BM25_ONLY_SEARCH_SQL, params, _map_func)
+        return await self._execute_search_query(_get_bm25_only_search_sql(), params, _map_func)
 
     async def _fallback_keyword_search(
         self,
