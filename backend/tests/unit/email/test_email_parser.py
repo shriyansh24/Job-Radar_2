@@ -507,6 +507,25 @@ async def test_service_resolves_webhook_user_from_recipient(db_session: AsyncSes
 
 
 @pytest.mark.asyncio
+async def test_service_resolves_webhook_user_with_case_insensitive_fallback(
+    db_session: AsyncSession,
+) -> None:
+    user = User(
+        email="Mixed.Case@example.com",
+        password_hash="unused",
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+
+    svc = EmailService(db_session)
+    payload = EmailWebhookPayload(to="JobRadar <mixed.case@example.com>")
+
+    assert await svc.resolve_webhook_user_id(payload) == user.id
+
+
+@pytest.mark.asyncio
 async def test_service_rejects_unknown_webhook_recipient(db_session: AsyncSession) -> None:
     svc = EmailService(db_session)
     payload = EmailWebhookPayload(to="unknown@example.com")

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import re
 import uuid
+from email.utils import getaddresses
 from typing import cast
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -23,7 +23,6 @@ from app.pipeline.state_machine import VALID_TRANSITIONS
 from app.shared.errors import AuthError
 
 logger = structlog.get_logger()
-_RECIPIENT_EMAIL_RE = re.compile(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}")
 
 _ACTION_TO_STATUS: dict[str, str] = {
     "offer": "offer",
@@ -183,6 +182,17 @@ class EmailService:
             raise AuthError("Webhook recipient could not be resolved")
 
         user = await self.db.scalar(select(User).where(User.email == recipient_email))
+        if user is None:
+            candidate_users = (
+                await self.db.scalars(
+                    select(User)
+                    .where(func.lower(User.email) == recipient_email.lower())
+                    .limit(2)
+                )
+            ).all()
+            if len(candidate_users) != 1:
+                raise AuthError("Webhook recipient not recognized")
+            user = candidate_users[0]
         if user is None or not user.is_active:
             raise AuthError("Webhook recipient not recognized")
         return cast(uuid.UUID, user.id)
@@ -270,8 +280,11 @@ class EmailService:
 
     @staticmethod
     def _extract_recipient_email(recipient_field: str) -> str | None:
-        match = _RECIPIENT_EMAIL_RE.search(recipient_field)
-        return match.group(0).lower() if match else None
+        for _, address in getaddresses([recipient_field]):
+            candidate = address.strip()
+            if candidate and "@" in candidate:
+                return candidate
+        return None
 
     @staticmethod
     def verify_webhook_signature(

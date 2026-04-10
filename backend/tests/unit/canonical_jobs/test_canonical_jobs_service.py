@@ -9,10 +9,11 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Register canonical_jobs tables with Base.metadata
-import app.canonical_jobs.models  # noqa: F401
-from app.canonical_jobs.models import CanonicalJob
+from app.canonical_jobs import models as canonical_job_models
 from app.canonical_jobs.service import STALE_THRESHOLD_DAYS, CanonicalJobService
 from app.shared.errors import NotFoundError
+
+CanonicalJob = canonical_job_models.CanonicalJob
 
 # ---------------------------------------------------------------------------
 # Helpers

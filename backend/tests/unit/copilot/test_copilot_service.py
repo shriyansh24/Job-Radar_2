@@ -129,12 +129,6 @@ class TestCopilotChat:
     async def test_yields_placeholder_when_llm_not_configured(self, db_session: AsyncSession):
         svc = CopilotService(db_session)
 
-        async def _mock_build_llm():
-            mock_llm = MagicMock()
-            mock_llm.is_configured = False
-            mock_llm.close = AsyncMock()
-            return mock_llm
-
         with patch("app.copilot.service._build_llm_client", return_value=MagicMock(
             is_configured=False, close=AsyncMock()
         )):
