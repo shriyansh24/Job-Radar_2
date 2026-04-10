@@ -113,6 +113,7 @@ class JobService:
             raise NotFoundError(f"Job {job_id} not found")
 
         await self.db.commit()
+        await self.db.refresh(job)
         return job
 
     async def delete_job(self, job_id: str, user_id: uuid.UUID) -> None:
