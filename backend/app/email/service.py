@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import re
 import uuid
 from typing import cast
 
@@ -19,8 +20,10 @@ from app.pipeline.models import Application
 from app.pipeline.schemas import StatusTransition
 from app.pipeline.service import PipelineService
 from app.pipeline.state_machine import VALID_TRANSITIONS
+from app.shared.errors import AuthError
 
 logger = structlog.get_logger()
+_RECIPIENT_EMAIL_RE = re.compile(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}")
 
 _ACTION_TO_STATUS: dict[str, str] = {
     "offer": "offer",
@@ -172,6 +175,18 @@ class EmailService:
         )
         return [EmailLogResponse.model_validate(log) for log in result.all()]
 
+    async def resolve_webhook_user_id(self, payload: EmailWebhookPayload) -> uuid.UUID:
+        from app.auth.models import User
+
+        recipient_email = self._extract_recipient_email(payload.to)
+        if recipient_email is None:
+            raise AuthError("Webhook recipient could not be resolved")
+
+        user = await self.db.scalar(select(User).where(User.email == recipient_email))
+        if user is None or not user.is_active:
+            raise AuthError("Webhook recipient not recognized")
+        return cast(uuid.UUID, user.id)
+
     async def _find_duplicate_log(
         self,
         message: InboundEmailMessage,
@@ -192,13 +207,13 @@ class EmailService:
         return cast(
             EmailLog | None,
             await self.db.scalar(
-            select(EmailLog).where(
-                EmailLog.user_id == user_id,
-                EmailLog.sender == message.effective_sender,
-                EmailLog.subject == message.subject[:1000],
-                EmailLog.raw_body_hash == body_hash,
+                select(EmailLog).where(
+                    EmailLog.user_id == user_id,
+                    EmailLog.sender == message.effective_sender,
+                    EmailLog.subject == message.subject[:1000],
+                    EmailLog.raw_body_hash == body_hash,
+                )
             )
-        )
         )
 
     def _build_log(
@@ -252,6 +267,11 @@ class EmailService:
     def _can_transition(current_status: str, target_status: str) -> bool:
         allowed = VALID_TRANSITIONS.get(current_status, [])
         return target_status in allowed
+
+    @staticmethod
+    def _extract_recipient_email(recipient_field: str) -> str | None:
+        match = _RECIPIENT_EMAIL_RE.search(recipient_field)
+        return match.group(0).lower() if match else None
 
     @staticmethod
     def verify_webhook_signature(
