@@ -33,6 +33,7 @@ async def persist_jobs(
         seen_at = datetime.now(UTC)
         job_id = compute_job_id(scraped)
         scraped_fields = scraped_job_to_dict(scraped)
+        scraped_fields["scraped_at"] = seen_at
         content_hash = _compute_content_hash(scraped)
         ats_composite_key = scraped_fields.get("ats_composite_key")
         existing = None
@@ -46,7 +47,6 @@ async def persist_jobs(
         if existing:
             for field_name, value in scraped_fields.items():
                 setattr(existing, field_name, value)
-            existing.scraped_at = seen_at
             existing.first_seen_at = existing.first_seen_at or seen_at
             existing.last_seen_at = seen_at
             existing.seen_count = (existing.seen_count or 0) + 1

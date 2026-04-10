@@ -119,3 +119,35 @@ async def test_import_targets_with_skips_and_errors(
     )
     targets = result.all()
     assert len(targets) == 2
+
+
+@pytest.mark.asyncio
+async def test_import_targets_skips_duplicates_within_same_request(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    user_id, token = await _register_and_login(client, email_prefix="targets-import-duplicates")
+
+    items = [
+        {"url": "https://duplicate.example.com/jobs", "company_name": "DupCo"},
+        {"url": "https://duplicate.example.com/jobs", "company_name": "DupCo"},
+    ]
+
+    response = await client.post(
+        "/api/v1/scraper/targets/import",
+        headers=_auth(token),
+        json=items,
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["imported"] == 1
+    assert data["skipped"] == 1
+    assert data["errors"] == []
+
+    result = await db_session.scalars(
+        select(ScrapeTarget).where(ScrapeTarget.user_id == user_id)
+    )
+    targets = result.all()
+    assert len(targets) == 1
+    assert targets[0].url == "https://duplicate.example.com/jobs"

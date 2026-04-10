@@ -103,6 +103,7 @@ async def test_persist_jobs_tracks_lifecycle_fields_for_existing_jobs(db_session
     assert job.first_seen_at == first_seen_at
     assert job.last_seen_at is not None
     assert job.last_seen_at > first_seen_at
+    assert job.scraped_at == job.last_seen_at
     assert job.seen_count == 2
     assert job.disappeared_at is None
     assert job.previous_hash == "old-hash"
@@ -126,6 +127,7 @@ async def test_persist_jobs_initializes_lifecycle_fields_for_new_jobs(db_session
     assert job.first_seen_at is not None
     assert job.last_seen_at is not None
     assert job.first_seen_at == job.last_seen_at
+    assert job.scraped_at == job.last_seen_at
     assert job.seen_count == 1
     assert job.content_hash is not None
     assert job.previous_hash is None

@@ -112,6 +112,7 @@ async def import_targets(
     skipped = 0
     errors: list[str] = []
     to_add: list[ScrapeTarget] = []
+    queued_urls: set[str] = set()
 
     for item in items:
         url = item.url.strip()
@@ -126,6 +127,9 @@ async def import_targets(
             )
         )
         if existing:
+            skipped += 1
+            continue
+        if url in queued_urls:
             skipped += 1
             continue
 
@@ -152,6 +156,7 @@ async def import_targets(
             next_scheduled_at=datetime.now(UTC),
         )
         to_add.append(target)
+        queued_urls.add(url)
         imported += 1
 
     if to_add:

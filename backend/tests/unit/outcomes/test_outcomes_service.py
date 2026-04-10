@@ -8,8 +8,8 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Ensure outcomes & pipeline tables are registered with Base.metadata
-import app.outcomes.models  # noqa: F401
 from app.jobs.models import Job
+from app.outcomes.models import ApplicationOutcome
 from app.outcomes.schemas import OutcomeCreate, OutcomeUpdate
 from app.outcomes.service import OutcomeService
 from app.pipeline.models import Application
@@ -73,6 +73,7 @@ class TestRecordOutcome:
         assert outcome.stage_reached == "interviewing"
         assert outcome.days_to_response == 7
         assert isinstance(outcome.id, uuid.UUID)
+        assert isinstance(outcome, ApplicationOutcome)
 
     @pytest.mark.asyncio
     async def test_missing_application_raises_not_found(self, db_session: AsyncSession):
