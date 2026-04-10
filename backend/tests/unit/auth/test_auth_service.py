@@ -222,13 +222,11 @@ def test_clear_auth_cookies_logs_session_clear_without_sensitive_fields(
     )
 
 
-
 def test_decode_token_payload_invalid_type():
     user_id = "test-user"
     token = auth_service.create_access_token(user_id)
     with pytest.raises(AuthError, match="Invalid token type"):
         auth_service.decode_token_payload(token, expected_type="refresh")
-
 
 
 def test_decode_token_payload_invalid_sub(monkeypatch):
@@ -239,7 +237,6 @@ def test_decode_token_payload_invalid_sub(monkeypatch):
     )
     with pytest.raises(AuthError, match="Invalid token"):
         auth_service.decode_token_payload("dummy-token", expected_type="access")
-
 
 
 def test_decode_token_payload_expired(monkeypatch):
@@ -254,10 +251,11 @@ def test_decode_token_payload_expired(monkeypatch):
         auth_service.decode_token_payload("expired-token")
 
 
-
 def test_normalize_auth_reason_edge_cases() -> None:
     assert auth_service.normalize_auth_reason(None) == "auth_error"
-    assert auth_service.normalize_auth_reason(None, fallback="custom_fallback") == "custom_fallback"
+    assert (
+        auth_service.normalize_auth_reason(None, fallback="custom_fallback") == "custom_fallback"
+    )
     assert auth_service.normalize_auth_reason("") == "auth_error"
     assert auth_service.normalize_auth_reason("   ") == "auth_error"
 
@@ -269,7 +267,6 @@ def test_normalize_auth_reason_edge_cases() -> None:
     assert auth_service.normalize_auth_reason("---", fallback="custom") == "custom"
 
 
-
 def test_create_csrf_token():
     token = auth_service.create_csrf_token()
     assert isinstance(token, str)
@@ -278,11 +275,7 @@ def test_create_csrf_token():
     assert token != token2
 
 
-
 def test_decode_token_payload_missing_sub(monkeypatch: pytest.MonkeyPatch):
-    import jwt as pyjwt
-    from app.config import settings
-
     payload = {
         "exp": auth_service.datetime.now(auth_service.timezone.utc)
         + auth_service.timedelta(minutes=15),
@@ -290,14 +283,13 @@ def test_decode_token_payload_missing_sub(monkeypatch: pytest.MonkeyPatch):
         "jti": "fake-jti",
         "ver": 0,
     }
-    token = pyjwt.encode(
+    token = auth_service.jwt.encode(
         payload,
-        settings.effective_jwt_signing_key,
-        algorithm=settings.algorithm,
+        auth_service.settings.effective_jwt_signing_key,
+        algorithm=auth_service.settings.algorithm,
     )
     with pytest.raises(AuthError, match="Invalid token"):
         auth_service.decode_token_payload(token, expected_type="access")
-
 
 
 def test_create_refresh_token():
@@ -310,12 +302,10 @@ def test_create_refresh_token():
     assert payload["jti"]
 
 
-
 def test_verify_password_with_known_hash():
     known_hash = "$2b$12$3zl1BmX2bM4rIlbhWMOaKOdpWw2jOWbIIqTZwJ/vbqtqgqoC9QF9."
     assert auth_service.verify_password("mysecretpassword", known_hash)
     assert not auth_service.verify_password("wrongpassword", known_hash)
-
 
 
 def test_get_token_version():
@@ -324,7 +314,6 @@ def test_get_token_version():
     assert auth_service.get_token_version(SimpleNamespace(token_version=0)) == 0
     assert auth_service.get_token_version(SimpleNamespace(token_version=5)) == 5
     assert auth_service.get_token_version(SimpleNamespace(token_version="3")) == 3
-
 
 
 def test_create_tokens(monkeypatch: pytest.MonkeyPatch):
@@ -347,7 +336,6 @@ def test_create_tokens(monkeypatch: pytest.MonkeyPatch):
     assert isinstance(tokens, auth_service.AuthTokens)
     assert tokens.access_token == mock_access_token
     assert tokens.refresh_token == mock_refresh_token
-
 
 
 def test_create_access_token_default_version():

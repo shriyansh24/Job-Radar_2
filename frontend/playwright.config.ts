@@ -4,12 +4,13 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = fileURLToPath(new URL(".", import.meta.url));
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
+const backendRoot = fileURLToPath(new URL("../backend", import.meta.url));
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:5173";
 
 process.env.PLAYWRIGHT_BASE_URL ??= baseURL;
 process.env.VITE_API_PROXY_TARGET ??= "http://127.0.0.1:8000";
 process.env.JR_DEBUG ??= "true";
-process.env.JR_SECRET_KEY ??= "playwright-local-secret";
+process.env.JR_SECRET_KEY ??= "playwright-local-secret-key-for-tests-32";
 process.env.JR_CORS_ORIGINS ??= '["http://127.0.0.1:5173","http://localhost:5173"]';
 process.env.JR_TRUSTED_HOSTS ??= '["127.0.0.1","localhost","test"]';
 
@@ -31,7 +32,7 @@ export default defineConfig({
   webServer: [
     {
       name: "backend-api",
-      command: `uv run python "${fileURLToPath(new URL("../scripts/start_playwright_backend.py", import.meta.url))}"`,
+      command: `uv run --project "${backendRoot}" python "${fileURLToPath(new URL("../scripts/start_playwright_backend.py", import.meta.url))}"`,
       url: "http://127.0.0.1:8000/docs",
       reuseExistingServer: true,
       timeout: 120_000,

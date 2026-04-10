@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useUIStore, parseThemePreference, serializeThemePreference } from "../../store/useUIStore";
 
 function resetStore() {
@@ -11,12 +11,33 @@ function resetStore() {
   });
 }
 
+function mockMatchMedia(matchesDark: boolean) {
+  const originalMatchMedia = window.matchMedia;
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: query === "(prefers-color-scheme: dark)" ? matchesDark : false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+  return () => {
+    window.matchMedia = originalMatchMedia;
+  };
+}
+
 beforeEach(() => {
   localStorage.clear();
   resetStore();
   // Reset DOM class and attributes
   document.documentElement.classList.remove("dark");
   document.documentElement.removeAttribute("data-theme");
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 // ---------------------------------------------------------------------------
@@ -47,15 +68,27 @@ describe("parseThemePreference", () => {
   });
 
   it("falls back to defaults for unrecognised values", () => {
-    const result = parseThemePreference("nonsense");
-    expect(["dark", "light"]).toContain(result.mode);
-    expect(result.themeFamily).toBe("default");
+    const restore = mockMatchMedia(true);
+    expect(parseThemePreference("nonsense")).toEqual({ mode: "dark", themeFamily: "default" });
+    restore();
   });
 
   it("falls back to defaults for null / undefined", () => {
-    const result = parseThemePreference(null);
-    expect(["dark", "light"]).toContain(result.mode);
-    expect(result.themeFamily).toBe("default");
+    const restore = mockMatchMedia(false);
+    expect(parseThemePreference(null)).toEqual({ mode: "light", themeFamily: "default" });
+    expect(parseThemePreference(undefined)).toEqual({ mode: "light", themeFamily: "default" });
+    expect(parseThemePreference("system")).toEqual({ mode: "light", themeFamily: "default" });
+    restore();
+  });
+
+  it("falls back to system dark mode when stored family or mode is invalid", () => {
+    const restore = mockMatchMedia(true);
+    expect(parseThemePreference("invalid:dark")).toEqual({ mode: "dark", themeFamily: "default" });
+    expect(parseThemePreference("terminal:invalid")).toEqual({
+      mode: "dark",
+      themeFamily: "default",
+    });
+    restore();
   });
 });
 
