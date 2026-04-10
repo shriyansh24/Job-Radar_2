@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import uuid
 from datetime import UTC, datetime
 
@@ -29,8 +30,10 @@ async def persist_jobs(
         return 0, 0
 
     for scraped in jobs:
+        seen_at = datetime.now(UTC)
         job_id = compute_job_id(scraped)
         scraped_fields = scraped_job_to_dict(scraped)
+        content_hash = _compute_content_hash(scraped)
         ats_composite_key = scraped_fields.get("ats_composite_key")
         existing = None
         if ats_composite_key:
@@ -42,15 +45,25 @@ async def persist_jobs(
 
         if existing:
             for field_name, value in scraped_fields.items():
-                if field_name == "scraped_at":
-                    continue
                 setattr(existing, field_name, value)
-            existing.scraped_at = datetime.now(UTC)
+            existing.scraped_at = seen_at
+            existing.first_seen_at = existing.first_seen_at or seen_at
+            existing.last_seen_at = seen_at
+            existing.seen_count = (existing.seen_count or 0) + 1
+            existing.disappeared_at = None
+            if existing.content_hash != content_hash:
+                existing.previous_hash = existing.content_hash
+                existing.content_hash = content_hash
             updated_count += 1
         else:
             job = Job(
                 id=job_id,
                 user_id=user_id,
+                first_seen_at=seen_at,
+                last_seen_at=seen_at,
+                disappeared_at=None,
+                content_hash=content_hash,
+                seen_count=1,
                 **scraped_fields,
             )
             db.add(job)
@@ -64,3 +77,14 @@ async def persist_jobs(
         raise
 
     return new_count, updated_count
+
+
+def _compute_content_hash(job: ScrapedJob) -> str:
+    """Track material content changes without including volatile scrape metadata."""
+    content = (
+        f"{job.title.strip().lower()}|"
+        f"{job.company_name.strip().lower()}|"
+        f"{(job.location or '').strip().lower()}|"
+        f"{(job.description_raw or '').strip()[:1000]}"
+    )
+    return hashlib.sha256(content.encode()).hexdigest()
