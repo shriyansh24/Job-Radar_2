@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, cast
 
 import structlog
@@ -25,6 +26,18 @@ WHERE user_id = :user_id
   AND is_active = true
   AND search_vector @@ plainto_tsquery('english', :query)
 """
+
+_SQL_DIR = Path(__file__).with_name("sql")
+
+
+def _load_sql(filename: str) -> str:
+    return (_SQL_DIR / filename).read_text(encoding="utf-8").replace(
+        "__BM25_BASE_QUERY__", _BM25_BASE_QUERY.strip()
+    )
+
+
+_HYBRID_SEARCH_SQL = text(_load_sql("hybrid_search.sql"))
+_BM25_ONLY_SEARCH_SQL = text(_load_sql("bm25_only_search.sql"))
 
 
 @dataclass
@@ -67,46 +80,6 @@ class HybridSearchService:
             return await self._bm25_only_search(query, user_id, limit, offset)
 
         fetch_limit = limit * 3
-        sql = text(
-            f"""
-            WITH bm25 AS (
-                {_BM25_BASE_QUERY}
-                LIMIT :fetch_limit
-            ),
-            semantic AS (
-                SELECT id, ROW_NUMBER() OVER (
-                    ORDER BY embedding <=> CAST(:q_emb AS vector)
-                ) AS rank
-                FROM jobs
-                WHERE user_id = :user_id
-                  AND is_active = true
-                  AND embedding IS NOT NULL
-                LIMIT :fetch_limit
-            ),
-            rrf AS (
-                SELECT id, :bm25_w * (1.0 / (:k + rank)) AS score,
-                       rank AS src_rank, 'bm25' AS src
-                FROM bm25
-                UNION ALL
-                SELECT id, :sem_w * (1.0 / (:k + rank)) AS score,
-                       rank AS src_rank, 'semantic' AS src
-                FROM semantic
-            ),
-            combined AS (
-                SELECT id, SUM(score) AS rrf_score,
-                       MIN(CASE WHEN src = 'bm25' THEN src_rank END) AS bm25_rank,
-                       MIN(CASE WHEN src = 'semantic' THEN src_rank END) AS semantic_rank
-                FROM rrf
-                GROUP BY id
-                ORDER BY rrf_score DESC
-                LIMIT :limit OFFSET :offset
-            )
-            SELECT id, rrf_score, bm25_rank, semantic_rank
-            FROM combined
-            ORDER BY rrf_score DESC
-            """
-        )
-
         params = {
             "query": query,
             "q_emb": str(query_embedding),
@@ -127,7 +100,7 @@ class HybridSearchService:
                 semantic_rank=row.semantic_rank,
             )
 
-        return await self._execute_search_query(sql, params, _map_func)
+        return await self._execute_search_query(_HYBRID_SEARCH_SQL, params, _map_func)
 
     async def _bm25_only_search(
         self,
@@ -136,14 +109,6 @@ class HybridSearchService:
         limit: int,
         offset: int,
     ) -> list[HybridSearchResult]:
-        sql = text(
-            f"""
-            {_BM25_BASE_QUERY}
-            ORDER BY rank
-            LIMIT :limit OFFSET :offset
-            """
-        )
-
         params = {
             "query": query,
             "user_id": str(user_id),
@@ -159,7 +124,7 @@ class HybridSearchService:
                 semantic_rank=None,
             )
 
-        return await self._execute_search_query(sql, params, _map_func)
+        return await self._execute_search_query(_BM25_ONLY_SEARCH_SQL, params, _map_func)
 
     async def _fallback_keyword_search(
         self,

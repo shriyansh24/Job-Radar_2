@@ -34,7 +34,7 @@ async def test_embed_jobs_batch_rolls_back_on_store_failure():
     scalars_result = MagicMock()
     scalars_result.all.return_value = [_job("job-1"), _job("job-2")]
     db.scalars = AsyncMock(return_value=scalars_result)
-    db.execute.side_effect = [None, RuntimeError("boom")]
+    db.execute.side_effect = RuntimeError("boom")
 
     service = EmbeddingService(db)
     service._model = _FakeModel()
@@ -59,6 +59,11 @@ async def test_embed_jobs_batch_commits_full_batch_when_all_updates_succeed():
     count = await service.embed_jobs_batch(limit=2)
 
     assert count == 2
-    assert db.execute.await_count == 2
+    db.execute.assert_awaited_once()
+    _, execute_params = db.execute.await_args.args
+    assert execute_params == [
+        {"emb": str([0.1, 0.2, 0.3]), "id": "job-1"},
+        {"emb": str([0.1, 0.2, 0.3]), "id": "job-2"},
+    ]
     db.commit.assert_awaited_once()
     db.rollback.assert_not_awaited()
