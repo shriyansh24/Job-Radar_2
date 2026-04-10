@@ -3,12 +3,14 @@ from __future__ import annotations
 import inspect
 import uuid
 from dataclasses import dataclass
+from functools import lru_cache
 from importlib.resources import files as _resource_files
 from typing import Any, cast
 
 import structlog
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import TextClause
 
 logger = structlog.get_logger()
 
@@ -27,9 +29,6 @@ WHERE user_id = :user_id
   AND search_vector @@ plainto_tsquery('english', :query)
 """
 
-_HYBRID_SEARCH_SQL: Any = None
-_BM25_ONLY_SEARCH_SQL: Any = None
-
 
 def _load_sql(filename: str) -> str:
     try:
@@ -47,18 +46,14 @@ def _load_sql(filename: str) -> str:
     return sql_text.replace("__BM25_BASE_QUERY__", _BM25_BASE_QUERY.strip())
 
 
-def _get_hybrid_search_sql() -> Any:
-    global _HYBRID_SEARCH_SQL
-    if _HYBRID_SEARCH_SQL is None:
-        _HYBRID_SEARCH_SQL = text(_load_sql("hybrid_search.sql"))
-    return _HYBRID_SEARCH_SQL
+@lru_cache(maxsize=None)
+def _get_hybrid_search_sql() -> TextClause:
+    return text(_load_sql("hybrid_search.sql"))
 
 
-def _get_bm25_only_search_sql() -> Any:
-    global _BM25_ONLY_SEARCH_SQL
-    if _BM25_ONLY_SEARCH_SQL is None:
-        _BM25_ONLY_SEARCH_SQL = text(_load_sql("bm25_only_search.sql"))
-    return _BM25_ONLY_SEARCH_SQL
+@lru_cache(maxsize=None)
+def _get_bm25_only_search_sql() -> TextClause:
+    return text(_load_sql("bm25_only_search.sql"))
 
 
 @dataclass
