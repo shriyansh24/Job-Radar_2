@@ -34,13 +34,38 @@ def _structured_resume() -> dict[str, object]:
         "contact": {
             "name": "Jane Doe",
             "email": "jane@example.com",
+            "phone": "555-123-4567",
         },
-        "summary": "Staff frontend engineer with design-system experience.",
+        "summary": (
+            "Staff frontend engineer with 8 years of experience building design systems, "
+            "platform UI foundations, and performance-sensitive product surfaces."
+        ),
         "work": [
             {
                 "company": "Acme",
                 "title": "Staff Frontend Engineer",
-                "bullets": ["Built a shared UI platform"],
+                "start_date": "Jan 2020",
+                "end_date": "Present",
+                "bullets": [
+                    "Led a cross-functional UI platform initiative serving 12 product squads.",
+                    "Built a shared design system that reduced duplicate component work by 40%.",
+                    (
+                        "Implemented performance budgets that improved median dashboard "
+                        "load time by 32%."
+                    ),
+                    (
+                        "Mentored 5 engineers and formalized accessibility review "
+                        "gates across releases."
+                    ),
+                ],
+            }
+        ],
+        "education": [
+            {
+                "institution": "MIT",
+                "degree": "BS",
+                "field": "Computer Science",
+                "end_date": "2017",
             }
         ],
         "skills": ["React", "TypeScript", "Design Systems"],
@@ -94,7 +119,7 @@ async def test_resume_templates_preview_and_export(
     preview_data = preview_resp.json()
     assert preview_data["template_id"] == "modern"
     assert "Jane Doe" in preview_data["html"]
-    assert "Built a shared UI platform" in preview_data["html"]
+    assert "Built a shared design system" in preview_data["html"]
 
     assert export_resp.status_code == 200
     assert export_resp.headers["content-type"] == "application/pdf"
@@ -131,3 +156,62 @@ async def test_resume_preview_rejects_unknown_template(
 
     assert preview_resp.status_code == 422
     assert "Unknown template" in preview_resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_resume_validate_returns_ats_score(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    token, user_id = await _register_and_login(client)
+    user_uuid = uuid.UUID(user_id)
+
+    version = ResumeVersion(
+        user_id=user_uuid,
+        filename="resume.pdf",
+        parsed_text="Jane Doe",
+        parsed_structured=_structured_resume(),
+        is_default=True,
+    )
+    db_session.add(version)
+    await db_session.commit()
+    await db_session.refresh(version)
+
+    response = await client.post(
+        f"/api/v1/resume/versions/{version.id}/validate",
+        headers=_auth(token),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["passed"] is True
+    assert body["score"] >= 70
+    assert any(check["field"] == "has_work" for check in body["checks"])
+
+
+@pytest.mark.asyncio
+async def test_resume_validate_requires_structured_data(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    token, user_id = await _register_and_login(client)
+    user_uuid = uuid.UUID(user_id)
+
+    version = ResumeVersion(
+        user_id=user_uuid,
+        filename="resume.txt",
+        parsed_text="Unstructured text only",
+        parsed_structured=None,
+        is_default=True,
+    )
+    db_session.add(version)
+    await db_session.commit()
+    await db_session.refresh(version)
+
+    response = await client.post(
+        f"/api/v1/resume/versions/{version.id}/validate",
+        headers=_auth(token),
+    )
+
+    assert response.status_code == 422
+    assert "structured data available for validation" in response.json()["detail"]
