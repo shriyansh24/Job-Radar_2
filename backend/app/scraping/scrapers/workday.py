@@ -27,6 +27,7 @@ _WORKDAY_URL_RE = re.compile(
     r"/(?P<section>[^/?#]+)",
     re.IGNORECASE,
 )
+_WORKDAY_REQUISITION_RE = re.compile(r"(REQ-\d+)", re.IGNORECASE)
 
 
 class WorkdayScraper(BaseScraper):
@@ -114,6 +115,7 @@ class WorkdayScraper(BaseScraper):
 
             # Determine remote type
             remote_type = self._normalize_remote_type(location)
+            ats_job_id = self._extract_ats_job_id(external_path)
 
             jobs.append(
                 ScrapedJob(
@@ -125,12 +127,22 @@ class WorkdayScraper(BaseScraper):
                     remote_type=remote_type,
                     job_type=job_type,
                     posted_at=posted_at,
-                    ats_job_id=external_path or None,
+                    ats_job_id=ats_job_id,
                     ats_provider=self.source_name,
                 )
             )
 
         return jobs
+
+    @staticmethod
+    def _extract_ats_job_id(external_path: str) -> str | None:
+        """Extract a stable Workday ATS job identifier from an external path."""
+        requisition_match = _WORKDAY_REQUISITION_RE.search(external_path)
+        if requisition_match:
+            return requisition_match.group(1).upper()
+
+        path_parts = [part for part in external_path.rstrip("/").split("/") if part]
+        return path_parts[-1] if path_parts else None
 
     async def fetch_jobs(
         self, query: str, location: str | None = None, limit: int = 50

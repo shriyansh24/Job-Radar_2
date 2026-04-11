@@ -89,7 +89,7 @@ async def run_tfidf_scoring(ctx: Mapping[str, Any] | None = None) -> None:
     """Background job: update TF-IDF scores against user resume."""
     async with async_session_factory() as db:
         try:
-            from sqlalchemy import select, update
+            from sqlalchemy import bindparam, select, update
 
             from app.jobs.models import Job
             from app.profile.models import UserProfile
@@ -107,8 +107,16 @@ async def run_tfidf_scoring(ctx: Mapping[str, Any] | None = None) -> None:
 
             scorer = TFIDFScorer()
             scores = scorer.score_jobs(profile.resume_text, cast(list[object], list(jobs)))
-            for job_id, score in scores:
-                await db.execute(update(Job).where(Job.id == job_id).values(tfidf_score=score))
+            if scores:
+                stmt = (
+                    update(Job)
+                    .where(Job.id == bindparam("id"))
+                    .values(tfidf_score=bindparam("tfidf_score"))
+                )
+                await db.execute(
+                    stmt,
+                    [{"id": job_id, "tfidf_score": score} for job_id, score in scores],
+                )
             await db.commit()
             logger.info("tfidf_scoring_completed", jobs_scored=len(scores))
         except Exception:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC
+
 import structlog
 from apscheduler.events import (
     EVENT_JOB_ERROR,
@@ -85,7 +87,8 @@ def _log_job_event(event: JobExecutionEvent) -> None:
 
 def create_scheduler() -> AsyncIOScheduler:
     """Create and configure the background job scheduler."""
-    scheduler = AsyncIOScheduler()
+    # Pin scheduling to UTC so startup does not depend on host-local tzdata.
+    scheduler = AsyncIOScheduler(timezone=UTC)
 
     # Scraping: every 6 hours
     scheduler.add_job(

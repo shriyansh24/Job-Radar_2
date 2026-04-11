@@ -6,8 +6,12 @@ hash function (hashlib.md5) instead of Python's built-in hash() which
 is randomized via PYTHONHASHSEED.
 """
 
+import os
+import shutil
 import subprocess
 import sys
+from pathlib import Path
+from textwrap import dedent
 
 from app.scraping.deduplication import DeduplicationService
 from app.scraping.port import ScrapedJob
@@ -100,22 +104,60 @@ def test_simhash_deterministic_across_processes():
     different PYTHONHASHSEED values.  This is the key regression test:
     Python's built-in hash() is randomized per-process, so using it would
     make this test fail."""
-    script = (
-        "from app.scraping.deduplication import DeduplicationService; "
-        "from app.scraping.port import ScrapedJob; "
-        "svc = DeduplicationService(); "
-        "j = ScrapedJob(title='Software Engineer', company_name='TestCorp', "
-        "source='test', description_raw='Build great software'); "
-        "print(svc._compute_simhash(j))"
+    repo_root = Path(__file__).resolve().parents[3]
+    python_executable = Path(sys.executable)
+    pyvenv_cfg = python_executable.parent.parent / "pyvenv.cfg"
+    if not pyvenv_cfg.exists():
+        python_executable = Path(
+            getattr(sys, "_base_executable", "") or shutil.which("python") or sys.executable
+        )
+
+    script = dedent(
+        """
+        import sys
+        import types
+
+        try:
+            import structlog  # noqa: F401
+        except ModuleNotFoundError:
+            structlog = types.ModuleType("structlog")
+
+            class _Logger:
+                def info(self, *args, **kwargs):
+                    return None
+
+            structlog.get_logger = lambda: _Logger()
+            sys.modules["structlog"] = structlog
+
+        from app.scraping.deduplication import DeduplicationService
+        from app.scraping.port import ScrapedJob
+
+        svc = DeduplicationService()
+        job = ScrapedJob(
+            title="Software Engineer",
+            company_name="TestCorp",
+            source="test",
+            description_raw="Build great software",
+        )
+        print(svc._compute_simhash(job))
+        """
     )
     results = []
     for seed in ("111", "999"):
         proc = subprocess.run(
-            [sys.executable, "-c", script],
+            [str(python_executable), "-c", script],
             capture_output=True,
             text=True,
-            env={**__import__("os").environ, "PYTHONHASHSEED": seed},
-            cwd=str(__import__("pathlib").Path(__file__).resolve().parents[3]),
+            env={
+                **os.environ,
+                "PYTHONHASHSEED": seed,
+                "PYTHONPATH": (
+                    str(repo_root)
+                    if not os.environ.get("PYTHONPATH")
+                    else f"{repo_root}{os.pathsep}{os.environ['PYTHONPATH']}"
+                ),
+            },
+            cwd=str(repo_root),
         )
         assert proc.returncode == 0, proc.stderr
         results.append(int(proc.stdout.strip()))

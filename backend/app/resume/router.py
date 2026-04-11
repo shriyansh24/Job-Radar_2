@@ -14,6 +14,7 @@ from app.resume.archetypes import (
     AutoSelectResponse,
 )
 from app.resume.schemas import (
+    ATSValidationResult,
     CouncilRequest,
     CouncilResponse,
     CoverLetterGenerateRequest,
@@ -98,6 +99,24 @@ async def export_version_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post("/versions/{resume_id}/validate", response_model=ATSValidationResult)
+async def validate_version_ats(
+    resume_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ATSValidationResult:
+    from app.resume.validator import ATSValidator
+    from app.shared.errors import ValidationError
+
+    svc = ResumeService(db)
+    version = await svc.get_version(resume_id, user.id)
+    if not version.parsed_structured:
+        raise ValidationError("Resume does not have structured data available for validation")
+
+    validator = ATSValidator()
+    return validator.validate(version.parsed_structured)
 
 
 @router.patch("/versions/{resume_id}", response_model=ResumeVersionResponse)

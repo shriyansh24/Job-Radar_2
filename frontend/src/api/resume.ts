@@ -21,6 +21,21 @@ export interface ResumePreview {
   html: string;
 }
 
+export interface ATSCheckResult {
+  field: string;
+  passed: boolean;
+  message: string;
+  details: Record<string, unknown> | null;
+}
+
+export interface ATSValidationResult {
+  score: number;
+  passed: boolean;
+  checks: ATSCheckResult[];
+  warnings: string[];
+  extracted_text_length: number;
+}
+
 export interface ResumeTailorStage1 {
   hard_requirements: string[];
   soft_requirements: string[];
@@ -84,6 +99,8 @@ export const resumeApi = {
     apiClient.get<ResumePreview>(`/resume/versions/${resumeVersionId}/preview`, {
       params: { template_id: templateId },
     }),
+  validateVersion: (resumeVersionId: string) =>
+    apiClient.post<ATSValidationResult>(`/resume/versions/${resumeVersionId}/validate`),
   exportVersion: (resumeVersionId: string, templateId: string) =>
     apiClient.get<Blob>(`/resume/versions/${resumeVersionId}/export`, {
       params: { template_id: templateId },

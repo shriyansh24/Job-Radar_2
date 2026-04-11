@@ -2,7 +2,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-type PageHeaderProps = React.HTMLAttributes<HTMLDivElement> & {
+type PageHeaderProps = Omit<React.HTMLAttributes<HTMLDivElement>, "title"> & {
   eyebrow?: React.ReactNode
   title: React.ReactNode
   description?: React.ReactNode

@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 import uuid
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.models import User
 from app.email.parser import EmailParser
 from app.email.schemas import EmailWebhookPayload
 from app.email.service import EmailService
@@ -12,6 +15,7 @@ from app.jobs.models import Job
 from app.pipeline.models import Application
 from app.pipeline.schemas import ApplicationCreate, StatusTransition
 from app.pipeline.service import PipelineService
+from app.shared.errors import AuthError
 
 # ---------------------------------------------------------------------------
 # EmailParser unit tests (no DB)
@@ -468,6 +472,63 @@ async def test_service_outreach_no_transition(
 
 @pytest.mark.asyncio
 async def test_webhook_signature_verification() -> None:
+    secret = "email-webhook-signing-secret-for-tests"
+    expected_signature = hmac.new(
+        secret.encode(),
+        b"1700token-123",
+        hashlib.sha256,
+    ).hexdigest()
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr("app.email.service.settings.secret_key", secret)
+        monkeypatch.setattr("app.email.service.settings.jwt_signing_key", "")
+        assert EmailService.verify_webhook_signature("1700", "token-123", expected_signature)
+
     # Signature verification with wrong values should fail
     assert not EmailService.verify_webhook_signature("", "", "")
     assert not EmailService.verify_webhook_signature("ts", "tok", "bad")
+
+
+@pytest.mark.asyncio
+async def test_service_resolves_webhook_user_from_recipient(db_session: AsyncSession) -> None:
+    user = User(
+        email="candidate@example.com",
+        password_hash="unused",
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+
+    svc = EmailService(db_session)
+    payload = EmailWebhookPayload(to="JobRadar <candidate@example.com>")
+
+    assert await svc.resolve_webhook_user_id(payload) == user.id
+
+
+@pytest.mark.asyncio
+async def test_service_resolves_webhook_user_with_case_insensitive_fallback(
+    db_session: AsyncSession,
+) -> None:
+    user = User(
+        email="Mixed.Case@example.com",
+        password_hash="unused",
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+
+    svc = EmailService(db_session)
+    payload = EmailWebhookPayload(to="JobRadar <mixed.case@example.com>")
+
+    assert await svc.resolve_webhook_user_id(payload) == user.id
+
+
+@pytest.mark.asyncio
+async def test_service_rejects_unknown_webhook_recipient(db_session: AsyncSession) -> None:
+    svc = EmailService(db_session)
+    payload = EmailWebhookPayload(to="unknown@example.com")
+
+    with pytest.raises(AuthError, match="Webhook recipient not recognized"):
+        await svc.resolve_webhook_user_id(payload)

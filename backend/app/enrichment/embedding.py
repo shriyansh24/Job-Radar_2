@@ -118,11 +118,10 @@ class EmbeddingService:
             return 0
 
         try:
-            for update in updates:
-                await self.db.execute(
-                    text("UPDATE jobs SET embedding = :emb WHERE id = :id"),
-                    update,
-                )
+            await self.db.execute(
+                text("UPDATE jobs SET embedding = :emb WHERE id = :id"),
+                updates,
+            )
             await self.db.commit()
         except Exception as e:
             await self.db.rollback()
