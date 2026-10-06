@@ -1,0 +1,48 @@
+title = "JobRadar secret scanning"
+
+[extend]
+useDefault = true
+
+# Keep the default detectors and add provider-specific environment assignments.
+[[rules]]
+id = "scrapingbee-api-key"
+description = "ScrapingBee credential in configuration"
+regex = '''(?i)scrapingbee[_-]?(?:api[_-]?)?key["']?\s*[:=]\s*["']?([a-z0-9_-]{40,})'''
+secretGroup = 1
+keywords = ["scrapingbee"]
+
+[[rules]]
+id = "serpapi-api-key"
+description = "SerpAPI credential in configuration"
+regex = '''(?i)serpapi[_-]?(?:api[_-]?)?key["']?\s*[:=]\s*["']?([a-f0-9]{64})'''
+secretGroup = 1
+keywords = ["serpapi"]
+
+# Exceptions are restricted to exact synthetic values in their fixture paths.
+[[allowlists]]
+targetRules = ["generic-api-key"]
+description = "Synthetic integration-test API key"
+condition = "AND"
+paths = ['''(?:^|/)backend/tests/(?:unit/settings/test_settings_service|integration/test_(?:admin|settings)_api)\.py$''']
+regexes = ['''^sk-test-1234567890$''']
+
+[[allowlists]]
+targetRules = ["generic-api-key"]
+description = "Synthetic URL parameters for content hashing"
+condition = "AND"
+paths = ['''(?:^|/)backend/tests/unit/scraping/test_content_hasher\.py$''']
+regexes = ['''^(?:abcdef123456|fedcba654321)$''']
+
+[[allowlists]]
+targetRules = ["generic-api-key"]
+description = "Historical scheduler job identifier"
+condition = "AND"
+paths = ['''(?:^|/)backend/scheduler\.py$''']
+regexes = ['''^replace_existing=True$''']
+
+[[allowlists]]
+targetRules = ["generic-api-key"]
+description = "Empty historical environment assignment crossing into the next variable name"
+condition = "AND"
+paths = ['''(?:^|/)\.env\.example$''']
+regexes = ['''^SCRAPINGBEE_KEY=$''']
