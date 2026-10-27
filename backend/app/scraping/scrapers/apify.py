@@ -22,16 +22,13 @@ class ApifyScraper(BaseScraper):
             logger.debug("apify_skipped", reason="no_api_key")
             return []
 
-        url = (
-            "https://api.apify.com/v2/acts/"
-            "misceres~linkedin-jobs-scraper/run-sync-get-dataset-items"
-        )
+        url = "https://api.apify.com/v2/acts/johnvc~linkedin-jobs-api/run-sync-get-dataset-items"
         params = {"token": self.settings.apify_api_key}
-        search_url = (
-            f"https://www.linkedin.com/jobs/search/"
-            f"?keywords={query}&location={location or 'United States'}"
-        )
-        payload = {"searchUrl": search_url, "maxItems": limit}
+        payload = {
+            "keyword": query,
+            "location": location or "United States",
+            "maxJobs": limit,
+        }
 
         resp = await self.client.post(url, json=payload, params=params, timeout=120.0)
         resp.raise_for_status()
@@ -39,14 +36,21 @@ class ApifyScraper(BaseScraper):
 
         jobs: list[ScrapedJob] = []
         for item in items:
+            if item.get("error_message"):
+                logger.warning(
+                    "apify_item_error",
+                    error_type=item.get("error_type"),
+                    error=item.get("error_message"),
+                )
+                continue
             jobs.append(
                 ScrapedJob(
                     title=item.get("title", ""),
                     company_name=item.get("companyName", ""),
                     source=self.source_name,
-                    source_url=item.get("url"),
+                    source_url=item.get("jobUrl"),
                     location=item.get("location"),
-                    description_raw=item.get("descriptionText"),
+                    description_raw=item.get("description"),
                 )
             )
         return jobs[:limit]
